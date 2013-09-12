@@ -1,0 +1,34 @@
+
+
+    These are the main references used for putting the application together. If you want to change the code in the program, these are the references that will be the most helpful. Also there is a lot of information on the internet for using GTK+, SQLite and Gnuplot. Both GTK+ and SQLite have excellent developer websites and there are a lot of available examples for Gnuplot. You are encouraged to give a little math and coding a try.
+
+Apophenia library;
+    Klemens, Ben. 2009, Tools and Techniques for Scientific Computing, Princeton University Press.
+
+GSL library;
+    Gough, Brian. 2003. GNU Scientific Library Reference Manual, 2nd edition, Network Theory, Ltd.
+
+Multivariate Fortran code written by,
+    Alan Genz 
+!          Department of Mathematics
+!          Washington State University 
+!          Pullman, WA 99164-3113
+!          Email : AlanGenz@wsu.edu
+
+For ANOVA, Dunnett's test, Dunn-Sidak, Bonferonni comparisons and contingency tables.
+    De Muth, J.E.(2006). "Basic Statistics and Pharmaceutical Statistical Applications", Second Edition, Chapman & Hall/CRC.
+
+Code idea for comparisons with contrasts came from;
+      Johnson, R. A. and Wichern, D. W. Applied Multivariate Statistical Analysis 6th edition. Pearson Prentice Hall, pp.282-283 Sleeping Dog example.
+
+Z-factor Reference;
+       A Simple Statistical Parameter for Use in Evaluation and Validation of High Throughput 
+  Screening Assays, Ji-Hu Zhang, Thomas D. Y. Chung and Kevin R. Oldenburg,
+  Journal of Biomolecular Screening, Volumne 4, Number 2, 1999
+
+For the Chi square calculation for contingency tables.
+  Sachs, Lothar, Applied Statistics,
+  Springer-Verlag, NY, 1984, P.476-477. 
+
+
+
