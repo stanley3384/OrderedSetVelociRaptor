@@ -904,7 +904,7 @@ double bonferroni_critical_value(double alpha, int Comparisons, int DF)
 double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,int iMeanDistance,int iDF)
         {
           //Match variables to Alan Genz's function.
-      int iPlates=1;//From test version
+      int iPlates=1;//From test version. Set to 1.
       int N=iMeanDistance;
       int NU=iDF;
       int M=iMeanDistance;
@@ -924,8 +924,6 @@ double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,
       double ERROR=0;
       double VALUE=0;
       
-     // double dArray[]={10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,20.0,20.0,20.0,20.0,20.0,20.0,20.0,20.0,20.0,20.0};
-
       double rho=0;
       int i=0;
       int j=0;
@@ -960,11 +958,9 @@ double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,
                    iCounter2++;
                  }
                printf("\n");
-             }
-             
+             }             
           }
- 
-     
+      
       printf("\n");
       
       //printf("Bonferonni bound %f\n", gsl_cdf_tdist_Qinv(ALPHA/(2*N), NU));
@@ -1326,7 +1322,7 @@ void send_text_to_database(const gchar *pTableName, GtkWidget *textview)
        gchar *string1=g_strdup(gtk_text_buffer_get_text(buffer1, &start1, &end1, TRUE));
        gchar *string2=g_strdup(pTableName);
        char *p1;
-       char prev;
+       char prev='~';
        p1=string1;
        int check1=0;
 

@@ -90,19 +90,24 @@ static void build_aux_table_dialog(GtkWidget*, GtkWidget*);
 static void build_combo_table_dialog(GtkWidget*, GtkWidget*);
 static void build_permutation_table_dialog(GtkWidget*, GtkWidget*);
 static void about_dialog(GtkWidget*, GtkWidget*);
-static void draw_raptor(GtkWidget*, gpointer); 
+static void draw_veloci_raptor(GtkWidget*, gpointer);
+static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *ImportItem, *QuitItem, *BasicStatsItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase;  
+     GtkWidget *window, *button, *scrolled_win, *textview, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *ImportItem, *QuitItem, *BasicStatsItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
      
      gtk_init(&argc, &argv);
     
      window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
      gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
      gtk_window_set_title(GTK_WINDOW(window), "Ordered Set VelociRaptor");
-     gtk_container_set_border_width(GTK_CONTAINER(window), 40);
-     gtk_window_set_default_size(GTK_WINDOW(window), 600, 300);
+     gtk_container_set_border_width(GTK_CONTAINER(window), 8);
+     gtk_window_set_default_size(GTK_WINDOW(window), 1024, 300);
+
+     RaptorFeet=gtk_drawing_area_new();
+     gtk_widget_set_size_request(RaptorFeet, 1024,35);
+     g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), NULL);
 
      button=gtk_button_new_with_mnemonic("Get Test Data");
      textbutton=gtk_button_new_with_mnemonic("Erase White Board");
@@ -111,7 +116,7 @@ int main(int argc, char *argv[])
      FormatText2=gtk_button_new_with_mnemonic("RiseFall Plate Map");
      SendToDatabase=gtk_button_new_with_mnemonic("Data To Database");
 
-     MainTable=gtk_table_new(9,8,TRUE);
+     MainTable=gtk_table_new(10,8,TRUE);
 
      FileMenu=gtk_menu_new(); 
      ImportItem=gtk_menu_item_new_with_label("Import Text");
@@ -238,33 +243,35 @@ int main(int argc, char *argv[])
      gtk_entry_set_width_chars(GTK_ENTRY(PlatePosControlEntry), 10);
      gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
 
-     gtk_table_attach(GTK_TABLE(MainTable), TextLabel, 2,7,0,1,GTK_EXPAND,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateParametersLabel, 0,2,0,1,GTK_FILL,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateNumberLabel, 0,1,1,2,GTK_FILL,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateSizeLabel, 0,1,2,3,GTK_FILL,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateStatsLabel, 0,1,3,4,GTK_FILL,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), ControlCheck, 0,2,4,5,GTK_FILL,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlatePosControlLabel, 0,1,5,6,GTK_FILL,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateNegControlLabel, 0,1,6,7,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), RaptorFeet, 0,8,0,1,GTK_FILL,GTK_FILL,0,0);
 
-     gtk_table_attach(GTK_TABLE(MainTable), PlateNumberEntry, 1,2,1,2,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateSizeEntry, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateStatsEntry, 1,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlatePosControlEntry, 1,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), PlateNegControlEntry, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), TextLabel, 2,7,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateParametersLabel, 0,2,1,2,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateNumberLabel, 0,1,2,3,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateSizeLabel, 0,1,3,4,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateStatsLabel, 0,1,4,5,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), ControlCheck, 0,2,5,6,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlatePosControlLabel, 0,1,6,7,GTK_FILL,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateNegControlLabel, 0,1,7,8,GTK_FILL,GTK_SHRINK,0,0);
+
+     gtk_table_attach(GTK_TABLE(MainTable), PlateNumberEntry, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateSizeEntry, 1,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateStatsEntry, 1,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlatePosControlEntry, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), PlateNegControlEntry, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
    
-     gtk_table_attach(GTK_TABLE(MainTable), scrolled_win, 2,7,1,8,GTK_FILL,GTK_FILL,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), scrolled_win, 2,7,2,9,GTK_FILL,GTK_FILL,0,0);
 
      gtk_table_attach(GTK_TABLE(MainTable), MenuBar, 6,8,0,1,GTK_FILL,GTK_FILL,0,0);
 
-     gtk_table_attach(GTK_TABLE(MainTable), button, 0,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), textbutton, 2,3,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), ClearFormat, 3,4,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), FormatText1, 4,5,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), FormatText2, 5,6,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), SendToDatabase, 6,7,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), button, 0,2,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), textbutton, 2,3,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), ClearFormat, 3,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), FormatText1, 4,5,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), FormatText2, 5,6,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), SendToDatabase, 6,7,9,10,GTK_SHRINK,GTK_SHRINK,0,0);    
 
-     gtk_table_set_row_spacings(GTK_TABLE(MainTable), 7);
+     gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
 
      g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(test_data_button_clicked), NULL);
@@ -724,7 +731,7 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkTextBuffer *buffer1;
     GtkTextIter start1;
     GtkTextIter end1;
-    int iRadioButton;
+    int iRadioButton=1;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -1385,16 +1392,16 @@ static void about_dialog(GtkWidget *menu, GtkWidget *window)
 
     content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
     gtk_widget_set_size_request(content_area, 250,300);
-    RaptorDrawing = gtk_drawing_area_new ();
+    RaptorDrawing = gtk_drawing_area_new();
     gtk_widget_set_size_request(RaptorDrawing, 400,220);
-    gtk_container_add (GTK_CONTAINER (content_area), RaptorDrawing);   
-    g_signal_connect(G_OBJECT(RaptorDrawing), "draw", G_CALLBACK(draw_raptor), NULL); 
+    gtk_container_add (GTK_CONTAINER(content_area), RaptorDrawing);   
+    g_signal_connect(G_OBJECT(RaptorDrawing), "draw", G_CALLBACK(draw_veloci_raptor), NULL); 
 
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
   }
-void draw_raptor(GtkWidget *widget, gpointer data)
+void draw_veloci_raptor(GtkWidget *widget, gpointer data)
   {
     cairo_t *cr;
     cairo_t *cr2;
@@ -1546,6 +1553,88 @@ void draw_raptor(GtkWidget *widget, gpointer data)
     cairo_destroy(raptor);
     cairo_pattern_destroy(pat3);
 
+  }
+static void draw_veloci_raptor_feet(GtkWidget *widget, gpointer data)
+ {   
+  int i=0;
+  int j=0;
+  int width=0;
+  int ScaleWidthCount=0;
+  int FootCount=0;
+  cairo_t *cr=NULL;
+  GdkWindow *DefaultWindow=NULL;
+
+  DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
+
+  width=gdk_window_get_width(DefaultWindow);
+  ScaleWidthCount=width-1024;
+
+  if(ScaleWidthCount<=0)
+    {
+      FootCount=22;
+    }
+  if(ScaleWidthCount>0)
+    {
+      FootCount=22+ScaleWidthCount%50;
+    } 
+
+  cr=gdk_cairo_create(DefaultWindow);
+
+  int points[9][2] = { 
+    { -70, -200 }, 
+    { -50, -170 }, 
+    { -40, -200 }, 
+    { -30, -170 }, 
+    { -10, -200 },
+    { -20, -140 }, 
+    { -20, -90 },
+    { -60, -160 }, 
+    { -70, -200 } 
+    };
+
+  int points2[9][2] = { 
+    { 70, -40 }, 
+    { 50, -10 }, 
+    { 40, -40 }, 
+    { 30, -10 }, 
+    { 10, -40 },
+    { 20, 20 }, 
+    { 20, 70 },
+    { 50, 20 }, 
+    { 70, -40 } 
+    };
+  
+  cairo_set_line_width(cr, 4);   
+  cairo_translate(cr, 0, 25);
+  cairo_rotate(cr, G_PI/2);
+  cairo_scale(cr, 0.15, 0.15);
+  cairo_set_source_rgb(cr, 0, 1, 0);
+ 
+  for(i=0;i<FootCount;i++)
+     {      
+         for(j=0;j<8;j++)
+            {
+              cairo_line_to(cr, points[j][0], points[j][1]);
+            }
+
+         cairo_close_path(cr);
+         cairo_stroke_preserve(cr);
+         cairo_fill(cr);
+
+         for(j=0;j<8;j++)
+            {
+              cairo_line_to(cr, points2[j][0], points2[j][1]);
+            }
+
+         cairo_close_path(cr);
+         cairo_stroke_preserve(cr);
+         cairo_fill(cr);
+         cairo_translate(cr, 0, -340); 
+     }
+   if(cr!=NULL)
+     {
+       cairo_destroy(cr);
+     } 
   }
 static void get_text_file(GtkWidget *menu, GtkWidget *window)
   {
@@ -2533,8 +2622,8 @@ static void format_text_dialog(GtkButton *button, gpointer data)
     GtkWidget *dialog, *table, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *content_area, *action_area;
     gint result;
     guint32 iBufferCount;
-    gunichar Char;
-    gunichar Char2;
+    gunichar Char='~';
+    gunichar Char2='~';
     int iSwitch=0;
     int iSwitch2=0;
     guint32 i=0;
@@ -2722,7 +2811,7 @@ static void copy_selected_to_clipboard(GtkWidget *copy, GtkWidget *treeview)
     GList *list;
     GList *row;
     GString *buffer=g_string_new(NULL);
-    gchar *string;
+    gchar *string=NULL;
     const gchar *title;
     double dnumber=0;
     guint32 count;
@@ -2749,7 +2838,10 @@ static void copy_selected_to_clipboard(GtkWidget *copy, GtkWidget *treeview)
     gtk_clipboard_set_text(clipboard, buffer->str, strlen(buffer->str));
     //g_list_foreach (list, (GFunc) gtk_tree_path_free, NULL);
     g_list_free (list);
-    g_free(string);
+    if(string!=NULL)
+       {
+        g_free(string);
+       }
     g_string_free(buffer,TRUE);
   }
 static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview)
