@@ -18,30 +18,8 @@
 #include <gsl/gsl_cdf.h>
 #include <math.h>
 #include "VelociRaptorUI_Validation.h"
-
-//Interop with Fortran for Dunnett's critical values.
-extern void mvdistdun( int *N, double COVRNC1[], int *NU, int *M, double LOWER[], double CONSTR[], double UPPER[], int INFIN[], double DELTA[], int *MAXPTS, double *ABSEPS, double *RELEPS, double *ERROR, double *VALUE, int *NEVALS, int *INFORM, double *ALPHA, double *TALPHA);
-
-void basic_statistics_sql(GtkTextView *textview, int iRadioButton);
-void one_way_anova_sql(GtkTextView *textview, int iRadioButton, int check_box, double alpha);
-void anova_format(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithinDf,int iTotalDf, double one, double two, double three, double alpha);
-void anova_format_tabular(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithinDf,int iTotalDf, double one, double two, double three, double alpha);
-void database_to_box_graph_sql(int iRadioButton, int lower_bound, int upper_bound);
-void database_to_error_graph_sql(int iRadioButton1, int iRadioButton2, int lower_bound, int upper_bound);
-void database_to_scatter_graph_sql(int iRadioButton, int lower_bound, int upper_bound);
-void plot_matrix_now(gsl_matrix *data, int graph, int lower_bound, int upper_bound);
-void comparison_with_control_sql(int iRadioButton, int iControlValue, double alpha, int iRadioCritVal, GtkTextView *textview, GtkWidget *progress, int *pBreakLoop);
-void multiple_comparison_with_controls(char *sql1, char *sql2, char *sql3, char *sql4, char *sql5, char *sql6, int iControlValue, double alpha, int iRadioCritVal, GtkTextView *textview, GtkWidget *progress, int *pBreakLoop);
-double dunn_sidak_critical_value(double alpha, int Comparisons, int DF);
-double bonferroni_critical_value(double alpha, int Comparisons, int DF);
-double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,int iMeanDistance,int iDF);
-void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSize,int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText);
-void CalculatePercentControl(double dDataArray[], double dPercentArray[], int iPlateSize, int iNumberOfPlates, int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText);
-void PlateMapInt(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns);
-void PlateMapDouble(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns);
-void build_combo_table_sql(int ComboSet, int ComboSubSet, const gchar *TableName);
-void build_permutation_table_sql(int ComboSet, const gchar *TableName);
-void copy_treeview_to_database_sql(GtkWidget*, GtkWidget*, const gchar *pWindowTitle);
+#include "VelociRaptorMath.h"
+#include "VelociRaptorGlobal.h"
 
 
 void basic_statistics_sql(GtkTextView *textview, int iRadioButton)
@@ -904,18 +882,18 @@ double bonferroni_critical_value(double alpha, int Comparisons, int DF)
 double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,int iMeanDistance,int iDF)
         {
           //Match variables to Alan Genz's function.
-      int iPlates=1;//From test version. Set to 1.
+      int iPlates=1;//Left over from test version. Set to 1.
       int N=iMeanDistance;
       int NU=iDF;
       int M=iMeanDistance;
-      double COVRNCV1[iPlates*N*N];//Three Covariance matrices in sets of five. Three plates.
+      double COVRNCV1[iPlates*N*N];
       double CONSTR[N*M];
       double LOWER[M];//Set in Fortran
       double UPPER[M];//Set in Fortran
       int INFIN[M];//=2; Set in Fortran
       double DELTA[M];//=0.0; Set in Fortran
-      int MAXPTS=10000;
-      double ABSEPS=0.001;
+      //int MAXPTS=10000;
+      //double ABSEPS=0.001;
       double ALPHA=alpha1;
       double RELEPS=0.0;
       int INFORM=0;
@@ -977,7 +955,7 @@ double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,
                 iCounter1++;
               }
            printf("\n");
-           mvdistdun(&N, COVRNCTEMP, &NU, &M, LOWER, CONSTR, UPPER, INFIN, DELTA, &MAXPTS, &ABSEPS, &RELEPS, &ERROR, &VALUE, &NEVALS, &INFORM, &ALPHA, &TALPHA);
+           mvdistdun(&N, COVRNCTEMP, &NU, &M, LOWER, CONSTR, UPPER, INFIN, DELTA, &MAXPTS_C, &ABSEPS_C, &RELEPS, &ERROR, &VALUE, &NEVALS, &INFORM, &ALPHA, &TALPHA);
            printf("Critical Value %f Alpha %f\n\n", TALPHA, ALPHA);
            free(COVRNCTEMP);
          }          

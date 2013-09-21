@@ -86,7 +86,7 @@ SUBROUTINE MVDISTDUN(N,COVRNC1,NU,M,LOWER,CONSTR,UPPER,INFIN,DELTA,MAXPTS,&
       REAL(KIND=STND),                 INTENT(IN) :: ABSEPS
 !
       INTEGER                                     :: I, INF, IVLS
-      REAL(KIND=STND)                             :: LWR, UPR, ALPHA, TALPHA
+      REAL(KIND=STND)                             :: ALPHA, TALPHA
       REAL(KIND=STND)                             :: ERROR, VALUE
 !
       PRINT "(/10X,A)", LABEL

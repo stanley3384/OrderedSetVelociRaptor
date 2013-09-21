@@ -27,3 +27,4 @@ void build_permutation_table_sql(int ComboSet, const gchar *TableName);
 void copy_treeview_to_database_sql(GtkWidget*, GtkWidget*, const gchar *pWindowTitle);
 
 
+

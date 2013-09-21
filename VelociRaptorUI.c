@@ -33,6 +33,7 @@ Compiled on Ubuntu version 12.04 LTS using a netbook as the test computer. Gedit
 #include "HotellingsT2.h"
 #include "VelociRaptorMath.h"
 #include "VelociRaptorUI_Validation.h"
+#include "VelociRaptorGlobal.h"
 
 //Global variables.   
 const gchar *pPlateNumberText=NULL;
@@ -45,6 +46,9 @@ guint32 iTextArrayCount=0;
 guint32 iRandomDataArrayCount=0;
 int iReferenceCountDialogWindow=0;
 int iBreakLoop=0;
+//Integration parameters in Dunnett's. Declared in VelociRaptorGlobal.h.
+int MAXPTS_C=1000;
+double ABSEPS_C=0.01;
 
 static void destroy_event(GtkWidget*, gpointer);
 static void activate_pos_control_event(GtkWidget*, GtkEntry*);
@@ -55,6 +59,7 @@ static void dialog_reference_destroy(GtkWidget*, gint, gpointer);
 static void basic_statistics_dialog(GtkWidget*, GtkTextView*);
 static void one_way_anova_dialog(GtkWidget*, GtkTextView*);
 static void comparison_with_control_dialog(GtkWidget*, GtkTextView*);
+static void dunnetts_parameters_dialog(GtkWidget*, gpointer);
 static void hotelling_dialog(GtkWidget*, GtkTextView*);
 static void z_factor_dialog(GtkWidget*, GtkTextView*);
 static void contingency_dialog(GtkWidget*, GtkTextView*);
@@ -579,26 +584,29 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
     }
 static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textview)
     {
-       GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area;
+       GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area, *dunnett_button;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Comparison with Control", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups      ");
-     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks    ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups                          ");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups                    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks                              ");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks                        ");
+
+     dunnett_button=gtk_button_new_with_mnemonic("  !  ");
+     g_signal_connect(G_OBJECT(dunnett_button), "clicked", G_CALLBACK(dunnetts_parameters_dialog), NULL);
 
      radio_bonferroni=gtk_radio_button_new_with_label(NULL, "Bonferroni Critical Values   ");
      radio_sidak=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_bonferroni), "Dunn-Sidak Critical Values   ");
-     radio_dunnetts=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_sidak), "Dunnett's Critical Values      ");
+     radio_dunnetts=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_sidak), "Dunnett's Critical Values        ");
      radio_hotellingsT2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_sidak), "Hotelling's T2 Critical Values\n (Balanced Sets Only)");
      
      label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.");
-     label2=gtk_label_new("                Alpha for Critical Value(two-tail)");
-     label3=gtk_label_new("Control GROUP BY Value");
+     label2=gtk_label_new("Alpha for Critical Value(two-tail)");
+     label3=gtk_label_new("Control GROUP BY Value             ");
 
      entry1=gtk_entry_new();
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
@@ -617,14 +625,15 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
      gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0); 
+     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_FILL,GTK_FILL,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_FILL,GTK_FILL,0,0); 
      gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), entry2, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_bonferroni, 0,2,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_sidak, 0,2,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_dunnetts, 0,2,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_hotellingsT2, 0,2,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio_bonferroni, 0,1,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio_sidak, 0,1,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio_dunnetts, 0,1,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), dunnett_button, 1,2,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio_hotellingsT2, 0,1,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), progress, 0,2,12,13,GTK_EXPAND,GTK_EXPAND,0,0);
 
      gtk_table_set_row_spacings(GTK_TABLE(table), 10);
@@ -725,6 +734,82 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
       }
      gtk_widget_destroy(dialog);
     }
+static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
+    {
+      GtkWidget *dialog2, *table, *label1, *label2, *label3, *value_entry1, *value_entry2, *content_area, *action_area;
+    int result;
+
+    dialog2=gtk_dialog_new_with_buttons("Dunnett's Integration Parameters", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog2), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog2), 20);
+
+     label1=gtk_label_new("Parameters to set for numerical integration. Increase\nMax Points if returned Error is too large for the Value\nreturned from integration. The Value(Error) pair is\noutput to the terminal. If Inform = 0, normal completion\nof integration. A lot of points to evaluate can take some\ntime.");
+     label2=gtk_label_new("Max Points");
+     label3=gtk_label_new("Error Tolerance for Alpha");
+    
+     value_entry1=gtk_entry_new();
+     value_entry2=gtk_entry_new();
+
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 7);
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 7);
+
+     gtk_entry_set_text(GTK_ENTRY(value_entry1), "1000");
+     gtk_entry_set_text(GTK_ENTRY(value_entry2), "0.01");
+ 
+     table=gtk_table_new(4,2,FALSE);
+    
+     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), label2, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
+
+     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,2,1,2,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog2));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog2));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     gtk_widget_show_all(dialog2);
+     result=gtk_dialog_run(GTK_DIALOG(dialog2));
+
+     if(result==GTK_RESPONSE_OK)
+        {
+         int temp1=0;
+         double temp2=0;
+
+         temp1=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1))); 
+         temp2=atof(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+
+         //Set Global variables.
+         if(temp1>=1000&&temp1<=100000)
+           {
+             MAXPTS_C=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1))); 
+             printf("MAXPTS=%i\n", MAXPTS_C);
+           }
+         else
+           {
+             printf("Max Points Values 1000<=x<=100000\n");
+             simple_message_dialog("Max Points Values 1000<=x<=100000");
+           }
+
+         if(temp2>=0.000001&&temp2<=0.1)
+           {
+             ABSEPS_C=atof(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+             printf("ABSEPS=%f\n", ABSEPS_C);
+           }
+         else
+           {
+             printf("Error Tolerance for Alpha 0.000001<=x<=0.1\n");
+             simple_message_dialog("Error Tolerance for Alpha 0.000001<=x<=0.1");
+           }
+         
+        }
+    gtk_widget_destroy(dialog2);
+  }
 static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     {
       GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *textview1, *scroll1, *space1, *space2, *space3, *space4, *progress, *content_area, *action_area;
