@@ -16,6 +16,7 @@
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_vector.h>
 #include <math.h>
 #include "VelociRaptorUI_Validation.h"
 #include "VelociRaptorMath.h"
@@ -174,6 +175,265 @@ void basic_statistics_sql(GtkTextView *textview, int iRadioButton)
       {
         gsl_vector_free(vMedian);
       }
+   }
+void levenes_variance_test(GtkTextView *textview, int iRadioButton, double alpha)
+   {
+    //See references file for more information.
+    int i=0;
+    int j=0;
+    double temp1=0;
+    double temp2=0;
+    double temp3=0;
+    double temp4=0;
+    int iGroups=0;
+    int iCounter=0;
+    int iGroupsPerPlate=0;
+    int iRecordsPerPlate=0;
+    int iTotalPlates=0;
+    gsl_vector *vPlateData=NULL;
+    gsl_vector *vZ=NULL;
+    gsl_vector *vMM=NULL;
+    gsl_vector *vGroupCount=NULL;
+    gsl_vector *vMedian=NULL;
+    gsl_vector *vAvgZ=NULL;
+    gsl_vector *v=NULL;
+    gsl_vector *vPlateZ=NULL;
+    gsl_vector *vT1=NULL;
+    gsl_vector *vT2=NULL;
+    double *pctiles=NULL;
+    double AvgZ=0;
+    GtkTextBuffer *buffer;
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+
+    apop_db_open("VelociRaptorData.db");
+
+    //Groups and Data
+    if(iRadioButton==1)
+      {
+        vPlateData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID ORDER BY T2.Plate;");
+        iTotalPlates=(int)apop_query_to_float("SELECT max(T2.plate) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID;");
+        iGroupsPerPlate=(int)apop_query_to_float("SELECT max(T2.Groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1;");
+        iRecordsPerPlate=(int)apop_query_to_float("SELECT count(T1.data) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1 AND T2.Groups!=0;");
+        vGroupCount=apop_query_to_vector("SELECT count(T1.data) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID GROUP BY T2.Plate,T2.Groups ORDER BY T2.Plate;");
+        iGroups=(int)apop_query_to_float("SELECT count() FROM (SELECT count(T1.data) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID GROUP BY T2.Plate,T2.Groups ORDER BY T2.Plate);");
+        vMedian=gsl_vector_alloc(iGroups);
+        vAvgZ=gsl_vector_alloc(iGroups);
+        vZ=gsl_vector_alloc(vPlateData->size);
+        vMM=gsl_vector_alloc(vPlateData->size);
+        vPlateZ=gsl_vector_alloc(iTotalPlates);
+        vT1=gsl_vector_alloc(iTotalPlates);
+        vT2=gsl_vector_alloc(iTotalPlates);
+      }
+    //Groups and Percent
+    if(iRadioButton==2)
+      {
+        vPlateData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID ORDER BY T2.Plate;");
+        iTotalPlates=(int)apop_query_to_float("SELECT max(T2.plate) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID;");
+        iGroupsPerPlate=(int)apop_query_to_float("SELECT max(T2.Groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1;");
+        iRecordsPerPlate=(int)apop_query_to_float("SELECT count(T1.percent) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1 AND T2.Groups!=0;");
+        vGroupCount=apop_query_to_vector("SELECT count(T1.percent) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID GROUP BY T2.Plate,T2.Groups ORDER BY T2.Plate;");
+        iGroups=(int)apop_query_to_float("SELECT count() FROM (SELECT count(T1.percent) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID GROUP BY T2.Plate,T2.Groups ORDER BY T2.Plate);");
+        vMedian=gsl_vector_alloc(iGroups);
+        vAvgZ=gsl_vector_alloc(iGroups);
+        vZ=gsl_vector_alloc(vPlateData->size);
+        vMM=gsl_vector_alloc(vPlateData->size);
+        vPlateZ=gsl_vector_alloc(iTotalPlates);
+        vT1=gsl_vector_alloc(iTotalPlates);
+        vT2=gsl_vector_alloc(iTotalPlates);
+      }
+   
+    //Picks and Data
+    if(iRadioButton==3)
+      {
+        vPlateData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks!=0 ORDER BY T2.Plate;");
+        iTotalPlates=(int)apop_query_to_float("SELECT max(T2.plate) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID;");
+        iGroupsPerPlate=(int)apop_query_to_float("SELECT max(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1;");
+        iRecordsPerPlate=(int)apop_query_to_float("SELECT count(T1.data) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1 AND T2.Picks!=0;");
+        vGroupCount=apop_query_to_vector("SELECT count(T1.data) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks!=0 GROUP BY T2.Plate,T2.Picks ORDER BY T2.Plate;");
+        iGroups=(int)apop_query_to_float("SELECT count() FROM (SELECT count(T1.data) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks!=0 GROUP BY T2.Plate,T2.Picks ORDER BY T2.Plate);");
+        vMedian=gsl_vector_alloc(iGroups);
+        vAvgZ=gsl_vector_alloc(iGroups);
+        vZ=gsl_vector_alloc(vPlateData->size);
+        vMM=gsl_vector_alloc(vPlateData->size);
+        vPlateZ=gsl_vector_alloc(iTotalPlates);
+        vT1=gsl_vector_alloc(iTotalPlates);
+        vT2=gsl_vector_alloc(iTotalPlates);
+      }
+    //Picks and Percent
+    if(iRadioButton==4)
+      {
+        vPlateData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks!=0 ORDER BY T2.Plate;");
+        iTotalPlates=(int)apop_query_to_float("SELECT max(T2.plate) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID;");
+        iGroupsPerPlate=(int)apop_query_to_float("SELECT max(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1;");
+        iRecordsPerPlate=(int)apop_query_to_float("SELECT count(T1.percent) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Plate=1 AND T2.Picks!=0;");
+        vGroupCount=apop_query_to_vector("SELECT count(T1.percent) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks!=0 GROUP BY T2.Plate,T2.Picks ORDER BY T2.Plate;");
+        iGroups=(int)apop_query_to_float("SELECT count() FROM (SELECT count(T1.percent) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks!=0 GROUP BY T2.Plate,T2.Picks ORDER BY T2.Plate);");
+        vMedian=gsl_vector_alloc(iGroups);
+        vAvgZ=gsl_vector_alloc(iGroups);
+        vZ=gsl_vector_alloc(vPlateData->size);
+        vMM=gsl_vector_alloc(vPlateData->size);
+        vPlateZ=gsl_vector_alloc(iTotalPlates);
+        vT1=gsl_vector_alloc(iTotalPlates);
+        vT2=gsl_vector_alloc(iTotalPlates);
+      }
+
+    apop_db_close(0);
+
+    //find the median values.
+     for(i=0;i<iGroups;i++)
+        {
+         for(j=0;j<gsl_vector_get(vGroupCount,i);j++)
+            {
+              if(j==0)
+                {
+                  v=gsl_vector_alloc(gsl_vector_get(vGroupCount,i));
+                }
+              gsl_vector_set(v,j,gsl_vector_get(vPlateData,iCounter));
+              if(j==gsl_vector_get(vGroupCount,i)-1)
+                {
+                  pctiles=apop_vector_percentiles(v,'a');
+                  temp1=pctiles[50];
+                  //printf("%i GroupCount %i Median %f\n", i+1 , (int)gsl_vector_get(vGroupCount,i), temp1);
+                  gsl_vector_set(vMedian,i,temp1);
+                  gsl_vector_free(v);
+                  v=NULL;
+                }
+              iCounter++;
+            }
+         }
+    
+    //find |data-median| and avg|data-median|. Load the values into vectors.
+    iCounter=0;
+    for(i=0;i<iGroups;i++)
+        {
+         for(j=0;j<gsl_vector_get(vGroupCount,i);j++)
+            {
+              if(j==0)
+                {
+                  temp1=gsl_vector_get(vMedian,i);
+                }
+              temp2=fabs((gsl_vector_get(vPlateData,iCounter))-temp1);
+              gsl_vector_set(vZ,iCounter,temp2);
+              temp3=temp3+temp2;
+              iCounter++;
+            }
+           temp4=temp3/gsl_vector_get(vGroupCount,i);
+           //printf("%i GroupCount %i avgZ %f %i\n", i+1 , (int)gsl_vector_get(vGroupCount,i), temp4,j);
+           gsl_vector_set(vAvgZ,i,temp4);
+           temp2=0;
+           temp3=0;
+           temp4=0;
+         }
+
+    //find (vZ - vAvgZ)^2 and load into vector vMM.
+    iCounter=0;
+    for(i=0;i<iGroups;i++)
+        {
+         for(j=0;j<gsl_vector_get(vGroupCount,i);j++)
+            {
+              if(j==0)
+                {
+                  temp1=gsl_vector_get(vAvgZ,i);
+                }
+              temp2=pow(gsl_vector_get(vZ,iCounter)-temp1,2);
+              //printf("%i GroupCount %i squareZ %f\n", i+1 , (int)gsl_vector_get(vGroupCount,i), temp2);
+              gsl_vector_set(vMM,iCounter,temp2);
+              iCounter++;
+            }
+           //printf("\n");
+         }
+
+    //Find avg of z per plate.
+    temp1=0;
+    iCounter=0;
+    for(i=0;i<iTotalPlates;i++)
+       {
+        for(j=0;j<iGroupsPerPlate;j++)
+           {
+             temp1=temp1+gsl_vector_get(vAvgZ,iCounter);
+             iCounter++;
+           }
+        AvgZ=temp1/iGroupsPerPlate;
+        gsl_vector_set(vPlateZ, i, AvgZ);
+        temp1=0;
+       }
+    
+    //Get T1 and T2.
+    temp1=0;
+    temp2=0;
+    temp3=0;
+    temp4=0;
+    iCounter=0;
+    for(i=0;i<iTotalPlates;i++)
+       {
+        for(j=0;j<iRecordsPerPlate;j++)
+           {
+             temp1=gsl_vector_get(vZ,iCounter);
+             temp2=pow((temp1-gsl_vector_get(vPlateZ,i)),2);
+             temp3=temp3+gsl_vector_get(vMM,iCounter);
+             temp4=temp4+temp2;
+             iCounter++;
+           }
+         gsl_vector_set(vT1,i,temp3);
+         gsl_vector_set(vT2,i,temp4);
+         temp3=0;
+         temp4=0;
+       }
+
+    printf("Plate Groups Records Z T1 T2 Levenes CriticalValue\n");
+    gtk_text_buffer_insert_at_cursor(buffer, "Plate Groups Records Z T1 T2 Levenes CriticalValue\n", -1);
+    GString *string=g_string_new("");
+    for(i=0;i<iTotalPlates;i++)
+       {
+         printf("%i %i %i %f %f %f %f %f\n", i+1, iGroupsPerPlate, iRecordsPerPlate, gsl_vector_get(vPlateZ,i), gsl_vector_get(vT1,i), gsl_vector_get(vT2,i), ((gsl_vector_get(vT2,i)-gsl_vector_get(vT1,i))/(iGroupsPerPlate-1))/(gsl_vector_get(vT1,i)/(iRecordsPerPlate-iGroupsPerPlate)), gsl_cdf_fdist_Qinv(alpha,(iGroupsPerPlate-1),(iRecordsPerPlate-iGroupsPerPlate)));
+
+         g_string_append_printf(string,"%i %i %i %f %f %f %f %f\n", i+1, iGroupsPerPlate, iRecordsPerPlate, gsl_vector_get(vPlateZ,i), gsl_vector_get(vT1,i), gsl_vector_get(vT2,i), ((gsl_vector_get(vT2,i)-gsl_vector_get(vT1,i))/(iGroupsPerPlate-1))/(gsl_vector_get(vT1,i)/(iRecordsPerPlate-iGroupsPerPlate)), gsl_cdf_fdist_Qinv(alpha,(iGroupsPerPlate-1),(iRecordsPerPlate-iGroupsPerPlate)));
+       } 
+
+    gtk_text_buffer_insert_at_cursor(buffer, string->str, -1);
+    g_string_free(string,TRUE);
+
+    if(vPlateData!=NULL)
+      {
+        gsl_vector_free(vPlateData);
+      }
+    if(vZ!=NULL)
+      {
+        gsl_vector_free(vZ);
+      }
+    if(vMM!=NULL)
+      {
+        gsl_vector_free(vMM);
+      }
+    if(vGroupCount!=NULL)
+      {
+        gsl_vector_free(vGroupCount);
+      }
+    if(vAvgZ!=NULL)
+      {
+        gsl_vector_free(vAvgZ);
+      }
+    if(v!=NULL)
+      {
+        gsl_vector_free(v);
+      }
+    if(vMedian!=NULL)
+      {
+        gsl_vector_free(vMedian);
+      }
+    if(vPlateZ!=NULL)
+      {
+        gsl_vector_free(vPlateZ);
+      }
+   if(vT1!=NULL)
+      {
+        gsl_vector_free(vT1);
+      }
+   if(vT2!=NULL)
+      {
+        gsl_vector_free(vT2);
+      }
+
    }
 void one_way_anova_sql(GtkTextView *textview, int iRadioButton, int check_box, double alpha)
    {
@@ -495,11 +755,11 @@ void database_to_error_graph_sql(int iRadioButton1, int iRadioButton2, int lower
           }
         if(iRadioButton1==3)
           {
-             apop_query("INSERT INTO ErrorGraphTemp(Mean, StandardDev) SELECT avg(data), stddev(data) FROM data,aux WHERE data.KeyID=aux.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
+             apop_query("INSERT INTO ErrorGraphTemp(Mean, StandardDev) SELECT avg(data), stddev(data) FROM data,aux WHERE data.KeyID=aux.KeyID AND aux.Picks!=0 GROUP BY Plate,Picks ORDER BY Plate,Picks;");
           }
         if(iRadioButton1==4)
           {
-             apop_query("INSERT INTO ErrorGraphTemp(Mean, StandardDev) SELECT avg(percent), stddev(percent) FROM data,aux WHERE data.KeyID=aux.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
+             apop_query("INSERT INTO ErrorGraphTemp(Mean, StandardDev) SELECT avg(percent), stddev(percent) FROM data,aux WHERE data.KeyID=aux.KeyID AND aux.Picks!=0 GROUP BY Plate,Picks ORDER BY Plate,Picks;");
           }
         apop_query("COMMIT;");
  

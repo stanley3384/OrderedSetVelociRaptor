@@ -57,6 +57,7 @@ static void activate_treeview_data_event(GtkWidget*, GtkStateFlags, gpointer);
 static void activate_treeview_percent_event(GtkWidget*, GtkStateFlags, gpointer);
 static void dialog_reference_destroy(GtkWidget*, gint, gpointer);
 static void basic_statistics_dialog(GtkWidget*, GtkTextView*);
+static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textview);
 static void one_way_anova_dialog(GtkWidget*, GtkTextView*);
 static void comparison_with_control_dialog(GtkWidget*, GtkTextView*);
 static void dunnetts_parameters_dialog(GtkWidget*, gpointer);
@@ -100,7 +101,7 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *ImportItem, *QuitItem, *BasicStatsItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
+     GtkWidget *window, *button, *scrolled_win, *textview, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *ImportItem, *QuitItem, *BasicStatsItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
      
      gtk_init(&argc, &argv);
     
@@ -134,6 +135,7 @@ int main(int argc, char *argv[])
 
      FileMenu3=gtk_menu_new();
      BasicStatsItem=gtk_menu_item_new_with_label("Basic Statistics");
+     VarianceItem=gtk_menu_item_new_with_label("Homogeniety of Variance");
      AnovaItem=gtk_menu_item_new_with_label("One-Way ANOVA");
      DunnSidakItem=gtk_menu_item_new_with_label("Comparison with Control");
      HotellingItem=gtk_menu_item_new_with_label("Comparison with Contrasts");
@@ -154,6 +156,7 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildComboItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildPermutItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), BasicStatsItem);
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), VarianceItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), AnovaItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), DunnSidakItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), HotellingItem);
@@ -197,6 +200,7 @@ int main(int argc, char *argv[])
        
      textview=gtk_text_view_new();
      g_signal_connect(BasicStatsItem, "activate", G_CALLBACK(basic_statistics_dialog), textview);
+     g_signal_connect(VarianceItem, "activate", G_CALLBACK(homogeniety_of_variance_dialog), textview);
      g_signal_connect(AnovaItem, "activate", G_CALLBACK(one_way_anova_dialog), textview);
      g_signal_connect(DunnSidakItem, "activate", G_CALLBACK(comparison_with_control_dialog), textview);
      g_signal_connect(HotellingItem, "activate", G_CALLBACK(hotelling_dialog), textview);
@@ -485,6 +489,89 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
             }
 
           basic_statistics_sql(textview, iRadioButton);
+       }
+     gtk_widget_destroy(dialog);
+   }
+static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textview)
+   {
+     GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+     radio1=gtk_radio_button_new_with_label(NULL, " Variance from Data by Groups      ");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Percent By Groups");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Data By Picks          ");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Percent By Picks    ");
+     
+     label1=gtk_label_new("Build Auxiliary Table First. Data Pulled From the Database.");
+     label2=gtk_label_new("Levene's test using the median");
+     label3=gtk_label_new("Alpha for Critical Value");
+
+     entry1=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "0.05");
+
+     table=gtk_table_new(9,2,FALSE);
+     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+ 
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+         int iRadioButton=0;
+         int check1=0;
+         double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));       
+
+         printf("Begin Levene's\n");
+         
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
+            {
+              iRadioButton=1;
+            }
+         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+            {
+              iRadioButton=2;
+            }
+         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+            {
+              iRadioButton=3;
+            }
+         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+            {
+              iRadioButton=4;
+            }
+         else
+            {
+              //exit
+            }
+
+         check1=critical_value_changed_validation(entry1);
+     
+         if(check1==0)
+           {
+             levenes_variance_test(textview, iRadioButton, alpha);
+           }
+   
+       printf("Levene's Finished\n");
        }
      gtk_widget_destroy(dialog);
    }
