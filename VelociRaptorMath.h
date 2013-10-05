@@ -5,6 +5,7 @@
 extern void mvdistdun( int *N, double COVRNC1[], int *NU, int *M, double LOWER[], double CONSTR[], double UPPER[], int INFIN[], double DELTA[], int *MAXPTS, double *ABSEPS, double *RELEPS, double *ERROR, double *VALUE, int *NEVALS, int *INFORM, double *ALPHA, double *TALPHA);
 
 void basic_statistics_sql(GtkTextView *textview, int iRadioButton);
+void anderson_darling_test(GtkTextView *textview, int iRadioButton);
 void levenes_variance_test(GtkTextView *textview, int iRadioButton, double alpha);
 void one_way_anova_sql(GtkTextView *textview, int iRadioButton, int check_box, double alpha);
 void anova_format(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithinDf,int iTotalDf, double one, double two, double three, double alpha);

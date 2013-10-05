@@ -176,6 +176,171 @@ void basic_statistics_sql(GtkTextView *textview, int iRadioButton)
         gsl_vector_free(vMedian);
       }
    }
+void anderson_darling_test(GtkTextView *textview, int iRadioButton)
+   {
+    int i=0;
+    int j=0;
+    int k=0;
+    double temp1=0;
+    int temp2=0;
+    double temp3=0;
+    double temp4=0;
+    double temp5=0;
+    int temp6=0;
+    int temp7=0;
+    double A2=0;
+    double A2_1=0;
+    double A2_2=0;
+    double Pvalue=0;
+    int iCounter=0;
+    apop_data *AndersonsStats1=NULL;
+    gsl_vector *vAndersonsData1=NULL;
+    gsl_vector *v1=NULL;
+    GString *string=g_string_new("");
+    GtkTextBuffer *buffer;
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+
+    apop_db_open("VelociRaptorData.db");
+
+      if(iRadioButton==1)
+        {
+          AndersonsStats1=apop_query_to_data("SELECT T4.plate, count(T3.data), avg(T3.data), stddev_samp(T3.data) FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID GROUP BY T4.Groups,T4.Plate ORDER BY T4.Plate,T4.Groups;");
+          vAndersonsData1=apop_query_to_vector("SELECT T3.data FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID ORDER BY T4.Plate,T4.Groups,T3.data asc;");
+        }
+      if(iRadioButton==2)
+        {
+          AndersonsStats1=apop_query_to_data("SELECT T4.plate, count(T3.percent), avg(T3.percent), stddev_samp(T3.percent) FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID GROUP BY T4.Groups,T4.Plate ORDER BY T4.Plate,T4.Groups;");
+          vAndersonsData1=apop_query_to_vector("SELECT T3.percent FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID ORDER BY T4.Plate,T4.Groups,T3.percent asc;");
+        }
+      if(iRadioButton==3)
+        {
+          AndersonsStats1=apop_query_to_data("SELECT T4.plate, count(T3.data), avg(T3.data), stddev_samp(T3.data) FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID AND T4.Picks!=0 GROUP BY T4.Picks,T4.Plate ORDER BY T4.Plate,T4.Picks;");
+          vAndersonsData1=apop_query_to_vector("SELECT T3.data FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID AND T4.Picks!=0 ORDER BY T4.Plate,T4.Picks,T3.data asc;");
+        }
+      if(iRadioButton==4)
+        {
+          AndersonsStats1=apop_query_to_data("SELECT T4.plate, count(T3.percent), avg(T3.percent), stddev_samp(T3.percent) FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID AND T4.Picks!=0 GROUP BY T4.Picks,T4.Plate ORDER BY T4.Plate,T4.Picks;");
+          vAndersonsData1=apop_query_to_vector("SELECT T3.percent FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID AND T4.Picks!=0 ORDER BY T4.Plate,T4.Picks,T3.percent asc;");
+        }
+
+      v1=gsl_vector_alloc(vAndersonsData1->size);
+   
+    apop_db_close(0);
+
+    //Get (x-u)/s and put in v1.
+    for(i=0;i<AndersonsStats1->matrix->size1;i++)
+       {
+          for(j=0;j<AndersonsStats1->matrix->size2;j++)
+             {
+                temp1=apop_data_get(AndersonsStats1,i,j);
+                //group count
+                if(j==1)
+                  {
+                    temp2=(int)temp1;
+                  }
+                //avg value
+                if(j==2)
+                  {
+                    temp3=temp1;
+                  }
+                //stdev value
+                if(j==3)
+                  {
+                    temp4=temp1;
+                    //Loop the group count number down the data vector.
+                    for(k=0;k<temp2;k++)
+                       {
+                         temp5=(gsl_vector_get(vAndersonsData1,iCounter)-temp3)/temp4;
+                         //printf("%i %f\n", iCounter, temp5);
+                         gsl_vector_set(v1,iCounter,temp5);
+                         iCounter++;
+                       }
+                  }
+             }
+       }
+
+    //Get A2 test statistic.
+    temp5=0;
+    iCounter=0;
+    for(i=0;i<AndersonsStats1->matrix->size1;i++)
+       {
+          for(j=0;j<AndersonsStats1->matrix->size2;j++)
+             {
+                temp1=apop_data_get(AndersonsStats1,i,j);
+                //Plate
+                if(j==0)
+                  {
+                    temp2=(int)temp1;
+                  }
+                //Group count
+                if(j==1)
+                  {
+                    temp6=(int)temp1;
+                  }
+                if(j==2)
+                  {
+                    temp3=temp1;
+                  }
+                //Loop the group count number down the data vector.
+                if(j==3)
+                  {
+                   temp4=temp1;
+                   temp7=iCounter+temp6;
+                    for(k=1;k<=temp6;k++)
+                       {
+                         temp5=temp5+((2.0*(double)k-1.0)*(log(gsl_cdf_ugaussian_P(gsl_vector_get(v1,iCounter)))+log(1.0-gsl_cdf_ugaussian_P(gsl_vector_get(v1,temp7-k)))));  
+                         //printf("%i %i %i %f %f %f %f\n", iCounter, k, temp7-k, temp5, gsl_cdf_ugaussian_P(gsl_vector_get(v1,iCounter)), 1.0-gsl_cdf_ugaussian_P(gsl_vector_get(v1,temp7-k)), temp5) ;
+                         iCounter++;
+                       }
+                  }
+             }
+           //A2
+           A2=((1.0/(double)temp6)*temp5);
+           A2=-(double)temp6-A2;
+           //A2 adjusted from Wikipedia
+           A2_1=1.0+(4.0/(double)temp6)-(25.0/pow((double)temp6,2));
+           A2_1=A2*A2_1;
+           //A2 for small sample sizes 
+           A2_2=1.0+0.75/temp6+2.25/pow((double)temp6,2);
+           A2_2=A2*A2_2;
+           //R.B. D'Agostino and M.A. Stephens, Eds. (1986). Goodness-of-Fit Techniques, Marcel Dekker.
+           if(A2_2>=0.6)
+             {
+               Pvalue=exp(1.2937-5.709*A2_2+0.0186*pow(A2_2,2));
+             }
+           else if(A2_2>=0.34&&A2_2<0.6)
+             {
+               Pvalue=exp(0.9177-4.279*A2_2-1.38*pow(A2_2,2));
+             }
+           else if(A2_2>=0.20&&A2_2<0.34)
+             {
+               Pvalue=1-exp(-8.318 + 42.796*A2_2-59.938*pow(A2_2,2));
+             }
+           else //<0.2
+             {
+               Pvalue=1-exp(-13.436+101.14*A2_2- 223.73*pow(A2_2,2));
+             }
+           //printf("%i %i %f %f %f %f %f\n", temp2, temp6, temp3, temp4, A2, A2_2, Pvalue); 
+           g_string_append_printf(string,"%i %i %f %f %f %f %f\n", temp2, temp6, temp3, temp4, A2, A2_2, Pvalue);
+           temp5=0;
+       }
+
+    printf("Plate Count Mean StdDevS A2 A2adjusted p_value\n");
+    printf("%s", string->str);
+    gtk_text_buffer_insert_at_cursor(buffer, "Plate Count Mean StdDevS A2 A2adjusted p_value\n", -1);
+    gtk_text_buffer_insert_at_cursor(buffer, string->str, -1);
+       
+    g_string_free(string,TRUE);
+
+    if(vAndersonsData1!=NULL)
+      {
+        gsl_vector_free(vAndersonsData1);
+      }
+    if(AndersonsStats1!=NULL)
+      {
+        gsl_matrix_free(AndersonsStats1->matrix);
+      }
+   }
 void levenes_variance_test(GtkTextView *textview, int iRadioButton, double alpha)
    {
     //See references file for more information.
