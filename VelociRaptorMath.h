@@ -19,7 +19,7 @@ void multiple_comparison_with_controls(char *sql1, char *sql2, char *sql3, char 
 double dunn_sidak_critical_value(double alpha, int Comparisons, int DF);
 double bonferroni_critical_value(double alpha, int Comparisons, int DF);
 double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,int iMeanDistance,int iDF);
-void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSize,int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText);
+void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSize,int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText, int seed_value, double param, double pFuncDistribution());
 void CalculatePercentControl(double dDataArray[], double dPercentArray[], int iPlateSize, int iNumberOfPlates, int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText);
 void PlateMapInt(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns);
 void PlateMapDouble(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns);

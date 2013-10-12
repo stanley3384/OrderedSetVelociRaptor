@@ -50,9 +50,11 @@ int iBreakLoop=0;
 int MAXPTS_C=1000;
 double ABSEPS_C=0.01;
 
+double wrap_gsl_rng_uniform(gsl_rng *r, double param);
 static void destroy_event(GtkWidget*, gpointer);
 static void activate_pos_control_event(GtkWidget*, GtkEntry*);
 static void activate_neg_control_event(GtkWidget*, GtkEntry*);
+static void distributions_dialog(GtkButton*, gpointer);
 static void activate_treeview_data_event(GtkWidget*, GtkStateFlags, gpointer);
 static void activate_treeview_percent_event(GtkWidget*, GtkStateFlags, gpointer);
 static void dialog_reference_destroy(GtkWidget*, gint, gpointer);
@@ -75,7 +77,7 @@ static void format_text_dialog(GtkButton*, gpointer);
 static void clear_format_event(GtkButton*, gpointer);
 static void rise_fall_text_dialog(GtkButton*, gpointer);
 static void send_text_to_database_dialog(GtkButton*, gpointer);
-static void test_data_button_clicked(GtkButton*, gpointer);
+static void test_data_button_clicked(GtkButton*, gpointer, int, double, int);
 static void text_button_clicked(GtkButton*, GtkTextView*);
 static void next_button_clicked(GtkButton*, GtkTreeView*);
 static void cell_edited(GtkCellRendererText*, gchar*, gchar*, GtkTreeView*);
@@ -89,7 +91,7 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
 static void copy_plates_to_clipboard(GtkWidget*, GtkWidget*,int,int);
 static void select_all(GtkTreeView*, gpointer);
 static void copy_treeview_to_database(GtkWidget*, GtkWidget*);
-static void setup_tree_view_data(GtkTreeView*);
+static void setup_tree_view_data(GtkTreeView*, int, double, int);
 static void setup_tree_view_percent(GtkTreeView*, GtkTreeView*);
 static void setup_tree_view_text(GtkTreeView*, GArray*);
 static void get_text_file(GtkWidget*, GtkWidget*);
@@ -287,7 +289,7 @@ int main(int argc, char *argv[])
      gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
 
-     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(test_data_button_clicked), NULL);
+     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(distributions_dialog), NULL);
      g_signal_connect(G_OBJECT(textbutton), "clicked", G_CALLBACK(text_button_clicked), (gpointer) textview);
      g_signal_connect(G_OBJECT(ClearFormat), "clicked", G_CALLBACK(clear_format_event), textview);
      g_signal_connect(G_OBJECT(FormatText1), "clicked", G_CALLBACK(format_text_dialog), textview);
@@ -317,7 +319,10 @@ int main(int argc, char *argv[])
      gtk_main();
      return 0;
     }
-
+double wrap_gsl_rng_uniform(gsl_rng *r, double param)
+  {
+    return param*gsl_rng_uniform(r);
+  }
 static void destroy_event(GtkWidget *window, gpointer data)
   {
     guint  signal_id;
@@ -432,6 +437,123 @@ static void dialog_reference_destroy(GtkWidget *dialog , gint response, gpointer
         gtk_widget_destroy(dialog);
        }
        
+  }
+static void distributions_dialog(GtkButton *button, gpointer data)
+  {
+    GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *entry1, *entry2, *entry3, *entry4, *entry5, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("Get Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+     radio1=gtk_radio_button_new_with_label(NULL, "Gaussian Distribution       ");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Chi-Squared Distribution");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Rayleigh Distribution        ");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Uniform Distribution        ");
+     
+     label1=gtk_label_new("Generate Some Numbers For Testing.");
+     label2=gtk_label_new("SD");
+     label3=gtk_label_new("DF");
+     label4=gtk_label_new("Scale");
+     label5=gtk_label_new("Scale");
+     label6=gtk_label_new("Seed Value");
+
+     entry1=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 4);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "50");
+
+     entry2=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 4);
+     gtk_entry_set_text(GTK_ENTRY(entry2), "1");
+
+     entry3=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 4);
+     gtk_entry_set_text(GTK_ENTRY(entry3), "1");
+
+     entry4=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry4), 4);
+     gtk_entry_set_text(GTK_ENTRY(entry4), "50");
+
+     entry5=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry5), 8);
+     gtk_entry_set_text(GTK_ENTRY(entry5), "0");
+
+     table=gtk_table_new(8,3,FALSE);
+     gtk_table_attach(GTK_TABLE(table), label1, 0,3,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio1, 0,1,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio2, 0,1,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio3, 0,1,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio4, 0,1,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 1,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label4, 1,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label5, 1,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+
+     gtk_table_attach(GTK_TABLE(table), entry1, 2,3,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry2, 2,3,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry3, 2,3,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry4, 2,3,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+ 
+     gtk_table_attach(GTK_TABLE(table), label6, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry5, 2,3,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+ 
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+         int iRadioButton=0;
+         int seed_value=0;
+         double param=1;
+
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
+            {
+              iRadioButton=1;
+              seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
+              param=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
+            }
+         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+            {
+              iRadioButton=2;
+              seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
+              param=atof(gtk_entry_get_text(GTK_ENTRY(entry2))); 
+            }
+         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+            {
+              iRadioButton=3;
+              seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
+              param=atof(gtk_entry_get_text(GTK_ENTRY(entry3))); 
+            }
+         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+            {
+              iRadioButton=4;
+              seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
+              param=atof(gtk_entry_get_text(GTK_ENTRY(entry4))); 
+            }
+         else
+            {
+              //exit
+            }
+          if(seed_value>=0&&param>=1)
+            {
+              test_data_button_clicked(button, NULL, seed_value, param, iRadioButton);
+            }
+          else
+            {
+              printf("Seed Value >= 0 and the Parameter Value >= 1\n");
+              simple_message_dialog("Seed Value >= 0 and the Parameter Value >= 1");
+            }
+       }
+     gtk_widget_destroy(dialog);
   }
 static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
    {
@@ -1951,7 +2073,7 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
 
               if(iTextPresent==0)
                 {
-                  test_data_button_clicked(button, DataArray);
+                  test_data_button_clicked(button, DataArray,0,0,0);
                   g_print("Imported Text File\n");
                 }
               else
@@ -3239,9 +3361,8 @@ static void cell_edited(GtkCellRendererText *renderer, gchar *path, gchar *new_t
           }
       }
    }
-static void test_data_button_clicked (GtkButton *button, gpointer data)
+static void test_data_button_clicked (GtkButton *button, gpointer data, int seed_value, double param, int iRadioButton)
 {
-   //Get the first data set for the application and set it up in a TreeView.
    GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *NextButton, *scrolled_win, *menu, *copy, *copyplates, *copyplatesd, *copyappend;
    GtkTreeSelection *selection;
    GtkAccelGroup *group = NULL;
@@ -3314,7 +3435,7 @@ static void test_data_button_clicked (GtkButton *button, gpointer data)
 
        if(iArrayNotVoid==0)
          {
-           setup_tree_view_data(GTK_TREE_VIEW(treeview));
+           setup_tree_view_data(GTK_TREE_VIEW(treeview), seed_value, param, iRadioButton);
          }
        else
          {
@@ -3495,7 +3616,7 @@ void setup_tree_view_text(GtkTreeView *treeview2, GArray *DataArray)
       */
      }
 
-void setup_tree_view_data(GtkTreeView *treeview)
+void setup_tree_view_data(GtkTreeView *treeview, int seed_value, double param, int iRadioButton)
      {
         //Set up the tree model and renderers for the TreeView and call data functions.
         guint32 i=0;
@@ -3523,8 +3644,28 @@ void setup_tree_view_data(GtkTreeView *treeview)
            
         g_print("Arrays Allocated\n");
         g_print("Setting Up Treeview...\n");      
-      
-        GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText);
+        
+        if(iRadioButton==1)
+          {
+           double gsl_ran_gaussian();
+           GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_gaussian);
+          }
+        if(iRadioButton==2)
+          {
+           double gsl_ran_chisq();
+           GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_chisq);
+          }
+        if(iRadioButton==3)
+          {
+           double gsl_ran_rayleigh();
+           GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_rayleigh);
+          }
+        if(iRadioButton==4)
+          {
+           double wrap_gsl_rng_uniform();
+           GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, wrap_gsl_rng_uniform);
+          }
+
         iModelRows=iPlateSize*iNumberOfPlates;
  
         g_print("Model Rows Count %i\n", iModelRows);

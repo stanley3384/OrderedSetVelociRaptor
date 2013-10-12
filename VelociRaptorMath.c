@@ -1387,15 +1387,20 @@ double dunnetts_critical_value(double alpha1,int CovarianceArray[],int iCovSize,
     
       return TALPHA;
         }
-void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSize,int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText)
+void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSize,int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText, int seed_value, double param, double pFuncDistribution())
      {
       //Generate random numbers in blocks or based on positional arguments.
-      double dRndNumber;
+      double dRndNumber=0;
+      double shift=0;
+      double shift_pos=0;
+      double shift_neg=0;
+      int iGroupCounter=0;
       const gsl_rng_type *T;
       gsl_rng *r;
       gsl_rng_env_setup();
-      T = gsl_rng_default;
+      T = gsl_rng_mt19937;
       r = gsl_rng_alloc(T);
+      gsl_rng_set(r,seed_value);
 
       int PosControlLength=strlen(pPlatePosControlText);
       int NegControlLength=strlen(pPlateNegControlText);
@@ -1404,7 +1409,6 @@ void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSiz
       GArray *NegArray=g_array_new(FALSE, FALSE, sizeof (int));
       guint32 iPosControlSize=0;
       guint32 iNegControlSize=0;
-      //guint32 iblock=0;
       guint32 itemp=0;
       guint32 i=0;
       guint32 j=0;
@@ -1412,7 +1416,8 @@ void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSiz
       guint32 m=0;
 
      g_print("Start Random Number Generator\n");
-
+     printf("Mersenne Twister Generator %s\n", gsl_rng_name(r));
+     printf("Seed Value %i\n", seed_value);
        if(PosControlLength>0)
           {
             for(i=0;i<PosControlLength;i++)
@@ -1466,31 +1471,50 @@ void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSiz
 	       {
                for(j=0; j<iPlateSize; j++)
 	           {
-                       if(i*iPlateSize+j==i*iPlateSize+g_array_index(PosArray,int,k)&&k<iPosControlSize)
+                       if(iGroupCounter==iSetSizeForStatistics)
                          {
-		            do
+                           shift=gsl_rng_uniform(r) * 1000;
+                           iGroupCounter=0;
+                         }
+                       if(j==0)
+                         {
+                           do
 		              {
-		                dRndNumber = gsl_rng_uniform(r) * 1000;
+		                shift_pos=gsl_rng_uniform(r)*1000;
 		              }
-		            while (dRndNumber < 800);
-	                   dDataArray[i*iPlateSize+j] = dRndNumber;
-                           if(k<iPosControlSize)
-                             k++;
-                          }
-                      else if(i*iPlateSize+j==i*iPlateSize+g_array_index(NegArray,int,m)&&m<iNegControlSize)
+		           while (shift_pos<800);
+                           do
+		              {
+		                shift_neg=gsl_rng_uniform(r)*1000;
+		              }
+		           while (shift_neg>200);
+                         }
+
+                       if(i*iPlateSize+j==i*iPlateSize+g_array_index(PosArray,int,k)&&k<iPosControlSize)
                           {
-		            do
-		              {
-		                dRndNumber = gsl_rng_uniform(r) * 1000;
-		              }
-		            while (dRndNumber > 200);
-	                   dDataArray[i*iPlateSize+j] = dRndNumber;
-                           if(m<iNegControlSize)
-                             m++;
+                            dRndNumber=shift_pos+pFuncDistribution(r,param);
+                            dDataArray[i*iPlateSize+j] = dRndNumber;
+                            iGroupCounter++;  
+                            if(k<iPosControlSize)
+                               {
+                                 k++;
+                               }
+                          }
+                       else if(i*iPlateSize+j==i*iPlateSize+g_array_index(NegArray,int,m)&&m<iNegControlSize)
+                          {
+                            dRndNumber=shift_neg+pFuncDistribution(r,param);
+                            dDataArray[i*iPlateSize+j] = dRndNumber;
+                            iGroupCounter++;
+                            if(m<iNegControlSize)
+                              {
+                                m++;
+                              }
                           }
                        else
                           {
-                          dDataArray[i*iPlateSize+j] = gsl_rng_uniform(r) * 1000;
+                            dRndNumber=shift+pFuncDistribution(r,param);
+                            dDataArray[i*iPlateSize+j] = dRndNumber;   
+                            iGroupCounter++;
                           }
                      }
                    k=0;
@@ -1501,33 +1525,42 @@ void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSiz
         {
          g_print("Random Number Generator with Stats Value\n");
          for (i=0; i<iNumberOfPlates; i++)
-	       {
-            for(j=(i*iPlateSize); j<(i*iPlateSize+iSetSizeForStatistics); j++)
+	     {
+              do
+		{
+		  shift_pos=gsl_rng_uniform(r)*1000;
+		}
+	      while (shift_pos<800);
+              do
+		{
+		  shift_neg=gsl_rng_uniform(r)*1000;
+	        }
+	      while (shift_neg>200);
+               for(j=(i*iPlateSize); j<(i*iPlateSize+iSetSizeForStatistics); j++)
+	          {
+                    dRndNumber=shift_pos+pFuncDistribution(r,param);
+                    dDataArray[j] = dRndNumber;
+	          }
+
+               for(j=(i*iPlateSize+iSetSizeForStatistics); j<(i*iPlateSize+2*iSetSizeForStatistics); j++)
 	            {
-		         do
-		           {
-		             dRndNumber = gsl_rng_uniform(r) * 1000;
-		           }
-		         while (dRndNumber < 800);
-	             dDataArray[j] = dRndNumber;
+                      dRndNumber=shift_neg+pFuncDistribution(r,param);
+                      dDataArray[j] = dRndNumber;
 	            }
 
-            for(j=(i*iPlateSize+iSetSizeForStatistics); j<(i*iPlateSize+2*iSetSizeForStatistics); j++)
+               for(j=(i*iPlateSize+2*iSetSizeForStatistics); j<(i*iPlateSize+iPlateSize); j++)
 	            {
-		         do
-		           {
-		             dRndNumber = gsl_rng_uniform(r) * 1000;
-		           }
-		         while (dRndNumber > 200);
-	            dDataArray[j] = dRndNumber;
+                      if(iGroupCounter==iSetSizeForStatistics)
+                         {
+                           shift=gsl_rng_uniform(r) * 1000;
+                           iGroupCounter=0;
+                         }
+                      dRndNumber=shift+pFuncDistribution(r,param);
+                      dDataArray[j] = dRndNumber;
+                      iGroupCounter++;
 	            }
 
-            for(j=(i*iPlateSize+2*iSetSizeForStatistics); j<(i*iPlateSize+iPlateSize); j++)
-	            {
-	            dDataArray[j] = gsl_rng_uniform(r) * 1000;
-	            }
-
-            }
+          }
 
         }
        gsl_rng_free(r);
@@ -1535,7 +1568,6 @@ void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSiz
        g_array_free(NegArray,TRUE);
        g_string_free(buffer,TRUE);
       }
-
 void CalculatePercentControl(double dDataArray[], double dPercentArray[], int iPlateSize, int iNumberOfPlates, int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText)
       {
          //A percent of control function that can take a block size or positional arguments.
