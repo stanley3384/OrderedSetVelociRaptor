@@ -2985,26 +2985,9 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
   }
 static void format_text_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *content_area, *action_area;
+    GtkWidget *dialog, *table, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *check1, *content_area, *action_area;
     gint result;
-    guint32 iBufferCount;
-    gunichar Char='~';
-    gunichar Char2='~';
-    int iSwitch=0;
-    int iSwitch2=0;
-    guint32 i=0;
-    guint32 j=0;
-    double dTemp;
-    double dEntry1;
-    double dEntry2;
-    double dEntry3;
-    double dEntry4;
-    GtkTextBuffer *buffer;
-    GtkTextIter start1, end1, start_iter, start_number, end_number;
-    //PangoFontDescription *font_desc;
-    GtkTextTagTable *TagTable;
-    GtkTextTag *tagtest;
-
+    
      g_print("Format Text\n");
 
      dialog=gtk_dialog_new_with_buttons("Format Platemap", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -3031,7 +3014,9 @@ static void format_text_dialog(GtkButton *button, gpointer data)
      gtk_entry_set_text(GTK_ENTRY(entry3), "400.0");
      gtk_entry_set_text(GTK_ENTRY(entry4), "600.0");
 
-     table=gtk_table_new(4,2,FALSE);
+     check1=gtk_check_button_new_with_label("Heatmap Platemap");
+
+     table=gtk_table_new(5,2,FALSE);
      gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 1, 0, 1);
      gtk_table_attach_defaults(GTK_TABLE(table), label2, 0, 1, 1, 2);
      gtk_table_attach_defaults(GTK_TABLE(table), label3, 0, 1, 2, 3);
@@ -3040,6 +3025,7 @@ static void format_text_dialog(GtkButton *button, gpointer data)
      gtk_table_attach_defaults(GTK_TABLE(table), entry2, 1, 2, 1, 2);
      gtk_table_attach_defaults(GTK_TABLE(table), entry3, 1, 2, 2, 3);
      gtk_table_attach_defaults(GTK_TABLE(table), entry4, 1, 2, 3, 4);
+     gtk_table_attach_defaults(GTK_TABLE(table), check1, 0, 2, 4, 5);
 
      gtk_table_set_row_spacings(GTK_TABLE(table), 10);
      gtk_table_set_col_spacings(GTK_TABLE(table), 10);
@@ -3054,96 +3040,24 @@ static void format_text_dialog(GtkButton *button, gpointer data)
 
      if(result==GTK_RESPONSE_OK)
         {
-         dEntry1=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));
-         dEntry2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
-         dEntry3=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
-         dEntry4=atof(gtk_entry_get_text(GTK_ENTRY(entry4)));
+         double dEntry1=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));
+         double dEntry2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
+         double dEntry3=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
+         double dEntry4=atof(gtk_entry_get_text(GTK_ENTRY(entry4)));
+         double high=0;
+         double low=0;
 
-         buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (data));
-         TagTable=gtk_text_buffer_get_tag_table(buffer);
-         tagtest=gtk_text_tag_table_lookup(TagTable, "blue_foreground");
-           if(tagtest==NULL)
-               {
-                 gtk_text_buffer_create_tag (buffer, "blue_foreground",
-                        "foreground", "#0000ff", NULL); 
-                 gtk_text_buffer_create_tag (buffer, "red_foreground",
-                        "foreground", "#ff0000", NULL); 
-                 gtk_text_buffer_create_tag (buffer, "green_foreground",
-                        "foreground", "#00ff00", NULL);     
-               }
-           else
-               {
-                 //remove tags.
-                 gtk_text_buffer_get_bounds(buffer, &start1, &end1);
-                 gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
-               }
-
-           iBufferCount=gtk_text_buffer_get_char_count(buffer); 
-           gtk_text_buffer_get_start_iter(buffer, &start_iter);
-           for(i=0;i<iBufferCount;i++)
-              {
-                 Char=gtk_text_iter_get_char(&start_iter);
-                       if(Char=='\n' && Char2=='\n')
-                         {
-                           //A jump of " \n\n" or 3 characters between plates after a " \n".
-                           iSwitch=1;
-                           iSwitch2=0;
-                         }
-                       if(Char==' '&& Char2=='\n')
-                         {
-                            //A jump of " \n" or 2 characters between rows.
-                            iSwitch2=1;
-                         }
-
-                       if(Char==' ')
-                         {
-                             if(iSwitch==1)
-                                {
-                                  gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-2));
-                                  gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
-                                  iSwitch=0;
-                                }
-                             else if(iSwitch2==1)
-                                {
-                                  gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-1));
-                                  gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
-                                  iSwitch2=0;
-                                }
-                             else
-                                {
-                                  gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-j);
-                                  gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
-                                }
-
-                            //g_print("z%sz\n", gtk_text_iter_get_text(&start_number, &end_number));
-                            dTemp=atof(gtk_text_iter_get_text(&start_number, &end_number));
-
-                              if(dTemp>dEntry1)
-                                {
-                                   gtk_text_buffer_apply_tag_by_name (buffer, "blue_foreground", &start_number, &end_number);
-                                }
-                              else if(dTemp<dEntry2)
-                                {
-                                   gtk_text_buffer_apply_tag_by_name(buffer, "red_foreground", &start_number, &end_number);
-                                }
-                              else if(dTemp>dEntry3 && dTemp<dEntry4)
-                                {
-                                   gtk_text_buffer_apply_tag_by_name(buffer, "green_foreground", &start_number, &end_number);
-                                }
-                              else
-                                {
-                                 //exit
-                                }
-                                j=0;
-                             }
-                          else
-                             {
-                               j++;
-                             }
-                      Char2=Char;
-                      gtk_text_iter_forward_chars(&start_iter, 1);
-                 }
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check1)))
+           {
+             format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
+             format_text_platemap_heatmap(GTK_TEXT_VIEW(data), high, low);
            }
+         else
+           {
+            format_text_platemap(dEntry1, dEntry2, dEntry3, dEntry4, GTK_TEXT_VIEW(data));
+           }
+         
+        }
       gtk_widget_destroy(dialog);
        
   }

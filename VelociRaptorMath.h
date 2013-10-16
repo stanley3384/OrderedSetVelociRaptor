@@ -27,6 +27,12 @@ void send_text_to_database(const gchar *pTableName, GtkWidget *textview);
 void build_combo_table_sql(int ComboSet, int ComboSubSet, const gchar *TableName);
 void build_permutation_table_sql(int ComboSet, const gchar *TableName);
 void copy_treeview_to_database_sql(GtkWidget*, GtkWidget*, const gchar *pWindowTitle);
+void format_text_platemap(double dEntry1, double dEntry2, double dEntry3, double dEntry4, GtkTextView *textview);
+void format_text_platemap_heatmap_high_low(GtkTextView *textview, double *high, double *low);
+void format_text_platemap_heatmap(GtkTextView *textview, int high, int low);
+
+
+
 
 
 

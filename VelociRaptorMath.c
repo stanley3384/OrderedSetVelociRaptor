@@ -2223,6 +2223,326 @@ void copy_treeview_to_database_sql(GtkWidget *copy, GtkWidget *treeview, const g
      sqlite3_close(handle);
      printf("Data Export Finished!\n");
   }
+void format_text_platemap(double dEntry1, double dEntry2, double dEntry3, double dEntry4, GtkTextView *textview)
+  {
+    guint32 iBufferCount;
+    gunichar Char='~';
+    gunichar Char2='~';
+    int iSwitch=0;
+    int iSwitch2=0;
+    guint32 i=0;
+    guint32 j=0;
+    double dTemp;
+    GtkTextBuffer *buffer;
+    GtkTextIter start1, end1, start_iter, start_number, end_number;
+    GtkTextTagTable *TagTable;
+    GtkTextTag *tagtest;
+
+    buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+    TagTable=gtk_text_buffer_get_tag_table(buffer);
+    tagtest=gtk_text_tag_table_lookup(TagTable, "blue_foreground");
+           if(tagtest==NULL)
+               {
+                 gtk_text_buffer_create_tag (buffer, "blue_foreground",
+                        "foreground", "#0000ff", NULL); 
+                 gtk_text_buffer_create_tag (buffer, "red_foreground",
+                        "foreground", "#ff0000", NULL); 
+                 gtk_text_buffer_create_tag (buffer, "green_foreground",
+                        "foreground", "#00ff00", NULL);     
+               }
+           else
+               {
+                 //remove tags.
+                 gtk_text_buffer_get_bounds(buffer, &start1, &end1);
+                 gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
+               }
+
+           iBufferCount=gtk_text_buffer_get_char_count(buffer); 
+           gtk_text_buffer_get_start_iter(buffer, &start_iter);
+           for(i=0;i<iBufferCount;i++)
+              {
+                 Char=gtk_text_iter_get_char(&start_iter);
+                       if(Char=='\n' && Char2=='\n')
+                         {
+                           //A jump of " \n\n" or 3 characters between plates after a " \n".
+                           iSwitch=1;
+                           iSwitch2=0;
+                         }
+                       if(Char==' '&& Char2=='\n')
+                         {
+                            //A jump of " \n" or 2 characters between rows.
+                            iSwitch2=1;
+                         }
+
+                       if(Char==' ')
+                         {
+                             if(iSwitch==1)
+                                {
+                                  gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-2));
+                                  gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
+                                  iSwitch=0;
+                                }
+                             else if(iSwitch2==1)
+                                {
+                                  gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-1));
+                                  gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
+                                  iSwitch2=0;
+                                }
+                             else
+                                {
+                                  gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-j);
+                                  gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
+                                }
+
+                            //g_print("z%sz\n", gtk_text_iter_get_text(&start_number, &end_number));
+                            dTemp=atof(gtk_text_iter_get_text(&start_number, &end_number));
+
+                              if(dTemp>dEntry1)
+                                {
+                                   gtk_text_buffer_apply_tag_by_name (buffer, "blue_foreground", &start_number, &end_number);
+                                }
+                              else if(dTemp<dEntry2)
+                                {
+                                   gtk_text_buffer_apply_tag_by_name(buffer, "red_foreground", &start_number, &end_number);
+                                }
+                              else if(dTemp>dEntry3 && dTemp<dEntry4)
+                                {
+                                   gtk_text_buffer_apply_tag_by_name(buffer, "green_foreground", &start_number, &end_number);
+                                }
+                              else
+                                {
+                                 //exit
+                                }
+                                j=0;
+                             }
+                          else
+                             {
+                               j++;
+                             }
+                      Char2=Char;
+                      gtk_text_iter_forward_chars(&start_iter, 1);
+                 }
+
+  }
+void format_text_platemap_heatmap_high_low(GtkTextView *textview, double *high, double *low)
+  {
+    guint32 iBufferCount;
+    gunichar Char='~';
+    gunichar Char2='~';
+    int iSwitch=0;
+    int iSwitch2=0;
+    guint32 i=0;
+    guint32 j=0;
+    double dTemp=0;
+    GtkTextBuffer *buffer;
+    GtkTextIter start_iter, start_number, end_number;
+    buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+
+    iBufferCount=gtk_text_buffer_get_char_count(buffer); 
+    gtk_text_buffer_get_start_iter(buffer, &start_iter);
+    for(i=0;i<iBufferCount;i++)
+       {
+         Char=gtk_text_iter_get_char(&start_iter);
+            if(Char=='\n' && Char2=='\n')
+              {
+                //A jump of " \n\n" or 3 characters between plates after a " \n".
+                iSwitch=1;
+                iSwitch2=0;
+              }
+            if(Char==' '&& Char2=='\n')
+              {
+                //A jump of " \n" or 2 characters between rows.
+                iSwitch2=1;
+              }
+
+            if(Char==' ')
+              {
+                if(iSwitch==1)
+                  {
+                    gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-2));
+                    gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
+                    iSwitch=0;
+                  }
+                else if(iSwitch2==1)
+                  {
+                    gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-1));
+                    gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
+                    iSwitch2=0;
+                  }
+                else
+                  {
+                    gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-j);
+                    gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i);
+                  }
+
+                 //g_print("z%sz\n", gtk_text_iter_get_text(&start_number, &end_number));
+                 dTemp=atof(gtk_text_iter_get_text(&start_number, &end_number));
+                 if(dTemp>*high)
+                   {
+                     *high=dTemp;
+                   }
+                 if(dTemp<*low)
+                   {
+                     *low=dTemp;
+                   }
+                j=0;
+              }  
+            else
+              {
+                j++;
+              }
+           Char2=Char;
+           gtk_text_iter_forward_chars(&start_iter, 1);
+        }
+    //printf("high %f low %f\n", *high, *low);
+  }
+void format_text_platemap_heatmap(GtkTextView *textview, int high, int low)
+  {
+    int hexup=0x00;
+    int hexdown=0xFF;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));;
+    char hex_blue_to_red[65][8];
+    char *tag_names[]={"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19", "20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39", "40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60", "61","62","63","64","65"};
+    int tag=0;
+    double range=high-low;
+    guint32 iBufferCount;
+    gunichar Char='~';
+    gunichar Char2='~';
+    int iSwitch=0;
+    int iSwitch2=0;
+    guint32 i=0;
+    guint32 j=0;
+    double dTemp=0;
+    GtkTextIter start1, end1, start_iter, start_number, end_number;
+    GtkTextTagTable *TagTable;
+    GtkTextTag *tagtest;
+
+    TagTable=gtk_text_buffer_get_tag_table(buffer);
+    tagtest=gtk_text_tag_table_lookup(TagTable, "1");
+    if(tagtest==NULL)
+      {
+        //256/8=32. scale 64 times from red to blue
+        //scale blue to green
+        for(i=0;i<16;i++)
+           {
+             snprintf(hex_blue_to_red[i], 8, "#00%02XFF", hexup);
+             //printf("hex number:%i %s \n", i+1, hex_blue_to_red[i]);
+             gtk_text_buffer_create_tag(buffer,tag_names[i],"background", hex_blue_to_red[i], "foreground", "#000000", NULL);
+             hexup=hexup+0x0F;
+           }
+   
+        hexup=0x00;
+        hexdown=0xFF;
+        for(i=16;i<32;i++)
+           {
+             snprintf(hex_blue_to_red[i], 8, "#00FF%02X", hexdown);
+             //printf("hex number:%i %s \n", i+1, hex_blue_to_red[i]);
+             gtk_text_buffer_create_tag(buffer,tag_names[i],"background", hex_blue_to_red[i], "foreground", "#000000", NULL);
+             hexdown=hexdown-0x0F;
+           }
+        
+        hexup=0x00;
+        hexdown=0xFF;
+        for(i=32;i<48;i++)
+           {
+             snprintf(hex_blue_to_red[i], 8, "#%02XFF00", hexup);
+             //printf("hex number:%i %s \n", i+1, hex_blue_to_red[i]);
+             gtk_text_buffer_create_tag(buffer,tag_names[i],"background", hex_blue_to_red[i], "foreground", "#000000", NULL);
+             hexup=hexup+0x0F;
+           }
+
+        //scale green to red
+        hexup=0x00;
+        hexdown=0xFF;
+        for(i=48;i<64;i++)
+           {
+             snprintf(hex_blue_to_red[i], 8, "#FF%02X00", hexdown);
+             //printf("hex number:%i %s \n", i+1, hex_blue_to_red[i]);
+             gtk_text_buffer_create_tag(buffer,tag_names[i],"background", hex_blue_to_red[i], "foreground", "#000000", NULL);
+             hexdown=hexdown-0x0F;
+           } 
+        
+         gtk_text_buffer_create_tag(buffer, tag_names[64], "background", "#FF0000", "foreground", "#000000", NULL);
+       
+      }
+    else
+      {
+        //remove tags.
+        gtk_text_buffer_get_bounds(buffer, &start1, &end1);
+        gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
+      }
+    
+    //Heatmap numbers
+    iBufferCount=gtk_text_buffer_get_char_count(buffer); 
+    gtk_text_buffer_get_start_iter(buffer, &start_iter);
+    for(i=0;i<iBufferCount;i++)
+       {
+         Char=gtk_text_iter_get_char(&start_iter);
+            if(Char=='\n' && Char2=='\n')
+              {
+                //A jump of " \n\n" or 3 characters between plates after a " \n".
+                iSwitch=1;
+                iSwitch2=0;
+              }
+            if(Char==' '&& Char2=='\n')
+              {
+                //A jump of " \n" or 2 characters between rows.
+                iSwitch2=1;
+              }
+
+            if(Char==' ')
+              {
+                if(iSwitch==1)
+                  {
+                    gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-2));
+                    gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i+1);
+                    iSwitch=0;
+                  }
+                else if(iSwitch2==1)
+                  {
+                    gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-(j-1));
+                    gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i+1);
+                    iSwitch2=0;
+                  }
+                else
+                  {
+                    gtk_text_buffer_get_iter_at_offset (buffer, &start_number, i-j);
+                    gtk_text_buffer_get_iter_at_offset (buffer, &end_number, i+1);
+                  }
+
+                 //g_print("z%sz\n", gtk_text_iter_get_text(&start_number, &end_number));
+                 dTemp=atof(gtk_text_iter_get_text(&start_number, &end_number));
+                 tag=(int)rint(((dTemp-low)/range)*65.0);
+                 //printf("tag %i\n", tag);
+                 if(tag<0)
+                   {
+                     gtk_text_buffer_apply_tag_by_name(buffer, tag_names[0], &start_number, &end_number);  
+                   }    
+                 if(tag>64)
+                   {
+                     gtk_text_buffer_apply_tag_by_name(buffer, tag_names[64], &start_number, &end_number); 
+                   } 
+                 if(tag<=64&&tag>=0)
+                   {
+                     gtk_text_buffer_apply_tag_by_name(buffer, tag_names[tag], &start_number, &end_number); 
+                   }          
+
+                j=0;
+              }  
+            else
+              {
+                j++;
+              }
+           Char2=Char;
+           gtk_text_iter_forward_chars(&start_iter, 1);
+        }
+
+  }
+
+
+
+
+
 
 
 
