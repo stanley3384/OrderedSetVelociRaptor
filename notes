@@ -24,6 +24,7 @@
 
 
 C. Eric Cashon
+cecashon@aol.com
 
 
 1. SQLite percent of control. This is an attempt to write this in SQL. It isn't a very dynamic solution. There are other ways to solve this. You could go the procedural language route of some dialects of SQL or you might write the code in C or a combination of SQL and C. 

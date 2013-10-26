@@ -36,5 +36,12 @@ Levene's test also called Brown Forsythe test and called Levine's in this refere
 For figuring out GTK+.
      Krause, Andrew. 2007, Foundations of GTK+ Development, Apress.
 
+The printing_layout_set_text_attributes function for printing heatmaps is a truncated version of the following print code. The original code is much more complete and a better example of doing this.
+
+http://www.claws-mail.org
+Claws Mail -- a GTK+ based, lightweight, and fast e-mail client
+ Copyright (C) 2007-2012 Holger Berndt <hb@claws-mail.org>,
+ Colin Leroy <colin@colino.net>, and the Claws Mail team
+
 
 

@@ -34,6 +34,7 @@ Compiled on Ubuntu version 12.04 LTS using a netbook as the test computer. Gedit
 #include "VelociRaptorMath.h"
 #include "VelociRaptorUI_Validation.h"
 #include "VelociRaptorGlobal.h"
+#include "VelociRaptorPrinting.h"
 
 //Global variables.   
 const gchar *pPlateNumberText=NULL;
@@ -54,6 +55,7 @@ double wrap_gsl_rng_uniform(gsl_rng *r, double param);
 static void destroy_event(GtkWidget*, gpointer);
 static void activate_pos_control_event(GtkWidget*, GtkEntry*);
 static void activate_neg_control_event(GtkWidget*, GtkEntry*);
+static void change_font(GtkWidget*, GtkTextView*);
 static void distributions_dialog(GtkButton*, gpointer);
 static void activate_treeview_data_event(GtkWidget*, GtkStateFlags, gpointer);
 static void activate_treeview_percent_event(GtkWidget*, GtkStateFlags, gpointer);
@@ -104,8 +106,10 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
-     
+     GtkWidget *window, *button, *scrolled_win, *textview, *FontCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
+     //For printing
+     Widgets *w;
+
      gtk_init(&argc, &argv);
     
      window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -125,10 +129,9 @@ int main(int argc, char *argv[])
      FormatText2=gtk_button_new_with_mnemonic("RiseFall Plate Map");
      SendToDatabase=gtk_button_new_with_mnemonic("Data To Database");
 
-     MainTable=gtk_table_new(10,8,TRUE);
-
      FileMenu=gtk_menu_new(); 
      ImportItem=gtk_menu_item_new_with_label("Import Text");
+     PrintItem=gtk_menu_item_new_with_label("Print Textview");
      QuitItem=gtk_menu_item_new_with_label("Quit");
 
      FileMenu2=gtk_menu_new();
@@ -155,6 +158,8 @@ int main(int argc, char *argv[])
      AboutItem=gtk_menu_item_new_with_label("About");
 
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), ImportItem);
+     
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), PrintItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), QuitItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildAuxItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildComboItem);
@@ -172,7 +177,9 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), BoxItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), AboutItem);
 
+
      g_signal_connect(QuitItem, "activate", G_CALLBACK(destroy_event), NULL);
+     //PrintItem signal connected after textview
      g_signal_connect(ImportItem, "activate", G_CALLBACK(get_text_file), window);
      g_signal_connect(AboutItem, "activate", G_CALLBACK(about_dialog), window);
      //AnovaItem signal connected after textview.
@@ -212,6 +219,11 @@ int main(int argc, char *argv[])
      g_signal_connect(HotellingItem, "activate", G_CALLBACK(hotelling_dialog), textview);
      g_signal_connect(ZFactorItem, "activate", G_CALLBACK(z_factor_dialog), textview);
      g_signal_connect(ContingencyItem, "activate", G_CALLBACK(contingency_dialog), textview);
+     //For printing.
+     w=g_slice_new(Widgets);
+     w->window=GTK_WIDGET(window);
+     w->textview=GTK_WIDGET(textview);
+     g_signal_connect(PrintItem, "activate", G_CALLBACK(print_textview), (gpointer) w);
         
      scrolled_win=gtk_scrolled_window_new(NULL, NULL);
      
@@ -257,7 +269,21 @@ int main(int argc, char *argv[])
      gtk_entry_set_width_chars(GTK_ENTRY(PlateStatsEntry), 5);
      gtk_entry_set_width_chars(GTK_ENTRY(PlatePosControlEntry), 10);
      gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
+     
+     FontCombo=gtk_combo_box_text_new();
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "0", "6");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "1", "7");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "2", "8");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "3", "9");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "4", "10");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "5", "11");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "6", "12");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "7", "13");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "8", "14");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(FontCombo), 5);
+     g_signal_connect(FontCombo, "changed", G_CALLBACK(change_font), textview);
 
+     MainTable=gtk_table_new(10,8,TRUE);
      gtk_table_attach(GTK_TABLE(MainTable), RaptorFeet, 0,8,0,1,GTK_FILL,GTK_FILL,0,0);
 
      gtk_table_attach(GTK_TABLE(MainTable), TextLabel, 2,7,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
@@ -280,11 +306,13 @@ int main(int argc, char *argv[])
      gtk_table_attach(GTK_TABLE(MainTable), MenuBar, 6,8,0,1,GTK_FILL,GTK_FILL,0,0);
 
      gtk_table_attach(GTK_TABLE(MainTable), button, 0,2,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
+
      gtk_table_attach(GTK_TABLE(MainTable), textbutton, 2,3,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), ClearFormat, 3,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), FormatText1, 4,5,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), FormatText2, 5,6,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), SendToDatabase, 6,7,9,10,GTK_SHRINK,GTK_SHRINK,0,0);    
+     gtk_table_attach(GTK_TABLE(MainTable), SendToDatabase, 6,7,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), FontCombo, 7,8,9,10,GTK_SHRINK,GTK_SHRINK,0,0);    
 
      gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
@@ -375,6 +403,17 @@ static void activate_neg_control_event(GtkWidget *check, GtkEntry *entry)
               pPlateNegControlText=gtk_entry_get_text(GTK_ENTRY(entry));
               gtk_widget_set_sensitive(GTK_WIDGET(entry),FALSE);
             }
+  }
+static void change_font(GtkWidget *font, GtkTextView *textview)
+  {
+    //Set the font for the textview.
+    char *fonts[9]={"Regular 6", "Regular 7", "Regular 8", "Regular 9", "Regular 10", "Regular 11", "Regular 12", "Regular 13", "Regular 14"};
+    const gchar *fontID;
+    PangoFontDescription *pfd;
+
+    fontID=gtk_combo_box_get_active_id(GTK_COMBO_BOX(font));
+    pfd = pango_font_description_from_string(fonts[atoi(fontID)]); 
+    gtk_widget_override_font(GTK_WIDGET(textview), pfd);
   }
 static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
   {

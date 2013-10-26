@@ -1,0 +1,297 @@
+
+/*
+ Printing functions for the VelociRaptor application.
+     
+ Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
+*/
+
+#include "VelociRaptorPrinting.h"
+
+static GtkPrintSettings *settings=NULL;
+static void begin_print(GtkPrintOperation*, GtkPrintContext*, GtkTextView*);
+static void draw_page(GtkPrintOperation*, GtkPrintContext*, gint, GtkTextView*);
+static void end_print(GtkPrintOperation*, GtkPrintContext*, GtkTextView*);
+static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIter start1, GtkTextIter end1, PangoLayout *layout, GtkPrintContext *context);
+static gint printing_text_iter_get_offset_bytes(GtkTextView *textview, const GtkTextIter *iter);
+
+void print_textview(GtkWidget *menu, Widgets *w)
+  {
+     GtkPrintOperation *operation;
+     GError *error=NULL;
+     gint result;
+
+     operation=gtk_print_operation_new();
+     if (settings!=NULL)
+        {
+           gtk_print_settings_set_use_color(settings,TRUE);
+           gtk_print_operation_set_print_settings (operation, settings);
+        }
+
+      g_signal_connect(G_OBJECT(operation), "begin_print", G_CALLBACK(begin_print), GTK_TEXT_VIEW(w->textview));
+      g_signal_connect(G_OBJECT(operation), "draw_page", G_CALLBACK(draw_page), GTK_TEXT_VIEW(w->textview));
+      g_signal_connect(G_OBJECT(operation), "end_print", G_CALLBACK(end_print), GTK_TEXT_VIEW(w->textview));
+
+      result=gtk_print_operation_run(operation, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
+                GTK_WINDOW(w->window), &error);
+     
+      switch(result)
+         {
+            case GTK_PRINT_OPERATION_RESULT_ERROR:
+                printf("%s\n", error->message);
+                g_error_free(error);
+            case GTK_PRINT_OPERATION_RESULT_APPLY:
+                if (settings)
+                   {
+                     g_object_unref(settings);
+                   }
+                settings = g_object_ref(gtk_print_operation_get_print_settings(operation));
+            default:
+                break;
+          }
+      
+      g_object_unref(operation);
+  }
+static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, GtkTextView *textview)
+  {
+     printf("Begin Printing\n");
+     gdouble height;
+     gint lines;
+     gint lines_per_page;
+     gint total_pages;
+     gint font_size;
+     GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
+     PangoContext *context1=gtk_widget_get_pango_context(GTK_WIDGET(textview));
+     PangoFontDescription *desc=pango_context_get_font_description(context1);
+
+     if(!pango_font_description_get_size_is_absolute(desc))
+       {
+         font_size=pango_font_description_get_size(desc)/PANGO_SCALE; 
+       }
+     else
+       {
+         font_size=pango_font_description_get_size(desc);
+       }
+
+     lines=gtk_text_buffer_get_line_count(buffer);
+     height=gtk_print_context_get_height(context); 
+     lines_per_page=floor(height/(font_size+3));
+     total_pages=((lines-1)/lines_per_page)+1;
+     
+     gtk_print_operation_set_n_pages(operation, total_pages);
+   
+  }
+static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, GtkTextView *textview)
+  {
+     printf("Draw Page %i\n", page_nr+1);
+     cairo_t *cr;
+     PangoLayout *layout;
+     gint font_size;
+     gint lines, height, lines_per_page, total_pages, page_width;
+     PangoContext *context1=gtk_widget_get_pango_context(GTK_WIDGET(textview));
+     PangoFontDescription *desc=pango_context_get_font_description(context1);
+
+     if(!pango_font_description_get_size_is_absolute(desc))
+       {
+         font_size=pango_font_description_get_size(desc)/PANGO_SCALE; 
+       }
+     else
+       {
+         font_size=pango_font_description_get_size(desc);
+       }
+
+     GtkTextIter start1, end1;
+     GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
+
+     lines=gtk_text_buffer_get_line_count(buffer);
+     height=gtk_print_context_get_height(context); 
+     lines_per_page=floor(height/(font_size+3));
+     total_pages=((lines-1)/lines_per_page)+1;
+
+     if(lines<=lines_per_page)
+        {
+          gtk_text_buffer_get_bounds(buffer, &start1, &end1);
+          printf("First Page\n");
+        }
+     else if(lines>lines_per_page&&page_nr<total_pages-1)
+        {
+          gtk_text_buffer_get_iter_at_line(buffer, &start1, (page_nr*lines_per_page));
+          gtk_text_buffer_get_iter_at_line(buffer, &end1, ((page_nr*lines_per_page)+lines_per_page));
+          printf("Full Page\n");
+        }
+     else
+        {
+          gtk_text_buffer_get_iter_at_line(buffer, &start1, (page_nr*lines_per_page));
+          gtk_text_buffer_get_end_iter(buffer, &end1);
+          printf("Last Page\n");
+        }
+
+
+     cr=gtk_print_context_get_cairo_context(context);
+     page_width=gtk_print_context_get_width(context);
+
+     layout=gtk_print_context_create_pango_layout(context);
+
+     printing_layout_set_text_attributes(textview, start1, end1, layout, context);
+
+     pango_layout_set_font_description(layout, desc);
+     pango_layout_set_text(layout, gtk_text_buffer_get_text(buffer, &start1, &end1, FALSE),-1);
+     pango_layout_set_width(layout, page_width*PANGO_SCALE);
+     pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+     pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+
+     pango_cairo_show_layout(cr, layout);
+
+     g_object_unref(layout);
+  }
+static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, GtkTextView *textview)
+  {
+     printf("End Printing\n");
+  }
+/*
+ A truncated version of the following print code. An attempt to get the treeview heatmapped platemaps
+ to print. The original code is much more complete and a better example of doing this.
+
+http://www.claws-mail.org
+Claws Mail -- a GTK+ based, lightweight, and fast e-mail client
+ Copyright (C) 2007-2012 Holger Berndt <hb@claws-mail.org>,
+ Colin Leroy <colin@colino.net>, and the Claws Mail team
+*/
+static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIter start1, GtkTextIter end1, PangoLayout *layout, GtkPrintContext *context)
+{
+        printf("Get Attributes\n");
+        PangoAttrList *attr_list;
+        PangoAttribute *attr;
+        GSList *open_attrs=NULL;
+        GSList *attr_walk=NULL;
+        GtkTextIter iter=start1;
+
+        attr_list = pango_attr_list_new();
+        
+        do{
+            gboolean fg_set, bg_set;
+            GSList *tags, *tag_walk;
+            GtkTextTag *tag;
+            GdkColor *color = NULL;
+
+           if(gtk_text_iter_ends_tag(&iter, NULL)) 
+             {
+               tags = gtk_text_iter_get_toggled_tags(&iter, FALSE);
+               for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
+                  {
+                    gboolean found;
+                    tag = GTK_TEXT_TAG(tag_walk->data);
+                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, NULL);
+                    if(fg_set)
+                      {
+                        found = FALSE;
+                        for(attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next) 
+                           {
+                             attr = (PangoAttribute*)attr_walk->data;
+                             if(attr->klass->type == PANGO_ATTR_FOREGROUND)
+                               {
+                                 g_object_get(G_OBJECT(tag), "foreground_gdk", &color, NULL);
+                                 if(color)
+                                   {
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                                     pango_attr_list_insert(attr_list, attr);
+                                     found = TRUE;
+                                     open_attrs = g_slist_delete_link(open_attrs, attr_walk);
+                                     break;
+                                   }
+                                 if(color)
+                                   {
+                                     gdk_color_free(color);
+                                   }
+                                }
+                             }
+                         if(!found)
+                            {
+                              printf("Error generating attribute list.\n");
+                            }
+                      }
+                    if(bg_set)
+                      {
+                        found=FALSE;
+                        for(attr_walk=open_attrs; attr_walk!=NULL; attr_walk=attr_walk->next)
+                           {
+                             attr=(PangoAttribute*)attr_walk->data;
+                             if(attr->klass->type==PANGO_ATTR_BACKGROUND)
+                               {
+                                 g_object_get(G_OBJECT(tag), "background-gdk", &color, NULL);
+                                 if(color)
+                                   {
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                                     pango_attr_list_insert(attr_list, attr);
+                                     found = TRUE;
+                                     open_attrs = g_slist_delete_link(open_attrs, attr_walk);
+                                     break;
+                                   }
+                                  if(color)
+                                    {
+                                      gdk_color_free(color);
+                                    }
+                                }
+                           }
+                         if(!found)
+                           {
+                             printf("Error generating attribute list.\n");
+                           }
+                       }
+                                
+                   }
+                  g_slist_free(tags);
+              }
+
+            if(gtk_text_iter_begins_tag(&iter, NULL))
+              {
+                tags = gtk_text_iter_get_toggled_tags(&iter, TRUE);
+                for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
+                  {
+                    tag=GTK_TEXT_TAG(tag_walk->data);
+                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, NULL);
+                    if(fg_set)
+                      {
+                        g_object_get(G_OBJECT(tag), "foreground-gdk", &color, NULL);
+                        attr = pango_attr_foreground_new(color->red,color->green,color->blue);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                        open_attrs = g_slist_prepend(open_attrs, attr);
+                      }
+                    if(bg_set)
+                      {
+                        g_object_get(G_OBJECT(tag), "background-gdk", &color, NULL);
+                        attr = pango_attr_background_new(color->red,color->green,color->blue);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                        open_attrs = g_slist_prepend(open_attrs, attr);
+                      }
+                   }
+                 g_slist_free(tags);
+              }
+    
+        }while(!gtk_text_iter_is_end(&iter) && gtk_text_iter_forward_to_tag_toggle(&iter, NULL));
+        
+        /* close all open attributes */
+        for (attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next) {
+                attr = (PangoAttribute*) attr_walk->data;
+                attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                pango_attr_list_insert(attr_list, attr);
+        }
+        g_slist_free(open_attrs);
+
+        pango_layout_set_attributes(layout, attr_list);
+        pango_attr_list_unref(attr_list);
+}
+
+static gint printing_text_iter_get_offset_bytes(GtkTextView *textview, const GtkTextIter *iter)
+{
+        gint off_bytes;
+        gchar *text;
+        GtkTextIter start;
+
+        gtk_text_buffer_get_start_iter(gtk_text_iter_get_buffer(iter), &start);
+        
+        text = gtk_text_iter_get_text(&start, iter);
+        off_bytes = strlen(text);
+        g_free(text);
+        return off_bytes;
+}
+
