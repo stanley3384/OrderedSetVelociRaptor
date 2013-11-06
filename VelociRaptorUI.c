@@ -35,6 +35,7 @@ Compiled on Ubuntu version 12.04 LTS using a netbook as the test computer. Gedit
 #include "VelociRaptorUI_Validation.h"
 #include "VelociRaptorGlobal.h"
 #include "VelociRaptorPrinting.h"
+#include "VelociRaptorPermutations.h"
 
 //Global variables.   
 const gchar *pPlateNumberText=NULL;
@@ -67,6 +68,7 @@ static void one_way_anova_dialog(GtkWidget*, GtkTextView*);
 static void comparison_with_control_dialog(GtkWidget*, GtkTextView*);
 static void dunnetts_parameters_dialog(GtkWidget*, gpointer);
 static void hotelling_dialog(GtkWidget*, GtkTextView*);
+static void permutations_dialog(GtkWidget*, GtkTextView*);
 static void z_factor_dialog(GtkWidget*, GtkTextView*);
 static void contingency_dialog(GtkWidget*, GtkTextView*);
 static void exit_comparison_loop_event(GtkWidget*,gint, gpointer);
@@ -106,7 +108,7 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *FontCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
+     GtkWidget *window, *button, *scrolled_win, *textview, *FontCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
      //For printing
      Widgets *w;
 
@@ -146,6 +148,7 @@ int main(int argc, char *argv[])
      AnovaItem=gtk_menu_item_new_with_label("One-Way ANOVA");
      DunnSidakItem=gtk_menu_item_new_with_label("Comparison with Control");
      HotellingItem=gtk_menu_item_new_with_label("Comparison with Contrasts");
+     PermutationsItem=gtk_menu_item_new_with_label("Permutation Testing");
      ZFactorItem=gtk_menu_item_new_with_label("Calculate Z-factor");
      ContingencyItem=gtk_menu_item_new_with_label("Contingency Data");
 
@@ -170,6 +173,7 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), AnovaItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), DunnSidakItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), HotellingItem);
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), PermutationsItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), ZFactorItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), ContingencyItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), ScatterItem);
@@ -217,6 +221,7 @@ int main(int argc, char *argv[])
      g_signal_connect(AnovaItem, "activate", G_CALLBACK(one_way_anova_dialog), textview);
      g_signal_connect(DunnSidakItem, "activate", G_CALLBACK(comparison_with_control_dialog), textview);
      g_signal_connect(HotellingItem, "activate", G_CALLBACK(hotelling_dialog), textview);
+     g_signal_connect(PermutationsItem, "activate", G_CALLBACK(permutations_dialog), textview);
      g_signal_connect(ZFactorItem, "activate", G_CALLBACK(z_factor_dialog), textview);
      g_signal_connect(ContingencyItem, "activate", G_CALLBACK(contingency_dialog), textview);
      //For printing.
@@ -1271,7 +1276,7 @@ static void exit_comparison_loop_event(GtkWidget *dialog , gint response, gpoint
      {
        if(response==GTK_RESPONSE_CANCEL||response==GTK_RESPONSE_CLOSE)
          {
-           printf("Comparison Dialog Cancelled.\n");
+           printf("Exit Loop\n");
            //gtk_widget_destroy(dialog);
            iBreakLoop=1;//Break out of multiple comparison loop.
          }
@@ -1285,6 +1290,103 @@ static void exit_hotelling_dialog(GtkWidget *dialog , gint response, gpointer da
            //gtk_widget_destroy(dialog);
          }
 
+     }
+static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
+     {
+       GtkWidget *dialog, *table, *label1, *label3, *label2, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *progress, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups      ");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks          ");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks    ");
+
+     label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.\nTest with a 1,000 or less permutations first. It can take a while.");
+     label2=gtk_label_new("Control GROUP BY Value");
+     label3=gtk_label_new("Number of Permutations");
+
+     entry1=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "1");
+
+     entry2=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
+     gtk_entry_set_text(GTK_ENTRY(entry2), "1000");
+
+     progress=gtk_progress_bar_new();
+     gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
+     
+     table=gtk_table_new(10,2,FALSE);
+     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0); 
+     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry2, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), progress, 0,2,8,9,GTK_EXPAND,GTK_EXPAND,0,0);
+
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_comparison_loop_event), NULL);
+
+     gtk_widget_show_all(dialog);
+
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+         printf("Begin Permutation Calculation\n");
+         int iRadioButton=1;
+         int iControl=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+         int iPermutations= atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+         
+         //get value of radiobutton.
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
+            {
+              iRadioButton=1;
+            }
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+            {
+              iRadioButton=2;
+            }
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+            {
+              iRadioButton=3;
+            }
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+            {
+              iRadioButton=4;
+            }
+
+         //Set some bounds for the number of permutations
+         if(iPermutations>=10&&iPermutations<=500000)
+           {
+             permutation_sql(iPermutations, iRadioButton, iControl, textview, GTK_PROGRESS_BAR(progress), &iBreakLoop);
+           }
+         else
+           {
+             printf("Permutations Bounds 10<=x<=500000\n");
+             simple_message_dialog("Permutations Bounds 10<=x<=500000");
+           }
+
+         
+       }
+      printf("Permutations Finished\n");
+      gtk_widget_destroy(dialog);
+     
      }
 static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
      {
