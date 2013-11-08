@@ -202,14 +202,11 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
           
       }
 
-    if(malloc_error==0) 
-      {
-        gsl_matrix_free(mPermutationData1->matrix);
-        gsl_vector_free(vPermutationData1);
-        gsl_vector_free(vPermutationData2);
-        gsl_vector_free(vPermutationData3);
-      }
-      
+    
+     if(mPermutationData1->matrix!=NULL)gsl_matrix_free(mPermutationData1->matrix);
+     if(vPermutationData1!=NULL)gsl_vector_free(vPermutationData1);
+     if(vPermutationData2!=NULL)gsl_vector_free(vPermutationData2);
+     if(vPermutationData3!=NULL)gsl_vector_free(vPermutationData3);      
    }
 static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview)
    {
@@ -442,21 +439,19 @@ static void generate_permutations_with_hashing(int permutations, int permutation
             gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
             free(string3); 
           }
-    }
-
-    if(malloc_error==0) 
-      {
-        for(i=0;i<permutations; ++i)
-           {
-            free(perm1[i]);
-           }
-        free(perm1);
-        free(means);
-        free(temp_perm);
-        g_string_free(string, TRUE);
-        gsl_rng_free(r);
-        g_hash_table_destroy(hash);
       }
+
+      for(i=0;i<permutations; ++i)
+         {
+          if(perm1[i]!=NULL)free(perm1[i]);
+         }
+      if(perm1!=NULL)free(perm1);
+      if(means!=NULL)free(means);
+      if(temp_perm!=NULL)free(temp_perm);
+      g_string_free(string, TRUE);
+      gsl_rng_free(r);
+      g_hash_table_destroy(hash);
+      
   }
 
 
