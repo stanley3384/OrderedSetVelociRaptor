@@ -27,6 +27,7 @@ static void key_destroyed(gpointer data)
 void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop);
 static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview);
 static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview);
+static int compare_doubles(const double *a, const double *b);
 
 void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop)
    {
@@ -112,7 +113,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
       {
         //printf("Plate Control Test ControlMean, TestMean, MeanDifference Permutations PermutationLength ControlCount TestCount Values>=MeanDifference Mean StdDevS Side p-value Seconds\n");
         char *string;
-        asprintf(&string, "Plate Control Test ControlMean TestMean MeanDifference Permutations PermutationLength ControlCount TestCount CountValues PermMean PermStdDevS Side p-value Seconds\n");
+        asprintf(&string, "Plate Control Test ControlMean TestMean MeanDifference Permutations PermutationLength ControlCount TestCount CountP CountMaxT PermMean PermStdDevS Side p-value maxT_p_value Seconds\n");
         gtk_text_buffer_insert_at_cursor(buffer, string, -1);
         free(string);
         for(i=0;i<mPermutationData1->matrix->size1;i++)
@@ -263,6 +264,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
     double dtemp2=0;
     double dtemp3=0;
     int counter=0;
+    int counter2=0;
     int malloc_error=0;
     time_t start;
     time_t end;
@@ -281,6 +283,14 @@ static void generate_permutations_with_hashing(int permutations, int permutation
          //printf("%i ", (int)combine_arrays[i]);
        }
     //printf("\n");
+
+    //for maxT
+    //double means_sort[permutations];
+    double *means_sort=(double *)malloc(sizeof(double)*permutations);
+    if(means_sort==NULL) malloc_error=1;
+    //double maxT[permutations];
+    double *maxT=(double *)malloc(sizeof(double)*permutations);
+    if(maxT==NULL) malloc_error=1;
 
     //int perm1[permutations][permutation_length];
     int **perm1=malloc(permutations*sizeof(int*));
@@ -414,9 +424,31 @@ static void generate_permutations_with_hashing(int permutations, int permutation
                }
            }
 
+        //Copy means to mean_sort and sort.
+        for(i=0;i<permutations;i++)
+           {
+             means_sort[i]=means[i];
+           }
+        qsort(means_sort, permutations, sizeof(double), (__compar_fn_t)compare_doubles);
+        //Calculate maxT array.
+        maxT[permutations-1]=fabs(means_sort[permutations-1]);
+        for(i=1;i<permutations;i++)
+           {
+             maxT[permutations-i-1]=fmax(means_sort[permutations-i], fabs(means_sort[permutations-i-1]));
+           }
+        //For the adjusted p-value.
+        counter2=0;
+        for(i=0;i<permutations;i++)
+           {
+             if(maxT[i]>=mean_difference)
+               {
+                 counter2++;
+               }
+           }
+
         //printf("%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter); 
         char *string;
-        asprintf(&string, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
+        asprintf(&string, "%i %i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter, counter2);
         gtk_text_buffer_insert_at_cursor(buffer, string, -1);
         free(string);
 
@@ -427,7 +459,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
           {
             //printf("%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "greater", ((double)counter+1)/((double)permutations+1), end-start); 
             char *string2;
-            asprintf(&string2, "%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "greater", ((double)counter+1)/((double)permutations+1), end-start);
+            asprintf(&string2, "%f %f %s %f %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "greater", ((double)counter+1)/((double)permutations+1), ((double)counter2+1)/((double)permutations+1), end-start);
             gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
             free(string2);
           }
@@ -435,12 +467,14 @@ static void generate_permutations_with_hashing(int permutations, int permutation
           {
             //printf("%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "less", ((double)counter+1)/((double)permutations+1), end-start);
             char *string3;
-            asprintf(&string3, "%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "less", ((double)counter+1)/((double)permutations+1), end-start);
+            asprintf(&string3, "%f %f %s %f %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "less", ((double)counter+1)/((double)permutations+1), ((double)counter2+1)/((double)permutations+1), end-start);
             gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
             free(string3); 
           }
       }
 
+      if(means_sort!=NULL)free(means_sort);
+      if(maxT!=NULL)free(maxT);
       for(i=0;i<permutations; ++i)
          {
           if(perm1[i]!=NULL)free(perm1[i]);
@@ -452,6 +486,21 @@ static void generate_permutations_with_hashing(int permutations, int permutation
       gsl_rng_free(r);
       g_hash_table_destroy(hash);
       
+  }
+static int compare_doubles(const double *a, const double *b)
+  {
+    if(fabs(*a)<fabs(*b))
+       {
+         return 1;
+       }
+    else if(fabs(*a)>fabs(*b))
+       {
+         return -1;
+       }
+    else
+       {
+         return 0;
+       }
   }
 
 
