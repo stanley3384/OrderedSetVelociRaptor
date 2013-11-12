@@ -17,6 +17,7 @@ Some permutation testing.
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_sf_gamma.h>
+#include "VelociRaptorUI_Validation.h"
 
 int hash_check=0;
 static void key_destroyed(gpointer data)
@@ -25,7 +26,7 @@ static void key_destroyed(gpointer data)
     hash_check=1;
   }
 void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop);
-static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview);
+static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop);
 static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview);
 static int compare_doubles(const double *a, const double *b);
 
@@ -175,7 +176,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
                  gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
                  free(string2);
  
-                 permutation_calculations(permutations, data_control, data_test, control_count, temp4, textview); 
+                 permutation_calculations(permutations, data_control, data_test, control_count, temp4, textview, pBreakLoop); 
 
                  free(data_test);
                  free(data_control);
@@ -209,7 +210,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
      if(vPermutationData2!=NULL)gsl_vector_free(vPermutationData2);
      if(vPermutationData3!=NULL)gsl_vector_free(vPermutationData3);      
    }
-static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview)
+static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop)
    {
     int greater=0;
     int less=0;
@@ -247,7 +248,10 @@ static void permutation_calculations(int permutations, double data_control[], do
       }
     else
       {
-        printf("The maximum number of permutations is %f\n", check_permutation_count);
+        printf("The maximum number of permutations is %i\n", (int)check_permutation_count);
+        simple_message_dialog("The number of permutations exceeded n! for the set.");
+        *pBreakLoop=1;
+        //Some textview clean-up.
         GtkTextIter start, end;
         gtk_text_buffer_get_bounds(buffer, &start, &end);
         gtk_text_buffer_delete(buffer, &start, &end);
