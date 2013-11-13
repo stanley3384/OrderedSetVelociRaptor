@@ -114,7 +114,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
       {
         //printf("Plate Control Test ControlMean, TestMean, MeanDifference Permutations PermutationLength ControlCount TestCount Values>=MeanDifference Mean StdDevS Side p-value Seconds\n");
         char *string;
-        asprintf(&string, "Plate Control Test ControlMean TestMean MeanDifference Permutations PermutationLength ControlCount TestCount CountP CountMaxT PermMean PermStdDevS Side p-value maxT_p_value Seconds\n");
+        asprintf(&string, "Plate Control Test ControlMean TestMean MeanDifference Permutations PermutationLength ControlCount TestCount CountP CountMaxT PermMean PermStdDevS Side p-value Seconds\n");
         gtk_text_buffer_insert_at_cursor(buffer, string, -1);
         free(string);
         for(i=0;i<mPermutationData1->matrix->size1;i++)
@@ -427,7 +427,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
                    }
                }
            }
-
+        
         //Copy means to mean_sort and sort.
         for(i=0;i<permutations;i++)
            {
@@ -440,7 +440,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
            {
              maxT[permutations-i-1]=fmax(means_sort[permutations-i], fabs(means_sort[permutations-i-1]));
            }
-        //For the adjusted p-value.
+        //For the adjusted p-value. Not right. Needs work.
         counter2=0;
         for(i=0;i<permutations;i++)
            {
@@ -463,7 +463,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
           {
             //printf("%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "greater", ((double)counter+1)/((double)permutations+1), end-start); 
             char *string2;
-            asprintf(&string2, "%f %f %s %f %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "greater", ((double)counter+1)/((double)permutations+1), ((double)counter2+1)/((double)permutations+1), end-start);
+            asprintf(&string2, "%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "greater", ((double)counter+1)/((double)permutations+1), end-start);
             gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
             free(string2);
           }
@@ -471,7 +471,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
           {
             //printf("%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "less", ((double)counter+1)/((double)permutations+1), end-start);
             char *string3;
-            asprintf(&string3, "%f %f %s %f %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "less", ((double)counter+1)/((double)permutations+1), ((double)counter2+1)/((double)permutations+1), end-start);
+            asprintf(&string3, "%f %f %s %f %ld\n", dtemp3, gsl_stats_sd_m(means, 1, permutations, dtemp3), "less", ((double)counter+1)/((double)permutations+1), end-start);
             gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
             free(string3); 
           }
