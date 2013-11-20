@@ -25,12 +25,12 @@ static void key_destroyed(gpointer data)
     //printf("Got a key destroy call for %s\n", (char*)data);
     hash_check=1;
   }
-void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop);
-static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop);
-static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview);
-static int compare_doubles(const double *a, const double *b);
+void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton);
+static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop, int iSeedValue, int iRandomButton);
+static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview, int iSeedValue, int iRandomButton);
+//static int compare_doubles(const double *a, const double *b);
 
-void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop)
+void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton)
    {
      int malloc_error=0;
      int iCounter1=0;
@@ -114,7 +114,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
       {
         //printf("Plate Control Test ControlMean, TestMean, MeanDifference Permutations PermutationLength ControlCount TestCount Values>=MeanDifference Mean StdDevS Side p-value Seconds\n");
         char *string;
-        asprintf(&string, "Plate Control Test ControlMean TestMean MeanDifference Permutations PermutationLength ControlCount TestCount CountP CountMaxT PermMean PermStdDevS Side p-value Seconds\n");
+        asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value Seconds\n");
         gtk_text_buffer_insert_at_cursor(buffer, string, -1);
         free(string);
         for(i=0;i<mPermutationData1->matrix->size1;i++)
@@ -176,7 +176,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
                  gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
                  free(string2);
  
-                 permutation_calculations(permutations, data_control, data_test, control_count, temp4, textview, pBreakLoop); 
+                 permutation_calculations(permutations, data_control, data_test, control_count, temp4, textview, pBreakLoop, iSeedValue, iRandomButton); 
 
                  free(data_test);
                  free(data_control);
@@ -210,7 +210,7 @@ void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkT
      if(vPermutationData2!=NULL)gsl_vector_free(vPermutationData2);
      if(vPermutationData3!=NULL)gsl_vector_free(vPermutationData3);      
    }
-static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop)
+static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop, int iSeedValue, int iRandomButton)
    {
     int greater=0;
     int less=0;
@@ -244,7 +244,7 @@ static void permutation_calculations(int permutations, double data_control[], do
 
     if(permutations<=check_permutation_count)
       {
-        generate_permutations_with_hashing(permutations, permutation_length, data_control, data_test, mean_difference, control_count, test_count, less, greater, textview);
+        generate_permutations_with_hashing(permutations, permutation_length, data_control, data_test, mean_difference, control_count, test_count, less, greater, textview, iSeedValue, iRandomButton);
       }
     else
       {
@@ -258,7 +258,7 @@ static void permutation_calculations(int permutations, double data_control[], do
       }
       
   }
-static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview)
+static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview, int iSeedValue, int iRandomButton)
   {
     int i=0;
     int j=0;
@@ -268,7 +268,6 @@ static void generate_permutations_with_hashing(int permutations, int permutation
     double dtemp2=0;
     double dtemp3=0;
     int counter=0;
-    int counter2=0;
     int malloc_error=0;
     time_t start;
     time_t end;
@@ -287,14 +286,6 @@ static void generate_permutations_with_hashing(int permutations, int permutation
          //printf("%i ", (int)combine_arrays[i]);
        }
     //printf("\n");
-
-    //for maxT
-    //double means_sort[permutations];
-    double *means_sort=(double *)malloc(sizeof(double)*permutations);
-    if(means_sort==NULL) malloc_error=1;
-    //double maxT[permutations];
-    double *maxT=(double *)malloc(sizeof(double)*permutations);
-    if(maxT==NULL) malloc_error=1;
 
     //int perm1[permutations][permutation_length];
     int **perm1=malloc(permutations*sizeof(int*));
@@ -317,9 +308,14 @@ static void generate_permutations_with_hashing(int permutations, int permutation
     gsl_rng *r;
     const gsl_rng_type *T;
     gsl_rng_env_setup();
-    T=gsl_rng_default;
+    if(iRandomButton==1)T=gsl_rng_mt19937;
+    if(iRandomButton==2)T=gsl_rng_taus2;
+    if(iRandomButton==3)T=gsl_rng_ranlux389;
     r=gsl_rng_alloc(T);
+    gsl_rng_set(r,iSeedValue);
     if(r==NULL) malloc_error=1;
+
+    //printf("Generator %s\n", gsl_rng_name(r));
 
     //Set up initial permutation.
     for(i=0;i<permutation_length;i++)
@@ -428,31 +424,10 @@ static void generate_permutations_with_hashing(int permutations, int permutation
                }
            }
         
-        //Copy means to mean_sort and sort.
-        for(i=0;i<permutations;i++)
-           {
-             means_sort[i]=means[i];
-           }
-        qsort(means_sort, permutations, sizeof(double), (__compar_fn_t)compare_doubles);
-        //Calculate maxT array.
-        maxT[permutations-1]=fabs(means_sort[permutations-1]);
-        for(i=1;i<permutations;i++)
-           {
-             maxT[permutations-i-1]=fmax(means_sort[permutations-i], fabs(means_sort[permutations-i-1]));
-           }
-        //For the adjusted p-value. Not right. Needs work.
-        counter2=0;
-        for(i=0;i<permutations;i++)
-           {
-             if(maxT[i]>=mean_difference)
-               {
-                 counter2++;
-               }
-           }
 
         //printf("%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter); 
         char *string;
-        asprintf(&string, "%i %i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter, counter2);
+        asprintf(&string, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
         gtk_text_buffer_insert_at_cursor(buffer, string, -1);
         free(string);
 
@@ -477,8 +452,6 @@ static void generate_permutations_with_hashing(int permutations, int permutation
           }
       }
 
-      if(means_sort!=NULL)free(means_sort);
-      if(maxT!=NULL)free(maxT);
       for(i=0;i<permutations; ++i)
          {
           if(perm1[i]!=NULL)free(perm1[i]);
@@ -491,6 +464,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
       g_hash_table_destroy(hash);
       
   }
+/*
 static int compare_doubles(const double *a, const double *b)
   {
     if(fabs(*a)<fabs(*b))
@@ -506,7 +480,7 @@ static int compare_doubles(const double *a, const double *b)
          return 0;
        }
   }
-
+*/
 
 
 
