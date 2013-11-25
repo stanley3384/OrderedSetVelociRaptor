@@ -396,7 +396,7 @@ static void generate_permutations_with_hashing(int permutations, int permutation
                       dtemp2=dtemp2+combine_arrays[perm1[i][j]];
                     }
                 }
-             means[i]=(dtemp1/control_count)-(dtemp2/test_count);
+             means[i]=(dtemp2/test_count)-(dtemp1/control_count);
              dtemp1=0;
              dtemp2=0;
            }
