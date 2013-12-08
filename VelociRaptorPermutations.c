@@ -308,8 +308,8 @@ static void generate_permutations(int permutations, int permutation_length, doub
         hash_check=0;
         start = time(NULL);
         
-        //Use GSL to generate permutations. 9!=362,880
-        if(permutation_length<=9&&permutations/gsl_sf_gamma(permutation_length+1)>0.70)
+        //Use GSL to generate complete set permutations. 9!=362,880
+        if(permutation_length<=9&&((double)permutations/(double)gsl_sf_gamma(permutation_length+1))>0.80)
           {
             generate_permutations_without_hashing(&perm1, permutations, permutation_length, iSeedValue, iRandomButton);
           }
@@ -412,7 +412,7 @@ static void generate_permutations(int permutations, int permutation_length, doub
 //a bottle neck for trying to get complete sets of permutations for "small" values(<=9!). Should probably
 //just create an array with permutations and directly access "rows". Give GSL permutations a try first.
 //Should also figure out which one is better at a percentage of the complete permutation set. Guess
-//without hashing at >0.70 for now. Still testing this out. 
+//without hashing at >0.80 for now. Still testing this out. 
 static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length,  int iSeedValue, int iRandomButton)
   {
     int i=0;
