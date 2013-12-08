@@ -27,8 +27,10 @@ static void key_destroyed(gpointer data)
   }
 void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton);
 static void permutation_calculations(int permutations, double data_control[], double data_test[], int control_count, int test_count, GtkTextView *textview, int *pBreakLoop, int iSeedValue, int iRandomButton);
-static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview, int iSeedValue, int iRandomButton);
-//static int compare_doubles(const double *a, const double *b);
+static void generate_permutations(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview, int iSeedValue, int iRandomButton);
+static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length,  int iSeedValue, int iRandomButton);
+static void generate_permutations_with_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
+
 
 void permutation_sql(int permutations, int iRadioButton, int iControlValue, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton)
    {
@@ -244,7 +246,7 @@ static void permutation_calculations(int permutations, double data_control[], do
 
     if(permutations<=check_permutation_count)
       {
-        generate_permutations_with_hashing(permutations, permutation_length, data_control, data_test, mean_difference, control_count, test_count, less, greater, textview, iSeedValue, iRandomButton);
+        generate_permutations(permutations, permutation_length, data_control, data_test, mean_difference, control_count, test_count, less, greater, textview, iSeedValue, iRandomButton);
       }
     else
       {
@@ -258,12 +260,10 @@ static void permutation_calculations(int permutations, double data_control[], do
       }
       
   }
-static void generate_permutations_with_hashing(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview, int iSeedValue, int iRandomButton)
+static void generate_permutations(int permutations, int permutation_length, double data_control[], double data_test[], double mean_difference, int control_count, int test_count, int less, int greater, GtkTextView *textview, int iSeedValue, int iRandomButton)
   {
     int i=0;
     int j=0;
-    int temp1=0;
-    int temp2=0;
     double dtemp1=0;
     double dtemp2=0;
     double dtemp3=0;
@@ -298,30 +298,6 @@ static void generate_permutations_with_hashing(int permutations, int permutation
     //double means[permutations];
     double *means=(double *)malloc(sizeof(double)*permutations);
     if(means==NULL) malloc_error=1;
-    //int temp_perm[permutation_length];
-    int *temp_perm=(int *)malloc(sizeof(int)*permutation_length);
-    if(temp_perm==NULL) malloc_error=1;
-    GHashTable* hash = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)key_destroyed, NULL);
-    if(hash==NULL) malloc_error=1;
-    GString *string=g_string_new("");
-
-    gsl_rng *r;
-    const gsl_rng_type *T;
-    gsl_rng_env_setup();
-    if(iRandomButton==1)T=gsl_rng_mt19937;
-    if(iRandomButton==2)T=gsl_rng_taus2;
-    if(iRandomButton==3)T=gsl_rng_ranlux389;
-    r=gsl_rng_alloc(T);
-    gsl_rng_set(r,iSeedValue);
-    if(r==NULL) malloc_error=1;
-
-    //printf("Generator %s\n", gsl_rng_name(r));
-
-    //Set up initial permutation.
-    for(i=0;i<permutation_length;i++)
-       {
-         temp_perm[i]=i;
-       }
 
     if(malloc_error==1)
       {
@@ -331,44 +307,16 @@ static void generate_permutations_with_hashing(int permutations, int permutation
       {
         hash_check=0;
         start = time(NULL);
-        //printf("Generate Permutation Vector and String to Hash\n");
-        do
-           {
-             //Generate a permutation vector and string to hash.
-             for(i=0; i<permutation_length; i++)
-                {
-                  temp1=gsl_rng_get(r)%(permutation_length);
-                  temp2=temp_perm[i]; 
-                  temp_perm[i]=temp_perm[temp1];
-                  temp_perm[temp1]=temp2;
-                }
-             for(i=0;i<permutation_length;i++)
-                {
-                  g_string_append_printf(string, "%i", temp_perm[i]);
-                }
-
-             //Hash the string.
-             g_hash_table_insert(hash, string->str, NULL);
-
-             //Check if permutation has already been generated.
-             if(hash_check==0)
-               {
-                 //Add permutation to array.
-                 for(i=0;i<permutation_length;i++)
-                    {
-                      perm1[counter][i]=temp_perm[i];
-                    }
-                 counter++;
-                }
-             else
-                {
-                  //printf("Duplicate Value %s\n", string->str);
-                  hash_check=0;
-                }
-             //Clear the string
-             g_string_truncate(string,0);     
-          }while(counter<permutations);
-        //printf("There are %d keys in the hash table\n", g_hash_table_size(hash));
+        
+        //Use GSL to generate permutations. 9!=362,880
+        if(permutation_length<=9&&permutations/gsl_sf_gamma(permutation_length+1)>0.70)
+          {
+            generate_permutations_without_hashing(&perm1, permutations, permutation_length, iSeedValue, iRandomButton);
+          }
+        else//Get permutations one at a time with hashing.
+          {
+            generate_permutations_with_hashing(&perm1, permutations, permutation_length, iSeedValue, iRandomButton);
+          }
     
         /*Print permutation array
         printf("Permutation Array\n");
@@ -458,29 +406,155 @@ static void generate_permutations_with_hashing(int permutations, int permutation
          }
       if(perm1!=NULL)free(perm1);
       if(means!=NULL)free(means);
-      if(temp_perm!=NULL)free(temp_perm);
-      g_string_free(string, TRUE);
-      gsl_rng_free(r);
-      g_hash_table_destroy(hash);
       
   }
-/*
-static int compare_doubles(const double *a, const double *b)
+//If the number of permutations is reasonable just create all the possibilities. That way there isn't 
+//a bottle neck for trying to get complete sets of permutations for "small" values(<=9!). Should probably
+//just create an array with permutations and directly access "rows". Give GSL permutations a try first.
+//Should also figure out which one is better at a percentage of the complete permutation set. Guess
+//without hashing at >0.70 for now. Still testing this out. 
+static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length,  int iSeedValue, int iRandomButton)
   {
-    if(fabs(*a)<fabs(*b))
+    int i=0;
+    int j=0;
+    int difference=0;
+    const size_t N=permutation_length;
+
+    gsl_rng *r;
+    const gsl_rng_type *T;
+    gsl_rng_env_setup();
+    if(iRandomButton==1)T=gsl_rng_mt19937;
+    if(iRandomButton==2)T=gsl_rng_taus2;
+    if(iRandomButton==3)T=gsl_rng_ranlux389;
+    r=gsl_rng_alloc(T);
+    gsl_rng_set(r,iSeedValue);
+
+    int check_permutation_count=gsl_sf_gamma(permutation_length+1);
+    //int permutation_shuffled_index[check_permutation_count];
+    int *permutation_shuffled_index=(int *)malloc(sizeof(int)*check_permutation_count);
+
+    for(i=0;i<check_permutation_count;i++)
        {
-         return 1;
+         permutation_shuffled_index[i]=i;
        }
-    else if(fabs(*a)>fabs(*b))
+
+    gsl_permutation *p=gsl_permutation_alloc(N);
+
+    gsl_permutation_init(p);
+    
+    gsl_ran_shuffle(r, permutation_shuffled_index, check_permutation_count, sizeof(int));
+
+    for(i=0;i<permutations;i++)
        {
-         return -1;
+         difference=difference-permutation_shuffled_index[i];
+         if(difference>0)
+           {
+             for(j=0;j<difference;j++)
+                {
+                  gsl_permutation_prev(p);
+                }
+           }
+         if(difference<0)
+           {
+             for(j=0;j<abs(difference);j++)
+                {
+                  gsl_permutation_next(p);
+                }
+           }
+     
+          for(j=0;j<permutation_length;j++)
+             {
+               (*perm1)[i][j]=gsl_permutation_get(p,j);
+             }
+          difference=permutation_shuffled_index[i];//Current index location of p. 
        }
-    else
-       {
-         return 0;
-       }
+   
+    gsl_permutation_free(p);
+    free(permutation_shuffled_index);
+
   }
-*/
+//If there are too many permutations to just store in memory create them one at a time. Make sure
+//they are unique by hashing the values. 
+static void generate_permutations_with_hashing(int ***perm1, int permutations, int permutation_length,  int iSeedValue, int iRandomButton)
+  {
+    int i=0;
+    int temp1=0;
+    int temp2=0;
+    int counter=0;
+    int malloc_error=0;
+    //int temp_perm[permutation_length];
+    int *temp_perm=(int *)malloc(sizeof(int)*permutation_length);
+    if(temp_perm==NULL) malloc_error=1;
+    GHashTable* hash = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)key_destroyed, NULL);
+    if(hash==NULL) malloc_error=1;
+    GString *string=g_string_new("");
+
+    gsl_rng *r;
+    const gsl_rng_type *T;
+    gsl_rng_env_setup();
+    if(iRandomButton==1)T=gsl_rng_mt19937;
+    if(iRandomButton==2)T=gsl_rng_taus2;
+    if(iRandomButton==3)T=gsl_rng_ranlux389;
+    r=gsl_rng_alloc(T);
+    gsl_rng_set(r,iSeedValue);
+    if(r==NULL) malloc_error=1;
+
+     for(i=0;i<permutation_length;i++)
+       {
+         temp_perm[i]=i;
+       }
+   
+    if(malloc_error==1)
+      {
+        printf("Memory allocation error in function generate_permutations_with_hashing().");
+      }
+    else
+      {
+       do
+       {
+         //Generate a permutation vector and string to hash.
+         for(i=0; i<permutation_length; i++)
+            {
+              temp1=gsl_rng_get(r)%(permutation_length);
+              temp2=temp_perm[i]; 
+              temp_perm[i]=temp_perm[temp1];
+              temp_perm[temp1]=temp2;
+            }
+         for(i=0;i<permutation_length;i++)
+            {
+              g_string_append_printf(string, "%i", temp_perm[i]);
+            }
+
+         //Hash the string.
+         g_hash_table_insert(hash, string->str, NULL);
+
+         //Check if permutation has already been generated.
+         if(hash_check==0)
+           {
+             //Add permutation to array.
+             for(i=0;i<permutation_length;i++)
+                {
+                  (*perm1)[counter][i]=temp_perm[i];
+                }
+             counter++;
+            }
+         else
+            {
+              //printf("Duplicate Value %s\n", string->str);
+              hash_check=0;
+            }
+         //Clear the string
+         g_string_truncate(string,0);     
+      }while(counter<permutations);
+    //printf("There are %d keys in the hash table\n", g_hash_table_size(hash));
+    }
+
+   if(temp_perm!=NULL) free(temp_perm);
+   g_string_free(string, TRUE);
+   g_hash_table_destroy(hash);
+   gsl_rng_free(r);
+  }
+
 
 
 
