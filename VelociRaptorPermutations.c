@@ -309,7 +309,7 @@ static void generate_permutations(int permutations, int permutation_length, doub
         start = time(NULL);
         
         //Use GSL to generate complete set permutations. 9!=362,880
-        if(permutation_length<=9&&((double)permutations/(double)gsl_sf_gamma(permutation_length+1))>0.80)
+        if(permutation_length<=9)
           {
             generate_permutations_without_hashing(&perm1, permutations, permutation_length, iSeedValue, iRandomButton);
           }
@@ -409,15 +409,12 @@ static void generate_permutations(int permutations, int permutation_length, doub
       
   }
 //If the number of permutations is reasonable just create all the possibilities. That way there isn't 
-//a bottle neck for trying to get complete sets of permutations for "small" values(<=9!). Should probably
-//just create an array with permutations and directly access "rows". Give GSL permutations a try first.
-//Should also figure out which one is better at a percentage of the complete permutation set. Guess
-//without hashing at >0.80 for now. Still testing this out. 
+//a bottle neck for trying to get complete sets of permutations for "small" values(<=9!).  
 static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length,  int iSeedValue, int iRandomButton)
   {
     int i=0;
     int j=0;
-    int difference=0;
+    int malloc_error=0;
     const size_t N=permutation_length;
 
     gsl_rng *r;
@@ -430,45 +427,61 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
     gsl_rng_set(r,iSeedValue);
 
     int check_permutation_count=gsl_sf_gamma(permutation_length+1);
-    //int permutation_shuffled_index[check_permutation_count];
     int *permutation_shuffled_index=(int *)malloc(sizeof(int)*check_permutation_count);
+    if(permutation_shuffled_index==NULL) malloc_error=1;
 
+    //An array to hold all the permutations.
+    int **AllPermutations=malloc(check_permutation_count*sizeof(int*));
+    if(AllPermutations==NULL) malloc_error=1;
     for(i=0;i<check_permutation_count;i++)
-       {
-         permutation_shuffled_index[i]=i;
-       }
+         {
+           AllPermutations[i]=malloc(permutation_length * sizeof(int));
+           if(AllPermutations[i]==NULL) malloc_error=1;
+         }
 
     gsl_permutation *p=gsl_permutation_alloc(N);
-
     gsl_permutation_init(p);
-    
-    gsl_ran_shuffle(r, permutation_shuffled_index, check_permutation_count, sizeof(int));
 
-    for(i=0;i<permutations;i++)
-       {
-         difference=difference-permutation_shuffled_index[i];
-         if(difference>0)
+    if(malloc_error==1)
+      {
+        printf("Memory allocation error in function generate_permutations_without_hashing().");
+      }
+    else
+      {
+        //Add some values to be shuffled.
+        for(i=0;i<check_permutation_count;i++)
            {
-             for(j=0;j<difference;j++)
+             permutation_shuffled_index[i]=i;
+           }
+
+        //shuffle the index.
+        gsl_ran_shuffle(r, permutation_shuffled_index, check_permutation_count, sizeof(int));
+
+        //Get all the permutations in an array.
+        for(i=0;i<check_permutation_count;i++)
+           {
+            for(j=0;j<permutation_length;j++)
+               {
+                 AllPermutations[i][j]=gsl_permutation_get(p,j);
+               }
+            gsl_permutation_next(p);
+           }
+
+        //load shuffled permutations.
+        for(i=0;i<permutations;i++)
+           {
+             for(j=0;j<permutation_length;j++)
                 {
-                   
-                  gsl_permutation_prev(p);
+                  (*perm1)[i][j]=AllPermutations[permutation_shuffled_index[i]][j];
                 }
            }
-         if(difference<0)
-           {
-             for(j=0;j<abs(difference);j++)
-                {
-                  gsl_permutation_next(p);
-                }
-           }
-          for(j=0;j<permutation_length;j++)
-                 {
-                   (*perm1)[i][j]=gsl_permutation_get(p,j);
-                 }
-          difference=permutation_shuffled_index[i];//Current index location of p. 
        }
-   
+
+    for(i=0;i<check_permutation_count; i++)
+         {
+           if(AllPermutations[i]!=NULL)free(AllPermutations[i]);
+         }
+    if(AllPermutations!=NULL) free(AllPermutations);   
     gsl_permutation_free(p);
     gsl_rng_free(r);
     free(permutation_shuffled_index);
