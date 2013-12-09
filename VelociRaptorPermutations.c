@@ -441,7 +441,6 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
     gsl_permutation *p=gsl_permutation_alloc(N);
 
     gsl_permutation_init(p);
-    //size_t *pRow=gsl_permutation_data(p);
     
     gsl_ran_shuffle(r, permutation_shuffled_index, check_permutation_count, sizeof(int));
 
@@ -471,6 +470,7 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
        }
    
     gsl_permutation_free(p);
+    gsl_rng_free(r);
     free(permutation_shuffled_index);
 
   }
