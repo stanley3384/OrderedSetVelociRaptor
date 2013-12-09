@@ -441,31 +441,27 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
     gsl_permutation *p=gsl_permutation_alloc(N);
 
     gsl_permutation_init(p);
+    size_t *pRow=gsl_permutation_data(p);
     
     gsl_ran_shuffle(r, permutation_shuffled_index, check_permutation_count, sizeof(int));
 
     for(i=0;i<permutations;i++)
        {
          difference=difference-permutation_shuffled_index[i];
-         if(difference>0)
-           {
-             for(j=0;j<difference;j++)
-                {
-                  gsl_permutation_prev(p);
-                }
-           }
-         if(difference<0)
-           {
-             for(j=0;j<abs(difference);j++)
-                {
-                  gsl_permutation_next(p);
-                }
-           }
-     
-          for(j=0;j<permutation_length;j++)
-             {
-               (*perm1)[i][j]=gsl_permutation_get(p,j);
-             }
+         if(difference>=0)
+            {
+              for(j=0;j<permutation_length;j++)
+                 {
+                   (*perm1)[i][j]=(pRow-difference)[j];
+                 }
+            }
+          if(difference<0)
+            {
+              for(j=0;j<permutation_length;j++)
+                 {
+                   (*perm1)[i][j]=(pRow+difference)[j];
+                 }
+            }
           difference=permutation_shuffled_index[i];//Current index location of p. 
        }
    
