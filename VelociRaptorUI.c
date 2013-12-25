@@ -1293,7 +1293,7 @@ static void exit_hotelling_dialog(GtkWidget *dialog , gint response, gpointer da
      }
 static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      {
-       GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *progress, *content_area, *action_area;
+       GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *progress, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -1309,11 +1309,13 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      random_radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(random_radio1), "Tausworthe 2                        ");
      random_radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(random_radio1), "RANLUX 389                          ");
 
-     label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.\nTest with a 1,000 or less permutations first. It can take a while.\n Two sample p-values calculated using the difference of means.");
+     label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.");
      label2=gtk_label_new("Control GROUP BY Value");
      label3=gtk_label_new("Number of Permutations");
      label4=gtk_label_new("Random Number Generators");
      label5=gtk_label_new("                      Seed Value");
+     label6=gtk_label_new("Probability Side");
+     label7=gtk_label_new("Test Statistic");
 
      entry1=gtk_entry_new();
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
@@ -1321,34 +1323,49 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
 
      entry2=gtk_entry_new();
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
-     gtk_entry_set_text(GTK_ENTRY(entry2), "1000");
+     gtk_entry_set_text(GTK_ENTRY(entry2), "10000");
 
      entry3=gtk_entry_new();
      gtk_entry_set_width_chars(GTK_ENTRY(entry3), 8);
      gtk_entry_set_text(GTK_ENTRY(entry3), "0");
 
+     tail_combo=gtk_combo_box_text_new();
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "0", "abs");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "1", "greater");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "2", "less");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(tail_combo), 0);
+
+     test_combo=gtk_combo_box_text_new();
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(test_combo), "0", "Mean Difference");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(test_combo), "1", "Welch's t-test");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(test_combo), 0);
+
      progress=gtk_progress_bar_new();
      gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
      
-     table=gtk_table_new(14,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+     table=gtk_table_new(15,4,FALSE);
+     gtk_table_attach(GTK_TABLE(table), label1, 0,4,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio1, 0,4,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio2, 0,4,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio3, 0,4,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), radio4, 0,4,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0); 
      gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry2, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 2,3,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry2, 3,4,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label6, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), tail_combo, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label7, 2,3,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), test_combo, 3,4,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
 
-     gtk_table_attach(GTK_TABLE(table), label4, 0,2,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio1, 0,2,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio2, 0,2,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio3, 0,2,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 0,1,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry3, 1,2,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label4, 0,4,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), random_radio1, 0,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), random_radio2, 0,4,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), random_radio3, 0,4,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label5, 0,2,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry3, 2,4,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
 
-     gtk_table_attach(GTK_TABLE(table), progress, 0,2,13,14,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), progress, 0,4,14,15,GTK_EXPAND,GTK_EXPAND,0,0);
 
      gtk_table_set_row_spacings(GTK_TABLE(table), 10);
      gtk_table_set_col_spacings(GTK_TABLE(table), 10);
@@ -1369,6 +1386,8 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
          printf("Begin Permutation Calculation\n");
          int iRadioButton=1;
          int iRandomButton=1;
+         int iTail=gtk_combo_box_get_active(GTK_COMBO_BOX(tail_combo))+1;
+         int iTest=gtk_combo_box_get_active(GTK_COMBO_BOX(test_combo))+1;
          int iControl=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
          int iPermutations= atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
          int iSeedValue=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
@@ -1418,7 +1437,7 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
            }
          else
            {
-             permutation_sql(iPermutations, iRadioButton, iControl, textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+             unadjusted_p_sql(iPermutations, iRadioButton, iControl, iTail, iTest ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
            }
 
          
