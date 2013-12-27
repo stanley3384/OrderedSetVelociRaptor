@@ -1293,7 +1293,7 @@ static void exit_hotelling_dialog(GtkWidget *dialog , gint response, gpointer da
      }
 static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      {
-       GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *progress, *content_area, *action_area;
+       GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *check_button1, *progress, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -1340,6 +1340,8 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(test_combo), "1", "Welch's t-test");
      gtk_combo_box_set_active(GTK_COMBO_BOX(test_combo), 0);
 
+     check_button1=gtk_check_button_new_with_label("Calculate minP(Two Passes at the Data)");
+
      progress=gtk_progress_bar_new();
      gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
      
@@ -1357,13 +1359,14 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      gtk_table_attach(GTK_TABLE(table), tail_combo, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), label7, 2,3,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(table), test_combo, 3,4,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), check_button1, 0,2,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
 
-     gtk_table_attach(GTK_TABLE(table), label4, 0,4,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio1, 0,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio2, 0,4,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio3, 0,4,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 0,2,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry3, 2,4,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label4, 0,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), random_radio1, 0,4,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), random_radio2, 0,4,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), random_radio3, 0,4,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label5, 1,2,13,14,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), entry3, 2,3,13,14,GTK_SHRINK,GTK_SHRINK,0,0);
 
      gtk_table_attach(GTK_TABLE(table), progress, 0,4,14,15,GTK_EXPAND,GTK_EXPAND,0,0);
 
@@ -1378,6 +1381,8 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_comparison_loop_event), NULL);
 
      gtk_widget_show_all(dialog);
+     //Hide check_button1. Still testing.
+     gtk_widget_hide(GTK_WIDGET(check_button1));
 
      result=gtk_dialog_run(GTK_DIALOG(dialog));
 
@@ -1438,6 +1443,18 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
          else
            {
              unadjusted_p_sql(iPermutations, iRadioButton, iControl, iTail, iTest ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+            if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button1)))
+              { 
+                //Clear textview and start again.
+                GtkTextBuffer *buffer;
+                GtkTextIter start;
+                GtkTextIter end;  
+                buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (textview));
+                gtk_text_buffer_get_bounds(buffer, &start, &end);
+                gtk_text_buffer_delete(buffer, &start, &end);
+                minP_sql(iPermutations, iRadioButton, iControl, iTail, iTest , textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+              }
+             
            }
 
          

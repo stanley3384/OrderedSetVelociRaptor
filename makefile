@@ -2,14 +2,14 @@
 
 OBJECTS=mvdist.o FortranInterop.o HotellingsT2.o VelociRaptorMath.o VelociRaptorUI_Validation.o VelociRaptorPrinting.o VelociRaptorPermutations.o
 PROGNAME=VelociRaptor
-CFLAGS=`pkg-config --cflags gtk+-3.0` -std=c99 -Wall
+CFLAGS=`pkg-config --cflags gtk+-3.0` -std=c99 -Wall -fopenmp
 LINKFLAGS=-lm -lapophenia -lgsl -lgslcblas -lsqlite3 -lgfortran `pkg-config --libs gtk+-3.0`
 COMPILE1=gfortran -c $< -o $@ 
 COMPILE2=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -c HotellingsT2.c -o HotellingsT2.o -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0`
 COMPILE3=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -c VelociRaptorMath.c -o VelociRaptorMath.o -lgsl -lgslcblas `pkg-config --libs gtk+-3.0`
 COMPILE4=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -c VelociRaptorUI_Validation.c -o VelociRaptorUI_Validation.o `pkg-config --libs gtk+-3.0`
 COMPILE5=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -c VelociRaptorPrinting.c -o VelociRaptorPrinting.o `pkg-config --libs gtk+-3.0`
-COMPILE6=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -c VelociRaptorPermutations.c -o VelociRaptorPermutations.o `pkg-config --libs gtk+-3.0`
+COMPILE6=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -fopenmp -Wall -O2 -c VelociRaptorPermutations.c -o VelociRaptorPermutations.o `pkg-config --libs gtk+-3.0`
 
 executable:$(OBJECTS)
 	gcc $(CFLAGS) $(OBJECTS) VelociRaptorUI.c $(LINKFLAGS) -o $(PROGNAME)

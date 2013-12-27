@@ -4,3 +4,4 @@ cecashon@aol.com
 */
 
 void unadjusted_p_sql(int permutations, int iRadioButton, int iControlValue, int iTail, int iTest, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton);
+void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, int iTest, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton);
