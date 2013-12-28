@@ -153,7 +153,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
 
     //printf("Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount Count1 PermutationMean PermutationStdDevS Side p-value\n");
     char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value Seconds\n");
+    asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value\n");
     gtk_text_buffer_insert_at_cursor(buffer, string, -1);
     free(string);
 
