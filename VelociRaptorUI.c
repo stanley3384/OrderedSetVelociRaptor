@@ -982,10 +982,10 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
          int iRadioCritVal=1;
          double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
          int iControlValue=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+         
          int check1=0;
          int check2=0;
-         int check3=0;
-         int check4=0; 
+         int check3=0; 
 
          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
             {
@@ -1031,18 +1031,17 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
             }
 
          //check entry fields
-         check1=group_by_changed_validation(entry2);
-         check2=critical_value_changed_validation(entry1);
+         check1=critical_value_changed_validation(entry1);
          if(iRadioButton==1||iRadioButton==2)
            {
-             check3=groups_database_validation(entry2);
+             check2=groups_database_validation(entry2);
            }
          if(iRadioButton==3||iRadioButton==4)
            {
-             check4=picks_database_validation(entry2);
+             check3=picks_database_validation(entry2);
            }           
 
-         if(check1==0&&check2==0&&check3==0&&check4==0)
+         if(check1==0&&check2==0&&check3==0)
            {
              if(iRadioCritVal==4)
                {
@@ -1389,6 +1388,8 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      if(result==GTK_RESPONSE_OK)
        {
          printf("Begin Permutation Calculation\n");
+         int check1=0;
+         int check2=0;
          int iRadioButton=1;
          int iRandomButton=1;
          int iTail=gtk_combo_box_get_active(GTK_COMBO_BOX(tail_combo))+1;
@@ -1428,6 +1429,16 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
             {
               iRandomButton=3;
             }
+  
+         //Check that values are in the database.
+         if(iRadioButton==1||iRadioButton==2)
+           {
+             check1=groups_database_validation(entry1);
+           }
+         if(iRadioButton==3||iRadioButton==4)
+           {
+             check2=picks_database_validation(entry1);
+           }  
 
          //Set some bounds for the number of permutations
          if(iPermutations<=10||iPermutations>=500000)
@@ -1439,6 +1450,11 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
            {
              printf("Seed Value Bounds 0<=x<=10000000\n");
              simple_message_dialog("Seed Value Bounds 0<=x<=10000000");
+           }
+         else if(check1!=0||check2!=0)
+           {
+             //Exit. Message dialog in database validation functions.
+             printf("Exit Permutations\n");
            }
          else
            {
@@ -1512,8 +1528,7 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
          printf("Begin Z-factor Calculation\n");
          int iRadioButton=1;
          int iControl=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-         int check1=0;
-         int check2=0; 
+         int check1=0; 
          
          //get value of radiobutton.
          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
@@ -1537,19 +1552,17 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
               //exit
             }
 
-         //check entry x>0
-         check1=group_by_changed_validation(entry1);
          //check entry is in database
          if(iRadioButton==1||iRadioButton==2)
            {
-             check2=groups_database_validation(entry1);
+             check1=groups_database_validation(entry1);
            }
          if(iRadioButton==3||iRadioButton==4)
            {
-             check2=picks_database_validation(entry1);
+             check1=picks_database_validation(entry1);
            }
 
-         if(check1==0&&check2==0)
+         if(check1==0)
            {
              z_factor(iRadioButton, iControl, textview);
            }

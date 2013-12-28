@@ -7,12 +7,13 @@
 #include <sqlite3.h>
 #include <stdlib.h>
 #include <string.h>
+#include <apop.h>
+#include <gsl/gsl_vector.h>
 
 void simple_message_dialog(const char *str);
 void entry_field_validation(const gchar *pPlateSizeText1, const gchar *pPlateStatsText1, GtkWidget *entry);
 void control_changed_validation(const gchar *pPlateSizeText, GtkWidget *entry);
 int critical_value_changed_validation(GtkWidget *entry);
-int group_by_changed_validation(GtkWidget *entry);
 int groups_database_validation(GtkWidget *entry);
 int picks_database_validation(GtkWidget *entry);
 int contrast_matrix_validation(char contrasts[], int *rows, int *columns);
@@ -230,68 +231,104 @@ int critical_value_changed_validation(GtkWidget *entry)
        }  
     return check;  
   }
-int group_by_changed_validation(GtkWidget *entry)
-  {
-    int check=0;
-    const gchar *pTempValue;
-    pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
-
-    if(atoi(pTempValue)<=0)
-      {
-        g_print("GROUP BY Values x>0\n");
-        simple_message_dialog("GROUP BY Values x>0");
-        check=1;
-      }
-    return check;
-  }
 int groups_database_validation(GtkWidget *entry)
   {
-    sqlite3 *db;
-    sqlite3_stmt *stmt1;
-    int check=0;
-    int iMax=0;
+    printf("Validate Control Group in Database\n");
+    int i=0;
+    int check=1;
+    double DataCount=0;
+    double AuxCount=0;
     const gchar *pTempValue;
     pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
-    char *pSQL="SELECT max(Groups) FROM aux;";
+    int group=atoi(pTempValue);
+    gsl_vector *vCheckGroups=NULL;
 
-    sqlite3_open("VelociRaptorData.db",&db);
-    sqlite3_prepare_v2(db,pSQL,-1,&stmt1,0);
-    sqlite3_step(stmt1);
-    iMax=sqlite3_column_int(stmt1, 0);
-    sqlite3_finalize(stmt1); 
-    sqlite3_close(db);
-
-    if(atoi(pTempValue)>iMax)
+    if(group>0)
       {
-        g_print("GROUP BY Groups Value not in Database\n");
-        simple_message_dialog("GROUP BY Value not in Database. Check the\n Groups Field in the Auxiliary Table.");
-        check=1;
+        apop_db_open("VelociRaptorData.db");   
+
+        vCheckGroups=apop_query_to_vector("SELECT DISTINCT Groups FROM aux WHERE Groups!=0;");
+        DataCount=apop_query_to_float("SELECT count(rowid) FROM data;");
+        AuxCount=apop_query_to_float("SELECT count(rowid) FROM aux;");
+
+        apop_db_close(0);
+   
+        for(i=0;i<vCheckGroups->size;i++)
+           {
+             if(group==(int)gsl_vector_get(vCheckGroups,i))
+               {
+                 check=0;
+               }
+           }
+        
+        if(check==1)
+          {
+            simple_message_dialog("The control group isn't in the database."); 
+          }
+
+        if((int)DataCount!=(int)AuxCount)
+          {
+            simple_message_dialog("Warning! The data and aux tables in the\ndatabase don't match up.");
+            check=1;
+          }
+    
       }
+    else
+      {
+        simple_message_dialog("GROUP BY Values x>0");
+      }
+
+    if(vCheckGroups!=NULL)gsl_vector_free(vCheckGroups);
     return check;
   }
 int picks_database_validation(GtkWidget *entry)
   {
-    sqlite3 *db;
-    sqlite3_stmt *stmt1;
-    int check=0;
-    int iMax=0;
+    printf("Validate Control Group in Database\n");
+    int i=0;
+    int check=1;
+    double DataCount=0;
+    double AuxCount=0;
     const gchar *pTempValue;
     pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
-    char *pSQL="SELECT max(Picks) FROM aux;";
+    int group=atoi(pTempValue);
+    gsl_vector *vCheckGroups=NULL;
 
-    sqlite3_open("VelociRaptorData.db",&db);
-    sqlite3_prepare_v2(db,pSQL,-1,&stmt1,0);
-    sqlite3_step(stmt1);
-    iMax=sqlite3_column_int(stmt1, 0);
-    sqlite3_finalize(stmt1); 
-    sqlite3_close(db);
-
-    if(atoi(pTempValue)>iMax)
+    if(group>0)
       {
-        g_print("GROUP BY Picks Value not in Database\n");
-        simple_message_dialog("GROUP BY Value not in Database. Check the\n Picks Field in the Auxiliary Table.");
-        check=1;
+        apop_db_open("VelociRaptorData.db");   
+
+        vCheckGroups=apop_query_to_vector("SELECT DISTINCT Picks FROM aux WHERE Picks!=0;");
+        DataCount=apop_query_to_float("SELECT count(rowid) FROM data;");
+        AuxCount=apop_query_to_float("SELECT count(rowid) FROM aux;");
+
+        apop_db_close(0);
+
+        for(i=0;i<vCheckGroups->size;i++)
+           {
+             if(group==(int)gsl_vector_get(vCheckGroups,i))
+               {
+                 check=0;
+               }
+           }
+
+        if(check==1)
+          {
+            simple_message_dialog("The control group isn't in the database."); 
+          }
+
+        if((int)DataCount!=(int)AuxCount)
+          {
+            simple_message_dialog("Warning! The data and aux tables in the\ndatabase don't match up.");
+            check=1;
+          }
+
       }
+    else
+      {
+        simple_message_dialog("GROUP BY Values x>0");
+      }
+
+    if(vCheckGroups!=NULL)gsl_vector_free(vCheckGroups);
     return check;
   }
 int contrast_matrix_validation(char contrasts[], int *rows, int *columns)
