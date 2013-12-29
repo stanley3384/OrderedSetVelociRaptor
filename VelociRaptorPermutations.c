@@ -143,7 +143,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
     int test_count=0;
     int previous_count=0;
     int step_plate_count=1;
-    double check_permutations_count=0;
+    int check_permutations_count=0;
     int **perm1=NULL;
     GtkTextBuffer *buffer;
     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
@@ -242,29 +242,33 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
                       assert(malloc_error==0);
                     }
                   //check the possible permutations. 
-                  check_permutations_count=gsl_sf_gamma((control_count+test_count)+1);
+                  if((control_count+test_count)<=9)
+                    {
+                      check_permutations_count=(int)gsl_sf_gamma((control_count+test_count)+1);
+                      if(permutations<check_permutations_count)
+                        {
+                          check_permutations_count=permutations;
+                        }
+                    }
+                  else
+                    {
+                      check_permutations_count=permutations;
+                    }
                   if(permutations>check_permutations_count)
                     {
-                      printf("Permutation count adjusted to %f for a complete set.\n", check_permutations_count);
+                      printf("Permutation count adjusted to %i for a complete set.\n", (int)check_permutations_count);
                     }
                   //Get random permutations without hashing.
                   if((control_count+test_count)<=9)
                     {
-                      if(permutations>check_permutations_count)
-                        {
-                          generate_permutations_without_hashing(&perm1, (int)check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
-                        }
-                      else
-                        {
-                          generate_permutations_without_hashing(&perm1, permutations, (control_count+test_count), iSeedValue, iRandomButton);
-                        }
+                      generate_permutations_without_hashing(&perm1, check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
                     }
                   //Get random permutations with hashing.
                   else
                     {
-                      generate_permutations_with_hashing(&perm1, permutations, (control_count+test_count), iSeedValue, iRandomButton);
+                      generate_permutations_with_hashing(&perm1, check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
                     }
-                   scope_problem: generate_permutations_test_statistics(i, plate, permutations, data_control, data_test, control_count, test_count, pValues, iTail, iTest, textview, &perm1);
+                   scope_problem: generate_permutations_test_statistics(i, plate, check_permutations_count, data_control, data_test, control_count, test_count, pValues, iTail, iTest, textview, &perm1);
                    //If last set done free permutation array.
                    if(i==mTestGroups->matrix->size1-1)
                      {
@@ -425,7 +429,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     int test_count=0;
     int previous_count=0;
     int step_plate_count=1;
-    double check_permutations_count=0;
+    int check_permutations_count=0;
     int **perm1=NULL;
     GtkTextBuffer *buffer;
     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
@@ -519,29 +523,33 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                       assert(malloc_error==0);
                     }
                   //check possible number of permutations. 
-                  check_permutations_count=gsl_sf_gamma((control_count+test_count)+1);
+                  if((control_count+test_count)<=9)
+                    {
+                      check_permutations_count=(int)gsl_sf_gamma((control_count+test_count)+1);
+                      if(permutations<check_permutations_count)
+                        {
+                          check_permutations_count=permutations;
+                        }
+                    }
+                  else
+                    {
+                      check_permutations_count=permutations;
+                    }
                   if(permutations>check_permutations_count)
                     {
-                      printf("Permutation count adjusted to %f for a complete set.\n", check_permutations_count);
+                      printf("Permutation count adjusted to %i for a complete set.\n", (int)check_permutations_count);
                     }
                   //Get random permutations without hashing.
                   if((control_count+test_count)<=9)
                     {
-                      if(permutations>check_permutations_count)
-                        {
-                          generate_permutations_without_hashing(&perm1, (int)check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
-                        }
-                      else
-                        {
-                          generate_permutations_without_hashing(&perm1, permutations, (control_count+test_count), iSeedValue, iRandomButton);
-                        }
+                      generate_permutations_without_hashing(&perm1, check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
                     }
                   //Get random permutations with hashing.
                   else
                     {
-                      generate_permutations_with_hashing(&perm1, permutations, (control_count+test_count), iSeedValue, iRandomButton);
+                      generate_permutations_with_hashing(&perm1, check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
                     }
-                   scope_problem2: generate_permutations_test_statistics_minP(i, plate, permutations, data_control, data_test, control_count, test_count, mPvaluesSorted, iTail, iTest, textview, &perm1);
+                   scope_problem2: generate_permutations_test_statistics_minP(i, plate, check_permutations_count, data_control, data_test, control_count, test_count, mPvaluesSorted, iTail, iTest, textview, &perm1);
                    //If the last set is done, free the permutation array. 
                    if(i==mTestGroups->matrix->size1-1)
                      {
@@ -1069,7 +1077,7 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
     gsl_rng_set(r,iSeedValue);
     if(r==NULL) malloc_error=1;
 
-    int check_permutation_count=gsl_sf_gamma(permutation_length+1);
+    int check_permutation_count=(int)gsl_sf_gamma(permutation_length+1);
     int *permutation_shuffled_index=(int *)malloc(sizeof(int)*check_permutation_count);
     if(permutation_shuffled_index==NULL) malloc_error=1;
 
