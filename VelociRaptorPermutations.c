@@ -39,11 +39,12 @@ static void send_raw_pvalues_to_database(int rows, GArray *pValues);
 
 static void generate_permutations_test_statistics(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, GArray *pValues, int iTail, int iTest, GtkTextView *textview, int ***perm1);
 
-static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1, GString *PrintOutput, double *monotinicity, double *prob_prev_row);
+static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1, GString *PrintOutput, GPtrArray *sArray, double *monotonicity, double *prob_prev_row);
 
 static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
 static void generate_permutations_with_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
 static void hash_key_destroyed(gpointer data);
+static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted);
 
 /*
     Pull data from the database to calculate unadjusted p-values.
@@ -438,10 +439,11 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     int check_permutations_count=0;
     int **perm1=NULL;
     GString *PrintOutput=g_string_new(NULL);
+    GPtrArray *sArray = g_ptr_array_sized_new(mPvaluesSorted->matrix->size1);
     GtkTextBuffer *buffer;
     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 
-    double *monotinicity=(double *)malloc(sizeof(double)*(mPvaluesSorted->matrix->size1));
+    double *monotonicity=(double *)malloc(sizeof(double)*(mPvaluesSorted->matrix->size1));
     double *prob_prev_row=(double *)malloc(sizeof(double)*permutations);
     if(prob_prev_row==NULL) malloc_error=1;
     //Initialize prob_prev_row to 1.
@@ -568,7 +570,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                     {
                       generate_permutations_with_hashing(&perm1, check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
                     }
-                   scope_problem2: generate_permutations_test_statistics_minP(i, plate, check_permutations_count, data_control, data_test, control_count, test_count, mPvaluesSorted, iTail, iTest, textview, &perm1, PrintOutput, monotinicity, prob_prev_row);
+                   scope_problem2: generate_permutations_test_statistics_minP(i, plate, check_permutations_count, data_control, data_test, control_count, test_count, mPvaluesSorted, iTail, iTest, textview, &perm1, PrintOutput, sArray, monotonicity, prob_prev_row);
                    //If the last set is done, free the permutation array. 
                    if(i==mTestGroups->matrix->size1-1)
                      {
@@ -614,9 +616,13 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
               free(data_control);     
          } 
 
-     if(monotinicity!=NULL) free(monotinicity);
+     //Enforce monotonicity.
+     print_monotone_pvalues(textview, sArray, monotonicity, mPvaluesSorted);
+
+     if(monotonicity!=NULL) free(monotonicity);
      if(prob_prev_row!=NULL) free(prob_prev_row);
-     g_string_free(PrintOutput, TRUE);  
+     g_string_free(PrintOutput, TRUE);
+     g_ptr_array_free(sArray, TRUE);  
 
   }  
 /*
@@ -816,7 +822,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
 /*
    Second pass through the permutations to calculate the minP adjusted p-values.
 */
-static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1, GString *PrintOutput, double *monotinicity, double *prob_prev_row)
+static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1, GString *PrintOutput, GPtrArray *sArray, double *monotonicity, double *prob_prev_row)
   {
     int i=0;
     int j=0;
@@ -830,8 +836,8 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
     double test_mean=gsl_stats_mean(data_test, 1, test_count);
     int permutation_length=control_count+test_count;
     double mean_difference=0;
-    GtkTextBuffer *buffer;
-    buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+    //GtkTextBuffer *buffer;
+    //buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
     
     //Calculate test statistic.
     if(iTest==1)
@@ -1004,11 +1010,10 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
            }        
 
         //Calculate minP array. ???
-        minP[permutations-1]=prob[permutations-1];
         if((int)apop_data_get(mPvaluesSorted,comparison,0)==new_plate)
           {
             #pragma omp parallel for private(i)
-            for(i=0;i<permutations-1;i++)
+            for(i=0;i<permutations;i++)
                {
                  minP[i]=fmin(prob_prev_row[i], prob[i]);
                  prob_prev_row[i]=minP[i];
@@ -1017,7 +1022,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
          else
           {
             #pragma omp parallel for private(i)
-            for(i=0;i<permutations-1;i++)
+            for(i=0;i<permutations;i++)
                {
                  minP[i]=fmin(1.0, prob[i]);
                  prob_prev_row[i]=1.0;
@@ -1040,8 +1045,8 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
         //Adjusted p-value.
         adjP=((double)counter2+1)/((double)permutations+1);
 
-        //Save the p-value for monotinicity.
-        monotinicity[comparison]=adjP;
+        //Save the p-value for monotonicity.
+        monotonicity[comparison]=adjP;
         
         //Get the mean of the permutation test statistic.
         dPermutationMean=gsl_stats_mean(means, 1, permutations);
@@ -1055,23 +1060,24 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
         if(iTail==1)//abs
           {
             //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1));
-             g_string_append_printf(PrintOutput, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", rawP, adjP);
-            gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1);
+             g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", rawP, adjP);
+            //gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1);
           }
         if(iTail==2)//greater
           {
             //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1));
-            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", rawP, adjP);
-            gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", rawP, adjP);
+            //gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
           }
         if(iTail==3)//less
           {
             //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1));
-            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", rawP, adjP);
-            gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", rawP, adjP);
+            //gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
           }
        }
 
+      g_ptr_array_add(sArray, g_strdup(PrintOutput->str));
       g_string_truncate(PrintOutput,0); 
 
       if(minP!=NULL) free(minP);
@@ -1255,7 +1261,57 @@ static void hash_key_destroyed(gpointer data)
     //printf("Got a key destroy call for %s\n", (char*)data);
     hash_check=1;
   }
+static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted)
+  {
+    printf("Enforce Monotonicity\n");
+    int i=0;
+    int plate=0;
+    int size=0;
+    double ProbValue=-1.0;
+    GString *sAdjP=g_string_new(NULL);
+    GtkTextBuffer *buffer;
+    GtkTextIter start;
+    GtkTextIter end;  
+    buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW (textview));
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+    gtk_text_buffer_delete(buffer, &start, &end);
 
+    char *string;
+    asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
+    gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+    free(string);
+
+    size=mPvaluesSorted->matrix->size1;
+
+    //Enforce monotonicity. Start from the bottom of the array and adjust within each plate.
+    for(i=size-1;i>=0;i--)
+       {
+         if(plate!=(int)apop_data_get(mPvaluesSorted,i,0))
+           {
+             plate=(int)apop_data_get(mPvaluesSorted,i,0);
+             ProbValue=-1.0;
+           }
+         if(ProbValue>=0)
+           {
+             //printf("%i %i %i %f %f\n", i, size, plate, monotonicity[i], monotonicity[i+1]);
+             monotonicity[i]=fmax(monotonicity[i], monotonicity[i+1]);
+           }
+         else
+           {
+             //printf("%i %i %i %f\n", i, size, plate, monotonicity[i]);
+           }
+         ProbValue=monotonicity[i];
+       }
+
+    //Print the results.
+    for(i=0;i<size;i++)
+       {
+         g_string_append_printf(sAdjP, "%f\n", monotonicity[i]);
+         gtk_text_buffer_insert_at_cursor(buffer, g_ptr_array_index(sArray,i), -1);
+         gtk_text_buffer_insert_at_cursor(buffer, sAdjP->str, -1);
+         g_string_truncate(sAdjP,0); 
+       }
+  }
 
 
 

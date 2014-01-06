@@ -1461,13 +1461,6 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
              unadjusted_p_sql(iPermutations, iRadioButton, iControl, iTail, iTest ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
             if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button1)))
               { 
-                //Clear textview and start again.
-                GtkTextBuffer *buffer;
-                GtkTextIter start;
-                GtkTextIter end;  
-                buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (textview));
-                gtk_text_buffer_get_bounds(buffer, &start, &end);
-                gtk_text_buffer_delete(buffer, &start, &end);
                 minP_sql(iPermutations, iRadioButton, iControl, iTail, iTest , textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
               }
              
