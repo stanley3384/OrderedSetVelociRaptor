@@ -2,8 +2,9 @@
 /*Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
 
-Some permutation testing. Still working on minP. The minP code is for testing only! It may not be valid.
-The minP code is disabled in the UI by hiding the check box.
+Some permutation testing. Still working on minP. The minP code is for testing only! It is not valid.
+The minP code is disabled in the UI by hiding the check box. Check the Test_SQL_minP.R script for
+an example.
 */
 
 
@@ -26,8 +27,7 @@ The minP code is disabled in the UI by hiding the check box.
 
 
 int hash_check=0;
-int new_plate=0;
-double prevP=0;
+int new_plate=1;
 
 void unadjusted_p_sql(int permutations, int iRadioButton, int iControlValue, int iTail, int iTest, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton);
 static void unadjusted_p_data(int permutations, int iControlValue, int iTail, int iTest, apop_data *mTestGroups, gsl_vector *vTestData, gsl_vector *vControlGroups, gsl_vector *vControlData, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton, double PlateCount);
@@ -39,7 +39,7 @@ static void send_raw_pvalues_to_database(int rows, GArray *pValues);
 
 static void generate_permutations_test_statistics(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, GArray *pValues, int iTail, int iTest, GtkTextView *textview, int ***perm1);
 
-static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1);
+static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1, GString *PrintOutput, double *monotinicity, double *prob_prev_row);
 
 static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
 static void generate_permutations_with_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
@@ -219,7 +219,13 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
               if((control_count+test_count!=previous_count))
                 {
                   previous_count=control_count+test_count;
-                  //Free the permutations
+                 /*
+                    Free the permutations. The permutation array is allocated and freed
+                    with the number of permutations which should always be greater than
+                    check_permutations_count. An ineffeciency but shouldn't seg fault.
+                    This allows the code to automatically resize to a smaller permutation
+                    set if needed.
+                  */
                   if(perm1!=NULL)
                     {
                       for(l=0;l<permutations; l++)
@@ -337,58 +343,58 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
      //Order the test values by the p-values.
      if(iRadioButton==1)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(vTestData==NULL) malloc_error=1;  
          //Don't have to worry about ordering the control values. Only one per plate.
-         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups desc;", iControlValue);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups desc;", iControlValue);
          if(vControlData==NULL) malloc_error=1;
-         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue;");
+         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue desc;");
          if(mPvaluesSorted==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
     if(iRadioButton==2)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T3.percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups desc;", iControlValue);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups desc;", iControlValue);
          if(vControlData==NULL) malloc_error=1;
-         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue;");
+         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue desc;");
          if(mPvaluesSorted==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
     if(iRadioButton==3)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 GROUP BY T2.plate, T2.Picks ORDER BY T2.plate, T2.Picks asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 GROUP BY T2.plate, T2.Picks ORDER BY T2.plate, T2.Picks desc;", iControlValue);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 ORDER BY T2.plate, T2.Picks asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 ORDER BY T2.plate, T2.Picks desc;", iControlValue);
          if(vControlData==NULL) malloc_error=1;
-         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue;");
+         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue desc;");
          if(mPvaluesSorted==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
     if(iRadioButton==4)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.Percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T3.Percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 desc;", iControlValue);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 GROUP BY T2.plate, T2.Picks ORDER BY T2.plate, T2.Picks asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 GROUP BY T2.plate, T2.Picks ORDER BY T2.plate, T2.Picks desc;", iControlValue);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.Percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 ORDER BY T2.plate, T2.Picks asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.Percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 ORDER BY T2.plate, T2.Picks desc;", iControlValue);
          if(vControlData==NULL) malloc_error=1;
-         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue;");
+         mPvaluesSorted=apop_query_to_data("SELECT plate, pValue FROM TempPvalues ORDER BY Plate, pValue desc;");
          if(mPvaluesSorted==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
@@ -431,8 +437,18 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     int step_plate_count=1;
     int check_permutations_count=0;
     int **perm1=NULL;
+    GString *PrintOutput=g_string_new(NULL);
     GtkTextBuffer *buffer;
     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+
+    double *monotinicity=(double *)malloc(sizeof(double)*(mPvaluesSorted->matrix->size1));
+    double *prob_prev_row=(double *)malloc(sizeof(double)*permutations);
+    if(prob_prev_row==NULL) malloc_error=1;
+    //Initialize prob_prev_row to 1.
+    for(i=0;i<permutations;i++)
+       {
+         prob_prev_row[i]=1.0;
+       }
     
     //printf("Plate Control Test ControlMean, TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationStdDevS Side p-value minP\n");
     char *string;
@@ -441,7 +457,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     free(string);
 
     for(i=0;i<mTestGroups->matrix->size1;i++)
-       {
+       { 
          for(j=0;j<mTestGroups->matrix->size2;j++)
             {
                temp1=apop_data_get(mTestGroups,i,j);
@@ -491,10 +507,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                    iCounter2++;
                  } 
               //printf("%i %i %i ", plate, iControlValue, group);
-              char *string2;
-              asprintf(&string2, "%i %i %i ", plate, iControlValue, group);
-              gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
-              free(string2); 
+              g_string_append_printf(PrintOutput, "%i %i %i ", plate, iControlValue, group); 
 
               //Check if a new permutation set is needed.
               if((control_count+test_count)!=previous_count)
@@ -509,7 +522,13 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                          }
                       if(perm1!=NULL) free(perm1);
                     }
-                  //Build a new permutation set
+                  /*
+                    Free the permutations. The permutation array is allocated and freed
+                    with the number of permutations which should always be greater than
+                    check_permutations_count. An ineffeciency but shouldn't seg fault.
+                    This allows the code to automatically resize to a smaller permutation
+                    set if needed.
+                  */
                   int **perm1=malloc(permutations*sizeof(int*));
                   if(perm1==NULL) malloc_error=1;
                   for(l=0;l<permutations;l++)
@@ -549,7 +568,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                     {
                       generate_permutations_with_hashing(&perm1, check_permutations_count, (control_count+test_count), iSeedValue, iRandomButton);
                     }
-                   scope_problem2: generate_permutations_test_statistics_minP(i, plate, check_permutations_count, data_control, data_test, control_count, test_count, mPvaluesSorted, iTail, iTest, textview, &perm1);
+                   scope_problem2: generate_permutations_test_statistics_minP(i, plate, check_permutations_count, data_control, data_test, control_count, test_count, mPvaluesSorted, iTail, iTest, textview, &perm1, PrintOutput, monotinicity, prob_prev_row);
                    //If the last set is done, free the permutation array. 
                    if(i==mTestGroups->matrix->size1-1)
                      {
@@ -594,6 +613,11 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
               free(data_test);
               free(data_control);     
          } 
+
+     if(monotinicity!=NULL) free(monotinicity);
+     if(prob_prev_row!=NULL) free(prob_prev_row);
+     g_string_free(PrintOutput, TRUE);  
+
   }  
 /*
     Send unadjusted p-values to the database so that the data can be re-sorted in the order
@@ -792,7 +816,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
 /*
    Second pass through the permutations to calculate the minP adjusted p-values.
 */
-static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1)
+static void generate_permutations_test_statistics_minP(int comparison, int plate, int permutations, double data_control[], double data_test[], int control_count, int test_count, apop_data *mPvaluesSorted, int iTail, int iTest, GtkTextView *textview, int ***perm1, GString *PrintOutput, double *monotinicity, double *prob_prev_row)
   {
     int i=0;
     int j=0;
@@ -800,6 +824,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
     int counter=0;
     int counter2=0;
     int malloc_error=0;
+    double rawP=0;
     double adjP=0;
     double control_mean=gsl_stats_mean(data_control, 1, control_count);
     double test_mean=gsl_stats_mean(data_test, 1, test_count);
@@ -910,7 +935,9 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                }
            }
 
-        //Probabilities for abs.
+        rawP=((double)counter+1)/((double)permutations+1);
+
+        //Get the probabilities.
         if(iTail==1)
           { 
             counter2=0;
@@ -976,13 +1003,27 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
               }
            }        
 
-        //Calculate minP array. Compare successive probabilities going backwards. ???
+        //Calculate minP array. ???
         minP[permutations-1]=prob[permutations-1];
-        #pragma omp parallel for private(i)
-        for(i=0;i<permutations-2;i++)
-           {
-             minP[i]=fmin(prob[permutations-i], prob[permutations-2-i]);
-           }
+        if((int)apop_data_get(mPvaluesSorted,comparison,0)==new_plate)
+          {
+            #pragma omp parallel for private(i)
+            for(i=0;i<permutations-1;i++)
+               {
+                 minP[i]=fmin(prob_prev_row[i], prob[i]);
+                 prob_prev_row[i]=minP[i];
+               }
+          }
+         else
+          {
+            #pragma omp parallel for private(i)
+            for(i=0;i<permutations-1;i++)
+               {
+                 minP[i]=fmin(1.0, prob[i]);
+                 prob_prev_row[i]=1.0;
+               }
+            new_plate=(int)apop_data_get(mPvaluesSorted,comparison,0);
+          }
  
         //Calculate the adjusted minP p-value. ???
         counter2=0;
@@ -994,60 +1035,44 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                {
                  counter2++;
                }
-            } 
+           }
            
-        //Enforce monotonicity. Compare with previous adjusted p-value.
+        //Adjusted p-value.
         adjP=((double)counter2+1)/((double)permutations+1);
-        if(apop_data_get(mPvaluesSorted,comparison,0)!=new_plate)
-          {
-            prevP=0;
-          }
-        else
-          {
-            if(prevP>adjP) adjP=prevP;
-          }
-        prevP=adjP;
 
+        //Save the p-value for monotinicity.
+        monotinicity[comparison]=adjP;
+        
         //Get the mean of the permutation test statistic.
         dPermutationMean=gsl_stats_mean(means, 1, permutations);
 
         //printf("%f %f %f ", control_mean, test_mean, mean_difference);
-        char *string;
-        asprintf(&string, "%f %f %f ", control_mean, test_mean, mean_difference);
-        gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-        free(string);
+        g_string_append_printf(PrintOutput, "%f %f %f ", control_mean, test_mean, mean_difference);
 
         //printf("%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
-        char *string2;
-        asprintf(&string2, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
-        gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
-        free(string2);  
+        g_string_append_printf(PrintOutput, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
 
         if(iTail==1)//abs
           {
-            //printf("%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1), adjP);
-            char *string3;
-            asprintf(&string3, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1), adjP);
-            gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
-            free(string3);
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1));
+             g_string_append_printf(PrintOutput, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", rawP, adjP);
+            gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1);
           }
         if(iTail==2)//greater
           {
-            //printf("%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1), adjP);
-            char *string4;
-            asprintf(&string4, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1), adjP);
-            gtk_text_buffer_insert_at_cursor(buffer, string4, -1);
-            free(string4); 
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1));
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", rawP, adjP);
+            gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
           }
         if(iTail==3)//less
           {
-            //printf("%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1), adjP);
-            char *string5;
-            asprintf(&string5, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1), adjP);
-            gtk_text_buffer_insert_at_cursor(buffer, string5, -1);
-            free(string5); 
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1));
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f\n", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", rawP, adjP);
+            gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
           }
        }
+
+      g_string_truncate(PrintOutput,0); 
 
       if(minP!=NULL) free(minP);
       if(prob!=NULL) free(prob);
