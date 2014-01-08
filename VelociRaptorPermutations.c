@@ -46,6 +46,7 @@ static void generate_permutations_with_hashing(int ***perm1, int permutations, i
 static void hash_key_destroyed(gpointer data);
 static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted);
 
+
 /*
     Pull data from the database to calculate unadjusted p-values.
 */
@@ -835,19 +836,17 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
     double control_mean=gsl_stats_mean(data_control, 1, control_count);
     double test_mean=gsl_stats_mean(data_test, 1, test_count);
     int permutation_length=control_count+test_count;
-    double mean_difference=0;
-    //GtkTextBuffer *buffer;
-    //buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+    double difference=0;
     
-    //Calculate test statistic.
+    //Calculate difference.
     if(iTest==1)
       {
-       mean_difference=fabs(control_mean-test_mean);
+        difference=fabs(control_mean-test_mean);
       }
     //Welch's t-statistic. u1-u2/sqrt(var1/count1+var2/count2).
     if(iTest==2)
       {
-        mean_difference=fabs((control_mean-test_mean)/sqrt(gsl_stats_variance(data_control, 1, control_count)/control_count+gsl_stats_variance(data_test, 1, test_count)/test_count));
+        difference=fabs((control_mean-test_mean)/sqrt(gsl_stats_variance(data_control, 1, control_count)/control_count+gsl_stats_variance(data_test, 1, test_count)/test_count));
       }
 
     double dControl[control_count];
@@ -863,14 +862,18 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
          combine_arrays[i]=data_test[i-control_count];
        }
 
+    //Index for sorted test statistics.
+    size_t *index=(size_t *)malloc(sizeof(size_t)*permutations);
+    if(index==NULL) malloc_error=1;
+    //Array for probabilities.
     double *prob=(double *)malloc(sizeof(double)*permutations);
     if(prob==NULL) malloc_error=1;
+    //Array for minP values.
     double *minP=(double *)malloc(sizeof(double)*permutations);
-    if(minP==NULL) malloc_error=1;
-    
+    if(minP==NULL) malloc_error=1;    
     //Array for permutation test statistics.
-    double *means=(double *)malloc(sizeof(double)*permutations);
-    if(means==NULL) malloc_error=1;
+    double *perm_test_stat=(double *)malloc(sizeof(double)*permutations);
+    if(perm_test_stat==NULL) malloc_error=1;
 
     if(malloc_error==1)
       {
@@ -897,33 +900,47 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                 }
              if(iTest==1)
                {
-                 means[i]=gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count);
+                 if(iTail==1)
+                   {
+                     perm_test_stat[i]=fabs(gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count));
+                   }
+                 else
+                   {
+                     perm_test_stat[i]=gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count);
+                   }
                }
              if(iTest==2)
                {
-                 means[i]=(gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count))/sqrt(gsl_stats_variance(dTest, 1, test_count)/test_count+gsl_stats_variance(dControl, 1, control_count)/control_count);
+                 if(iTail==1)
+                   {
+                     perm_test_stat[i]=fabs((gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count))/sqrt(gsl_stats_variance(dTest, 1, test_count)/test_count+gsl_stats_variance(dControl, 1, control_count)/control_count));
+                   }
+                 else
+                   {
+                     perm_test_stat[i]=(gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count))/sqrt(gsl_stats_variance(dTest, 1, test_count)/test_count+gsl_stats_variance(dControl, 1, control_count)/control_count);
+                   }
                }
            }
 
         //Count test statistics in tails.
         counter=0;
         if(iTail==1)//abs
-           {
-             #pragma omp parallel for private(i) reduction(+:counter)
-             for(i=0;i<permutations;i++)
-                {
-                  if(means[i]<=-mean_difference||means[i]>=mean_difference)
-                    {
-                      counter++;
-                    }
-                }
-           }
+          {
+            #pragma omp parallel for private(i) reduction(+:counter)
+            for(i=0;i<permutations;i++)
+               {
+                 if(perm_test_stat[i]>=difference)
+                   {
+                     counter++;
+                   }
+               }
+          }
         if(iTail==2)//greater
           {
             #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
-                 if(means[i]>=mean_difference)
+                 if(perm_test_stat[i]>=difference)
                    {
                      counter++;
                    }
@@ -934,7 +951,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
             #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
-                 if(means[i]<=-mean_difference)
+                 if(perm_test_stat[i]<=-difference)
                    {
                      counter++;
                    }
@@ -943,72 +960,14 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
 
         rawP=((double)counter+1)/((double)permutations+1);
 
-        //Get the probabilities.
-        if(iTail==1)
-          { 
-            counter2=0;
-            #pragma omp parallel private(i,j)
-              {
-               #pragma omp for reduction(+:counter2)
-               for(i=0;i<permutations;i++)
-                  {
-                    for(j=0;j<permutations;j++)
-                       {
-                         if(fabs(means[j])>=fabs(means[i]))
-                           {
-                             counter2++;
-                           }
-                       }
-                    prob[i]=((double)counter2+1.0)/((double)permutations+1.0);
-                    counter2=0;
-                  }
-              }
+        //Indirect sort and get the probabilities.
+        gsl_sort_index(index, perm_test_stat, 1, permutations);
+        #pragma omp parallel for private(i)
+        for(i=0;i<permutations;i++)
+           {
+             prob[index[i]]=(double)i/(double)permutations;
            }
-      
-        //Probabilities for greater.
-        if(iTail==2)
-          { 
-            counter2=0;
-            #pragma omp parallel private(i,j)
-              {
-               #pragma omp for reduction(+:counter2)
-               for(i=0;i<permutations;i++)
-                  {
-                    for(j=0;j<permutations;j++)
-                       {
-                         if(means[j]>=means[i])
-                           {
-                             counter2++;
-                           }
-                       }
-                    prob[i]=((double)counter2+1.0)/((double)permutations+1.0);
-                    counter2=0;
-                  }
-              }
-           }
-
-        //Probabilities for less.
-        if(iTail==3)
-          { 
-            counter2=0;
-            #pragma omp parallel private(i,j)
-              {
-               #pragma omp for reduction(+:counter2)
-               for(i=0;i<permutations;i++)
-                  {
-                    for(j=0;j<permutations;j++)
-                       {
-                         if(means[j]<=means[i])
-                           {
-                             counter2++;
-                           }
-                       }
-                    prob[i]=((double)counter2+1.0)/((double)permutations+1.0);
-                    counter2=0;
-                  }
-              }
-           }        
-
+            
         //Calculate minP array. ???
         if((int)apop_data_get(mPvaluesSorted,comparison,0)==new_plate)
           {
@@ -1049,40 +1008,39 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
         monotonicity[comparison]=adjP;
         
         //Get the mean of the permutation test statistic.
-        dPermutationMean=gsl_stats_mean(means, 1, permutations);
+        dPermutationMean=gsl_stats_mean(perm_test_stat, 1, permutations);
 
-        //printf("%f %f %f ", control_mean, test_mean, mean_difference);
-        g_string_append_printf(PrintOutput, "%f %f %f ", control_mean, test_mean, mean_difference);
+        //printf("%f %f %f ", control_mean, test_mean, difference);
+        g_string_append_printf(PrintOutput, "%f %f %f ", control_mean, test_mean, difference);
 
         //printf("%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
         g_string_append_printf(PrintOutput, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
 
+        //Store the strings so that they can be printed with the monotone p-values.
         if(iTail==1)//abs
           {
-            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1));
-             g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", rawP, adjP);
-            //gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1);
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1));
+             g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "abs", rawP, adjP);
           }
         if(iTail==2)//greater
           {
-            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1));
-            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", rawP, adjP);
-            //gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1));
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "greater", rawP, adjP); 
           }
         if(iTail==3)//less
           {
-            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1));
-            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", rawP, adjP);
-            //gtk_text_buffer_insert_at_cursor(buffer, PrintOutput->str, -1); 
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1));
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "less", rawP, adjP); 
           }
        }
 
       g_ptr_array_add(sArray, g_strdup(PrintOutput->str));
       g_string_truncate(PrintOutput,0); 
 
+      if(index!=NULL) free(index);
       if(minP!=NULL) free(minP);
       if(prob!=NULL) free(prob);
-      if(means!=NULL) free(means);
+      if(perm_test_stat!=NULL) free(perm_test_stat);
 
   }
 /*
@@ -1312,6 +1270,7 @@ static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, dou
          g_string_truncate(sAdjP,0); 
        }
   }
+
 
 
 
