@@ -238,44 +238,61 @@ int groups_database_validation(GtkWidget *entry)
     int check=1;
     double DataCount=0;
     double AuxCount=0;
-    const gchar *pTempValue;
-    pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
-    int group=atoi(pTempValue);
+    const gchar *pTempValue=NULL;
+    int group=1;
     gsl_vector *vCheckGroups=NULL;
 
-    if(group>0)
+    if(entry!=NULL)
       {
-        apop_db_open("VelociRaptorData.db");   
-
-        vCheckGroups=apop_query_to_vector("SELECT DISTINCT Groups FROM aux WHERE Groups!=0;");
-        DataCount=apop_query_to_float("SELECT count(rowid) FROM data;");
-        AuxCount=apop_query_to_float("SELECT count(rowid) FROM aux;");
-
-        apop_db_close(0);
-   
-        for(i=0;i<vCheckGroups->size;i++)
-           {
-             if(group==(int)gsl_vector_get(vCheckGroups,i))
-               {
-                 check=0;
-               }
-           }
-        
-        if(check==1)
-          {
-            simple_message_dialog("The control group isn't in the database."); 
-          }
-
-        if((int)DataCount!=(int)AuxCount)
-          {
-            simple_message_dialog("Warning! The data and aux tables in the\ndatabase don't match up.");
-            check=1;
-          }
-    
+        pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
+        group=atoi(pTempValue);
       }
     else
       {
-        simple_message_dialog("GROUP BY Values x>0");
+        //Just check to see if group 1 is there for all types of analysis.
+        group=1;
+      }
+
+    if(access("VelociRaptorData.db", F_OK)!=-1)
+      {
+        if(group>0)
+          {
+            apop_db_open("VelociRaptorData.db");   
+
+            vCheckGroups=apop_query_to_vector("SELECT DISTINCT Groups FROM aux WHERE Groups!=0;");
+            DataCount=apop_query_to_float("SELECT count(rowid) FROM data;");
+            AuxCount=apop_query_to_float("SELECT count(rowid) FROM aux;");
+
+            apop_db_close(0);
+   
+            for(i=0;i<vCheckGroups->size;i++)
+               {
+                 if(group==(int)gsl_vector_get(vCheckGroups,i))
+                   {
+                     check=0;
+                   }
+               }
+        
+            if(check==1)
+              {
+                simple_message_dialog("The control group isn't in the database."); 
+              }
+
+            if((int)DataCount!=(int)AuxCount)
+              {
+                simple_message_dialog("Warning! The data and aux tables in the\ndatabase don't match up.");
+                check=1;
+              }
+    
+          }
+        else
+          {
+            simple_message_dialog("GROUP BY Values x>0");
+          }
+      }
+    else
+      {
+        simple_message_dialog("There is no database file.");
       }
 
     if(vCheckGroups!=NULL)gsl_vector_free(vCheckGroups);
@@ -293,39 +310,46 @@ int picks_database_validation(GtkWidget *entry)
     int group=atoi(pTempValue);
     gsl_vector *vCheckGroups=NULL;
 
-    if(group>0)
+    if(access("VelociRaptorData.db", F_OK)!=-1)
       {
-        apop_db_open("VelociRaptorData.db");   
+        if(group>0)
+          {
+            apop_db_open("VelociRaptorData.db");   
 
-        vCheckGroups=apop_query_to_vector("SELECT DISTINCT Picks FROM aux WHERE Picks!=0;");
-        DataCount=apop_query_to_float("SELECT count(rowid) FROM data;");
-        AuxCount=apop_query_to_float("SELECT count(rowid) FROM aux;");
+            vCheckGroups=apop_query_to_vector("SELECT DISTINCT Picks FROM aux WHERE Picks!=0;");
+            DataCount=apop_query_to_float("SELECT count(rowid) FROM data;");
+            AuxCount=apop_query_to_float("SELECT count(rowid) FROM aux;");
 
-        apop_db_close(0);
+            apop_db_close(0);
 
-        for(i=0;i<vCheckGroups->size;i++)
-           {
-             if(group==(int)gsl_vector_get(vCheckGroups,i))
+            for(i=0;i<vCheckGroups->size;i++)
                {
-                 check=0;
+                 if(group==(int)gsl_vector_get(vCheckGroups,i))
+                   {
+                     check=0;
+                   }
                }
-           }
 
-        if(check==1)
-          {
-            simple_message_dialog("The control group isn't in the database."); 
+            if(check==1)
+              {
+                simple_message_dialog("The control group isn't in the database."); 
+              }
+
+            if((int)DataCount!=(int)AuxCount)
+              {
+                simple_message_dialog("Warning! The data and aux tables in the\ndatabase don't match up.");
+                check=1;
+              }
+
           }
-
-        if((int)DataCount!=(int)AuxCount)
+        else
           {
-            simple_message_dialog("Warning! The data and aux tables in the\ndatabase don't match up.");
-            check=1;
+            simple_message_dialog("GROUP BY Values x>0");
           }
-
       }
     else
       {
-        simple_message_dialog("GROUP BY Values x>0");
+        simple_message_dialog("There is no database file.");
       }
 
     if(vCheckGroups!=NULL)gsl_vector_free(vCheckGroups);

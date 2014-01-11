@@ -641,24 +641,23 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
             {
               iRadioButton=1;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               iRadioButton=2;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
             {
               iRadioButton=3;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
             {
               iRadioButton=4;
             }
-         else
-            {
-              //exit
-            }
 
-          basic_statistics_sql(textview, iRadioButton);
+          if(groups_database_validation(NULL)==0)
+            {
+              basic_statistics_sql(textview, iRadioButton);
+            }
        }
      gtk_widget_destroy(dialog);
    }
@@ -707,24 +706,23 @@ static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
             {
               iRadioButton=1;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               iRadioButton=2;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
             {
               iRadioButton=3;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
             {
               iRadioButton=4;
             }
-         else
-            {
-              //exit
-            }
 
-         anderson_darling_test(textview, iRadioButton);
+         if(groups_database_validation(NULL)==0)
+           {
+             anderson_darling_test(textview, iRadioButton);
+           }
    
        }
      printf("Anderson Darling Finished\n");
@@ -785,28 +783,27 @@ static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textvie
             {
               iRadioButton=1;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               iRadioButton=2;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
             {
               iRadioButton=3;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
             {
               iRadioButton=4;
-            }
-         else
-            {
-              //exit
             }
 
          check1=critical_value_changed_validation(entry1);
      
          if(check1==0)
            {
-             levenes_variance_test(textview, iRadioButton, alpha);
+             if(groups_database_validation(NULL)==0)
+               {
+                 levenes_variance_test(textview, iRadioButton, alpha);
+               }
            }
    
        printf("Levene's Finished\n");
@@ -874,21 +871,17 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
             {
               iRadioButton=1;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               iRadioButton=2;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
             {
               iRadioButton=3;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
             {
               iRadioButton=4;
-            }
-         else
-            {
-              //exit
             }
          
          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button1)))
@@ -900,7 +893,10 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
      
          if(check1==0)
            {
-             one_way_anova_sql(textview, iRadioButton,check_box,alpha);
+             if(groups_database_validation(NULL)==0)
+               {
+                 one_way_anova_sql(textview, iRadioButton, check_box, alpha);
+               }
            }
    
        printf("ANOVA Finished\n");
@@ -1224,21 +1220,17 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
             {
               iRadioButton=1;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               iRadioButton=2;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
             {
               iRadioButton=3;
             }
-         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
+         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
             {
               iRadioButton=4;
-            }
-         else
-            {
-              //exit
             }
 
          //check the contrast matrix for errors
@@ -1259,7 +1251,10 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
          //do T2 calculations
          if(check1==0&&check2==0&&check3==0)
            {
-             hotellings_T2(iRadioButton, alpha, 0, -1, textview, progress, SuppliedContrasts, columns);
+             if(groups_database_validation(NULL)==0)
+               {
+                 hotellings_T2(iRadioButton, alpha, 0, -1, textview, progress, SuppliedContrasts, columns);
+               }
            }
 
          if(SuppliedContrasts!=NULL)
