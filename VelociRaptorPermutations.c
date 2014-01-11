@@ -2,9 +2,10 @@
 /*Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
 
-Some permutation testing. Still working on minP. The minP code is for testing only! It is not valid.
-The minP code is disabled in the UI by hiding the check box. Check the Test_SQL_minP.R script for
-an example.
+Some permutation testing. Still working on minP. The minP code is for testing only! It may not be valid and needs work. The minP code is disabled in the UI by hiding the check box. Check the Test_SQL_minP. script for an example to test results with. Different random number generators produce slightly different 
+values and if the probabilities are adjusted by adding one to the numerator and denominator can influence the values.
+
+C. Eric Cashon
 */
 
 
@@ -146,6 +147,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
     int previous_count=0;
     int step_plate_count=1;
     int check_permutations_count=0;
+    int broken_loop=0;
     int **perm1=NULL;
     GtkTextBuffer *buffer;
     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
@@ -313,9 +315,20 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
                if(*pBreakLoop==1)
                     {
                      //Break long running loop on cancel.
-                     printf("Break Loop\n");
+                     //printf("Break Loop\n");
                      i=mTestGroups->matrix->size1;
-                     *pBreakLoop=0;
+                     //reset BreakLoop in UI.
+                     //*pBreakLoop=0;
+                     broken_loop=1;
+                     printf("Free Permutation Array\n");
+                       if(perm1!=NULL)
+                         {
+                           for(l=0;l<permutations; l++)
+                              {
+                                if(perm1[l]!=NULL)free(perm1[l]);
+                              }
+                            if(perm1!=NULL) free(perm1);
+                          }
                      break;
                     } 
      
@@ -324,7 +337,10 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
             } 
 
       //Send the p-values to the database to be sorted.
-      send_raw_pvalues_to_database(mTestGroups->matrix->size1, pValues);
+      if(broken_loop==0)
+        {
+          send_raw_pvalues_to_database(mTestGroups->matrix->size1, pValues);
+        }
       g_array_free(pValues, TRUE);
       
    }
@@ -438,6 +454,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     int previous_count=0;
     int step_plate_count=1;
     int check_permutations_count=0;
+    int broken_loop=0;
     int **perm1=NULL;
     GString *PrintOutput=g_string_new(NULL);
     GPtrArray *sArray = g_ptr_array_sized_new(mPvaluesSorted->matrix->size1);
@@ -607,9 +624,19 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                if(*pBreakLoop==1)
                     {
                      //Break long running loop on cancel.
-                     printf("Break Loop\n");
+                     //printf("Break Loop\n");
                      i=mTestGroups->matrix->size1;
                      *pBreakLoop=0;
+                     broken_loop=1;
+                     printf("Free Permutation Array\n");
+                       if(perm1!=NULL)
+                         {
+                           for(l=0;l<permutations; l++)
+                              {
+                                if(perm1[l]!=NULL)free(perm1[l]);
+                              }
+                            if(perm1!=NULL) free(perm1);
+                          }
                      break;
                     } 
   
@@ -618,7 +645,10 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
          } 
 
      //Enforce monotonicity.
-     print_monotone_pvalues(textview, sArray, monotonicity, mPvaluesSorted);
+     if(broken_loop==0)
+       {
+         print_monotone_pvalues(textview, sArray, monotonicity, mPvaluesSorted);
+       }
 
      if(monotonicity!=NULL) free(monotonicity);
      if(prob_prev_row!=NULL) free(prob_prev_row);
@@ -833,6 +863,8 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
     int malloc_error=0;
     double rawP=0;
     double adjP=0;
+    double prev1=0;
+    int run=0;
     double control_mean=gsl_stats_mean(data_control, 1, control_count);
     double test_mean=gsl_stats_mean(data_test, 1, test_count);
     int permutation_length=control_count+test_count;
@@ -960,12 +992,21 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
 
         rawP=((double)counter+1)/((double)permutations+1);
 
-        //Indirect sort and get the probabilities.
+        //Indirect sort and get the probabilities. Account for ties.
         gsl_sort_index(index, perm_test_stat, 1, permutations);
-        #pragma omp parallel for private(i)
         for(i=0;i<permutations;i++)
            {
-             prob[index[i]]=(double)i/(double)permutations;
+             if(prev1==prob[index[i]])
+               {
+                 prob[index[i]]=(double)(i-run)/(double)permutations;
+                 run++;
+               }
+             else
+               {
+                 prob[index[i]]=(double)i/(double)permutations;
+                 run=1;
+               }
+             prev1=prob[index[i]];
            }
             
         //Calculate minP array. ???

@@ -1461,7 +1461,14 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
              unadjusted_p_sql(iPermutations, iRadioButton, iControl, iTail, iTest ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
             if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button1)))
               { 
-                minP_sql(iPermutations, iRadioButton, iControl, iTail, iTest , textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+                if(iBreakLoop==0)
+                  {
+                    minP_sql(iPermutations, iRadioButton, iControl, iTail, iTest , textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+                  }
+                else
+                  {
+                    iBreakLoop=0;
+                  }
               }
              
            }
