@@ -1761,7 +1761,10 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
 
         if(lower_bound>0&&upper_bound>0&&lower_bound<=upper_bound)
           {
-            database_to_scatter_graph_sql(iRadioButton, lower_bound, upper_bound);
+            if(groups_database_validation(NULL)==0)
+              {
+                database_to_scatter_graph_sql(iRadioButton, lower_bound, upper_bound);
+              }
           }
         else
           {
@@ -1870,7 +1873,10 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
         
         if(lower_bound>0&&upper_bound>0&&lower_bound<=upper_bound)
           {
-            database_to_error_graph_sql(iRadioButton1, iRadioButton2, lower_bound, upper_bound);
+            if(groups_database_validation(NULL)==0)
+              {
+                database_to_error_graph_sql(iRadioButton1, iRadioButton2, lower_bound, upper_bound);
+              }
           }
         else
           {
@@ -1956,7 +1962,10 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
         
         if(lower_bound>0&&upper_bound>0&&lower_bound<=upper_bound)
           {
-            database_to_box_graph_sql(iRadioButton, lower_bound, upper_bound);
+            if(groups_database_validation(NULL)==0)
+              {
+                database_to_box_graph_sql(iRadioButton, lower_bound, upper_bound);
+              }
           }
         else
           {
