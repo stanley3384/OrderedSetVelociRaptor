@@ -863,8 +863,6 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
     int malloc_error=0;
     double rawP=0;
     double adjP=0;
-    double prev1=0;
-    int run=0;
     double control_mean=gsl_stats_mean(data_control, 1, control_count);
     double test_mean=gsl_stats_mean(data_test, 1, test_count);
     int permutation_length=control_count+test_count;
@@ -992,21 +990,11 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
 
         rawP=((double)counter+1)/((double)permutations+1);
 
-        //Indirect sort and get the probabilities. Account for ties.
+        //Indirect sort and get the probabilities. Account for ties???.
         gsl_sort_index(index, perm_test_stat, 1, permutations);
         for(i=0;i<permutations;i++)
            {
-             if(prev1==prob[index[i]])
-               {
-                 prob[index[i]]=(double)(i-run)/(double)permutations;
-                 run++;
-               }
-             else
-               {
-                 prob[index[i]]=(double)i/(double)permutations;
-                 run=1;
-               }
-             prev1=prob[index[i]];
+             prob[index[i]]=(double)(i)/(double)permutations;
            }
             
         //Calculate minP array. ???
