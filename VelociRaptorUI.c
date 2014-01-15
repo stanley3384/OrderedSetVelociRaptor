@@ -1436,7 +1436,7 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
            }  
 
          //Set some bounds for the number of permutations
-         if(iPermutations<=10||iPermutations>=500000)
+         if(iPermutations<10||iPermutations>500000)
            {
              printf("Permutations Bounds 10<=x<=500000\n");
              simple_message_dialog("Permutations Bounds 10<=x<=500000");
