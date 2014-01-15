@@ -205,7 +205,14 @@ void hotellings_T2(int iRadioButton, double alpha, int ShowAll, int control, Gtk
                    }
              sqlite3_finalize(stmt5);
       
-             gtk_text_buffer_insert_at_cursor(buffer1, "Plate Control Test alpha T2 F LowerConfidence UpperConfidence\n", -1);
+             if(SuppliedContrasts==NULL)
+               {
+                 gtk_text_buffer_insert_at_cursor(buffer1, "Plate Control Test Alpha T2 F Lower Contrast Upper\n", -1);
+               }
+             else
+               {
+                 gtk_text_buffer_insert_at_cursor(buffer1, "Plate Row Alpha T2 F Lower Contrast Upper\n", -1);
+               }
              
              //Calculate confidence intervals
              for(i=0;i<iNumberOfPlates;i++)
@@ -509,7 +516,7 @@ void print_t2_confidence_intervals_control(gsl_matrix *CSC2, gsl_matrix *Cx, dou
                 {
                   //printf("%i %i %i %f %f %f %f %f\n", plate, control+1, i+1+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                   char *string;
-                  asprintf(&string, "%i %i %i %f %f %f %f %f\n", plate, control+1, i+1+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows)))); 
+                  asprintf(&string, "%i %i %i %f %f %f %f <uc%i-ut%i< %f\n", plate, control+1, i+1+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), control+1, i+1+1, gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows)))); 
                   gtk_text_buffer_insert_at_cursor(buffer, string, -1);
                   free(string);
                 }
@@ -517,7 +524,7 @@ void print_t2_confidence_intervals_control(gsl_matrix *CSC2, gsl_matrix *Cx, dou
                 {
                   //printf("%i %i %i %f %f %f %f %f\n", plate, control+1, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                   char *string;
-                  asprintf(&string, "%i %i %i %f %f %f %f %f\n", plate, control+1, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
+                  asprintf(&string, "%i %i %i %f %f %f %f <uc%i-ut%i< %f\n", plate, control+1, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), control+1, i+1, gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                   gtk_text_buffer_insert_at_cursor(buffer, string, -1);
                   free(string);
                 }
@@ -585,7 +592,6 @@ void print_t2_confidence_intervals_supplied(gsl_matrix *CSC2, gsl_matrix *Cx, gs
           }
 
        //Print intervals.
-       //printf("Plate Test alpha T2 F Contrasts LowerConfidence UpperConfidence\n");
        for(i=0; i<row1; i++)
            {
              for(j=0;j<row1;j++)
@@ -597,7 +603,7 @@ void print_t2_confidence_intervals_supplied(gsl_matrix *CSC2, gsl_matrix *Cx, gs
                  }
                 //printf("%i %i %f %f %f %s %f %f\n", plate, i+1, alpha, T2, fdist, (char*)g_ptr_array_index(sArray, i), gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                 char *string;
-                asprintf(&string, "%i %i %f %f %f %s %f %f\n", plate, i+1, alpha, T2, fdist, (char*)g_ptr_array_index(sArray, i), gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
+                asprintf(&string, "%i %i %f %f %f %f <%s< %f\n", plate, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), (char*)g_ptr_array_index(sArray, i), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                 gtk_text_buffer_insert_at_cursor(buffer, string, -1);
                 free(string);
            }
