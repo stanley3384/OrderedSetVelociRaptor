@@ -164,9 +164,9 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
      //Need an array to store raw p-values for the minP calculations.
     GArray *pValues=g_array_sized_new(FALSE,FALSE,sizeof(gdouble),mTestGroups->matrix->size1*3);
 
-    //printf("Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount Count1 PermutationMean PermutationStdDevS Side p-value\n");
+    //printf("Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount Count1 PermutationMean PermutationStdDevS Side p-value\n");
     char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value\n");
+    asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value\n");
     gtk_text_buffer_insert_at_cursor(buffer, string, -1);
     free(string);
 
@@ -602,9 +602,9 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
            }
       } 
     
-    //printf("Plate Control Test ControlMean, TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationStdDevS Side p-value minP\n");
+    //printf("Plate Control Test ControlMean, TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationStdDevS Side p-value minP\n");
     char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP\n");
+    asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP\n");
     gtk_text_buffer_insert_at_cursor(buffer, string, -1);
     free(string);
 
@@ -842,12 +842,12 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
     //Calculate test statistic.
     if(iTest==1)
       {
-       mean_difference=fabs(control_mean-test_mean);
+       mean_difference=test_mean-control_mean;
       }
     //Welch's t-statistic. u1-u2/sqrt(var1/count1+var2/count2).
     if(iTest==2)
       {
-        mean_difference=fabs((control_mean-test_mean)/sqrt(gsl_stats_variance(data_control, 1, control_count)/control_count+gsl_stats_variance(data_test, 1, test_count)/test_count));
+        mean_difference=(test_mean-control_mean)/sqrt(gsl_stats_variance(data_control, 1, control_count)/control_count+gsl_stats_variance(data_test, 1, test_count)/test_count);
       }
 
     double dControl[control_count];
@@ -906,7 +906,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
           {
             for(i=0;i<permutations;i++)
                {
-                 if(means[i]<=-mean_difference||means[i]>=mean_difference)
+                 if(fabs(means[i])>=fabs(mean_difference))
                    {
                      counter++;
                    }
@@ -926,7 +926,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
           {
             for(i=0;i<permutations;i++)
                {
-                 if(means[i]<=-mean_difference)
+                 if(means[i]<=mean_difference)
                    {
                      counter++;
                    }
@@ -1003,12 +1003,12 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
     //Calculate difference.
     if(iTest==1)
       {
-        difference=fabs(control_mean-test_mean);
+        difference=test_mean-control_mean;
       }
     //Welch's t-statistic. u1-u2/sqrt(var1/count1+var2/count2).
     if(iTest==2)
       {
-        difference=fabs((control_mean-test_mean)/sqrt(gsl_stats_variance(data_control, 1, control_count)/control_count+gsl_stats_variance(data_test, 1, test_count)/test_count));
+        difference=(test_mean-control_mean)/sqrt(gsl_stats_variance(data_control, 1, control_count)/control_count+gsl_stats_variance(data_test, 1, test_count)/test_count);
       }
 
     double dControl[control_count];
@@ -1062,25 +1062,11 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                 }
              if(iTest==1)
                {
-                 if(iTail==1)
-                   {
-                     perm_test_stat[i]=fabs(gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count));
-                   }
-                 else
-                   {
-                     perm_test_stat[i]=gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count);
-                   }
+                 perm_test_stat[i]=gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count);
                }
              if(iTest==2)
                {
-                 if(iTail==1)
-                   {
-                     perm_test_stat[i]=fabs((gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count))/sqrt(gsl_stats_variance(dTest, 1, test_count)/test_count+gsl_stats_variance(dControl, 1, control_count)/control_count));
-                   }
-                 else
-                   {
-                     perm_test_stat[i]=(gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count))/sqrt(gsl_stats_variance(dTest, 1, test_count)/test_count+gsl_stats_variance(dControl, 1, control_count)/control_count);
-                   }
+                 perm_test_stat[i]=(gsl_stats_mean(dTest, 1, test_count)-gsl_stats_mean(dControl, 1, control_count))/sqrt(gsl_stats_variance(dTest, 1, test_count)/test_count+gsl_stats_variance(dControl, 1, control_count)/control_count);
                }
            }
 
@@ -1091,7 +1077,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
             #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
-                 if(perm_test_stat[i]>=difference)
+                 if(fabs(perm_test_stat[i])>=fabs(difference))
                    {
                      counter++;
                    }
@@ -1113,7 +1099,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
             #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
-                 if(perm_test_stat[i]<=-difference)
+                 if(perm_test_stat[i]<=difference)
                    {
                      counter++;
                    }
@@ -1131,7 +1117,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                  prob[index[i]]=(double)(i)/(double)permutations;
                }
             
-            //Calculate minP array. ???
+            //Calculate minP array.
             if((int)apop_data_get(mPvaluesSorted,comparison,0)==new_plate)
               {
                 #pragma omp parallel for private(i)
@@ -1151,8 +1137,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                    }
                 new_plate=(int)apop_data_get(mPvaluesSorted,comparison,0);
               }
- 
-            //Calculate the adjusted minP p-value. ???
+  
             counter2=0;
             //printf("\n%f %i\n", apop_data_get(mPvaluesSorted, comparison, 1)), comparison);
             #pragma omp parallel for private(i) reduction(+:counter2)
@@ -1188,17 +1173,44 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                 new_plate=(int)apop_data_get(mPvaluesSorted,comparison,0);
               }
  
-            //Calculate the adjusted minP p-value. ???
+            //Calculate the adjusted maxT p-value.
             counter2=0;
             //printf("\n%f %i\n", apop_data_get(mPvaluesSorted, comparison, 1)), comparison);
-            #pragma omp parallel for private(i) reduction(+:counter2)
-            for(i=0;i<permutations;i++)
-               {
-                 if(minP[i]>=fabs(apop_data_get(mPvaluesSorted, comparison, 1)))
+            if(iTail==1)//abs
+              {
+                #pragma omp parallel for private(i) reduction(+:counter2)
+                for(i=0;i<permutations;i++)
                    {
-                     counter2++;
+                     if(fabs(minP[i])>=fabs(apop_data_get(mPvaluesSorted, comparison, 1)))
+                       {
+                         counter2++;
+                       }
                    }
-               }
+              }
+            
+            if(iTail==2)//greater
+              {
+                #pragma omp parallel for private(i) reduction(+:counter2)
+                for(i=0;i<permutations;i++)
+                   {
+                     if(minP[i]>=apop_data_get(mPvaluesSorted, comparison, 1))
+                       {
+                         counter2++;
+                       }
+                   }
+              }
+            if(iTail==3)//less
+              {
+                #pragma omp parallel for private(i) reduction(+:counter2)
+                for(i=0;i<permutations;i++)
+                   {
+                     if(minP[i]<=apop_data_get(mPvaluesSorted, comparison, 1))
+                       {
+                         counter2++;
+                       }
+                   }
+              }
+             
           }        
   
         //Adjusted p-value.
@@ -1435,7 +1447,7 @@ static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, dou
     gtk_text_buffer_delete(buffer, &start, &end);
 
     char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean AbsMeanDifference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
+    asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
     gtk_text_buffer_insert_at_cursor(buffer, string, -1);
     free(string);
 
