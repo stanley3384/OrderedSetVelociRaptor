@@ -2221,7 +2221,7 @@ void copy_treeview_to_database_sql(GtkWidget *copy, GtkWidget *treeview, const g
      
      sqlite3_finalize(stmt);
      sqlite3_close(handle);
-     printf("Data Export Finished!\n");
+     printf("Data Export Finished\n");
   }
 void format_text_platemap(double dEntry1, double dEntry2, double dEntry3, double dEntry4, GtkTextView *textview)
   {

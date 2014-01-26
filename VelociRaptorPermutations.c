@@ -12,6 +12,7 @@ C. Eric Cashon
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <float.h>
 #include <math.h>
 #include <time.h>
 #include <apop.h>
@@ -60,54 +61,66 @@ void unadjusted_p_sql(int permutations, int iRadioButton, int iControlValue, int
      gsl_vector *vTestData=NULL;
      gsl_vector *vControlGroups=NULL;
      gsl_vector *vControlData=NULL;
+     GString *order=NULL;
+
+     //For minP
+     if(iFunction==1||iFunction==2)
+       {
+         order=g_string_new("asc"); 
+       }
+     //For maxT
+     if(iFunction==3)
+       {
+         order=g_string_new("asc"); 
+       }
 
      apop_db_open("VelociRaptorData.db");   
  
      if(iRadioButton==1)
        {
-         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.groups, count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.groups, count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vControlData==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
     if(iRadioButton==2)
        {
-         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.groups, count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.groups, count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups!=%i ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vControlData==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
     if(iRadioButton==3)
        {
-         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.picks, count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.picks, count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.data FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(vControlData==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
     if(iRadioButton==4)
        {
-         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.picks, count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         mTestGroups=apop_query_to_data("SELECT T2.plate, T2.picks, count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         vTestData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks!=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
-         vControlGroups=apop_query_to_vector("SELECT count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         vControlGroups=apop_query_to_vector("SELECT count(T2.picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 GROUP BY T2.plate, T2.picks ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
-         vControlData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks asc;", iControlValue);
+         vControlData=apop_query_to_vector("SELECT T1.percent FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.picks=%i AND T2.picks!=0 ORDER BY T2.plate, T2.picks %s;", iControlValue, order->str);
          if(vControlData==NULL) malloc_error=1;
          PlateCount=apop_query_to_float("SELECT max(plate) FROM aux;");
        }
@@ -126,7 +139,7 @@ void unadjusted_p_sql(int permutations, int iRadioButton, int iControlValue, int
           }
         if(iFunction==3)
           {
-            printf("maxT Function\n");
+            printf("Send T-values to Database\n");
             send_tvalues_to_database(iControlValue, iTest, mTestGroups, vTestData, vControlGroups, vControlData, PlateCount);
           }
       }
@@ -135,6 +148,7 @@ void unadjusted_p_sql(int permutations, int iRadioButton, int iControlValue, int
     if(vTestData!=NULL)gsl_vector_free(vTestData);
     if(vControlGroups!=NULL)gsl_vector_free(vControlGroups);
     if(vControlData!=NULL)gsl_vector_free(vControlData);
+    g_string_free(order, TRUE);
 
   }
 static void unadjusted_p_data(int permutations, int iControlValue, int iTail, int iTest, apop_data *mTestGroups, gsl_vector *vTestData, gsl_vector *vControlGroups, gsl_vector *vControlData, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton, double PlateCount)
@@ -348,6 +362,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
       //Send the p-values to the database to be sorted.
       if(broken_loop==0)
         {
+          printf("Send P-values to Database\n");
           send_raw_pvalues_to_database(mTestGroups->matrix->size1, pValues);
         }
       g_array_free(pValues, TRUE);
@@ -593,13 +608,23 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
              prob_prev_row[i]=1.0;
            }
       }
-    //Initialize prob_prev_row to 0 for maxT.
+    //Initialize prob_prev_row for maxT.
     if(iFunction==3)
       {
-        for(i=0;i<permutations;i++)
-           {
-             prob_prev_row[i]=0.0;
-           }
+        if(iTail==3)
+          {
+            for(i=0;i<permutations;i++)
+               {
+                 prob_prev_row[i]=DBL_MAX;
+               }
+          }
+        else
+          {
+            for(i=0;i<permutations;i++)
+               {
+                 prob_prev_row[i]=-DBL_MAX;
+               }
+          }
       } 
     
     //printf("Plate Control Test ControlMean, TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationStdDevS Side p-value minP\n");
@@ -799,7 +824,6 @@ static void send_raw_pvalues_to_database(int rows, GArray *pValues)
     sqlite3 *handle;
     sqlite3_stmt *stmt1;
 
-    printf("Send Values to Database\n");
     sqlite3_open("VelociRaptorData.db",&handle);
       
     sqlite3_exec(handle, "BEGIN;", NULL, NULL, NULL);
@@ -1108,7 +1132,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
 
         rawP=((double)counter+1)/((double)permutations+1);
 
-        if(iFunction==2)
+        if(iFunction==2)//minP
           {
             //Indirect sort and get the probabilities. Account for ties???.
             gsl_sort_index(index, perm_test_stat, 1, permutations);
@@ -1150,25 +1174,58 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                }
           } 
 
-        if(iFunction==3)
+        if(iFunction==3)//maxT
           {
-            //Calculate maxT array. ???
+            //Calculate maxT array.
             if((int)apop_data_get(mPvaluesSorted,comparison,0)==new_plate)
               {
-                #pragma omp parallel for private(i)
-                for(i=0;i<permutations;i++)
-                   {
-                     minP[i]=fmax(prob_prev_row[i], fabs(perm_test_stat[i]));
-                     prob_prev_row[i]=minP[i];
-                   }
+                if(iTail==1)//abs
+                  {
+                    #pragma omp parallel for private(i)
+                    for(i=0;i<permutations;i++)
+                       {
+                         minP[i]=fmax(prob_prev_row[i], fabs(perm_test_stat[i]));
+                         prob_prev_row[i]=minP[i];
+                       }
+                  }
+                if(iTail==2)//greater
+                  {
+                    #pragma omp parallel for private(i)
+                    for(i=0;i<permutations;i++)
+                       {
+                         minP[i]=fmax(prob_prev_row[i], perm_test_stat[i]);
+                         prob_prev_row[i]=minP[i];
+                       }
+                  }
+                if(iTail==3)//less
+                  {
+                    #pragma omp parallel for private(i)
+                    for(i=0;i<permutations;i++)
+                       {
+                         minP[i]=fmin(prob_prev_row[i], perm_test_stat[i]);
+                         prob_prev_row[i]=minP[i];
+                       }
+                  }
               }
             else
               {
-                #pragma omp parallel for private(i)
-                for(i=0;i<permutations;i++)
-                   {
-                     minP[i]=fmax(0.0, fabs(perm_test_stat[i]));
-                     prob_prev_row[i]=0.0;
+                if(iTail==3)
+                  {
+                    #pragma omp parallel for private(i)
+                    for(i=0;i<permutations;i++)
+                       {
+                         minP[i]=fmin(DBL_MAX, fabs(perm_test_stat[i]));
+                         prob_prev_row[i]=DBL_MAX;
+                       }
+                  }
+                else
+                  {
+                    #pragma omp parallel for private(i)
+                    for(i=0;i<permutations;i++)
+                       {
+                         minP[i]=fmax(-DBL_MAX, fabs(perm_test_stat[i]));
+                         prob_prev_row[i]=-DBL_MAX;
+                       }
                    }
                 new_plate=(int)apop_data_get(mPvaluesSorted,comparison,0);
               }
@@ -1181,36 +1238,35 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                 #pragma omp parallel for private(i) reduction(+:counter2)
                 for(i=0;i<permutations;i++)
                    {
-                     if(fabs(minP[i])>=fabs(apop_data_get(mPvaluesSorted, comparison, 1)))
+                     if(minP[i]>=fabs(difference))
                        {
                          counter2++;
                        }
                    }
               }
-            
             if(iTail==2)//greater
               {
                 #pragma omp parallel for private(i) reduction(+:counter2)
                 for(i=0;i<permutations;i++)
                    {
-                     if(minP[i]>=apop_data_get(mPvaluesSorted, comparison, 1))
+                     if(minP[i]>=difference)
                        {
                          counter2++;
                        }
                    }
               }
-            if(iTail==3)//less
+            if(iTail==3)//lower
               {
                 #pragma omp parallel for private(i) reduction(+:counter2)
                 for(i=0;i<permutations;i++)
                    {
-                     if(minP[i]<=apop_data_get(mPvaluesSorted, comparison, 1))
+                     if(minP[i]<=difference)
                        {
                          counter2++;
                        }
                    }
               }
-             
+              
           }        
   
         //Adjusted p-value.

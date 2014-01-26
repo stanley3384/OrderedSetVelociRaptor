@@ -48,7 +48,7 @@ void entry_field_validation(const gchar *pPlateSizeText1, const gchar *pPlateSta
     int check3=0;
     int iZeroCheck=0;
     guint32 count=0;
-    g_print("Focus Changed\n"); 
+    //g_print("Focus Changed\n"); 
 
     pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
     pString=pTempValue;
@@ -80,7 +80,7 @@ void entry_field_validation(const gchar *pPlateSizeText1, const gchar *pPlateSta
            }
         count++;
       }
-    g_print("Entry Value %s\n",pTempValue);
+    //g_print("Entry Value %s\n",pTempValue);
  
     if(check==1)
        {
@@ -109,7 +109,7 @@ void entry_field_validation(const gchar *pPlateSizeText1, const gchar *pPlateSta
        }
     else
        {
-        g_print("Entry Field OK %s\n", pTempValue);
+        //g_print("Entry Field OK %s\n", pTempValue);
        }
   }
 void control_changed_validation(const gchar *pPlateSizeText, GtkWidget *entry)
@@ -130,7 +130,7 @@ void control_changed_validation(const gchar *pPlateSizeText, GtkWidget *entry)
     guint32 length=0;
     int iValue;
 
-    g_print("Focus Changed\n"); 
+    //g_print("Focus Changed\n"); 
     iPlateSize=atoi(pPlateSizeText);
     pTempValue=gtk_entry_get_text(GTK_ENTRY(entry));
     pString=pTempValue;
@@ -165,7 +165,7 @@ void control_changed_validation(const gchar *pPlateSizeText, GtkWidget *entry)
         else if(c==','|| count==length)
            {
              iValue=atoi(Buffer->str);  
-             g_print("Buffer Value %i\n", iValue);
+             //g_print("Buffer Value %i\n", iValue);
                 if(iValue>iPlateSize)
                   {
                    check2=1;
@@ -180,7 +180,7 @@ void control_changed_validation(const gchar *pPlateSizeText, GtkWidget *entry)
        d=c;
       }  
 
-    g_print("Entry Value %s\n",pTempValue);
+    //g_print("Entry Value %s\n",pTempValue);
  
     if(check==1)
        {
@@ -209,7 +209,7 @@ void control_changed_validation(const gchar *pPlateSizeText, GtkWidget *entry)
        }
     else
        {
-        g_print("Entry Field OK %s\n", pTempValue);
+        //g_print("Entry Field OK %s\n", pTempValue);
        }
 
     if(Buffer!=NULL)
