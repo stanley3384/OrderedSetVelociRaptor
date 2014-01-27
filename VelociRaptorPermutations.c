@@ -479,25 +479,41 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
      gsl_vector *vControlData=NULL;
      apop_data *mPvaluesSorted=NULL;
      GString *order=NULL;
+     GString *maxTsort=NULL;
 
      //For minP
      if(iFunction==2)
        {
          order=g_string_new("desc"); 
+         maxTsort=g_string_new("T2.pValue");
        }
      //For maxT
      if(iFunction==3)
-       {
-         order=g_string_new("asc"); 
+       { 
+         if(iTail==1)
+           {
+             order=g_string_new("asc"); 
+             maxTsort=g_string_new("abs(T2.pValue)");
+           }
+         else if(iTail==2)
+           {
+             order=g_string_new("desc"); 
+             maxTsort=g_string_new("T2.pValue");
+           }
+         else if(iTail==3)
+           {
+             order=g_string_new("asc"); 
+             maxTsort=g_string_new("T2.pValue");
+           }
        }
 
      apop_db_open("VelociRaptorData.db");   
      //Order the test values by the p-values or t-values.
      if(iRadioButton==1)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
          //Don't have to worry about ordering the control values. Only one per plate.
          vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
@@ -510,9 +526,9 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
        }
     if(iRadioButton==2)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.groups1, count(T4.groups1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i GROUP BY T4.plate1, T4.Groups1 ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         vTestData=apop_query_to_vector("SELECT T3.percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Groups AS Groups1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Groups=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Groups1!=%i ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
          vControlGroups=apop_query_to_vector("SELECT count(T2.groups) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Groups=%i GROUP BY T2.plate, T2.Groups ORDER BY T2.plate, T2.Groups %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
@@ -524,9 +540,9 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
        }
     if(iRadioButton==3)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         vTestData=apop_query_to_vector("SELECT T3.data FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
          vControlGroups=apop_query_to_vector("SELECT count(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 GROUP BY T2.plate, T2.Picks ORDER BY T2.plate, T2.Picks %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
@@ -538,9 +554,9 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
        }
     if(iRadioButton==4)
        {
-         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         mTestGroups=apop_query_to_data("SELECT T4.plate1, T4.Picks1, count(T4.Picks1) FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 GROUP BY T4.plate1, T4.Picks1 ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(mTestGroups==NULL) malloc_error=1; 
-         vTestData=apop_query_to_vector("SELECT T3.Percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, T2.pValue AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 %s;", iControlValue, order->str);
+         vTestData=apop_query_to_vector("SELECT T3.Percent FROM data T3, (SELECT T1.KeyID AS KeyID1, T1.Plate AS Plate1, T1.Picks AS Picks1, %s AS pValue1 FROM aux T1, temppvalues T2 WHERE T1.Plate=T2.Plate AND T1.Picks=T2.Groups) T4 WHERE T3.KeyID=T4.KeyID1 AND T4.Picks1!=%i AND T4.Picks1!=0 ORDER BY T4.plate1, T4.pValue1 %s;", maxTsort->str, iControlValue, order->str);
          if(vTestData==NULL) malloc_error=1;  
          vControlGroups=apop_query_to_vector("SELECT count(T2.Picks) FROM data T1, aux T2 WHERE T1.KeyID=T2.KeyID AND T2.Picks=%i AND T2.Picks!=0 GROUP BY T2.plate, T2.Picks ORDER BY T2.plate, T2.Picks %s;", iControlValue, order->str);
          if(vControlGroups==NULL) malloc_error=1;   
@@ -568,6 +584,7 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
     if(vControlData!=NULL)gsl_vector_free(vControlData);
     if(mPvaluesSorted->matrix!=NULL)gsl_matrix_free(mPvaluesSorted->matrix);
     g_string_free(order, TRUE);
+    g_string_free(maxTsort, TRUE);
 
   }
 static void minP_data(int permutations, int iControlValue, int iTail, int iTest, int iFunction, apop_data *mTestGroups, gsl_vector *vTestData, gsl_vector *vControlGroups, gsl_vector *vControlData, apop_data *mPvaluesSorted, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton, double PlateCount)
