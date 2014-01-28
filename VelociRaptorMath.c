@@ -1801,9 +1801,9 @@ void send_text_to_database(const gchar *pTableName, GtkWidget *textview)
                int retval=0;
                apop_db_open("VelociRaptorData.db");
                apop_query("DROP TABLE IF EXISTS %s;", string2);
-               printf("Send Text to Database.\n");
+               printf("Send Text to Database\n");
                retval=apop_text_to_db("stats_with_pipes.txt", string2,0,1,NULL);
-               printf("\n%i Rows Sent to Database.\n", retval);
+               printf("\n%i Rows Sent to Database\n", retval);
                apop_db_close(1);
              }
          }

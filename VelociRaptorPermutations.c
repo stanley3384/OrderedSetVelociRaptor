@@ -2,7 +2,7 @@
 /*Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
 
-Some permutation testing. Still working on minP and maxT. The minP and maxT code is for testing only! It may not be valid and needs work. The minP and maxT code is disabled in the UI by hiding the drop down on line 1385 of VelociRaptorUI.c. Check the Test_SQL_minP script for an example to test results with. Different random number generators produce slightly different values and if the probabilities are adjusted by adding one to the numerator and denominator can influence the values. The type of sort can also influence the values. One valid algorithm my not produce the same results as another valid algorithm on this one.
+Some permutation testing. Check the Test_SQL_minP.R script for an example to test results with. Different random number generators produce slightly different values.
 
 C. Eric Cashon
 */

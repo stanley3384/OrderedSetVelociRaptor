@@ -1326,8 +1326,8 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
 
      tail_combo=gtk_combo_box_text_new();
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "0", "abs");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "1", "greater");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "2", "less");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "1", "upper");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tail_combo), "2", "lower");
      gtk_combo_box_set_active(GTK_COMBO_BOX(tail_combo), 0);
 
      test_combo=gtk_combo_box_text_new();
@@ -1381,9 +1381,6 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_comparison_loop_event), NULL);
 
      gtk_widget_show_all(dialog);
-     //Hide drop down. Still testing.
-     gtk_widget_hide(GTK_WIDGET(p_function));
-     gtk_widget_hide(GTK_WIDGET(label8));
 
      result=gtk_dialog_run(GTK_DIALOG(dialog));
 
