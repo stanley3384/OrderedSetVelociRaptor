@@ -945,6 +945,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
         counter=0;
         if(iTail==1)//abs
           {
+            #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
                  if(fabs(means[i])>=fabs(mean_difference))
@@ -953,8 +954,9 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
                    }
                }
            }
-        if(iTail==2)//greater
+        if(iTail==2)//upper
           {
+            #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
                  if(means[i]>=mean_difference)
@@ -963,8 +965,9 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
                    }
                }
            }
-         if(iTail==3)//less
+         if(iTail==3)//lower
           {
+            #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
                {
                  if(means[i]<=mean_difference)
@@ -1002,19 +1005,19 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
             free(string3);
                   
           }
-        if(iTail==2)//greater
+        if(iTail==2)//upper
           {
-            //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", pValueTemp);
+            //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "upper", pValueTemp);
             char *string4;
-            asprintf(&string4, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "greater", pValueTemp);
+            asprintf(&string4, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "upper", pValueTemp);
             gtk_text_buffer_insert_at_cursor(buffer, string4, -1);
             free(string4); 
           }
-        if(iTail==3)//less
+        if(iTail==3)//lower
           {
-            //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", pValueTemp);
+            //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "lower", pValueTemp);
             char *string5;
-            asprintf(&string5, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "less", pValueTemp);
+            asprintf(&string5, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "lower", pValueTemp);
             gtk_text_buffer_insert_at_cursor(buffer, string5, -1);
             free(string5); 
           }
@@ -1124,7 +1127,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                    }
                }
           }
-        if(iTail==2)//greater
+        if(iTail==2)//upper
           {
             #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
@@ -1135,7 +1138,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                    }
                }
            }
-         if(iTail==3)//less
+         if(iTail==3)//lower
           {
             #pragma omp parallel for private(i) reduction(+:counter)
             for(i=0;i<permutations;i++)
@@ -1205,7 +1208,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                          prob_prev_row[i]=minP[i];
                        }
                   }
-                if(iTail==2)//greater
+                if(iTail==2)//upper
                   {
                     #pragma omp parallel for private(i)
                     for(i=0;i<permutations;i++)
@@ -1214,7 +1217,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                          prob_prev_row[i]=minP[i];
                        }
                   }
-                if(iTail==3)//less
+                if(iTail==3)//lower
                   {
                     #pragma omp parallel for private(i)
                     for(i=0;i<permutations;i++)
@@ -1261,7 +1264,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
                        }
                    }
               }
-            if(iTail==2)//greater
+            if(iTail==2)//upper
               {
                 #pragma omp parallel for private(i) reduction(+:counter2)
                 for(i=0;i<permutations;i++)
@@ -1307,15 +1310,15 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
             //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "abs", ((double)counter+1)/((double)permutations+1));
              g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "abs", rawP, adjP);
           }
-        if(iTail==2)//greater
+        if(iTail==2)//upper
           {
-            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "greater", ((double)counter+1)/((double)permutations+1));
-            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "greater", rawP, adjP); 
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "upper", ((double)counter+1)/((double)permutations+1));
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "upper", rawP, adjP); 
           }
-        if(iTail==3)//less
+        if(iTail==3)//lower
           {
-            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "less", ((double)counter+1)/((double)permutations+1));
-            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "less", rawP, adjP); 
+            //printf("%i %f %f %s %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "lower", ((double)counter+1)/((double)permutations+1));
+            g_string_append_printf(PrintOutput, "%i %f %f %s %f %f ", counter2, dPermutationMean, gsl_stats_sd_m(perm_test_stat, 1, permutations, dPermutationMean), "lower", rawP, adjP); 
           }
        }
 
