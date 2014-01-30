@@ -47,7 +47,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
 static void generate_permutations_without_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
 static void generate_permutations_with_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton);
 static void hash_key_destroyed(gpointer data);
-static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted);
+static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted, int iFunction);
 
 
 /*
@@ -468,6 +468,7 @@ static void send_tvalues_to_database(int iControlValue, int iTest, apop_data *mT
    }
 /*
      Pull the data from the database sorted by p-values. For the second round of permutations for minP.
+     This function is also for maxT.
 */
 void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, int iTest, int iFunction, GtkTextView *textview, GtkProgressBar *progress, int *pBreakLoop, int iSeedValue, int iRandomButton)
   {
@@ -610,9 +611,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     int **perm1=NULL;
     GString *PrintOutput=g_string_new(NULL);
     GPtrArray *sArray = g_ptr_array_sized_new(mPvaluesSorted->matrix->size1);
-    GtkTextBuffer *buffer;
-    buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-
+    
     double *monotonicity=(double *)malloc(sizeof(double)*(mPvaluesSorted->matrix->size1));
     double *prob_prev_row=(double *)malloc(sizeof(double)*permutations);
     if(prob_prev_row==NULL) malloc_error=1;
@@ -643,12 +642,6 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                }
           }
       } 
-    
-    //printf("Plate Control Test ControlMean, TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationStdDevS Side p-value minP\n");
-    char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP\n");
-    gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-    free(string);
 
     for(i=0;i<mTestGroups->matrix->size1;i++)
        { 
@@ -821,7 +814,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
      //Enforce monotonicity.
      if(broken_loop==0)
        {
-         print_monotone_pvalues(textview, sArray, monotonicity, mPvaluesSorted);
+         print_monotone_pvalues(textview, sArray, monotonicity, mPvaluesSorted, iFunction);
        }
 
      if(monotonicity!=NULL) free(monotonicity);
@@ -1156,6 +1149,7 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
           {
             //Indirect sort and get the probabilities. Account for ties???.
             gsl_sort_index(index, perm_test_stat, 1, permutations);
+            #pragma omp parallel for private(i)
             for(i=0;i<permutations;i++)
                {
                  prob[index[i]]=(double)(i)/(double)permutations;
@@ -1416,10 +1410,7 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
 
   }
 /*
-  If there are too many permutations to just store in memory, create them one at a time. Make sure
-  they are unique by hashing the values. If two or more hash keys are the same it shouldn't be
-  a problem as long as there is a large pool of permutations and no duplicate hash keys are allowed.
-  The UI limits the number of permutations to 500,000 which is safe for 10! and above.
+  If there are too many permutations to just store the entire set in memory, create them one at a time. Make sure they are unique by hashing the values. If two or more hash keys are the same it shouldn't be a problem as long as there is a large pool of permutations and no duplicate hash keys are allowed. The UI limits the number of permutations to 500,000 which is safe for 10! and above.
 */
 static void generate_permutations_with_hashing(int ***perm1, int permutations, int permutation_length, int iSeedValue, int iRandomButton)
   {
@@ -1507,7 +1498,7 @@ static void hash_key_destroyed(gpointer data)
     //printf("Got a key destroy call for %s\n", (char*)data);
     hash_check=1;
   }
-static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted)
+static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, double *monotonicity, apop_data *mPvaluesSorted, int iFunction)
   {
     printf("Enforce Monotonicity\n");
     int i=0;
@@ -1523,7 +1514,14 @@ static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, dou
     gtk_text_buffer_delete(buffer, &start, &end);
 
     char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
+    if(iFunction==2)
+      {
+        asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
+      }
+    else if(iFunction==3)
+      {
+        asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value maxT monotone_maxT\n");
+      }
     gtk_text_buffer_insert_at_cursor(buffer, string, -1);
     free(string);
 
