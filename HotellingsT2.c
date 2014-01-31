@@ -121,7 +121,7 @@ void hotellings_T2(int iRadioButton, double alpha, int ShowAll, int control, Gtk
          asprintf(&sql5, "SELECT Percent FROM Data AS D1, Aux AS D2 WHERE D1.KeyID==D2.KeyID AND Picks!=0 ;");
        }
 
-     printf("Connect to Database\n");
+     //printf("Connect to Database\n");
      sqlite3_open("VelociRaptorData.db",&handle);
 
          //Get record count
@@ -150,11 +150,11 @@ void hotellings_T2(int iRadioButton, double alpha, int ShowAll, int control, Gtk
          
          rows=iPlateSize/columns;
 
-         printf("Record Count=%i\n", iRecordCount);
-         printf("Plate Size=%i\n", iPlateSize);
-         printf("Number of Plates=%i\n", iNumberOfPlates);
-         printf("Rows=%i\n", rows);
-         printf("Columns=%i\n", columns);
+         //printf("Record Count=%i\n", iRecordCount);
+         //printf("Plate Size=%i\n", iPlateSize);
+         //printf("Number of Plates=%i\n", iNumberOfPlates);
+         //printf("Rows=%i\n", rows);
+         //printf("Columns=%i\n", columns);
 
          //Check mod. If not 0 exit. Check all values are greater than 0.
          //rows-columns+1>=1
@@ -435,10 +435,10 @@ void tsquared_multiple_comparison(double alpha, int ShowAll, int plate, int rows
        gsl_set_error_handler_off();
 
        status1=gsl_linalg_cholesky_decomp(Cholesky);
-       printf("Cholesky decomposition status = %i\n", status1);
+       //printf("Cholesky decomposition status = %i\n", status1);
        //Invert CSC'
        status2=gsl_linalg_cholesky_invert(Cholesky);
-       printf("Cholesky inverse status = %i\n", status2);
+       //printf("Cholesky inverse status = %i\n", status2);
 
        //if status!=0 then exit function
        if(status1!=0||status2!=0)

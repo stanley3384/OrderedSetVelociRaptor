@@ -1125,7 +1125,7 @@ void multiple_comparison_with_controls(char *sql1, char *sql2, char *sql3, char 
          int *iDF = malloc((iPlateCount) * sizeof(int));
 
          //Load mean table into arrays.
-         printf("Table of Sorted Means\n");
+         //printf("Table of Sorted Means\n");
          sqlite3_prepare_v2(handle,sql2,-1,&stmt2,0);
             for(i=0;i<iRecordCount;i++)
                {
@@ -1134,7 +1134,7 @@ void multiple_comparison_with_controls(char *sql1, char *sql2, char *sql3, char 
                  iGroup[i]=sqlite3_column_int(stmt2, 1);
                  iSetSize[i]=sqlite3_column_int(stmt2, 2);
                  dMean[i]=sqlite3_column_double(stmt2, 3);
-                 printf(" %i %i %i %i %f\n", i, iPlates[i], iGroup[i], iSetSize[i], dMean[i]);
+                 //printf(" %i %i %i %i %f\n", i, iPlates[i], iGroup[i], iSetSize[i], dMean[i]);
                }
          sqlite3_finalize(stmt2);  
          //printf("\n");   
@@ -1210,10 +1210,10 @@ void multiple_comparison_with_controls(char *sql1, char *sql2, char *sql3, char 
                for(ii=0;ii<iGroupCount[i];ii++) //put values into an array for each plate.
                    {
                      CovarianceArray[ii]=iSetSize[iStart+ii];
-                     printf("%i ", CovarianceArray[ii]);
+                     //printf("%i ", CovarianceArray[ii]);
                      iCovSize++;
                    }
-               printf("\n");
+               //printf("\n");
 
                //update progress bar.
                gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress), (double)i/(double)iPlateCount);
