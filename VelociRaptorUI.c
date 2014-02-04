@@ -2049,8 +2049,8 @@ void draw_veloci_raptor(GtkWidget *widget, gpointer data)
     g_print("Draw Raptor\n");
 
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
-    if(GDK_WINDOW(DefaultWindow)!=NULL)
-       g_print("Got GDK Window\n");
+    //if(GDK_WINDOW(DefaultWindow)!=NULL)
+       //g_print("Got GDK Window\n");
 
     cr = gdk_cairo_create(DefaultWindow);
     cr2 = gdk_cairo_create(DefaultWindow);
@@ -2060,8 +2060,8 @@ void draw_veloci_raptor(GtkWidget *widget, gpointer data)
 
     width=gdk_window_get_width(DefaultWindow);
     height=gdk_window_get_height(DefaultWindow); 
-    g_print("Width=%i\n",width);
-    g_print("Height=%i\n",height);
+    //g_print("Width=%i\n",width);
+    //g_print("Height=%i\n",height);
 
     //Scaled from a 1024x576 screen. Original graphic.
     ScaleWidth=width/1024.0;

@@ -12,7 +12,7 @@ static void begin_print(GtkPrintOperation*, GtkPrintContext*, GtkTextView*);
 static void draw_page(GtkPrintOperation*, GtkPrintContext*, gint, GtkTextView*);
 static void end_print(GtkPrintOperation*, GtkPrintContext*, GtkTextView*);
 static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIter start1, GtkTextIter end1, PangoLayout *layout, GtkPrintContext *context);
-static gint printing_text_iter_get_offset_bytes(GtkTextView *textview, const GtkTextIter *iter);
+static gint printing_text_iter_get_offset_bytes(GtkTextView *textview, const GtkTextIter *iter, const GtkTextIter *start1);
 
 void print_textview(GtkWidget *menu, Widgets *w)
   {
@@ -74,7 +74,7 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
 
      lines=gtk_text_buffer_get_line_count(buffer);
      height=gtk_print_context_get_height(context); 
-     lines_per_page=floor(height/(font_size+3));
+     lines_per_page=floor(height/(font_size+1));
      total_pages=((lines-1)/lines_per_page)+1;
      
      gtk_print_operation_set_n_pages(operation, total_pages);
@@ -104,13 +104,13 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
 
      lines=gtk_text_buffer_get_line_count(buffer);
      height=gtk_print_context_get_height(context); 
-     lines_per_page=floor(height/(font_size+3));
+     lines_per_page=floor(height/(font_size+1));
      total_pages=((lines-1)/lines_per_page)+1;
 
      if(lines<=lines_per_page)
         {
           gtk_text_buffer_get_bounds(buffer, &start1, &end1);
-          printf("First Page\n");
+          printf("One Page\n");
         }
      else if(lines>lines_per_page&&page_nr<total_pages-1)
         {
@@ -125,16 +125,15 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
           printf("Last Page\n");
         }
 
-
      cr=gtk_print_context_get_cairo_context(context);
      page_width=gtk_print_context_get_width(context);
 
      layout=gtk_print_context_create_pango_layout(context);
 
-     printing_layout_set_text_attributes(textview, start1, end1, layout, context);
-
      pango_layout_set_font_description(layout, desc);
      pango_layout_set_text(layout, gtk_text_buffer_get_text(buffer, &start1, &end1, FALSE),-1);
+     printing_layout_set_text_attributes(textview, start1, end1, layout, context);
+
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
      pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
      pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
@@ -142,6 +141,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      pango_cairo_show_layout(cr, layout);
 
      g_object_unref(layout);
+
   }
 static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, GtkTextView *textview)
   {
@@ -159,18 +159,26 @@ Claws Mail -- a GTK+ based, lightweight, and fast e-mail client
 static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIter start1, GtkTextIter end1, PangoLayout *layout, GtkPrintContext *context)
 {
         printf("Get Attributes\n");
-        PangoAttrList *attr_list;
-        PangoAttribute *attr;
+        PangoAttrList *attr_list=NULL;
+        PangoAttribute *attr=NULL;
         GSList *open_attrs=NULL;
         GSList *attr_walk=NULL;
         GtkTextIter iter=start1;
+        int counter1=0;
+        int counter2=0;
+
+        //Check iterators.
+        printf("PageLines %i to %i\n", gtk_text_iter_get_line(&iter), gtk_text_iter_get_line(&end1));
+        //Trouble getting the first tag for the layout.
+        gtk_text_iter_backward_to_tag_toggle(&iter, NULL);
 
         attr_list = pango_attr_list_new();
         
         do{
             gboolean fg_set, bg_set;
-            GSList *tags, *tag_walk;
-            GtkTextTag *tag;
+            GSList *tags=NULL;
+            GSList *tag_walk=NULL;
+            GtkTextTag *tag=NULL;
             GdkColor *color = NULL;
 
            if(gtk_text_iter_ends_tag(&iter, NULL)) 
@@ -192,7 +200,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                                  g_object_get(G_OBJECT(tag), "foreground_gdk", &color, NULL);
                                  if(color)
                                    {
-                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                                      pango_attr_list_insert(attr_list, attr);
                                      found = TRUE;
                                      open_attrs = g_slist_delete_link(open_attrs, attr_walk);
@@ -206,7 +214,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                              }
                          if(!found)
                             {
-                              printf("Error generating attribute list.\n");
+                              printf("Error generating forground attribute list.\n");
                             }
                       }
                     if(bg_set)
@@ -220,7 +228,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                                  g_object_get(G_OBJECT(tag), "background-gdk", &color, NULL);
                                  if(color)
                                    {
-                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                                      pango_attr_list_insert(attr_list, attr);
                                      found = TRUE;
                                      open_attrs = g_slist_delete_link(open_attrs, attr_walk);
@@ -234,7 +242,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                            }
                          if(!found)
                            {
-                             printf("Error generating attribute list.\n");
+                             printf("Error generating background attribute list.\n");
                            }
                        }
                                 
@@ -252,44 +260,47 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                     if(fg_set)
                       {
                         g_object_get(G_OBJECT(tag), "foreground-gdk", &color, NULL);
+                        counter1++;
                         attr = pango_attr_foreground_new(color->red,color->green,color->blue);
-                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                         open_attrs = g_slist_prepend(open_attrs, attr);
                       }
                     if(bg_set)
                       {
                         g_object_get(G_OBJECT(tag), "background-gdk", &color, NULL);
+                        counter2++;
                         attr = pango_attr_background_new(color->red,color->green,color->blue);
-                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                         open_attrs = g_slist_prepend(open_attrs, attr);
                       }
                    }
                  g_slist_free(tags);
               }
-    
-        }while(!gtk_text_iter_is_end(&iter) && gtk_text_iter_forward_to_tag_toggle(&iter, NULL));
-        
+         }while(!gtk_text_iter_is_end(&iter) && gtk_text_iter_forward_to_tag_toggle(&iter, NULL));
+
+        printf("End PageLine %i\n", gtk_text_iter_get_line(&iter));
+
         /* close all open attributes */
         for (attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next) {
                 attr = (PangoAttribute*) attr_walk->data;
-                attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter);
+                attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                 pango_attr_list_insert(attr_list, attr);
-        }
+        }     
+
         g_slist_free(open_attrs);
+        g_slist_free(attr_walk);
 
         pango_layout_set_attributes(layout, attr_list);
+          
         pango_attr_list_unref(attr_list);
 }
 
-static gint printing_text_iter_get_offset_bytes(GtkTextView *textview, const GtkTextIter *iter)
+static gint printing_text_iter_get_offset_bytes(GtkTextView *textview, const GtkTextIter *iter, const GtkTextIter *start1)
 {
         gint off_bytes;
         gchar *text;
-        GtkTextIter start;
 
-        gtk_text_buffer_get_start_iter(gtk_text_iter_get_buffer(iter), &start);
-        
-        text = gtk_text_iter_get_text(&start, iter);
+        text = gtk_text_iter_get_text(start1, iter);
         off_bytes = strlen(text);
         g_free(text);
         return off_bytes;
