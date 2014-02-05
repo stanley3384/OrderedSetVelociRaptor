@@ -115,12 +115,17 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      else if(lines>lines_per_page&&page_nr<total_pages-1)
         {
           gtk_text_buffer_get_iter_at_line(buffer, &start1, (page_nr*lines_per_page));
+          //Problem getting color on first number on the top of a page. Add a newline to solve it.
+          gtk_text_buffer_insert(buffer, &start1, "\n", 1);
+          gtk_text_iter_backward_char(&start1);
           gtk_text_buffer_get_iter_at_line(buffer, &end1, ((page_nr*lines_per_page)+lines_per_page));
           printf("Full Page\n");
         }
      else
         {
           gtk_text_buffer_get_iter_at_line(buffer, &start1, (page_nr*lines_per_page));
+          gtk_text_buffer_insert(buffer, &start1, "\n", 1);
+          gtk_text_iter_backward_char(&start1);
           gtk_text_buffer_get_end_iter(buffer, &end1);
           printf("Last Page\n");
         }
@@ -134,6 +139,8 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      pango_layout_set_text(layout, gtk_text_buffer_get_text(buffer, &start1, &end1, FALSE),-1);
      
      printing_layout_set_text_attributes(textview, start1, end1, layout, context);
+     //Remove the added newline.
+     gtk_text_buffer_delete(buffer, &start1, &start1);
 
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
      pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
@@ -215,7 +222,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                              }
                          if(!found)
                             {
-                              printf("Error generating foreground attribute list.\n");
+                              //printf("Error generating foreground attribute list.\n");
                             }
                       }
                     if(bg_set)
@@ -243,7 +250,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                            }
                          if(!found)
                            {
-                             printf("Error generating background attribute list.\n");
+                             //printf("Error generating background attribute list.\n");
                            }
                        }
                                 
