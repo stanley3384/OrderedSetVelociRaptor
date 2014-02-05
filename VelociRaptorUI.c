@@ -2352,6 +2352,7 @@ static void text_button_clicked(GtkButton *button, GtkTextView *textview)
   }
 static void clear_format_event(GtkButton *button, gpointer data)
   {
+    g_print("Clear Format\n");
     GtkTextIter start1, end1;
     GtkTextBuffer *buffer;
 
@@ -2468,21 +2469,21 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                              {
                                    if(iswitch==0)
                                      {
-                                       printf("%f %f ",previous, atof(cArrayNumber->str));
+                                       //printf("%f %f ",previous, atof(cArrayNumber->str));
                                        iBeginIter=iTwoPrevSpace+1;
                                        iswitch=1;
                                        iSetSize=2;
                                      }
                                    else
                                      {
-                                       printf("%f ", atof(cArrayNumber->str));
+                                       //printf("%f ", atof(cArrayNumber->str));
                                        //count sets of a specified size
                                        iSetSize++;
                                         if(i==iBufferCount-3&&iSetSize>=iSize) //ends with " \n\n\n"
                                             {
                                              //end off of last space
                                              iEndIter=iSpace;
-                                             printf("\nBegin %i End %i\n", iBeginIter, iEndIter);
+                                             //printf("\nBegin %i End %i\n", iBeginIter, iEndIter);
                                              gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
                                              gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
                                              gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
@@ -2493,18 +2494,18 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                              {
                                    if(iswitch==1)
                                      {
-                                       printf("\n");
+                                       //printf("\n");
                                        iEndIter=iPrevSpace;
                                        if(iSetSize>=iSize)
                                           {
-                                            printf("Begin %i End %i\n", iBeginIter, iEndIter);
+                                            //printf("Begin %i End %i\n", iBeginIter, iEndIter);
                                             gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
                                             gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
                                             gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
                                           }
                                        else
                                           {
-                                            printf("Iters Not Applied!\n");
+                                            //printf("Iters Not Applied!\n");
                                           }
                                      }
                                    iswitch=0;
@@ -2545,21 +2546,21 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                              {
                                    if(iswitch==0)
                                      {
-                                       printf("%f %f ",previous2, atof(cArrayNumber->str));
+                                       //printf("%f %f ",previous2, atof(cArrayNumber->str));
                                        iBeginIter=iTwoPrevSpace+1;
                                        iswitch=1;
                                        iSetSize=2;
                                      }
                                    else
                                      {
-                                       printf("%f ", atof(cArrayNumber->str));
+                                       //printf("%f ", atof(cArrayNumber->str));
                                        //count sets of a specified size
                                        iSetSize++;
                                         if(i==iBufferCount-3) //ends with " \n\n\n"
                                             {
                                              //end off of last space
                                              iEndIter=iSpace;
-                                             printf("\nBegin %i End %i\n", iBeginIter, iEndIter);
+                                             //printf("\nBegin %i End %i\n", iBeginIter, iEndIter);
                                              gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
                                              gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
                                              gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
@@ -2574,14 +2575,14 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                                        iEndIter=iPrevSpace;
                                        if(iSetSize>=iSize)
                                           {
-                                            printf("Begin %i End %i\n", iBeginIter, iEndIter);
+                                            //printf("Begin %i End %i\n", iBeginIter, iEndIter);
                                             gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
                                             gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
                                             gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
                                           }
                                        else
                                           {
-                                            printf("Iters Not Applied!\n");
+                                            //printf("Iters Not Applied!\n");
                                           }
                                      }
                                    iswitch=0;
