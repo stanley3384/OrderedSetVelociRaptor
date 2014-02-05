@@ -132,6 +132,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
 
      pango_layout_set_font_description(layout, desc);
      pango_layout_set_text(layout, gtk_text_buffer_get_text(buffer, &start1, &end1, FALSE),-1);
+     
      printing_layout_set_text_attributes(textview, start1, end1, layout, context);
 
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
@@ -214,7 +215,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                              }
                          if(!found)
                             {
-                              printf("Error generating forground attribute list.\n");
+                              printf("Error generating foreground attribute list.\n");
                             }
                       }
                     if(bg_set)
@@ -276,7 +277,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                    }
                  g_slist_free(tags);
               }
-         }while(!gtk_text_iter_is_end(&iter) && gtk_text_iter_forward_to_tag_toggle(&iter, NULL));
+         }while(gtk_text_iter_compare(&iter, &end1)<0 && gtk_text_iter_forward_to_tag_toggle(&iter, NULL));
 
         printf("End PageLine %i\n", gtk_text_iter_get_line(&iter));
 
