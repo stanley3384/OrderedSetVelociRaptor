@@ -90,7 +90,8 @@ gboolean control_changed(GtkWidget*, gpointer);
 static void cursor_changed(GtkTreeView*, gpointer);
 static void select_data(GtkWidget*, GtkTreeView*);
 static void pop_up_button_press_event(GtkWidget*, GdkEventButton*, GtkWidget*);
-static void copy_selected_to_clipboard(GtkWidget*, GtkWidget*);
+//Not working correctly.
+//static void copy_selected_to_clipboard(GtkWidget*, GtkWidget*);
 static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview);
 static void copy_plates_to_clipboard(GtkWidget*, GtkWidget*,int,int);
 static void select_all(GtkTreeView*, gpointer);
@@ -3322,6 +3323,8 @@ static void pop_up_button_press_event(GtkWidget *treeview, GdkEventButton *event
         gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, event->button, event->time);
       } 
   }
+/*
+   Not working correctly. Comment out.
 static void copy_selected_to_clipboard(GtkWidget *copy, GtkWidget *treeview)
   {
     //Copy the selected TreeView data to the clipboard.
@@ -3366,6 +3369,7 @@ static void copy_selected_to_clipboard(GtkWidget *copy, GtkWidget *treeview)
        }
     g_string_free(buffer,TRUE);
   }
+*/
 static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview)
   {
     GtkWidget *dialog, *table, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
@@ -3519,7 +3523,7 @@ static void cell_edited(GtkCellRendererText *renderer, gchar *path, gchar *new_t
    }
 static void test_data_button_clicked (GtkButton *button, gpointer data, int seed_value, double param, int iRadioButton)
 {
-   GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *NextButton, *scrolled_win, *menu, *copy, *copyplates, *copyplatesd, *copyappend;
+   GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *NextButton, *scrolled_win, *menu, *copyplates, *copyplatesd, *copyappend;
    GtkTreeSelection *selection;
    GtkAccelGroup *group = NULL;
    int iArrayCount;
@@ -3611,17 +3615,17 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
         gtk_window_add_accel_group(GTK_WINDOW(dialog), group);
     
         menu=gtk_menu_new();
-        copy=gtk_menu_item_new_with_label("Copy Selected to Clipboard");
+        //copy=gtk_menu_item_new_with_label("Copy Selected to Clipboard");
         copyplates=gtk_menu_item_new_with_label("Copy Plates to Clipboard(int)");
         copyplatesd=gtk_menu_item_new_with_label("Copy Plates to Clipboard(float)");
         copyappend=gtk_menu_item_new_with_label("Copy Table to SQLite database");
-        g_signal_connect(G_OBJECT(copy), "activate", G_CALLBACK(copy_selected_to_clipboard), treeview);
+        //g_signal_connect(G_OBJECT(copy), "activate", G_CALLBACK(copy_selected_to_clipboard), treeview);
         g_signal_connect(G_OBJECT(copyappend), "activate", G_CALLBACK(copy_treeview_to_database), treeview);
-        gtk_widget_add_accelerator(copy, "activate", group, GDK_KEY_C, GDK_CONTROL_MASK, GTK_ACCEL_MASK);
+        //gtk_widget_add_accelerator(copy, "activate", group, GDK_KEY_C, GDK_CONTROL_MASK, GTK_ACCEL_MASK);
         g_signal_connect(G_OBJECT(copyplates), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview);
         g_signal_connect(G_OBJECT(copyplatesd), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview);
         gtk_menu_attach_to_widget(GTK_MENU(menu), treeview, NULL);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), copy);
+        //gtk_menu_shell_append(GTK_MENU_SHELL(menu), copy);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplates);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplatesd);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyappend);
@@ -3647,7 +3651,7 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
 static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
 {
    //Create the TreeView for the data produced by the functions listed in the combobox.
-   GtkWidget *dialog2, *content_area2, *treeview2, *action_area2, *label1, *NextButton2, *scrolled_win2, *copy2, *copyplates2, *copyplatesd2, *copyappend2, *menu2;
+   GtkWidget *dialog2, *content_area2, *treeview2, *action_area2, *label1, *NextButton2, *scrolled_win2, *copyplates2, *copyplatesd2, *copyappend2, *menu2;
    GtkTreeSelection *selection2;
    GtkAccelGroup *group2 = NULL;
 
@@ -3693,17 +3697,17 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
        gtk_window_add_accel_group(GTK_WINDOW(dialog2), group2);
     
        menu2=gtk_menu_new();
-       copy2=gtk_menu_item_new_with_label("Copy Selected to Clipboard");
+       //copy2=gtk_menu_item_new_with_label("Copy Selected to Clipboard");
        copyplates2=gtk_menu_item_new_with_label("Copy Plates to Clipboard(int)");
        copyplatesd2=gtk_menu_item_new_with_label("Copy Plates to Clipboard(float)");
        copyappend2=gtk_menu_item_new_with_label("Copy Table to SQLite database");
-       g_signal_connect(G_OBJECT(copy2), "activate", G_CALLBACK(copy_selected_to_clipboard), treeview2);
+       //g_signal_connect(G_OBJECT(copy2), "activate", G_CALLBACK(copy_selected_to_clipboard), treeview2);
        g_signal_connect(G_OBJECT(copyappend2), "activate", G_CALLBACK(copy_treeview_to_database), treeview2);
-       gtk_widget_add_accelerator(copy2, "activate", group2, GDK_KEY_C, GDK_CONTROL_MASK, GTK_ACCEL_MASK);
+       //gtk_widget_add_accelerator(copy2, "activate", group2, GDK_KEY_C, GDK_CONTROL_MASK, GTK_ACCEL_MASK);
        g_signal_connect(G_OBJECT(copyplates2), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview2);
        g_signal_connect(G_OBJECT(copyplatesd2), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview2);
        gtk_menu_attach_to_widget(GTK_MENU(menu2), treeview2, NULL);
-       gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copy2);
+       //gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copy2);
        gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyplates2);
        gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyplatesd2);
        gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyappend2);
