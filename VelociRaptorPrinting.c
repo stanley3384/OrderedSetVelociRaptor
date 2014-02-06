@@ -99,7 +99,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
          font_size=pango_font_description_get_size(desc);
        }
 
-     GtkTextIter start1, end1;
+     GtkTextIter start1, start2, end1, end2, newline;
      GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
 
      lines=gtk_text_buffer_get_line_count(buffer);
@@ -107,26 +107,35 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      lines_per_page=floor(height/(font_size+1));
      total_pages=((lines-1)/lines_per_page)+1;
 
+     //Problem getting color on first number on the top of a page. Add a newline to solve it.
      if(lines<=lines_per_page)
         {
           gtk_text_buffer_get_bounds(buffer, &start1, &end1);
+          GtkTextMark *newstart=gtk_text_buffer_create_mark(buffer, "startmark", &start1, TRUE);
+          GtkTextMark *newend=gtk_text_buffer_create_mark(buffer, "endmark", &end1, TRUE);
+          gtk_text_buffer_insert(buffer, &start1, "\n", 1);
+          gtk_text_buffer_get_iter_at_mark(buffer, &start2, newstart);
+          gtk_text_buffer_get_iter_at_mark(buffer, &end2, newend);
           printf("One Page\n");
         }
      else if(lines>lines_per_page&&page_nr<total_pages-1)
         {
           gtk_text_buffer_get_iter_at_line(buffer, &start1, (page_nr*lines_per_page));
-          //Problem getting color on first number on the top of a page. Add a newline to solve it.
-          gtk_text_buffer_insert(buffer, &start1, "\n", 1);
-          gtk_text_iter_backward_char(&start1);
           gtk_text_buffer_get_iter_at_line(buffer, &end1, ((page_nr*lines_per_page)+lines_per_page));
+          GtkTextMark *newstart=gtk_text_buffer_create_mark(buffer, "startmark", &start1, TRUE);
+          GtkTextMark *newend=gtk_text_buffer_create_mark(buffer, "endmark", &end1, TRUE);
+          gtk_text_buffer_insert(buffer, &start1, "\n", 1);
+          gtk_text_buffer_get_iter_at_mark(buffer, &start2, newstart);
+          gtk_text_buffer_get_iter_at_mark(buffer, &end2, newend);
           printf("Full Page\n");
         }
      else
         {
           gtk_text_buffer_get_iter_at_line(buffer, &start1, (page_nr*lines_per_page));
+          GtkTextMark *newstart=gtk_text_buffer_create_mark(buffer, "startmark", &start1, TRUE);
           gtk_text_buffer_insert(buffer, &start1, "\n", 1);
-          gtk_text_iter_backward_char(&start1);
-          gtk_text_buffer_get_end_iter(buffer, &end1);
+          gtk_text_buffer_get_iter_at_mark(buffer, &start2, newstart);
+          gtk_text_buffer_get_end_iter(buffer, &end2);
           printf("Last Page\n");
         }
 
@@ -136,11 +145,13 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      layout=gtk_print_context_create_pango_layout(context);
 
      pango_layout_set_font_description(layout, desc);
-     pango_layout_set_text(layout, gtk_text_buffer_get_text(buffer, &start1, &end1, FALSE),-1);
+     pango_layout_set_text(layout, gtk_text_buffer_get_text(buffer, &start2, &end2, FALSE),-1);
      
-     printing_layout_set_text_attributes(textview, start1, end1, layout, context);
+     printing_layout_set_text_attributes(textview, start2, end2, layout, context);
      //Remove the added newline.
-     gtk_text_buffer_delete(buffer, &start1, &start1);
+     newline=start2;
+     gtk_text_iter_forward_cursor_position(&start2);
+     gtk_text_buffer_delete(buffer, &newline, &start2);
 
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
      pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
@@ -172,11 +183,9 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
         GSList *open_attrs=NULL;
         GSList *attr_walk=NULL;
         GtkTextIter iter=start1;
-        int counter1=0;
-        int counter2=0;
 
         //Check iterators.
-        printf("PageLines %i to %i\n", gtk_text_iter_get_line(&iter), gtk_text_iter_get_line(&end1));
+        //printf("PageLines %i to %i\n", gtk_text_iter_get_line(&iter), gtk_text_iter_get_line(&end1));
         //Trouble getting the first tag for the layout.
         gtk_text_iter_backward_to_tag_toggle(&iter, NULL);
 
@@ -268,7 +277,6 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                     if(fg_set)
                       {
                         g_object_get(G_OBJECT(tag), "foreground-gdk", &color, NULL);
-                        counter1++;
                         attr = pango_attr_foreground_new(color->red,color->green,color->blue);
                         attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                         open_attrs = g_slist_prepend(open_attrs, attr);
@@ -276,7 +284,6 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                     if(bg_set)
                       {
                         g_object_get(G_OBJECT(tag), "background-gdk", &color, NULL);
-                        counter2++;
                         attr = pango_attr_background_new(color->red,color->green,color->blue);
                         attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                         open_attrs = g_slist_prepend(open_attrs, attr);
@@ -286,7 +293,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
               }
          }while(gtk_text_iter_compare(&iter, &end1)<0 && gtk_text_iter_forward_to_tag_toggle(&iter, NULL));
 
-        printf("End PageLine %i\n", gtk_text_iter_get_line(&iter));
+        //printf("End PageLine %i\n", gtk_text_iter_get_line(&iter));
 
         /* close all open attributes */
         for (attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next) {
