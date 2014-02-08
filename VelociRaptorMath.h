@@ -23,6 +23,7 @@ void GenerateRandomValues(double dDataArray[], int iNumberOfPlates,int iPlateSiz
 void CalculatePercentControl(double dDataArray[], double dPercentArray[], int iPlateSize, int iNumberOfPlates, int iSetSizeForStatistics, const gchar *pPlatePosControlText, const gchar *pPlateNegControlText);
 void PlateMapInt(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns);
 void PlateMapDouble(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns);
+void PlateMapDoubleTruncate(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns, int digits);
 void send_text_to_database(const gchar *pTableName, GtkWidget *textview);
 void build_combo_table_sql(int ComboSet, int ComboSubSet, const gchar *TableName);
 void build_permutation_table_sql(int ComboSet, const gchar *TableName);

@@ -93,7 +93,8 @@ static void pop_up_button_press_event(GtkWidget*, GdkEventButton*, GtkWidget*);
 //Not working correctly.
 //static void copy_selected_to_clipboard(GtkWidget*, GtkWidget*);
 static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview);
-static void copy_plates_to_clipboard(GtkWidget*, GtkWidget*,int,int);
+static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWidget *treeview);
+static void copy_plates_to_clipboard(GtkWidget*, GtkWidget*,int,int,int);
 static void select_all(GtkTreeView*, gpointer);
 static void copy_treeview_to_database(GtkWidget*, GtkWidget*);
 static void setup_tree_view_data(GtkTreeView*, int, double, int);
@@ -3390,8 +3391,8 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 3);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 3);
 
-     gtk_entry_set_text(GTK_ENTRY(value_entry1), "");
-     gtk_entry_set_text(GTK_ENTRY(value_entry2), "");
+     gtk_entry_set_text(GTK_ENTRY(value_entry1), "8");
+     gtk_entry_set_text(GTK_ENTRY(value_entry2), "12");
  
      table=gtk_table_new(4,3,FALSE);
     
@@ -3416,11 +3417,89 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
         {
           rows=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1)));
           columns=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
-          copy_plates_to_clipboard(copy,treeview,rows,columns);
+
+          if(rows<1||columns<1)
+            {
+              simple_message_dialog("Rows and columns need to be greater than zero.");
+            }
+          else
+            {
+              copy_plates_to_clipboard(copy,treeview,rows,columns,0);
+            }
         }
      gtk_widget_destroy(dialog);
   }
-static void copy_plates_to_clipboard(GtkWidget *copy, GtkWidget *treeview, int iRows, int iColumns)
+static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWidget *treeview)
+  {
+    GtkWidget *dialog, *table, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
+    int result;
+    int rows=0;
+    int columns=0;
+    int digits=0;
+
+    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+     label1=gtk_label_new("Rows");
+     label2=gtk_label_new("Columns");
+     label3=gtk_label_new("Truncate Digits");
+    
+     value_entry1=gtk_entry_new();
+     value_entry2=gtk_entry_new();
+     value_entry3=gtk_entry_new();
+
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 3);
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 3);
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry3), 3);
+
+     gtk_entry_set_text(GTK_ENTRY(value_entry1), "8");
+     gtk_entry_set_text(GTK_ENTRY(value_entry2), "12");
+     gtk_entry_set_text(GTK_ENTRY(value_entry3), "7");
+ 
+     table=gtk_table_new(5,3,FALSE);
+    
+     gtk_table_attach(GTK_TABLE(table), label1, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), label2, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), label3, 0,1,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
+
+     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,2,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
+     gtk_table_attach(GTK_TABLE(table), value_entry3, 1,2,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
+
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+        {
+          rows=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1)));
+          columns=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+          digits=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry3)));
+         
+          if(digits<1||digits>10)
+            {
+              simple_message_dialog("Truncate digits 0<x<=10.");
+            }
+          else if(rows<1||columns<1)
+            {
+              simple_message_dialog("Rows and columns need to be greater than zero.");
+            }
+          else
+            {
+              copy_plates_to_clipboard(copy,treeview,rows,columns,digits);
+            }
+        }
+     gtk_widget_destroy(dialog);
+  }
+static void copy_plates_to_clipboard(GtkWidget *copy, GtkWidget *treeview, int iRows, int iColumns, int digits)
   {
     //Copy one dimensional data to two dimensions or plate well format.
     int iPlateSize=atoi(pPlateSizeText);
@@ -3465,11 +3544,15 @@ static void copy_plates_to_clipboard(GtkWidget *copy, GtkWidget *treeview, int i
            {
             if(g_strcmp0(title, "Copy Plates to Clipboard(int)")==0)
                {
-                PlateMapInt(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns);  
+                 PlateMapInt(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns);  
+               }
+            else if(g_strcmp0(title, "Copy Plates to Clipboard(float)")==0)
+               {
+                 PlateMapDouble(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns);
                }
             else
                {
-                PlateMapDouble(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns);  
+                 PlateMapDoubleTruncate(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns, digits);  
                }
             }
          else
@@ -3523,7 +3606,7 @@ static void cell_edited(GtkCellRendererText *renderer, gchar *path, gchar *new_t
    }
 static void test_data_button_clicked (GtkButton *button, gpointer data, int seed_value, double param, int iRadioButton)
 {
-   GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *NextButton, *scrolled_win, *menu, *copyplates, *copyplatesd, *copyappend;
+   GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *NextButton, *scrolled_win, *menu, *copyplates1, *copyplates2, *copyplates3, *copyappend;
    GtkTreeSelection *selection;
    GtkAccelGroup *group = NULL;
    int iArrayCount;
@@ -3616,18 +3699,21 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
     
         menu=gtk_menu_new();
         //copy=gtk_menu_item_new_with_label("Copy Selected to Clipboard");
-        copyplates=gtk_menu_item_new_with_label("Copy Plates to Clipboard(int)");
-        copyplatesd=gtk_menu_item_new_with_label("Copy Plates to Clipboard(float)");
+        copyplates1=gtk_menu_item_new_with_label("Copy Plates to Clipboard(int)");
+        copyplates2=gtk_menu_item_new_with_label("Copy Plates to Clipboard(float)");
+        copyplates3=gtk_menu_item_new_with_label("Copy Plates to Clipboard(truncate)");
         copyappend=gtk_menu_item_new_with_label("Copy Table to SQLite database");
         //g_signal_connect(G_OBJECT(copy), "activate", G_CALLBACK(copy_selected_to_clipboard), treeview);
         g_signal_connect(G_OBJECT(copyappend), "activate", G_CALLBACK(copy_treeview_to_database), treeview);
         //gtk_widget_add_accelerator(copy, "activate", group, GDK_KEY_C, GDK_CONTROL_MASK, GTK_ACCEL_MASK);
-        g_signal_connect(G_OBJECT(copyplates), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview);
-        g_signal_connect(G_OBJECT(copyplatesd), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview);
+        g_signal_connect(G_OBJECT(copyplates1), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview);
+        g_signal_connect(G_OBJECT(copyplates2), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview);
+        g_signal_connect(G_OBJECT(copyplates3), "activate", G_CALLBACK(copy_plates_to_clipboard_withtruncate_dialog), treeview);
         gtk_menu_attach_to_widget(GTK_MENU(menu), treeview, NULL);
         //gtk_menu_shell_append(GTK_MENU_SHELL(menu), copy);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplates);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplatesd);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplates1);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplates2);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyplates3);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), copyappend);
         gtk_widget_show_all(menu);
         g_signal_connect(G_OBJECT(treeview), "button_release_event", G_CALLBACK(pop_up_button_press_event),menu);
@@ -3651,7 +3737,7 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
 static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
 {
    //Create the TreeView for the data produced by the functions listed in the combobox.
-   GtkWidget *dialog2, *content_area2, *treeview2, *action_area2, *label1, *NextButton2, *scrolled_win2, *copyplates2, *copyplatesd2, *copyappend2, *menu2;
+   GtkWidget *dialog2, *content_area2, *treeview2, *action_area2, *label1, *NextButton2, *scrolled_win2, *copyplates2, *copyplatesd2, *copyplatest2, *copyappend2, *menu2;
    GtkTreeSelection *selection2;
    GtkAccelGroup *group2 = NULL;
 
@@ -3700,16 +3786,19 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
        //copy2=gtk_menu_item_new_with_label("Copy Selected to Clipboard");
        copyplates2=gtk_menu_item_new_with_label("Copy Plates to Clipboard(int)");
        copyplatesd2=gtk_menu_item_new_with_label("Copy Plates to Clipboard(float)");
+       copyplatest2=gtk_menu_item_new_with_label("Copy Plates to Clipboard(truncate)");
        copyappend2=gtk_menu_item_new_with_label("Copy Table to SQLite database");
        //g_signal_connect(G_OBJECT(copy2), "activate", G_CALLBACK(copy_selected_to_clipboard), treeview2);
        g_signal_connect(G_OBJECT(copyappend2), "activate", G_CALLBACK(copy_treeview_to_database), treeview2);
        //gtk_widget_add_accelerator(copy2, "activate", group2, GDK_KEY_C, GDK_CONTROL_MASK, GTK_ACCEL_MASK);
        g_signal_connect(G_OBJECT(copyplates2), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview2);
        g_signal_connect(G_OBJECT(copyplatesd2), "activate", G_CALLBACK(copy_plates_to_clipboard_dialog), treeview2);
+       g_signal_connect(G_OBJECT(copyplatest2), "activate", G_CALLBACK(copy_plates_to_clipboard_withtruncate_dialog), treeview2);
        gtk_menu_attach_to_widget(GTK_MENU(menu2), treeview2, NULL);
        //gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copy2);
        gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyplates2);
        gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyplatesd2);
+       gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyplatest2);
        gtk_menu_shell_append(GTK_MENU_SHELL(menu2), copyappend2);
        gtk_widget_show_all(menu2);
        g_signal_connect(G_OBJECT(treeview2), "button_release_event", G_CALLBACK(pop_up_button_press_event),menu2);

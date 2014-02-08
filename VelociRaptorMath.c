@@ -1733,8 +1733,8 @@ void PlateMapDouble(double dDataArray[], int iNumberOfPlates, int iPlateSize, in
               for(j=0; j<iRows; j++)
                  {
                    for(k=0; k<iColumns; k++)
-                        {
-                          g_string_append_printf(buffer,"%f ", dDataArray[check]); 
+                        {  
+                          g_string_append_printf(buffer,"%f ", dDataArray[check]);
                           check++;
                         }
                      g_string_append_printf(buffer,"\n");  
@@ -1744,6 +1744,40 @@ void PlateMapDouble(double dDataArray[], int iNumberOfPlates, int iPlateSize, in
              
            gtk_clipboard_set_text(clipboard, buffer->str, strlen(buffer->str));
            g_string_free(buffer, TRUE);
+     }
+void PlateMapDoubleTruncate(double dDataArray[], int iNumberOfPlates, int iPlateSize, int iRows, int iColumns, int digits)
+     {
+         //Put a column of numbers into row, column format. (double) version.
+         guint32 check=0;
+         guint32 i=0;
+         guint32 j=0;
+         guint32 k=0;
+         GString *buffer=g_string_new(NULL);
+         GString *temp1=g_string_new(NULL);
+         GtkClipboard *clipboard=gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+          
+         g_print("Create Plate Map(float)\n");  
+         for(i=0; i<iNumberOfPlates; i++)
+           {
+              for(j=0; j<iRows; j++)
+                 {
+                   for(k=0; k<iColumns; k++)
+                        {  
+                          
+                          g_string_printf(temp1,"%.10f", dDataArray[check]);
+                          g_string_truncate(temp1, digits);
+                          g_string_append_printf(buffer,"%s ", temp1->str);
+                          g_string_truncate(temp1, 0); 
+                          check++;
+                        }
+                     g_string_append_printf(buffer,"\n");  
+                 }
+                g_string_append_printf(buffer,"\n");
+           }
+             
+           gtk_clipboard_set_text(clipboard, buffer->str, strlen(buffer->str));
+           g_string_free(buffer, TRUE);
+           g_string_free(temp1, TRUE);
      }
 void send_text_to_database(const gchar *pTableName, GtkWidget *textview)
      {
