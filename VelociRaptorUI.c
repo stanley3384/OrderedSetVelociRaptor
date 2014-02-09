@@ -57,6 +57,7 @@ static void destroy_event(GtkWidget*, gpointer);
 static void activate_pos_control_event(GtkWidget*, GtkEntry*);
 static void activate_neg_control_event(GtkWidget*, GtkEntry*);
 static void change_font(GtkWidget*, GtkTextView*);
+static void change_margin(GtkWidget*, GtkTextView*);
 static void distributions_dialog(GtkButton*, gpointer);
 static void activate_treeview_data_event(GtkWidget*, GtkStateFlags, gpointer);
 static void activate_treeview_percent_event(GtkWidget*, GtkStateFlags, gpointer);
@@ -110,7 +111,7 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *FontCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
+     GtkWidget *window, *button, *scrolled_win, *textview, *FontCombo, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
      //For printing
      Widgets *w;
 
@@ -278,6 +279,7 @@ int main(int argc, char *argv[])
      gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
      
      FontCombo=gtk_combo_box_text_new();
+     gtk_widget_set_tooltip_text(FontCombo, "Font Size");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "0", "6");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "1", "7");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "2", "8");
@@ -289,6 +291,20 @@ int main(int argc, char *argv[])
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "8", "14");
      gtk_combo_box_set_active(GTK_COMBO_BOX(FontCombo), 5);
      g_signal_connect(FontCombo, "changed", G_CALLBACK(change_font), textview);
+
+     MarginCombo=gtk_combo_box_text_new_with_entry();
+     gtk_widget_set_tooltip_text(MarginCombo, "Left Margin");
+     GtkWidget *combo_entry=gtk_bin_get_child(GTK_BIN(MarginCombo));
+     gtk_entry_set_width_chars(GTK_ENTRY(combo_entry), 3);
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "0");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "10");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "20");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "30");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "40");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "50");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "60");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(MarginCombo), 0);
+     g_signal_connect(MarginCombo, "changed", G_CALLBACK(change_margin), textview);
 
      MainTable=gtk_table_new(10,8,TRUE);
      gtk_table_attach(GTK_TABLE(MainTable), RaptorFeet, 0,8,0,1,GTK_FILL,GTK_FILL,0,0);
@@ -319,7 +335,8 @@ int main(int argc, char *argv[])
      gtk_table_attach(GTK_TABLE(MainTable), FormatText1, 4,5,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), FormatText2, 5,6,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), SendToDatabase, 6,7,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), FontCombo, 7,8,9,10,GTK_SHRINK,GTK_SHRINK,0,0);    
+     gtk_table_attach(GTK_TABLE(MainTable), FontCombo, 7,8,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), MarginCombo, 7,8,8,9,GTK_SHRINK,GTK_SHRINK,0,0);     
 
      gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
@@ -421,6 +438,13 @@ static void change_font(GtkWidget *font, GtkTextView *textview)
     fontID=gtk_combo_box_get_active_id(GTK_COMBO_BOX(font));
     pfd = pango_font_description_from_string(fonts[atoi(fontID)]); 
     gtk_widget_override_font(GTK_WIDGET(textview), pfd);
+  }
+static void change_margin(GtkWidget *margin, GtkTextView *textview)
+  {
+    int left_margin=10;
+    left_margin=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(margin)));
+    printf("Left Margin %i\n", left_margin);
+    gtk_text_view_set_left_margin(textview, left_margin);
   }
 static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
   {
