@@ -441,10 +441,10 @@ static void change_font(GtkWidget *font, GtkTextView *textview)
   }
 static void change_margin(GtkWidget *margin, GtkTextView *textview)
   {
-    int left_margin=10;
+    int left_margin=0;
     left_margin=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(margin)));
-    printf("Left Margin %i\n", left_margin);
-    gtk_text_view_set_left_margin(textview, left_margin);
+    //printf("Left Margin %i\n", left_margin);
+    gtk_text_view_set_indent(textview, left_margin);
   }
 static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
   {

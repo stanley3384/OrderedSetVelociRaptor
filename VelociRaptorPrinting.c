@@ -87,6 +87,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      PangoLayout *layout;
      gint font_size;
      gint lines, height, lines_per_page, total_pages, page_width;
+     gint indent=gtk_text_view_get_indent(textview);
      PangoContext *context1=gtk_widget_get_pango_context(GTK_WIDGET(textview));
      PangoFontDescription *desc=pango_context_get_font_description(context1);
 
@@ -140,6 +141,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
         }
 
      cr=gtk_print_context_get_cairo_context(context);
+     cairo_move_to(cr, indent, 0);
      page_width=gtk_print_context_get_width(context);
 
      layout=gtk_print_context_create_pango_layout(context);
@@ -156,6 +158,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
      pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
      pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+     //pango_layout_set_indent(layout, 100);
 
      pango_cairo_show_layout(cr, layout);
 
