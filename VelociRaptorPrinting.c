@@ -194,12 +194,13 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
         attr_list = pango_attr_list_new();
         
         do{
-            gboolean fg_set, bg_set, weight_set;
+            gboolean fg_set, bg_set, weight_set, size_set;
             GSList *tags=NULL;
             GSList *tag_walk=NULL;
             GtkTextTag *tag=NULL;
             GdkColor *color = NULL;
             gint weight;
+            gint size;
 
            if(gtk_text_iter_ends_tag(&iter, NULL)) 
              {
@@ -209,7 +210,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                   {
                     gboolean found;
                     tag = GTK_TEXT_TAG(tag_walk->data);
-                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, NULL);
+                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, "size", &size_set, NULL);
                     if(fg_set)
                       {
                         found = FALSE;
@@ -290,7 +291,32 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                            {
                              //printf("Error generating weight list.\n");
                            }
-                        }          
+                        } 
+                     if(size_set)
+                      {
+                        found = FALSE;
+                        for(attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next)
+                           {
+                             attr = (PangoAttribute*)attr_walk->data;
+                             if(attr->klass->type == PANGO_ATTR_SIZE)
+                               {
+                                 attr_int = (PangoAttrInt*)attr;
+                                 g_object_get(G_OBJECT(tag), "size", &size, NULL);
+                                 if(attr_int->value == size)
+                                   {
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
+                                     pango_attr_list_insert(attr_list, attr);
+                                     found = TRUE;
+                                     open_attrs = g_slist_delete_link(open_attrs, attr_walk);
+                                     break;
+                                   }
+                               }
+                           }
+                         if(!found)
+                           {
+                             //printf("Error generating size list.\n");
+                           }
+                        }  
                    }
                   g_slist_free(tags);
               }
@@ -304,7 +330,7 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                 for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
                   {
                     tag=GTK_TEXT_TAG(tag_walk->data);
-                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, NULL);
+                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, "size", &size_set, NULL);
                     if(fg_set)
                       {
                         g_object_get(G_OBJECT(tag), "foreground-gdk", &color, NULL);
@@ -324,6 +350,13 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                         weight_set_for_this_iter = TRUE;
                         g_object_get(G_OBJECT(tag), "weight", &weight, NULL);
                         attr = pango_attr_weight_new(weight);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
+                        open_attrs = g_slist_prepend(open_attrs, attr);
+                      }
+                     if(size_set)
+                      {
+                        g_object_get(G_OBJECT(tag), "size", &size, NULL);
+                        attr = pango_attr_size_new(size);
                         attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                         open_attrs = g_slist_prepend(open_attrs, attr);
                       }
