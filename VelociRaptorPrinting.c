@@ -158,7 +158,6 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
      pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
      pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
-     //pango_layout_set_indent(layout, 100);
 
      pango_cairo_show_layout(cr, layout);
 

@@ -48,6 +48,8 @@ guint32 iTextArrayCount=0;
 guint32 iRandomDataArrayCount=0;
 int iReferenceCountDialogWindow=0;
 int iBreakLoop=0;
+int font_bold_switch1=0;
+int font_bold_switch2=0;
 //Integration parameters in Dunnett's. Declared in VelociRaptorGlobal.h.
 int MAXPTS_C=1000;
 double ABSEPS_C=0.01;
@@ -56,6 +58,9 @@ double wrap_gsl_rng_uniform(gsl_rng *r, double param);
 static void destroy_event(GtkWidget*, gpointer);
 static void activate_pos_control_event(GtkWidget*, GtkEntry*);
 static void activate_neg_control_event(GtkWidget*, GtkEntry*);
+static void selection_font_bold(GtkWidget*, GtkTextView*);
+static void global_font_bold(GtkWidget*, GtkTextView*);
+static void selection_change_font(GtkWidget*, GtkTextView*);
 static void change_font(GtkWidget*, GtkTextView*);
 static void change_margin(GtkWidget*, GtkTextView*);
 static void distributions_dialog(GtkButton*, gpointer);
@@ -111,7 +116,8 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *FontCombo, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet;  
+     GtkWidget *window, *button, *scrolled_win, *textview, *SelectFontCombo, *FontCombo, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FormatText1, *FormatText2, *ClearFormat, *SendToDatabase, *RaptorFeet, *BoldButton, *UnBoldButton; 
+     GtkTextBuffer *buffer; 
      //For printing
      Widgets *w;
 
@@ -133,6 +139,10 @@ int main(int argc, char *argv[])
      FormatText1=gtk_button_new_with_mnemonic("Format Plate Map");
      FormatText2=gtk_button_new_with_mnemonic("RiseFall Plate Map");
      SendToDatabase=gtk_button_new_with_mnemonic("Data To Database");
+     BoldButton=gtk_button_new_with_mnemonic("   Bold   ");
+     gtk_widget_set_tooltip_text(BoldButton, "Selection Bold");
+     UnBoldButton=gtk_button_new_with_mnemonic("   Bold   ");
+     gtk_widget_set_tooltip_text(UnBoldButton, "Global Bold");
 
      FileMenu=gtk_menu_new(); 
      ImportItem=gtk_menu_item_new_with_label("Import Text");
@@ -218,6 +228,11 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem5);
        
      textview=gtk_text_view_new();
+     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+     gtk_text_buffer_create_tag(buffer, "BoldText", "weight", PANGO_WEIGHT_BOLD, NULL);
+     g_signal_connect(BoldButton, "clicked", G_CALLBACK(selection_font_bold), textview);
+     g_signal_connect(UnBoldButton, "clicked", G_CALLBACK(global_font_bold), textview);
+
      g_signal_connect(BasicStatsItem, "activate", G_CALLBACK(basic_statistics_dialog), textview);
      g_signal_connect(GaussianItem, "activate", G_CALLBACK(gaussian_dialog), textview);
      g_signal_connect(VarianceItem, "activate", G_CALLBACK(homogeniety_of_variance_dialog), textview);
@@ -278,8 +293,24 @@ int main(int argc, char *argv[])
      gtk_entry_set_width_chars(GTK_ENTRY(PlatePosControlEntry), 10);
      gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
      
+     SelectFontCombo=gtk_combo_box_text_new();
+     gtk_widget_set_tooltip_text(SelectFontCombo, "Selection Font Size");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "0", "6");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "1", "7");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "2", "8");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "3", "9");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "4", "10");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "5", "11");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "6", "12");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "7", "13");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "8", "14");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "9", "15");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(SelectFontCombo), "10", "16");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(SelectFontCombo), 5);
+     g_signal_connect(SelectFontCombo, "changed", G_CALLBACK(selection_change_font), textview);
+     
      FontCombo=gtk_combo_box_text_new();
-     gtk_widget_set_tooltip_text(FontCombo, "Font Size");
+     gtk_widget_set_tooltip_text(FontCombo, "Global Font Size");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "0", "6");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "1", "7");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "2", "8");
@@ -289,6 +320,8 @@ int main(int argc, char *argv[])
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "6", "12");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "7", "13");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "8", "14");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "9", "15");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(FontCombo), "10", "16");
      gtk_combo_box_set_active(GTK_COMBO_BOX(FontCombo), 5);
      g_signal_connect(FontCombo, "changed", G_CALLBACK(change_font), textview);
 
@@ -335,8 +368,12 @@ int main(int argc, char *argv[])
      gtk_table_attach(GTK_TABLE(MainTable), FormatText1, 4,5,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), FormatText2, 5,6,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), SendToDatabase, 6,7,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), SelectFontCombo, 7,8,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), BoldButton, 7,8,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
+     
      gtk_table_attach(GTK_TABLE(MainTable), FontCombo, 7,8,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), MarginCombo, 7,8,8,9,GTK_SHRINK,GTK_SHRINK,0,0);     
+     gtk_table_attach(GTK_TABLE(MainTable), MarginCombo, 7,8,7,8,GTK_SHRINK,GTK_SHRINK,0,0);     
+     gtk_table_attach(GTK_TABLE(MainTable), UnBoldButton, 7,8,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
 
      gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
@@ -428,10 +465,90 @@ static void activate_neg_control_event(GtkWidget *check, GtkEntry *entry)
               gtk_widget_set_sensitive(GTK_WIDGET(entry),FALSE);
             }
   }
+static void selection_font_bold(GtkWidget *BoldButton, GtkTextView *textview)
+  {
+    
+    if(font_bold_switch1==0)
+      {
+        gtk_button_set_label(GTK_BUTTON(BoldButton), "Normal");
+        font_bold_switch1=1;
+      }
+    else
+      {
+        gtk_button_set_label(GTK_BUTTON(BoldButton), "   Bold   ");
+        font_bold_switch1=0;
+      }
+        
+  }
+static void global_font_bold(GtkWidget *BoldButton, GtkTextView *textview)
+  {
+    GtkTextIter start, end;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+
+    if(font_bold_switch2==0)
+      {
+        gtk_button_set_label(GTK_BUTTON(BoldButton), "Normal");
+        gtk_text_buffer_apply_tag_by_name(buffer, "BoldText", &start, &end);
+        font_bold_switch2=1;
+      }
+    else
+      {
+        gtk_button_set_label(GTK_BUTTON(BoldButton), "   Bold   ");
+        gtk_text_buffer_remove_tag_by_name(buffer, "BoldText", &start, &end);
+        font_bold_switch2=0;
+      }
+        
+  }
+static void selection_change_font(GtkWidget *font, GtkTextView *textview)
+  {
+    //Set the font for the textview.
+    char *fonts[11]={"Regular 6", "Regular 7", "Regular 8", "Regular 9", "Regular 10", "Regular 11", "Regular 12", "Regular 13", "Regular 14", "Regular 15", "Regular 16"};
+    char *bolds[11]={"6Bold", "7Bold", "8Bold", "9Bold", "10Bold", "11Bold", "12Bold", "13Bold", "14Bold", "15Bold", "16Bold"};
+    const gchar *fontID;
+    GtkTextIter start, end;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
+    GtkTextTag *tag=NULL;
+    GtkTextTagTable *TagTable=gtk_text_buffer_get_tag_table(buffer);
+
+    gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
+    fontID=gtk_combo_box_get_active_id(GTK_COMBO_BOX(font));
+
+    if(font_bold_switch1==1)
+      {
+        tag=gtk_text_tag_table_lookup(TagTable, fonts[atoi(fontID)]);
+      }
+    else
+      {
+        tag=gtk_text_tag_table_lookup(TagTable, bolds[atoi(fontID)]);
+      }
+     
+    if(tag==NULL)
+      {
+        printf("New Tag\n");
+        if(font_bold_switch1==1)
+          {
+            gtk_text_buffer_create_tag(buffer, fonts[atoi(fontID)] ,"font" ,fonts[atoi(fontID)] , NULL);
+            gtk_text_buffer_apply_tag_by_name(buffer, fonts[atoi(fontID)], &start, &end);
+          }
+        else
+          {
+            gtk_text_buffer_create_tag(buffer, bolds[atoi(fontID)] ,"font" ,fonts[atoi(fontID)] , "weight", PANGO_WEIGHT_BOLD, NULL);
+            gtk_text_buffer_apply_tag_by_name(buffer, bolds[atoi(fontID)], &start, &end);
+          }
+      }
+    else
+      {
+        printf("Tags Present\n");
+        gtk_text_buffer_remove_all_tags(buffer, &start, &end);
+        gtk_text_buffer_apply_tag(buffer, tag, &start, &end);
+      }
+ 
+  }
 static void change_font(GtkWidget *font, GtkTextView *textview)
   {
     //Set the font for the textview.
-    char *fonts[9]={"Regular 6", "Regular 7", "Regular 8", "Regular 9", "Regular 10", "Regular 11", "Regular 12", "Regular 13", "Regular 14"};
+    char *fonts[11]={"Regular 6", "Regular 7", "Regular 8", "Regular 9", "Regular 10", "Regular 11", "Regular 12", "Regular 13", "Regular 14", "Regular 15", "Regular 16"};
     const gchar *fontID;
     PangoFontDescription *pfd;
 
