@@ -194,20 +194,22 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
         attr_list = pango_attr_list_new();
         
         do{
-            gboolean fg_set, bg_set;
+            gboolean fg_set, bg_set, weight_set;
             GSList *tags=NULL;
             GSList *tag_walk=NULL;
             GtkTextTag *tag=NULL;
             GdkColor *color = NULL;
+            gint weight;
 
            if(gtk_text_iter_ends_tag(&iter, NULL)) 
              {
+               PangoAttrInt *attr_int;
                tags = gtk_text_iter_get_toggled_tags(&iter, FALSE);
                for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
                   {
                     gboolean found;
                     tag = GTK_TEXT_TAG(tag_walk->data);
-                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, NULL);
+                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, NULL);
                     if(fg_set)
                       {
                         found = FALSE;
@@ -264,7 +266,31 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                              //printf("Error generating background attribute list.\n");
                            }
                        }
-                                
+                    if(weight_set)
+                      {
+                        found = FALSE;
+                        for(attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next)
+                           {
+                             attr = (PangoAttribute*)attr_walk->data;
+                             if(attr->klass->type == PANGO_ATTR_WEIGHT)
+                               {
+                                 attr_int = (PangoAttrInt*)attr;
+                                 g_object_get(G_OBJECT(tag), "weight", &weight, NULL);
+                                 if(attr_int->value == weight)
+                                   {
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
+                                     pango_attr_list_insert(attr_list, attr);
+                                     found = TRUE;
+                                     open_attrs = g_slist_delete_link(open_attrs, attr_walk);
+                                     break;
+                                   }
+                               }
+                           }
+                         if(!found)
+                           {
+                             //printf("Error generating weight list.\n");
+                           }
+                        }          
                    }
                   g_slist_free(tags);
               }
@@ -272,10 +298,13 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
             if(gtk_text_iter_begins_tag(&iter, NULL))
               {
                 tags = gtk_text_iter_get_toggled_tags(&iter, TRUE);
+                /* Sometimes, an iter has several weights. Use only the first in this case */
+                gboolean weight_set_for_this_iter;
+                weight_set_for_this_iter = FALSE;
                 for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
                   {
                     tag=GTK_TEXT_TAG(tag_walk->data);
-                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, NULL);
+                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, NULL);
                     if(fg_set)
                       {
                         g_object_get(G_OBJECT(tag), "foreground-gdk", &color, NULL);
@@ -287,6 +316,14 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                       {
                         g_object_get(G_OBJECT(tag), "background-gdk", &color, NULL);
                         attr = pango_attr_background_new(color->red,color->green,color->blue);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
+                        open_attrs = g_slist_prepend(open_attrs, attr);
+                      }
+                    if(weight_set && !weight_set_for_this_iter)
+                      {
+                        weight_set_for_this_iter = TRUE;
+                        g_object_get(G_OBJECT(tag), "weight", &weight, NULL);
+                        attr = pango_attr_weight_new(weight);
                         attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
                         open_attrs = g_slist_prepend(open_attrs, attr);
                       }
