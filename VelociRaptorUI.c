@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 
      FileMenu=gtk_menu_new(); 
      ImportItem=gtk_menu_item_new_with_label("Import Text");
-     PrintItem=gtk_menu_item_new_with_label("Print Textview");
+     PrintItem=gtk_menu_item_new_with_label("Print White Board");
      QuitItem=gtk_menu_item_new_with_label("Quit");
 
      FileMenu2=gtk_menu_new();
