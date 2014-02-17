@@ -18,17 +18,17 @@
 
         For calculations, the optional positive and negative control values overide the Set Size for Stats value in the percent of control function and for generating random values for controls. If the optional controls are not checked the calculations will be performed in Set Size for Stats blocks down the column of numbers with the positive control the first block and negative control in the second block. The random numbers will generate your numbers in this pattern also unless you set the control values before you get the random numbers. If you set your control values the Set Size for Stats value is still needed. When the auxiliary table is built it needs a block size for default sets. You can make adjustments for your analysis if they aren't in block form by setting the Picks values in the auxiliary dialog. 
 
-	Try to make sense of what you are doing. It is a test version and has a some work left to be done.
+        Once the data is loaded into the database and the auxiliary table is built, everything is setup for doing analysis and graphing. There are several methods for adjusting for multiplicity in a set. With a test dataset you can look at several different methods for comparison. There is also some simple formatting, heatmapping and graphing for taking a look at data. 
 
-        The Ordered Set VelociRaptor is a simple demonstration of some useful ideas in analysis with high performance in mind. Enjoy.
+	Try to make sense of what you are doing. It is a test version and has a some work left to be done. It is an attempt to combine a bunch of scripts into a useful program with a graphical user interface. 
 
 
 C. Eric Cashon
 cecashon@aol.com
 
 
-1. SQLite percent of control. This is an attempt to write this in SQL. It isn't a very dynamic solution. There are other ways to solve this. You could go the procedural language route of some dialects of SQL or you might write the code in C or a combination of SQL and C. 
-   The following SQL script is setup to work with the default values in the VelociRaptor program.
+1. SQLite percent of control. This is the SQL example. It isn't a very dynamic solution. There are other ways to solve this. You could go the procedural language route of some dialects of SQL or you might write the code in C or a combination of SQL and C. 
+   The following SQL script is setup to work with the default values in the VelociRaptor program after they have been loaded into the SQLite database.
 
 SELECT T2.KeyID, T2.Data, (((T2.Data - T2.Neg)/(T2.Pos - T2.Neg)) *100) AS POC FROM (SELECT T1.KeyID, T1.Data,  (SELECT CASE WHEN T1.KeyID % 96 <> 0 THEN (SELECT (SUM(T3.Data)/ 4) FROM Data T3 WHERE T3.KeyID >= (T1.KeyID / 96) * 96 + 1 AND T3.KeyID <= (T1.KeyID / 96) * 96 + 4) ELSE (SELECT (SUM(T4.Data)/ 4) FROM Data T4 WHERE T4.KeyID >= ((T1.KeyID - 1) / 96) * 96 + 1 AND T4.KeyID <= ((T1.KeyID - 1) / 96) * 96 + 4) END) AS Pos, (SELECT CASE WHEN T1.KeyID % 96 <> 0 THEN (SELECT (SUM(T5.Data) / 4) FROM Data T5 WHERE T5.KeyID >= (T1.KeyID / 96) * 96 + 5 AND T5.KeyID <= (T1.KeyID / 96) * 96 + 8) ELSE (SELECT (SUM(T6.Data) / 4) FROM Data T6 WHERE T6.KeyID >= ((T1.KeyID - 1) / 96) * 96 + 5 AND T6.KeyID <= ((T1.KeyID - 1) / 96) * 96 + 8) END) AS Neg FROM Data T1) AS T2;
 
