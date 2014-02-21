@@ -169,7 +169,7 @@ static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, Gt
      printf("End Printing\n");
   }
 /*
- A truncated version of the following print code. An attempt to get the treeview heatmapped platemaps
+ A truncated version of the following print code. An attempt to get the textview heatmapped platemaps
  to print. The original code is much more complete and a better example of doing this.
 
 http://www.claws-mail.org
