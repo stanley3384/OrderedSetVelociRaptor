@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
      ClearFormat=gtk_button_new_with_mnemonic("Clear Format");
      SelectionButton=gtk_button_new_with_mnemonic("Selection");
      gtk_widget_set_tooltip_text(SelectionButton, "Selection Font");
-     GlobalButton=gtk_button_new_with_mnemonic("Global");
+     GlobalButton=gtk_button_new_with_mnemonic("   Global   ");
      gtk_widget_set_tooltip_text(GlobalButton, "Global Font");
      FontChooser=gtk_font_button_new();
      gtk_widget_set_tooltip_text(FontChooser, "Font Chooser");
