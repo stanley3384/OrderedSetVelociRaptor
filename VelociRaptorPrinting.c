@@ -69,11 +69,12 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
        }
      else
        {
-         font_size=pango_font_description_get_size(desc);
+         printf("Problem getting the font size. Print output probably formatted wrong.\n");
+         font_size=10;
        }
 
      lines=gtk_text_buffer_get_line_count(buffer);
-     height=gtk_print_context_get_height(context); 
+     height=gtk_print_context_get_height(context)-20; 
      lines_per_page=floor(height/(font_size+1));
      total_pages=((lines-1)/lines_per_page)+1;
      
@@ -97,14 +98,16 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
        }
      else
        {
-         font_size=pango_font_description_get_size(desc);
+         printf("Problem getting the font size. Print output probably formatted wrong.\n");
+         font_size=10;
        }
-
+     printf("Global Font Size %i\n", font_size);
+     
      GtkTextIter start1, start2, end1, end2, newline;
      GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
 
      lines=gtk_text_buffer_get_line_count(buffer);
-     height=gtk_print_context_get_height(context); 
+     height=gtk_print_context_get_height(context)-20; 
      lines_per_page=floor(height/(font_size+1));
      total_pages=((lines-1)/lines_per_page)+1;
 

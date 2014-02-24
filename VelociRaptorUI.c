@@ -116,9 +116,10 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 int main(int argc, char *argv[])
     {
      GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *RiseFallItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *SelectionButton, *GlobalButton, *FontChooser; 
-     GtkTextBuffer *buffer; 
+      
      //For printing
      Widgets *w;
+     PangoFontDescription *pfd;
 
      gtk_init(&argc, &argv);
     
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
      gtk_widget_set_tooltip_text(SelectionButton, "Selection Font");
      GlobalButton=gtk_button_new_with_mnemonic("   Global   ");
      gtk_widget_set_tooltip_text(GlobalButton, "Global Font");
-     FontChooser=gtk_font_button_new();
+     FontChooser=gtk_font_button_new_with_font("Monospace 9");
      gtk_widget_set_tooltip_text(FontChooser, "Font Chooser");
 
      FileMenu=gtk_menu_new(); 
@@ -237,8 +238,9 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem6);
        
      textview=gtk_text_view_new();
-     buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-     gtk_text_buffer_create_tag(buffer, "BoldText", "weight", PANGO_WEIGHT_BOLD, NULL);
+     //Set initial font.
+     pfd=pango_font_description_from_string("Monospace 9"); 
+     gtk_widget_override_font(GTK_WIDGET(textview), pfd);
      g_signal_connect(SelectionButton, "clicked", G_CALLBACK(change_selection_font), textview);
      g_signal_connect(GlobalButton, "clicked", G_CALLBACK(change_global_font), textview);
      g_signal_connect(FontChooser, "font-set", G_CALLBACK(font_chooser_dialog), textview);
