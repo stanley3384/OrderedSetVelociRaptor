@@ -200,8 +200,11 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      gtk_text_iter_forward_cursor_position(&start2);
      gtk_text_buffer_delete(buffer, &newline, &start2);
 
+     //Place holder for testing.
      pango_layout_set_width(layout, page_width*PANGO_SCALE);
-     pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+     //Don't wrap.
+     pango_layout_set_width(layout, -1);
+     //pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
      pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
 
      pango_cairo_show_layout(cr, layout);
