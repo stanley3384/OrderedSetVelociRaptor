@@ -73,14 +73,29 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
          font_size=10;
        }
 
-     gdouble font_base;
+      /*
+       Get the font height and compare to Monospace. Fonts of the same point size have different heights. For example, Century Schoolbook is taller in the layout than Monospace.
+     */
+     gdouble font_ascent1, font_descent1, font_ascent2, font_descent2, font_height1, font_height2;
+     PangoFontDescription * mono_desc=pango_font_description_new();
+     pango_font_description_set_family(mono_desc, "Monospace");
+     pango_font_description_set_size(mono_desc, font_size*PANGO_SCALE);
      PangoFont *font1=pango_context_load_font(context1, desc);
-     PangoFontMetrics *metrics=pango_font_get_metrics(font1, NULL);
-     font_base=pango_font_metrics_get_descent(metrics);
+     PangoFont *font2=pango_context_load_font(context1, mono_desc);
+     PangoFontMetrics *metrics1=pango_font_get_metrics(font1, NULL);
+     PangoFontMetrics *metrics2=pango_font_get_metrics(font2, NULL);
+     font_ascent1=pango_font_metrics_get_ascent(metrics1);
+     font_descent1=pango_font_metrics_get_descent(metrics1);
+     font_ascent2=pango_font_metrics_get_ascent(metrics2);
+     font_descent2=pango_font_metrics_get_descent(metrics2);
+     pango_font_description_free(mono_desc);
+     font_height1=font_ascent1+font_descent1;
+     font_height2=font_ascent2+font_descent2;
 
      lines=gtk_text_buffer_get_line_count(buffer);
      height=gtk_print_context_get_height(context)-40; 
-     lines_per_page=floor(((double)height/((double)font_size+1))*((3072.0/font_base)*1.05));
+     //Scale based on Monospace font.
+     lines_per_page=floor(((double)height/((double)font_size+1))*(font_height2/font_height1));
      total_pages=((lines-1)/lines_per_page)+1;
      
      gtk_print_operation_set_n_pages(operation, total_pages);
@@ -109,24 +124,33 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      printf("Global Font Size %i\n", font_size);
      
      /*
-       Get the font height and base. Having trouble getting the printed font height.
-       The heights are the same returned value but have different heights in the layout.
-       For example, Century Schoolbook is taller in the layout than Monospace.
+       Get the font height and compare to Monospace. Fonts of the same point size have different heights. For example, Century Schoolbook is taller in the layout than Monospace.
      */
-     gdouble font_height, font_base;
+     gdouble font_ascent1, font_descent1, font_ascent2, font_descent2, font_height1, font_height2;
+     PangoFontDescription * mono_desc=pango_font_description_new();
+     pango_font_description_set_family(mono_desc, "Monospace");
+     pango_font_description_set_size(mono_desc, font_size*PANGO_SCALE);
      PangoFont *font1=pango_context_load_font(context1, desc);
-     PangoFontMetrics *metrics=pango_font_get_metrics(font1, NULL);
-     font_height=pango_font_metrics_get_ascent(metrics);
-     font_base=pango_font_metrics_get_descent(metrics);
-     printf("Font Height %i Font Base %i\n", (int)font_height, (int)font_base);
+     PangoFont *font2=pango_context_load_font(context1, mono_desc);
+     PangoFontMetrics *metrics1=pango_font_get_metrics(font1, NULL);
+     PangoFontMetrics *metrics2=pango_font_get_metrics(font2, NULL);
+     font_ascent1=pango_font_metrics_get_ascent(metrics1);
+     font_descent1=pango_font_metrics_get_descent(metrics1);
+     font_ascent2=pango_font_metrics_get_ascent(metrics2);
+     font_descent2=pango_font_metrics_get_descent(metrics2);
+     pango_font_description_free(mono_desc);
+     font_height1=font_ascent1+font_descent1;
+     font_height2=font_ascent2+font_descent2;
+     printf("Font Ascent %i Font Descent %i Font Height %i\n", (int)font_ascent1, (int)font_descent1, (int)font_height1);
+     printf("Monospace Font Ascent %i Font Descent %i Font Height %i\n", (int)font_ascent2, (int)font_descent2, (int)font_height2);
 
      GtkTextIter start1, start2, end1, end2, newline;
      GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
 
      lines=gtk_text_buffer_get_line_count(buffer);
      height=gtk_print_context_get_height(context)-40; 
-     //adjust against Monospace 9. Not a good way to go about this.
-     lines_per_page=floor(((double)height/((double)font_size+1))*((3072.0/font_base)*1.05));
+     //Scale based on Monospace font.
+     lines_per_page=floor(((double)height/((double)font_size+1))*(font_height2/font_height1));
      total_pages=((lines-1)/lines_per_page)+1;
 
      //Problem getting color on first number on the top of a page. Add a newline to solve it.
