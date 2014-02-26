@@ -73,9 +73,14 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
          font_size=10;
        }
 
+     gdouble font_base;
+     PangoFont *font1=pango_context_load_font(context1, desc);
+     PangoFontMetrics *metrics=pango_font_get_metrics(font1, NULL);
+     font_base=pango_font_metrics_get_descent(metrics);
+
      lines=gtk_text_buffer_get_line_count(buffer);
-     height=gtk_print_context_get_height(context)-20; 
-     lines_per_page=floor(height/(font_size+1));
+     height=gtk_print_context_get_height(context)-40; 
+     lines_per_page=floor(((double)height/((double)font_size+1))*((3072.0/font_base)*1.05));
      total_pages=((lines-1)/lines_per_page)+1;
      
      gtk_print_operation_set_n_pages(operation, total_pages);
@@ -103,12 +108,25 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
        }
      printf("Global Font Size %i\n", font_size);
      
+     /*
+       Get the font height and base. Having trouble getting the printed font height.
+       The heights are the same returned value but have different heights in the layout.
+       For example, Century Schoolbook is taller in the layout than Monospace.
+     */
+     gdouble font_height, font_base;
+     PangoFont *font1=pango_context_load_font(context1, desc);
+     PangoFontMetrics *metrics=pango_font_get_metrics(font1, NULL);
+     font_height=pango_font_metrics_get_ascent(metrics);
+     font_base=pango_font_metrics_get_descent(metrics);
+     printf("Font Height %i Font Base %i\n", (int)font_height, (int)font_base);
+
      GtkTextIter start1, start2, end1, end2, newline;
      GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
 
      lines=gtk_text_buffer_get_line_count(buffer);
-     height=gtk_print_context_get_height(context)-20; 
-     lines_per_page=floor(height/(font_size+1));
+     height=gtk_print_context_get_height(context)-40; 
+     //adjust against Monospace 9. Not a good way to go about this.
+     lines_per_page=floor(((double)height/((double)font_size+1))*((3072.0/font_base)*1.05));
      total_pages=((lines-1)/lines_per_page)+1;
 
      //Problem getting color on first number on the top of a page. Add a newline to solve it.
