@@ -31,6 +31,7 @@ void copy_treeview_to_database_sql(GtkWidget*, GtkWidget*, const gchar *pWindowT
 void format_text_platemap(double dEntry1, double dEntry2, double dEntry3, double dEntry4, GtkTextView *textview);
 void format_text_platemap_heatmap_high_low(GtkTextView *textview, double *high, double *low);
 void format_text_platemap_heatmap(GtkTextView *textview, int high, int low);
+void format_text_platemap_heatmap_iris(GtkTextView *textview, int high, int low);
 
 
 

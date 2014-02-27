@@ -84,6 +84,7 @@ static void database_to_error_graph_dialog(GtkWidget* , gpointer);
 static void database_to_box_graph_dialog(GtkWidget* , gpointer);
 static void format_text_dialog(GtkButton*, gpointer);
 static void clear_format_event(GtkButton*, gpointer);
+static void heatmap_dialog(GtkButton *button, gpointer data);
 static void rise_fall_text_dialog(GtkButton*, gpointer);
 static void send_text_to_database_dialog(GtkButton*, gpointer);
 static void test_data_button_clicked(GtkButton*, gpointer, int, double, int);
@@ -115,7 +116,7 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *RiseFallItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *SelectionButton, *GlobalButton, *FontChooser; 
+     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *SelectionButton, *GlobalButton, *FontChooser; 
       
      //For printing
      Widgets *w;
@@ -172,6 +173,7 @@ int main(int argc, char *argv[])
 
      FileMenu5=gtk_menu_new();
      HeatmapItem=gtk_menu_item_new_with_label("Heatmap Platemap");
+     ConditionalItem=gtk_menu_item_new_with_label("Conditional Format Platemap");
      RiseFallItem=gtk_menu_item_new_with_label("Rise Fall Platemap");
 
      FileMenu6=gtk_menu_new();
@@ -198,6 +200,7 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), ErrorItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), BoxItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), HeatmapItem);
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), ConditionalItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), RiseFallItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu6), AboutItem);
 
@@ -255,7 +258,8 @@ int main(int argc, char *argv[])
      g_signal_connect(ZFactorItem, "activate", G_CALLBACK(z_factor_dialog), textview);
      g_signal_connect(ContingencyItem, "activate", G_CALLBACK(contingency_dialog), textview);
 
-     g_signal_connect(G_OBJECT(HeatmapItem), "activate", G_CALLBACK(format_text_dialog), textview);
+     g_signal_connect(G_OBJECT(HeatmapItem), "activate", G_CALLBACK(heatmap_dialog), textview);
+     g_signal_connect(G_OBJECT(ConditionalItem), "activate", G_CALLBACK(format_text_dialog), textview);
      g_signal_connect(G_OBJECT(RiseFallItem), "activate", G_CALLBACK(rise_fall_text_dialog), textview);
      g_signal_connect(G_OBJECT(BuildBoardItem), "activate", G_CALLBACK(send_text_to_database_dialog), textview);
 
@@ -2421,6 +2425,55 @@ static void clear_format_event(GtkButton *button, gpointer data)
     gtk_text_buffer_get_bounds(buffer, &start1, &end1);
     gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
   }
+static void heatmap_dialog(GtkButton *button, gpointer data)
+  {
+    GtkWidget *dialog, *table, *label1, *radio1, *radio2, *content_area, *action_area;
+    gint result;
+   
+     g_print("Heatmap Text\n");
+
+     dialog=gtk_dialog_new_with_buttons("Heatmap Platemap", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+     label1=gtk_label_new("Heatmap Gradient");
+
+     radio1=gtk_radio_button_new_with_label(NULL, "Heatmap(rgb)");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris)");
+     
+     table=gtk_table_new(3,2,FALSE);
+     gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 1, 0, 1);
+     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 1, 1, 2);
+     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 1, 2, 3);
+     
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+        {
+         double high=0;
+         double low=0;
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
+            {
+              format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
+              format_text_platemap_heatmap(GTK_TEXT_VIEW(data), high, low);
+            }
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+            {
+              format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
+              format_text_platemap_heatmap_iris(GTK_TEXT_VIEW(data), high, low);
+            }
+        }
+     gtk_widget_destroy(dialog);
+  }
 static void rise_fall_text_dialog(GtkButton *button, gpointer data)
   {
     GtkWidget *dialog, *table, *entry1, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
@@ -2447,8 +2500,6 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
     GtkTextTag *TagRiseFall;
 
      g_print("RiseFall Text\n");
-
-    // memset(cArrayNumber, 0, 25);
 
      dialog=gtk_dialog_new_with_buttons("RiseFall Platemap", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -3294,7 +3345,7 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
   }
 static void format_text_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *check1, *content_area, *action_area;
+    GtkWidget *dialog, *table, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *content_area, *action_area;
     gint result;
     
      g_print("Format Text\n");
@@ -3323,8 +3374,6 @@ static void format_text_dialog(GtkButton *button, gpointer data)
      gtk_entry_set_text(GTK_ENTRY(entry3), "400.0");
      gtk_entry_set_text(GTK_ENTRY(entry4), "600.0");
 
-     check1=gtk_check_button_new_with_label("Heatmap Platemap");
-
      table=gtk_table_new(5,2,FALSE);
      gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 1, 0, 1);
      gtk_table_attach_defaults(GTK_TABLE(table), label2, 0, 1, 1, 2);
@@ -3334,7 +3383,6 @@ static void format_text_dialog(GtkButton *button, gpointer data)
      gtk_table_attach_defaults(GTK_TABLE(table), entry2, 1, 2, 1, 2);
      gtk_table_attach_defaults(GTK_TABLE(table), entry3, 1, 2, 2, 3);
      gtk_table_attach_defaults(GTK_TABLE(table), entry4, 1, 2, 3, 4);
-     gtk_table_attach_defaults(GTK_TABLE(table), check1, 0, 2, 4, 5);
 
      gtk_table_set_row_spacings(GTK_TABLE(table), 10);
      gtk_table_set_col_spacings(GTK_TABLE(table), 10);
@@ -3353,18 +3401,8 @@ static void format_text_dialog(GtkButton *button, gpointer data)
          double dEntry2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
          double dEntry3=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
          double dEntry4=atof(gtk_entry_get_text(GTK_ENTRY(entry4)));
-         double high=0;
-         double low=0;
-
-         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check1)))
-           {
-             format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
-             format_text_platemap_heatmap(GTK_TEXT_VIEW(data), high, low);
-           }
-         else
-           {
-            format_text_platemap(dEntry1, dEntry2, dEntry3, dEntry4, GTK_TEXT_VIEW(data));
-           }
+ 
+         format_text_platemap(dEntry1, dEntry2, dEntry3, dEntry4, GTK_TEXT_VIEW(data));
          
         }
       gtk_widget_destroy(dialog);
