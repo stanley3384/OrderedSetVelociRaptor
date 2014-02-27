@@ -141,8 +141,8 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
      pango_font_description_free(mono_desc);
      font_height1=font_ascent1+font_descent1;
      font_height2=font_ascent2+font_descent2;
-     printf("Font Ascent %i Font Descent %i Font Height %i\n", (int)font_ascent1, (int)font_descent1, (int)font_height1);
-     printf("Monospace Font Ascent %i Font Descent %i Font Height %i\n", (int)font_ascent2, (int)font_descent2, (int)font_height2);
+     //printf("Font Ascent %i Font Descent %i Font Height %i\n", (int)font_ascent1, (int)font_descent1, (int)font_height1);
+     //printf("Monospace Font Ascent %i Font Descent %i Font Height %i\n", (int)font_ascent2, (int)font_descent2, (int)font_height2);
 
      GtkTextIter start1, start2, end1, end2, newline;
      GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);

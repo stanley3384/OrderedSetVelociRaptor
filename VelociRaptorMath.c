@@ -1756,7 +1756,7 @@ void PlateMapDoubleTruncate(double dDataArray[], int iNumberOfPlates, int iPlate
          GString *temp1=g_string_new(NULL);
          GtkClipboard *clipboard=gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
           
-         g_print("Create Plate Map(float)\n");  
+         g_print("Create Plate Map(truncate)\n");  
          for(i=0; i<iNumberOfPlates; i++)
            {
               for(j=0; j<iRows; j++)
