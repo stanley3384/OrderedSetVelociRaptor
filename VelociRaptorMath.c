@@ -2449,7 +2449,11 @@ void format_text_platemap_heatmap(GtkTextView *textview, int high, int low)
     double dTemp=0;
     GtkTextIter start1, end1, start_iter, start_number, end_number;
     GtkTextTagTable *TagTable;
-    GtkTextTag *tagtest;
+    GtkTextTag *tagtest=NULL;
+
+    //remove tags.
+    gtk_text_buffer_get_bounds(buffer, &start1, &end1);
+    gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
 
     TagTable=gtk_text_buffer_get_tag_table(buffer);
     tagtest=gtk_text_tag_table_lookup(TagTable, "1");
@@ -2498,12 +2502,6 @@ void format_text_platemap_heatmap(GtkTextView *textview, int high, int low)
         
          gtk_text_buffer_create_tag(buffer, tag_names[64], "background", "#FF0000", "foreground", "#000000", NULL);
        
-      }
-    else
-      {
-        //remove tags.
-        gtk_text_buffer_get_bounds(buffer, &start1, &end1);
-        gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
       }
     
     //Heatmap numbers
@@ -2589,7 +2587,11 @@ void format_text_platemap_heatmap_iris(GtkTextView *textview, int high, int low)
     double dTemp=0;
     GtkTextIter start1, end1, start_iter, start_number, end_number;
     GtkTextTagTable *TagTable;
-    GtkTextTag *tagtest;
+    GtkTextTag *tagtest=NULL;
+
+    //remove tags.
+    gtk_text_buffer_get_bounds(buffer, &start1, &end1);
+    gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
 
     TagTable=gtk_text_buffer_get_tag_table(buffer);
     tagtest=gtk_text_tag_table_lookup(TagTable, "66");
@@ -2599,12 +2601,6 @@ void format_text_platemap_heatmap_iris(GtkTextView *textview, int high, int low)
            {
          gtk_text_buffer_create_tag(buffer, tag_names[i], "background", iris[i], "foreground", "#000000", NULL);
            }
-      }
-    else
-      {
-        //remove tags.
-        gtk_text_buffer_get_bounds(buffer, &start1, &end1);
-        gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
       }
     
     //Heatmap numbers
