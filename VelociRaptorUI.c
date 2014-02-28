@@ -2427,7 +2427,7 @@ static void clear_format_event(GtkButton *button, gpointer data)
   }
 static void heatmap_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *label1, *radio1, *radio2, *content_area, *action_area;
+    GtkWidget *dialog, *table, *label1, *radio1, *radio2, *radio3, *content_area, *action_area;
     gint result;
    
      g_print("Heatmap Text\n");
@@ -2440,11 +2440,13 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
 
      radio1=gtk_radio_button_new_with_label(NULL, "Heatmap(rgb)");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris)");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris2)");
      
-     table=gtk_table_new(3,2,FALSE);
+     table=gtk_table_new(4,2,FALSE);
      gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 1, 0, 1);
      gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 1, 1, 2);
      gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 1, 2, 3);
+     gtk_table_attach_defaults(GTK_TABLE(table), radio3, 0, 1, 3, 4);
      
      gtk_table_set_row_spacings(GTK_TABLE(table), 10);
      gtk_table_set_col_spacings(GTK_TABLE(table), 10);
@@ -2470,6 +2472,11 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
             {
               format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
               format_text_platemap_heatmap_iris(GTK_TEXT_VIEW(data), high, low);
+            }
+          if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
+            {
+              format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
+              format_text_platemap_heatmap_iris2(GTK_TEXT_VIEW(data), high, low);
             }
         }
      gtk_widget_destroy(dialog);
