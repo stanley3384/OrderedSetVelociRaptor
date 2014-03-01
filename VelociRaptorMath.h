@@ -33,6 +33,7 @@ void format_text_platemap_heatmap_high_low(GtkTextView *textview, double *high, 
 void format_text_platemap_heatmap(GtkTextView *textview, int high, int low);
 void format_text_platemap_heatmap_iris(GtkTextView *textview, int high, int low);
 void format_text_platemap_heatmap_iris2(GtkTextView *textview, int high, int low);
+void format_text_platemap_heatmap_sun(GtkTextView *textview, int high, int low);
 
 
 
