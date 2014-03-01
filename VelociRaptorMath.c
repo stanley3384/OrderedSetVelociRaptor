@@ -2693,7 +2693,7 @@ void format_text_platemap_heatmap_iris2(GtkTextView *textview, int high, int low
     gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
 
     TagTable=gtk_text_buffer_get_tag_table(buffer);
-    tagtest=gtk_text_tag_table_lookup(TagTable, "66");
+    tagtest=gtk_text_tag_table_lookup(TagTable, "131");
     if(tagtest==NULL)
       {
         for(i=0;i<65;i++) 
