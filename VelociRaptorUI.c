@@ -49,6 +49,7 @@ guint32 iTextArrayCount=0;
 guint32 iRandomDataArrayCount=0;
 int iReferenceCountDialogWindow=0;
 int iBreakLoop=0;
+gboolean underline=FALSE;
 
 //Integration parameters in Dunnett's. Declared in VelociRaptorGlobal.h.
 int MAXPTS_C=1000;
@@ -59,6 +60,7 @@ static void destroy_event(GtkWidget*, gpointer);
 static void activate_pos_control_event(GtkWidget*, GtkEntry*);
 static void activate_neg_control_event(GtkWidget*, GtkEntry*);
 static void font_chooser_dialog(GtkWidget*, GtkTextView*);
+static void change_underline(GtkWidget*, GtkTextView*);
 static void change_selection_font(GtkWidget*, GtkTextView*);
 static void change_global_font(GtkWidget*, GtkTextView*);
 static void change_margin(GtkWidget*, GtkTextView*);
@@ -116,7 +118,7 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *SelectionButton, *GlobalButton, *FontChooser; 
+     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
       
      //For printing
      Widgets *w;
@@ -137,6 +139,8 @@ int main(int argc, char *argv[])
      button=gtk_button_new_with_mnemonic("Get Test Data");
      textbutton=gtk_button_new_with_mnemonic("Erase White Board");
      ClearFormat=gtk_button_new_with_mnemonic("Clear Format");
+     UnderlineButton=gtk_toggle_button_new_with_label("Underline");
+     gtk_widget_set_tooltip_text(UnderlineButton, "Underline Selection Font");
      SelectionButton=gtk_button_new_with_mnemonic("Selection");
      gtk_widget_set_tooltip_text(SelectionButton, "Selection Font");
      GlobalButton=gtk_button_new_with_mnemonic("   Global   ");
@@ -244,6 +248,7 @@ int main(int argc, char *argv[])
      //Set initial font.
      pfd=pango_font_description_from_string("Monospace 9"); 
      gtk_widget_override_font(GTK_WIDGET(textview), pfd);
+     g_signal_connect(UnderlineButton, "clicked", G_CALLBACK(change_underline), textview);
      g_signal_connect(SelectionButton, "clicked", G_CALLBACK(change_selection_font), textview);
      g_signal_connect(GlobalButton, "clicked", G_CALLBACK(change_global_font), textview);
      g_signal_connect(FontChooser, "font-set", G_CALLBACK(font_chooser_dialog), textview);
@@ -357,9 +362,10 @@ int main(int argc, char *argv[])
      gtk_table_attach(GTK_TABLE(MainTable), ClearFormat, 3,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
      gtk_table_attach(GTK_TABLE(MainTable), FontChooser, 4,8,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
 
-     gtk_table_attach(GTK_TABLE(MainTable), MarginCombo, 7,8,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), SelectionButton, 7,8,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(MainTable), GlobalButton, 7,8,8,9,GTK_SHRINK,GTK_SHRINK,0,0);     
+     gtk_table_attach(GTK_TABLE(MainTable), MarginCombo, 7,8,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), SelectionButton, 7,8,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(MainTable), UnderlineButton, 7,8,7,8,GTK_SHRINK,GTK_SHRINK,0,0);  
+     gtk_table_attach(GTK_TABLE(MainTable), GlobalButton, 7,8,8,9,GTK_SHRINK,GTK_SHRINK,0,0);    
 
      gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
@@ -453,9 +459,21 @@ static void font_chooser_dialog(GtkWidget *button, GtkTextView *textview)
     pCurrentFont=gtk_font_button_get_font_name(GTK_FONT_BUTTON(button));
     printf("%s\n", pCurrentFont);    
   }
+static void change_underline(GtkWidget *button, GtkTextView *textview)
+  {
+    if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button)))
+      {
+        underline=TRUE;
+      }
+    else
+      {
+        underline=FALSE;
+      }
+  }
 static void change_selection_font(GtkWidget *button, GtkTextView *textview)
   {
     //Set the font for the textview.
+    int i=0;
     static int tag_counter=0;
     GString *tag_name=g_string_new(NULL);
     GtkTextIter start, end;
@@ -463,7 +481,25 @@ static void change_selection_font(GtkWidget *button, GtkTextView *textview)
     gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
     g_string_printf(tag_name, "tag%i", tag_counter);
 
-    gtk_text_buffer_create_tag(buffer, tag_name->str ,"font" , pCurrentFont , NULL);
+    //Remove prior selection tags in the current selection.
+    for(i=0;i<tag_counter;i++)
+       {
+         char *string=NULL;
+         asprintf(&string, "tag%i", i);
+         gtk_text_buffer_remove_tag_by_name(buffer, string, &start, &end);
+         //printf("Remove Tag %s\n", string);
+         free(string);
+       }
+
+    if(!underline)
+      {
+        gtk_text_buffer_create_tag(buffer, tag_name->str ,"font" , pCurrentFont , NULL);
+      }
+    else
+      {
+        gtk_text_buffer_create_tag(buffer, tag_name->str ,"font" , pCurrentFont , "underline", PANGO_UNDERLINE_SINGLE, NULL);
+      }
+
     gtk_text_buffer_apply_tag_by_name(buffer, tag_name->str, &start, &end); 
     tag_counter++;    
  
@@ -501,7 +537,7 @@ static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags respon
     if(response==64)
       {
         pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
-        printf("Active Dialog Window Title %s\n", pWindowTitle);
+        //printf("Active Dialog Window Title %s\n", pWindowTitle);
       }
        
   }
