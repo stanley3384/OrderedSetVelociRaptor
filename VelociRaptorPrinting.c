@@ -242,24 +242,58 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
         attr_list = pango_attr_list_new();
         
         do{
-            gboolean fg_set, bg_set, weight_set, size_set, under_set;
+            gboolean family_set, fg_set, bg_set, weight_set, size_set, under_set;
             GSList *tags=NULL;
             GSList *tag_walk=NULL;
             GtkTextTag *tag=NULL;
             GdkColor *color = NULL;
+            gchar *family=NULL;
             PangoUnderline underline;
-            gint weight;
+            PangoWeight weight;
             gint size;
 
            if(gtk_text_iter_ends_tag(&iter, NULL)) 
              {
                PangoAttrInt *attr_int;
+               PangoAttrString *attr_str;
                tags = gtk_text_iter_get_toggled_tags(&iter, FALSE);
                for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
                   {
                     gboolean found;
                     tag = GTK_TEXT_TAG(tag_walk->data);
-                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, "size", &size_set, "underline-set", &under_set, NULL);
+                    g_object_get(G_OBJECT(tag), "family-set", &family_set, "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, "size-set", &size_set, "underline-set", &under_set, NULL);
+                    
+                    if(family_set)
+                      {
+                        found = FALSE;
+                        for(attr_walk = open_attrs; attr_walk != NULL; attr_walk = attr_walk->next) 
+                           {
+                             attr = (PangoAttribute*)attr_walk->data;
+                             if(attr->klass->type == PANGO_ATTR_FAMILY)
+                               {
+                                 attr_str = (PangoAttrString*)attr;
+                                 g_object_get(G_OBJECT(tag), "family", &family, NULL);
+                                 if(g_strcmp0(attr_str->value, family)==0)
+                                   {
+                                     attr->end_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
+                                     pango_attr_list_insert(attr_list, attr);
+                                     found = TRUE;
+                                     open_attrs = g_slist_delete_link(open_attrs, attr_walk);
+                                     break;
+                                   }
+                                 if(family)
+                                   {
+                                     g_free(family);
+                                   }
+                                  
+                                }
+                             }
+                         if(!found)
+                            {
+                              //printf("Error generating family attribute list.\n");
+                            }
+                      }            
+                    
                     if(fg_set)
                       {
                         found = FALSE;
@@ -404,7 +438,14 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                 for(tag_walk = tags; tag_walk != NULL; tag_walk = tag_walk->next)
                   {
                     tag=GTK_TEXT_TAG(tag_walk->data);
-                    g_object_get(G_OBJECT(tag), "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, "size", &size_set, "underline-set", &under_set, NULL);
+                    g_object_get(G_OBJECT(tag), "family-set", &family_set, "background-set", &bg_set, "foreground-set", &fg_set, "weight-set", &weight_set, "size-set", &size_set, "underline-set", &under_set, NULL);
+                    if(family_set)
+                      {
+                        g_object_get(G_OBJECT(tag), "family", &family, NULL);
+                        attr = pango_attr_family_new(family);
+                        attr->start_index = printing_text_iter_get_offset_bytes(textview, &iter, &start1);
+                        open_attrs = g_slist_prepend(open_attrs, attr);
+                      }
                     if(fg_set)
                       {
                         g_object_get(G_OBJECT(tag), "foreground-gdk", &color, NULL);
