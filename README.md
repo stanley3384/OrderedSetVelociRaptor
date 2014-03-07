@@ -1,8 +1,8 @@
 
 
---The VelociRaptor program helps with doing some ordered set statistical analysis in high throughput screening and assay development. Included are percent of control, Dunnett's test, ANOVA, Levene's test, Anderson Darling test, permutation tests, heatmaps and a few more. The result sets are in tabular format making the data easy to move into any relational database.
+--The VelociRaptor program helps with doing some ordered set statistical analysis in high throughput screening and assay development. Included are percent of control, Dunnett's test, ANOVA, Levene's test, Anderson Darling test, permutation tests, heatmaps and a few more. The statistical result sets are in tabular format making the data easy to move into any relational database.
 
-Heatmap Example
+Heatmap
 ![ScreenShot](/HeatmapReadme.jpg)
 
 --The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu.
@@ -11,7 +11,7 @@ Heatmap Example
 
 --Adapted from Ben Klemens README below. Take a look at the following for better information about installing Apophenia.
 
-https://github.com/b-k/Apophenia
+--https://github.com/b-k/Apophenia
 
 --Dependencies for Apophenia. 
 
@@ -57,4 +57,4 @@ make
 
 --Test it out. There is a notes file along with a references file that might be helpful at this point.
 
-
+C. Eric Cashon
