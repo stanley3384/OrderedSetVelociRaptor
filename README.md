@@ -11,7 +11,7 @@ Heatmap
 
 --Adapted from Ben Klemens README below. Take a look at the following for better information about installing Apophenia.
 
---https://github.com/b-k/Apophenia
+https://github.com/b-k/Apophenia
 
 --Dependencies for Apophenia. 
 
