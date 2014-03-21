@@ -2,6 +2,7 @@
 
 # Send the data from the output of siman_tsp.c and siman_run.sh to Gnuplot.
 # Change things around to see how things work or... don't work. Experiment.
+# Just pipe the data to Gnuplot on this one.
 
 #IFS=$'\n'
 cities=(
@@ -20,9 +21,9 @@ cities=(
         "-105.95 35.68 Santa Fe"
         )
 
-rm -f gnuplot.dat
-echo "Get data for Gnuplot"
+echo "Run Simulation"
 #change increment values and test.
+{
 for ((pattern=1; pattern <=4500 ; pattern=pattern+50));
   do
      indexes=($(awk -v ref=$pattern 'match($1, ref){print $5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16;exit}' tsp.output))
@@ -36,17 +37,12 @@ for ((pattern=1; pattern <=4500 ; pattern=pattern+50));
      temp_cities[15]="e e"
      temp_cities[16]="e pause .2" 
      #\x27 for ' . Had a little trouble getting '-' 
-     printf "%s\n" "${temp_cities[@]}" | awk 'NR == 1 { print "plot \x27-\x27", "using 1:2 with lines" }{print $2, $3}' >> gnuplot.dat
+     printf "%s\n" "${temp_cities[@]}" | awk 'NR == 1 { print "plot \x27-\x27", "using 1:2 with lines" }{print $2, $3}'
      unset temp_cities
      unset indexes
   done
-echo "Run Simulation"
-gnuplot -p gnuplot.dat
+} | gnuplot -p
 exit 0
-
-
-
-
 
 
 
