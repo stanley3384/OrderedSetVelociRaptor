@@ -37,13 +37,13 @@ for ((pattern=1; pattern <=4500 ; pattern=pattern+50));
      temp_cities[15]="e e"
      temp_cities[16]="e pause .2" 
      #\x27 for ' . Had a little trouble getting '-' 
-     printf "%s\n" "${temp_cities[@]}" | awk 'NR == 1 { print "plot \x27-\x27", "using 1:2 with lines" }{print $2, $3}'
+     printf "%s\n" "${temp_cities[@]}" | awk 'NR == 1 { print "plot \x27-\x27", "using 1:2 with linespoints pointtype 6 linecolor 4" }{print $2, $3}'
+     #linecolor 1 red, 2 green, 3 blue, 4 magenta, 5 lightblue, 6 yellow, 7 black, 8 orange, 9 grey
      unset temp_cities
      unset indexes
   done
 } | gnuplot -p
 exit 0
-
 
 
 
