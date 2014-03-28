@@ -58,6 +58,7 @@ void Ptsp(void *xp);
 /* in this table, latitude and longitude are obtained from the US
 Census Bureau, at http://www.census.gov/cgi-bin/gazetteer */
 
+
 Stsp_city cities[] = {{"Santa Fe", 35.68, 105.95},
                       {"Phoenix", 33.54, 112.07},
                       {"Albuquerque", 35.12, 106.62},
@@ -70,6 +71,21 @@ Stsp_city cities[] = {{"Santa Fe", 35.68, 105.95},
                       {"Las Cruces", 32.34, 106.76},
                       {"Cortez", 37.35, 108.58},
                       {"Gallup", 35.52, 108.74}};
+
+/*
+Stsp_city cities[] = {{"Reykjavik", 64.08, -21.56},
+                      {"Seattle", 47.37, -122.20},
+                      {"Johannesburg", -26.12, 28.03},
+                      {"Addis Ababa", 9.02, 38.44},
+                      {"Honolulu", 21.19, -157.50},
+                      {"Dallas", 32.79, -96.77},
+                      {"La Paz", -16.30, -68.09},
+                      {"Hamburg", 53.34, 10.00},
+                      {"Auckland", -36.50, 174.44},
+                      {"Darwin", -12.28, 130.50},
+                      {"Saint Petersburg", 59.57, 30.18},
+                      {"Singapore", 1.17, 103.50}};
+*/
 
 #define N_CITIES (sizeof(cities)/sizeof(Stsp_city))
 
