@@ -33,6 +33,8 @@ cd apophenia-X.XX
 
 sudo apt-get install libgtk-3-dev gnuplot gfortran
 
+--Hint, you might want to build gnuplot with wxWidgets and Gd dev libraries installed if you can't get the wxt terminal to work. 
+
 --That should be all for the dependencies. Next, create a new empty folder and extract the VelociRaptor-*.tar.gz  or *.zip file to the empty folder. 
 
 --Example
