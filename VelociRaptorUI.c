@@ -2501,25 +2501,62 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
         {
          double high=0;
          double low=0;
+         double difference=0;
           if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
             {
               format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
-              format_text_platemap_heatmap(GTK_TEXT_VIEW(data), high, low);
+              difference=abs(high-low)/10.0;
+              if(difference!=0)
+                {
+                  printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                  format_text_platemap_heatmap(GTK_TEXT_VIEW(data), high, low);
+                }
+              else
+                {
+                  simple_message_dialog("Can't find a high and low number.");
+                }
             }
           if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
-              format_text_platemap_heatmap_iris(GTK_TEXT_VIEW(data), high, low);
+              difference=abs(high-low)/10.0;
+              if(difference!=0)
+                {
+                  printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                  format_text_platemap_heatmap_iris(GTK_TEXT_VIEW(data), high, low);
+                }
+              else
+                {
+                  simple_message_dialog("Can't find a high and low number.");
+                }
             }
           if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
             {
               format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
-              format_text_platemap_heatmap_iris2(GTK_TEXT_VIEW(data), high, low);
+              difference=abs(high-low)/10.0;
+              if(difference!=0)
+                {
+                  printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                  format_text_platemap_heatmap_iris2(GTK_TEXT_VIEW(data), high, low);
+                }
+              else
+                {
+                  simple_message_dialog("Can't find a high and low number.");
+                }
             }
           if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
             {
               format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
-              format_text_platemap_heatmap_sun(GTK_TEXT_VIEW(data), high, low);
+              difference=abs(high-low)/10.0;
+              if(difference!=0)
+                {
+                  printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                  format_text_platemap_heatmap_sun(GTK_TEXT_VIEW(data), high, low);
+                }
+              else
+                {
+                  simple_message_dialog("Can't find a high and low number.");
+                }
             }
         }
      gtk_widget_destroy(dialog);
