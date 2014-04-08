@@ -15,7 +15,9 @@ https://github.com/b-k/Apophenia
 
 --Dependencies for Apophenia. 
 
-sudo apt-get install gsl-bin libgsl0-dev libblas-dev libblas3gf liblapack3gf sqlite3 libsqlite3-0 libsqlite3-dev
+sudo apt-get install make gcc libgsl0-dev libsqlite3-dev 
+or 
+sudo yum install make gcc gsl-devel libsqlite3x-devel
 
 --There is an optional Python interface, which will require all of the above plus the
 swig and Python-dev packages. *There isn't a requirement for this in the VelociRaptor program.
@@ -26,8 +28,10 @@ tar xzf apophenia-*.tar.gz
 or
 Unzip the contents of the zip file into the new empty folder. 
 
-cd apophenia-X.XX
-./configure; make; sudo make install
+./configure
+cd apophenia-0.99
+make 
+sudo make install
 
 --After Apophenia is installed, install GTK+, gfortran and gnuplot.
 
