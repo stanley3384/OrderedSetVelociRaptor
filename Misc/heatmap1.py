@@ -40,7 +40,7 @@ f.write("<meta charset=\"UTF-8\"/>")
 f.write("<title>Heatmap</title>")
 f.write("</head>")
 f.write("<body>")
-f.write("<h1>Some 384 Well Plates</h1>")
+f.write("<h1>Some 96 Well Plates</h1>")
 
 #Use a counter for simplicity.
 counter = 0
