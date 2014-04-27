@@ -4,12 +4,14 @@
    A simple example of formatting some micro-titer plates with Python and HTML. Change things
 around as needed. Can even get inventive with CSS or stream data from a database. Open the 
 resulting file in a browser.
+   Python version 2.7.3
 
 C. Eric Cashon
 '''
 import sys
 import random
 import os
+import sqlite3 as lite
 
 #Add 1 to columns for labels. The first column in a row is a label.
 rows = 8
@@ -26,6 +28,25 @@ gradient_iris = ["#d507e5", "#d60fde", "#d711dc", "#d716d7", "#d819d5", "#d91ed1
 test_data=[]
 for i in range(0, 960, 1):
     test_data.append(random.uniform(0,100))
+
+'''
+#Test a database connection.
+test_data2=[]
+for i in range(0, 960, 1):
+    test_data2.append( (i, random.uniform(0,100)) )
+con = lite.connect('test2.db')    
+cur = con.cursor()    
+cur.execute('SELECT SQLITE_VERSION()')   
+data = cur.fetchone()    
+print "Python version: %s SQLite version: %s" % (sys.version, str(data[0])) 
+cur.execute("DROP TABLE IF EXISTS PlateData")
+cur.execute("CREATE TABLE PlateData( KeyID int, WellData real)")
+cur.executemany("INSERT INTO PlateData VALUES(?,?)", test_data2)
+#con.commit()
+cur.execute("SELECT KeyID, WellData FROM PlateData")
+records = cur.fetchall()
+print "Database Record Count %d" % (len(records))
+'''
 
 #High and low across the entire dataset.
 high = max(test_data)
@@ -71,12 +92,6 @@ f.write("</body>")
 f.write("</html>") 
 
 f.close()
-
-
-
-
-
-
 
 
 
