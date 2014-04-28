@@ -68,7 +68,7 @@ counter = 0
 for i in range(0, plates, 1):
     #Write the column titles.
     f.write("<p></p>\n")
-    f.write("<table align=\"center\"><caption>Plate %s</caption><thead><tr>\n" % (str(i+1)))
+    f.write("<table align=\"center\" bgcolor=\"silver\"><caption>Plate %s</caption><thead><tr>\n" % (str(i+1)))
     f.write("<th scope=\"rowgroup\" bgcolor=\"silver\"></th>\n")
     for j in range(0, columns-1, 1):
         f.write("<th scope=\"col\" bgcolor=\"silver\">%s</th>\n" % (column_labels[j]))
