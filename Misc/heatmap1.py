@@ -40,7 +40,7 @@ cur.execute('SELECT SQLITE_VERSION()')
 data = cur.fetchone()    
 print "Python version: %s SQLite version: %s" % (sys.version, str(data[0])) 
 cur.execute("DROP TABLE IF EXISTS PlateData")
-cur.execute("CREATE TABLE PlateData( KeyID int, WellData real)")
+cur.execute("CREATE TABLE PlateData( KeyID INTEGER PRIMARY KEY, WellData REAL)")
 cur.executemany("INSERT INTO PlateData VALUES(?,?)", test_data2)
 #con.commit()
 cur.execute("SELECT KeyID, WellData FROM PlateData")
@@ -59,7 +59,7 @@ f.write("<html lang=\"en\">")
 f.write("<head>")
 f.write("<meta charset=\"UTF-8\"/>")
 f.write("<title>Heatmap</title>")
-f.write("</head>")
+f.write("</head>\n")
 f.write("<body>")
 f.write("<h1>Some 96 Well Plates</h1>")
 
@@ -76,7 +76,7 @@ for i in range(0, plates, 1):
 
     #Write the data and color gradient into the table.
     for j in range(0, rows, 1):
-        f.write("<tr>")
+        f.write("<tr>\n")
         for k in range(0, columns, 1):
             if(k==0):
                 #This is a label column. Doesn't count for the test_data counter.
@@ -85,7 +85,7 @@ for i in range(0, plates, 1):
                 temp = int((test_data[counter]/(high - low)) *64)
                 f.write("<td bgcolor=\"%s\">%s</td>" % (gradient_iris[temp], str(round(test_data[counter], 2))))
                 counter+=1
-        f.write("</tr>")
+        f.write("</tr>\n")
     f.write("</tbody></table>")  
 
 f.write("</body>")
