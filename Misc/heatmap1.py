@@ -54,25 +54,25 @@ low = min(test_data)
 
 f = open('heatmap1.html','w')
 
-f.write("<!DOCTYPE html>")
-f.write("<html lang=\"en\">")
-f.write("<head>")
-f.write("<meta charset=\"UTF-8\"/>")
-f.write("<title>Heatmap</title>")
+f.write("<!DOCTYPE html>\n")
+f.write("<html lang=\"en\">\n")
+f.write("<head>\n")
+f.write("<meta charset=\"UTF-8\"/>\n")
+f.write("<title>Heatmap</title>\n")
 f.write("</head>\n")
-f.write("<body>")
-f.write("<h1>Some 96 Well Plates</h1>")
+f.write("<body>\n")
+f.write("<h1 align=\"center\">Some 96 Well Plates</h1>\n")
 
 #Use a counter for simplicity.
 counter = 0
 for i in range(0, plates, 1):
     #Write the column titles.
-    f.write("<p></p>")
-    f.write("<table><caption>Plate %s</caption><thead><tr>" % (str(i+1)))
-    f.write("<th scope=\"rowgroup\" bgcolor=\"silver\"></th>")
+    f.write("<p></p>\n")
+    f.write("<table align=\"center\"><caption>Plate %s</caption><thead><tr>\n" % (str(i+1)))
+    f.write("<th scope=\"rowgroup\" bgcolor=\"silver\"></th>\n")
     for j in range(0, columns-1, 1):
-        f.write("<th scope=\"col\" bgcolor=\"silver\">%s</th>" % (column_labels[j]))
-    f.write("</tr></thead><tbody>")  
+        f.write("<th scope=\"col\" bgcolor=\"silver\">%s</th>\n" % (column_labels[j]))
+    f.write("</tr></thead><tbody>\n")  
 
     #Write the data and color gradient into the table.
     for j in range(0, rows, 1):
@@ -80,16 +80,16 @@ for i in range(0, plates, 1):
         for k in range(0, columns, 1):
             if(k==0):
                 #This is a label column. Doesn't count for the test_data counter.
-                f.write("<th scope=\"row\" bgcolor=\"silver\">%s</th>" % (row_labels[j]))
+                f.write("<th scope=\"row\" bgcolor=\"silver\">%s</th>\n" % (row_labels[j]))
             else:
                 temp = int((test_data[counter]/(high - low)) *64)
-                f.write("<td bgcolor=\"%s\">%s</td>" % (gradient_iris[temp], str(round(test_data[counter], 2))))
+                f.write("<td bgcolor=\"%s\">%s</td>\n" % (gradient_iris[temp], str(round(test_data[counter], 2))))
                 counter+=1
         f.write("</tr>\n")
-    f.write("</tbody></table>")  
+    f.write("</tbody></table>\n")  
 
-f.write("</body>")
-f.write("</html>") 
+f.write("</body>\n")
+f.write("</html>\n") 
 
 f.close()
 
