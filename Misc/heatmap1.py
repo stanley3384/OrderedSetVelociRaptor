@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 '''
-   A simple example of formatting some micro-titer plates with Python and HTML. Change things
+   A simple example of formatting some microtiter plates with Python and HTML. Change things
 around as needed. Can even get inventive with CSS or stream data from a database. Open the 
-resulting file in a browser.
+resulting file in a HTML5 browser.
    Python version 2.7.3
 
 C. Eric Cashon
@@ -48,9 +48,14 @@ records = cur.fetchall()
 print "Database Record Count %d" % (len(records))
 '''
 
-#High and low across the entire dataset.
-high = max(test_data)
-low = min(test_data)
+#High and low for each plate.
+high=[]
+low=[]
+for i in range(0, plates, 1):
+    index1 = plate_size*i
+    index2 = plate_size*i+(plate_size)
+    high.append(max(test_data[index1:index2]))   
+    low.append(min(test_data[index1:index2]))
 
 f = open('heatmap1.html','w')
 
@@ -61,14 +66,27 @@ f.write("<meta charset=\"UTF-8\"/>\n")
 f.write("<title>Heatmap</title>\n")
 f.write("</head>\n")
 f.write("<body>\n")
-f.write("<h1 align=\"center\">Some 96 Well Plates</h1>\n")
+f.write("<h1 align=\"center\">Heatmap 96 Well Plates</h1>\n")
 
 #Use a counter for simplicity.
 counter = 0
 for i in range(0, plates, 1):
-    #Write the column titles.
-    f.write("<p></p>\n")
-    f.write("<table align=\"center\" bgcolor=\"silver\"><caption>Plate %s</caption><thead><tr>\n" % (str(i+1)))
+
+    #Write the score table 
+    f.write("<table align=\"center\"><caption>Score %s</caption><tr>\n" % (str(i+1)))
+    for j in range(0, 8, 1):
+        diff = high[i] - low[i]
+        temp1 = (low[i] + j*(diff/7))
+        temp2 = int((temp1/diff) *64)
+        if(temp2>64):
+            temp2=64
+        if(temp2<0):
+            temp2=0
+        f.write("<td bgcolor=\"%s\">%s</td>\n" % (gradient_iris[temp2], str(round(temp1, 2))))
+    f.write("</tr></table>")
+
+    #The heatmap table
+    f.write("<table align=\"center\" bgcolor=\"silver\"  style=\"margin-bottom:40pt\"><caption>Plate %s</caption><thead><tr>\n" % (str(i+1)))
     f.write("<th scope=\"rowgroup\" bgcolor=\"silver\"></th>\n")
     for j in range(0, columns-1, 1):
         f.write("<th scope=\"col\" bgcolor=\"silver\">%s</th>\n" % (column_labels[j]))
@@ -82,11 +100,15 @@ for i in range(0, plates, 1):
                 #This is a label column. Doesn't count for the test_data counter.
                 f.write("<th scope=\"row\" bgcolor=\"silver\">%s</th>\n" % (row_labels[j]))
             else:
-                temp = int((test_data[counter]/(high - low)) *64)
-                f.write("<td bgcolor=\"%s\">%s</td>\n" % (gradient_iris[temp], str(round(test_data[counter], 2))))
+                temp3 = int((test_data[counter]/(high[i] - low[i])) *64)
+                if(temp3>64):
+                    temp3=64
+                if(temp3<0):
+                    temp3=0
+                f.write("<td bgcolor=\"%s\">%s</td>\n" % (gradient_iris[temp3], str(round(test_data[counter], 2))))
                 counter+=1
         f.write("</tr>\n")
-    f.write("</tbody></table>\n")  
+    f.write("</tbody></table>\n")
 
 f.write("</body>\n")
 f.write("</html>\n") 
