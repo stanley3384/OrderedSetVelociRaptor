@@ -5,6 +5,11 @@
 Heatmap
 ![ScreenShot](/HeatmapReadme.jpg)
 
+--There is also a Python script that makes it easy to customize a layout with HTML.
+
+Heatmap HTML
+![Screenshot2](/Heatmap2.jpg)
+
 --The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu.
 
 --Start with installing the Apophenia library and the libraries Apophenia depends on.
