@@ -90,7 +90,7 @@ for i in range(0, plates, 1):
     for j in range(0, 8, 1):
         diff = high[i] - low[i]
         temp1 = (low[i] + j*(diff/7))
-        temp2 = int((temp1/diff) *64)
+        temp2 = int(((temp1-low[i])/diff) *64)
         if(temp2>64):
             temp2=64
         if(temp2<0):
@@ -113,7 +113,7 @@ for i in range(0, plates, 1):
                 #This is a label column. Doesn't count for the test_data counter.
                 f.write("<th scope=\"row\" bgcolor=\"silver\">%s</th>\n" % (row_labels[j]))
             else:
-                temp3 = int((test_data[counter]/(high[i] - low[i])) *64)
+                temp3 = int(((test_data[counter]-low[i])/(high[i] - low[i])) *64)
                 if(temp3>64):
                     temp3=64
                 if(temp3<0):
