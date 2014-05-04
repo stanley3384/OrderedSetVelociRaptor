@@ -3,13 +3,16 @@
     For comparison with heatmap1.py. Testing some HTML output code for heatmapping microtiter plates
 and 2d arrays in general. The output is a heatmap2.html file that can be opened in a HTML5 web browser.
 
-Compile with;  gcc -Wall -std=c99 heatmap2.c -o heat
+Compile with;  gcc -Wall -std=c99 heatmap2.c -lsqlite3 -o heat2
 
 C. Eric Cashon
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <float.h>
+#include <sqlite3.h>
+
 
 void make_heatmap(double test_data[], int rows, int columns, int plate_size, int plates)
   {
@@ -77,7 +80,7 @@ void make_heatmap(double test_data[], int rows, int columns, int plate_size, int
              diff = high[i] - low[i];
              temp1 = (low[i] + j*(diff/7));
              temp2 = (((temp1-low[i])/(high[i]-low[i])) *64);
-             printf("high %f low %f temp1 %f temp2 %f\n", high[i], low[i], temp1, temp2);
+             //printf("high %f low %f temp1 %f temp2 %f\n", high[i], low[i], temp1, temp2);
              if(temp2>64)temp2=64;
              if(temp2<0)temp2=0;
              fprintf(f, "<td bgcolor=\"%s\">%8.2f</td>\n", gradient_iris[(int)temp2], temp1);
@@ -122,11 +125,89 @@ void make_heatmap(double test_data[], int rows, int columns, int plate_size, int
     fprintf(f, "</html>\n");
 
     fclose(f); 
-    printf("File Created\n");
+    printf("heatmap2.html file created.\n");
   }
-
-int main()
+void heatmap_to_html_sql(int iRadioButton, int rows, int columns)
   {
+    int i=0;
+    int iRecordCount=0;
+    int plate_size=0;
+    int plates=0;
+    sqlite3 *handle;
+    sqlite3_stmt *stmt1;
+    sqlite3_stmt *stmt2;
+    sqlite3_stmt *stmt3;
+    sqlite3_stmt *stmt4;
+    sqlite3_stmt *stmt5;
+    char sql1[]="SELECT count(data) FROM data;";
+    char sql2[]="SELECT max(wells) FROM aux;";
+    char sql3[]="SELECT max(plate) FROM aux;";
+    char sql4[]="SELECT Data FROM data ORDER BY KeyID;";
+    char sql5[]="SELECT Percent FROM data ORDER BY KeyID;";
+   
+    sqlite3_open("VelociRaptorData.db",&handle);
+
+    //Get record count.
+    sqlite3_prepare_v2(handle,sql1,-1,&stmt1,0);
+    sqlite3_step(stmt1);
+    iRecordCount=sqlite3_column_int(stmt1, 0);
+    sqlite3_finalize(stmt1);
+    //Get plate_number
+    sqlite3_prepare_v2(handle,sql2,-1,&stmt2,0);
+    sqlite3_step(stmt2);
+    plate_size=sqlite3_column_int(stmt2, 0);
+    sqlite3_finalize(stmt2);
+    //Get plates.
+    sqlite3_prepare_v2(handle,sql3,-1,&stmt3,0);
+    sqlite3_step(stmt3);
+    plates=sqlite3_column_int(stmt3, 0);
+    sqlite3_finalize(stmt3);
+
+    //Do some error checking.
+    printf("database records %i plate_size %i plates %i\n", iRecordCount, plate_size, plates);
+
+    if(iRecordCount==0)
+      {
+        printf("No records returned from database.\n");
+      }
+    else if(plate_size==0)
+      { 
+        printf("Couldn't get plate size from aux table.\n");
+      }
+    else
+      {
+        double *test_data = malloc((iRecordCount) * sizeof(double));      
+        if(iRadioButton==1)
+          {
+            sqlite3_prepare_v2(handle,sql4,-1,&stmt4,0);
+                for(i=0;i<iRecordCount;i++)
+                   {
+                     sqlite3_step(stmt4);
+                     test_data[i]=sqlite3_column_double(stmt4, 0);
+                   }
+             sqlite3_finalize(stmt4); 
+             make_heatmap(test_data, rows, columns, plate_size, plates);   
+          }
+        if(iRadioButton==2)
+          {   
+             sqlite3_prepare_v2(handle,sql5,-1,&stmt5,0);
+                for(i=0;i<iRecordCount;i++)
+                   {
+                     sqlite3_step(stmt5);
+                     test_data[i]=sqlite3_column_double(stmt5, 0);
+                   }
+             sqlite3_finalize(stmt5);
+             make_heatmap(test_data, rows, columns, plate_size, plates);       
+          }
+         if(test_data!=NULL)free(test_data);
+       }
+     
+     sqlite3_close(handle);         
+     
+  }
+void test_sequence()
+  {
+    //For sequence of numbers.
     int i=0;
     double test_data[288];
     int rows = 8;
@@ -141,6 +222,16 @@ int main()
 
     make_heatmap(test_data, rows, columns, plate_size, plates);
 
+  }
+int main()
+  {
+
+    //Comment out one function to test
+    test_sequence();
+       
+    //Need 1 or 2 for UI. Check plate_size and plates in database. Uses VelociRaptorData.db. Change as needed.
+    //heatmap_to_html_sql(1, 8, 13);
+       
     return 0;
   }
 
