@@ -14,7 +14,7 @@ C. Eric Cashon
 #include <sqlite3.h>
 
 
-void make_heatmap(double test_data[], int rows, int columns, int plate_size, int plates)
+void make_heatmap_html(double test_data[], int rows, int columns, int plate_size, int plates, int precision, int font_size)
   {
     int i=0;
     int j=0;
@@ -62,7 +62,7 @@ void make_heatmap(double test_data[], int rows, int columns, int plate_size, int
     fprintf(f, "<meta charset=\"UTF-8\"/>\n");
     fprintf(f, "<title>Heatmap</title>\n");
     fprintf(f, "</head>\n");
-    fprintf(f, "<body style=\"font-size:12px\">\n");
+    fprintf(f, "<body style=\"font-size:%ipx\">\n", font_size);
     fprintf(f, "<h1 align=\"center\">Heatmap 96 Well Plates</h1>\n");
 
     //Use a counter for simplicity.
@@ -83,7 +83,7 @@ void make_heatmap(double test_data[], int rows, int columns, int plate_size, int
              //printf("high %f low %f temp1 %f temp2 %f\n", high[i], low[i], temp1, temp2);
              if(temp2>64)temp2=64;
              if(temp2<0)temp2=0;
-             fprintf(f, "<td bgcolor=\"%s\">%8.2f</td>\n", gradient_iris[(int)temp2], temp1);
+             fprintf(f, "<td bgcolor=\"%s\">%.*f</td>\n", gradient_iris[(int)temp2], precision, temp1);
            }
         fprintf(f, "</tr></table>");
 
@@ -112,7 +112,7 @@ void make_heatmap(double test_data[], int rows, int columns, int plate_size, int
                       temp3 = (((test_data[counter]-low[i])/(high[i] - low[i])) *64);
                       if(temp3>64)temp3=64;
                       if(temp3<0)temp3=0;
-                      fprintf(f, "<td bgcolor=\"%s\">%8.2f</td>\n", gradient_iris[(int)temp3], test_data[counter]);
+                      fprintf(f, "<td bgcolor=\"%s\">%.*f</td>\n", gradient_iris[(int)temp3], precision, test_data[counter]);
                       counter+=1;
                     }
                   }
@@ -127,7 +127,7 @@ void make_heatmap(double test_data[], int rows, int columns, int plate_size, int
     fclose(f); 
     printf("heatmap2.html file created.\n");
   }
-void heatmap_to_html_sql(int iRadioButton, int rows, int columns)
+void heatmap_to_html_sql(int iRadioButton, int rows, int columns, int precision, int font_size)
   {
     int i=0;
     int iRecordCount=0;
@@ -176,29 +176,36 @@ void heatmap_to_html_sql(int iRadioButton, int rows, int columns)
       }
     else
       {
-        double *test_data = malloc((iRecordCount) * sizeof(double));      
-        if(iRadioButton==1)
+        double *test_data = malloc((iRecordCount) * sizeof(double));
+        if(test_data==NULL)
           {
-            sqlite3_prepare_v2(handle,sql4,-1,&stmt4,0);
+            printf("Couldn't allocate memory for database records.\n");
+          } 
+        else
+          {     
+            if(iRadioButton==1)
+              {
+                sqlite3_prepare_v2(handle,sql4,-1,&stmt4,0);
                 for(i=0;i<iRecordCount;i++)
                    {
                      sqlite3_step(stmt4);
                      test_data[i]=sqlite3_column_double(stmt4, 0);
                    }
-             sqlite3_finalize(stmt4); 
-             make_heatmap(test_data, rows, columns, plate_size, plates);   
-          }
-        if(iRadioButton==2)
-          {   
-             sqlite3_prepare_v2(handle,sql5,-1,&stmt5,0);
+                 sqlite3_finalize(stmt4); 
+                 make_heatmap_html(test_data, rows, columns, plate_size, plates, precision, font_size);   
+              }
+            if(iRadioButton==2)
+              {   
+                sqlite3_prepare_v2(handle,sql5,-1,&stmt5,0);
                 for(i=0;i<iRecordCount;i++)
                    {
                      sqlite3_step(stmt5);
                      test_data[i]=sqlite3_column_double(stmt5, 0);
                    }
-             sqlite3_finalize(stmt5);
-             make_heatmap(test_data, rows, columns, plate_size, plates);       
-          }
+                sqlite3_finalize(stmt5);
+                make_heatmap_html(test_data, rows, columns, plate_size, plates, precision, font_size);       
+              }
+            }
          if(test_data!=NULL)free(test_data);
        }
      
@@ -214,13 +221,15 @@ void test_sequence()
     int columns = 12+1;
     int plate_size = 96;
     int plates = 3;
+    int precision = 2;
+    int font_size = 10;
     
     for(i=0;i<288;i++)
         {
           test_data[i]=(double)i;
         }
 
-    make_heatmap(test_data, rows, columns, plate_size, plates);
+    make_heatmap_html(test_data, rows, columns, plate_size, plates, precision, font_size);
 
   }
 int main()
@@ -229,8 +238,8 @@ int main()
     //Comment out one function to test
     test_sequence();
        
-    //Need 1 or 2 for UI. Check plate_size and plates in database. Uses VelociRaptorData.db. Change as needed.
-    //heatmap_to_html_sql(1, 8, 13);
+    //Need 1 or 2 for UI radio button. Check plate_size and plates in database. Uses VelociRaptorData.db. Change as needed. (radio_button, rows, columns, precision, font_size)
+    //heatmap_to_html_sql(1, 8, 13, 2, 10);
        
     return 0;
   }
