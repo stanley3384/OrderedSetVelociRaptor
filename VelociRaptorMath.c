@@ -2913,7 +2913,7 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
     fprintf(f, "<meta charset=\"UTF-8\"/>\n");
     fprintf(f, "<title>Heatmap</title>\n");
     fprintf(f, "</head>\n");
-    fprintf(f, "<body style=\"font-size:%ipx\">\n", font_size);
+    fprintf(f, "<body style=\"font-size:%ipx;\">\n", font_size);
     fprintf(f, "<h1 align=\"center\">Heatmap %i Well Plates</h1>\n", plate_size);
 
     //Use a counter for simplicity.
@@ -3043,14 +3043,17 @@ void heatmap_to_html_sql(int iRadioButton, int rows, int columns, int precision,
     if(iRecordCount==0)
       {
         printf("No records returned from database.\n");
+        simple_message_dialog("No records returned from database.");
       }
     else if(plate_size==0)
       { 
         printf("Couldn't get plate size from aux table.\n");
+        simple_message_dialog("Couldn't get plate size from aux table.");
       }
     else if(rows*(columns-1)!=plate_size)
       {
-        printf("Rows times columns doesn't equal the plate_size.\n");
+        printf("Rows times columns doesn't equal the plate size.\n");
+        simple_message_dialog("Rows time columns doesn't equal the plate size.");
       }
     else
       {

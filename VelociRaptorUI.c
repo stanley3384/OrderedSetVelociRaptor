@@ -2863,7 +2863,7 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "1", "iris1");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "2", "iris2");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "3", "sun");
-     gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 1);
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
      
      table=gtk_table_new(8,2,FALSE);
      gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 2, 0, 1);
