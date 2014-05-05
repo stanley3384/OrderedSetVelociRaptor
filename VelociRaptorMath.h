@@ -34,7 +34,9 @@ void format_text_platemap_heatmap(GtkTextView *textview, int high, int low);
 void format_text_platemap_heatmap_iris(GtkTextView *textview, int high, int low);
 void format_text_platemap_heatmap_iris2(GtkTextView *textview, int high, int low);
 void format_text_platemap_heatmap_sun(GtkTextView *textview, int high, int low);
-
+void heatmap_to_html_sql(int iRadioButton, int rows, int columns, int precision, int font_size, int gradient);
+void heatmap_to_html_gradient(double test_data[], int rows, int columns, int plate_size, int plates, int precision, int font_size, int gradient);
+void make_heatmap_html(double test_data[], int rows, int columns, int plate_size, int plates, int precision, int font_size, char **gradient);
 
 
 
