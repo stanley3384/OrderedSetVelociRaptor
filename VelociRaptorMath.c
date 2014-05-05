@@ -2914,7 +2914,7 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
     fprintf(f, "<title>Heatmap</title>\n");
     fprintf(f, "</head>\n");
     fprintf(f, "<body style=\"font-size:%ipx\">\n", font_size);
-    fprintf(f, "<h1 align=\"center\">Heatmap 96 Well Plates</h1>\n");
+    fprintf(f, "<h1 align=\"center\">Heatmap %i Well Plates</h1>\n", plate_size);
 
     //Use a counter for simplicity.
     int counter = 0;
