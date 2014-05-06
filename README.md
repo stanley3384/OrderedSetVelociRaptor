@@ -5,7 +5,7 @@
 Heatmap
 ![ScreenShot](/HeatmapReadme.jpg)
 
---There is also a Python script that makes it easy to customize a layout with HTML.
+--The data sets can also be output to HTML in a heatmapped plate format. If there is a need to customize a layout with HTML there is a Python script along with a small C program that makes it easy to customize a layout with HTML.
 
 Heatmap HTML
 ![Screenshot2](/Heatmap2.jpg)
@@ -24,8 +24,7 @@ sudo apt-get install make gcc libgsl0-dev libsqlite3-dev
 or   
 sudo yum install make gcc gsl-devel libsqlite3x-devel  
 
---There is an optional Python interface, which will require all of the above plus the
-swig and Python-dev packages. *There isn't a requirement for this in the VelociRaptor program.
+--There is an optional Python interface, which will require all of the above plus the swig and Python-dev packages. *There isn't a requirement for this in the VelociRaptor program. The swig and Python-dev packages are good to have though.
 
 --Once you have it in place,
 
