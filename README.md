@@ -10,6 +10,9 @@ Heatmap
 Heatmap HTML
 ![Screenshot2](/Heatmap2.jpg)
 
+Or
+![Screenshot3](/Heatmap3.jpg)
+
 --The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu.
 
 --Start with installing the Apophenia library and the libraries Apophenia depends on.
