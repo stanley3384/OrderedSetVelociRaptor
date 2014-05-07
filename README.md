@@ -7,11 +7,10 @@ Heatmap
 
 --The data sets can also be output to HTML in a heatmapped plate format. If there is a need to customize a layout with HTML there is a Python script along with a small C program that makes it easy to customize a layout with HTML.
 
-Heatmap HTML
+Heatmap HTML's
 ![Screenshot2](/Heatmap2.jpg)
 
 
-Or
 ![Screenshot3](/Heatmap3.jpg)
 
 
