@@ -18,7 +18,7 @@ Heatmap HTML's
 
 --Start with installing the Apophenia library and the libraries Apophenia depends on.
 
---Adapted from Ben Klemens README below. Take a look at the following for better information about installing Apophenia.
+--Adapted from Ben Klemens README below. Take a look at the following for better information about Apophenia. The VelociRaptor program doesn't compile correctly with the most recent version of Apophenia(version 0.999). Working at it. For now, there is a previous version of Apophenia(version 0.99) in the Misc folder that will work.
 
 https://github.com/b-k/Apophenia
 
