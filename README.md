@@ -14,30 +14,26 @@ Heatmap HTML's
 ![Screenshot3](/Heatmap3.jpg)
 
 
---The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu.
+--The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu. First download the OrderedSetVelociRaptor-master.zip file into a new folder.
 
 --Start with installing the Apophenia library and the libraries Apophenia depends on.
 
---Adapted from Ben Klemens README below. Take a look at the following for better information about Apophenia. The VelociRaptor program doesn't compile correctly with the most recent version of Apophenia(version 0.999). Working at it. For now, there is a previous version of Apophenia(version 0.99) in the Misc folder that will work.
+--Adapted from Ben Klemens README below. Take a look at the following https://github.com/b-k/Apophenia for better information about Apophenia. The VelociRaptor program doesn't compile correctly with the most recent version of Apophenia(version 0.999). Working at it. For now, there is a previous version of Apophenia(version 0.99) in the Misc folder that will work. Start there.
 
-https://github.com/b-k/Apophenia
+cd ./Misc
 
 --Dependencies for Apophenia. 
 
-sudo apt-get install make gcc libgsl0-dev libsqlite3-dev  
-or   
-sudo yum install make gcc gsl-devel libsqlite3x-devel  
+sudo apt-get install make gcc libgsl0-dev libsqlite3-dev   
 
---There is an optional Python interface, which will require all of the above plus the swig and Python-dev packages. *There isn't a requirement for this in the VelociRaptor program. The swig and Python-dev packages are good to have though.
+--Unpack the file.
+tar xzf apophenia-*.tgz   
 
---Once you have it in place,
+--Move to the directory.
+cd ./apophenia-0.99 
 
-tar xzf apophenia-*.tar.gz  
-or  
-Unzip the contents of the zip file into the new empty folder. 
-
-./configure  
-cd apophenia-0.99  
+--Set it up.
+./configure   
 make   
 sudo make install  
 
@@ -47,19 +43,9 @@ sudo apt-get install libgtk-3-dev gnuplot gfortran
 
 --Hint, you might want to build gnuplot with wxWidgets and Gd dev libraries installed if you can't get the wxt terminal to work. 
 
---That should be all for the dependencies. Next, create a new empty folder and extract the VelociRaptor-*.tar.gz  or *.zip file to the empty folder. 
+--cd back to OrderedSetVelociRaptor-master$
 
---Example
-
-cd /home/.../
-mkdir OrderedSetVelociRaptor
-cd ./OrderedSetVelociRaptor
-
---Unpack the archive into the folder.
-
-tar xzf VelociRaptor-*.tar.gz 
-or
-Unzip the contents of the zip file to the new folder.
+cd ../../
 
 --Type make at the command line to build the program.
 
