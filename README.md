@@ -24,7 +24,9 @@ cd ./Misc
 
 --Dependencies for Apophenia. 
 
-sudo apt-get install make gcc libgsl0-dev libsqlite3-dev   
+sudo apt-get install make gcc libgsl0-dev libsqlite3-dev
+ 
+sudo apt-get install autoconf automake libtool  
 
 --Unpack the file.
 
