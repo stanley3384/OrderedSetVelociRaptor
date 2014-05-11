@@ -27,12 +27,15 @@ cd ./Misc
 sudo apt-get install make gcc libgsl0-dev libsqlite3-dev   
 
 --Unpack the file.
+
 tar xzf apophenia-*.tgz   
 
 --Move to the directory.
+
 cd ./apophenia-0.99 
 
 --Set it up.
+
 ./configure   
 make   
 sudo make install  
