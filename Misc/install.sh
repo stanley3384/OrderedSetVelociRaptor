@@ -7,9 +7,13 @@
 
 #To use, make a new directory and copy the install.sh file to the new directory.
 #A "test" directory would work fine. Then run the script.
+#
 # bash install.sh
 # or 
 # ./install.sh
+#
+#You should end up with the program and the install script in the new directory. 
+
 
 read -p "Do you wish to install the VelociRaptor program? (y/n) " ANSWER
 if [ "$ANSWER" = "y" ]; then
@@ -50,6 +54,9 @@ if [ "$ANSWER" = "y" ]; then
         cd ../../
         echo "Build the program"
         make
+        echo "Move program to install directory"
+        mv VelociRaptor ../../
+        cd ../../
         echo "Run with ./VelociRaptor"
         ./VelociRaptor
     fi
