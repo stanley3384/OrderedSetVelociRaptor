@@ -801,73 +801,54 @@ void anova_format(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithin
       buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
       double dCriticalValue=0;
 
-            //Format results for each set.
-              printf("Plate %i\n", iPlates);
-              dCriticalValue=gsl_cdf_fdist_Qinv(alpha,iBetweenDf,iWithinDf);
-              printf("F Critical Value %f with(%f, %i, %i)\n", dCriticalValue, alpha, iBetweenDf, iWithinDf);
-              printf("Source     df           SS             MS             F\n");
-              printf("Between    %i     ", iBetweenDf);
-              printf("   %f       %f      %f\n", three-two, (three-two)/iBetweenDf, ((three-two)/iBetweenDf)/((one-three)/iWithinDf));
-              printf("Within     %i    ", iWithinDf);
-              printf("   %f      %f\n", one-three, (one-three)/iWithinDf);
-              printf("Total      %i    ", iTotalDf);
-              printf("   %f\n\n", one-two);
+      //Format results for each set.
+      printf("Plate %i\n", iPlates);
+      dCriticalValue=gsl_cdf_fdist_Qinv(alpha,iBetweenDf,iWithinDf);
+      printf("F Critical Value %f with(%f, %i, %i)\n", dCriticalValue, alpha, iBetweenDf, iWithinDf);
+      printf("Source     df           SS             MS             F\n");
+      printf("Between    %i     ", iBetweenDf);
+      printf("   %f       %f      %f\n", three-two, (three-two)/iBetweenDf, ((three-two)/iBetweenDf)/((one-three)/iWithinDf));
+      printf("Within     %i    ", iWithinDf);
+      printf("   %f      %f\n", one-three, (one-three)/iWithinDf);
+      printf("Total      %i    ", iTotalDf);
+      printf("   %f\n\n", one-two);
 
-               //Print to textview
-                 char *string;
-                 asprintf(&string, " ");
-                 char *temp1=string;
-                 asprintf(&string, " one = %f\n", one);
-                 free(temp1);
-                 char *temp2=string;
-                 asprintf(&string, "%s two = %f\n",string, two);
-                 free(temp2);
-                 char *temp3=string;
-                 asprintf(&string, "%s three = %f\n\n",string, three);
-                 free(temp3);
+      //Print to textview
+      GString *string=g_string_new(" ");
+      g_string_append_printf(string, "one = %f\n", one);
+      g_string_append_printf(string, " two = %f\n", two);
+      g_string_append_printf(string, " three = %f\n\n", three);
+      g_string_append_printf(string, "Plate %i\n", iPlates);
+      g_string_append_printf(string, "F Critical Value %f with(%f, %i, %i)\n", dCriticalValue, alpha, iBetweenDf, iWithinDf);
+      g_string_append_printf(string, "Source         df          SS                    MS                F\n");
+      g_string_append_printf(string, "Between        %i     ", iBetweenDf);
+      g_string_append_printf(string, "  %f       %f      %f\n", three-two, (three-two)/iBetweenDf, ((three-two)/iBetweenDf)/((one-three)/iWithinDf));
+      g_string_append_printf(string, "Within         %i    ", iWithinDf);
+      g_string_append_printf(string, "   %f       %f\n", one-three, (one-three)/iWithinDf);
+      g_string_append_printf(string, "Total          %i    ", iTotalDf);
+      g_string_append_printf(string, "   %f\n\n", one-two);
 
-                 //Format results for each set.
-                 char *temp4=string;
-                 asprintf(&string, "%sPlate %i\n",string, iPlates);
-                 free(temp4);
-                 char *temp5=string;
-                 asprintf(&string, "%sF Critical Value %f with(%f, %i, %i)\n", string, dCriticalValue, alpha, iBetweenDf, iWithinDf);
-                 free(temp5);
-                 char *temp6=string;
-                 asprintf(&string, "%sSource         df                 SS                                     MS                           F\n", string);
-                 free(temp6);
-                 char *temp7=string;
-                 asprintf(&string, "%sBetween     %i     ",string, iBetweenDf);
-                 free(temp7);
-                 char *temp8=string;
-                 asprintf(&string, "%s   %f       %f      %f\n",string, three-two, (three-two)/iBetweenDf, ((three-two)/iBetweenDf)/((one-three)/iWithinDf));
-                 free(temp8);
-                 char *temp9=string;
-                 asprintf(&string, "%sWithin         %i    ",string, iWithinDf);
-                 free(temp9);
-                 char *temp10=string;
-                 asprintf(&string, "%s   %f      %f\n",string, one-three, (one-three)/iWithinDf);
-                 free(temp10);
-                 char *temp11=string;
-                 asprintf(&string, "%sTotal            %i    ",string, iTotalDf);
-                 free(temp11);
-                 char *temp12=string;
-                 asprintf(&string, "%s   %f\n\n",string, one-two);
-                 free(temp12);
-            
-                 gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-                 free(string);
+      gtk_text_buffer_insert_at_cursor(buffer, string->str, -1);
+      g_string_free(string,TRUE);
     }
 void anova_format_tabular(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithinDf,int iTotalDf, double one, double two, double three, double alpha)
    {
+      int as_return=0;
       GtkTextBuffer *buffer1;
       buffer1 = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
       double dCriticalValue=gsl_cdf_fdist_Qinv(alpha,iBetweenDf,iWithinDf);
 
        char *string;
-       asprintf(&string, "%i %i %i %i %f %f %f %f %f %f %f\n", iPlates, iBetweenDf, iWithinDf, iTotalDf, three-two, one-three, one-two, (three-two)/iBetweenDf, (one-three)/iWithinDf, ((three-two)/iBetweenDf)/((one-three)/iWithinDf), dCriticalValue  );
-       gtk_text_buffer_insert_at_cursor(buffer1, string, -1);
-       free(string); 
+       as_return=asprintf(&string, "%i %i %i %i %f %f %f %f %f %f %f\n", iPlates, iBetweenDf, iWithinDf, iTotalDf, three-two, one-three, one-two, (three-two)/iBetweenDf, (one-three)/iWithinDf, ((three-two)/iBetweenDf)/((one-three)/iWithinDf), dCriticalValue  );
+       if(as_return!=-1)
+         {
+           gtk_text_buffer_insert_at_cursor(buffer1, string, -1);
+           free(string); 
+         }
+       else
+         {
+           printf("Memory allocation error in asprintf.\n");
+         }
    }
 void database_to_box_graph_sql(int iRadioButton, int lower_bound, int upper_bound)
    {
@@ -990,9 +971,14 @@ void plot_matrix_now(gsl_matrix *data, int graph, int lower_bound, int upper_bou
                   
                 }
                
+              //apophenia 0.99
               apop_opts.output_type='p';
               apop_opts.output_pipe=gp;
               apop_matrix_print(data, NULL);
+              
+
+              //apophenia 0.999
+              //apop_matrix_print(data, .output_type='p', .output_pipe=gp);
               fflush(gp);
               pclose(gp);
             }

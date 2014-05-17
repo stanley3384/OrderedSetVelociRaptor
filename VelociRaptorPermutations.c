@@ -163,6 +163,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
     double temp1=0;
     int plate=0;
     int group=0;
+    int as_return=0;
     double control_value=0;
     double test_value=0;
     int control_count=0;
@@ -180,9 +181,16 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
 
     //printf("Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount Count1 PermutationMean PermutationStdDevS Side p-value\n");
     char *string;
-    asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value\n");
-    gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-    free(string);
+    as_return=asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount CountP PermMean PermStdDevS Side p-value\n");
+    if(as_return!=-1)
+      {
+        gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+        free(string);
+      }
+    else
+      {
+        printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+      }
 
     for(i=0;i<mTestGroups->matrix->size1;i++)
        {
@@ -238,9 +246,16 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
  
               //printf("%i %i %i ", plate, iControlValue, group);
               char *string2;
-              asprintf(&string2, "%i %i %i ", plate, iControlValue, group);
-              gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
-              free(string2); 
+              as_return=asprintf(&string2, "%i %i %i ", plate, iControlValue, group);
+              if(as_return!=-1)
+                {
+                  gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
+                  free(string2); 
+                }
+              else
+                {
+                  printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+                }
 
               //Check if a new permutation set is needed.
               if((control_count+test_count!=previous_count))
@@ -866,6 +881,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
     int counter=0;
     double pValueTemp=0;
     int malloc_error=0;
+    int as_return=0;
     double control_mean=gsl_stats_mean(data_control, 1, control_count);
     double test_mean=gsl_stats_mean(data_test, 1, test_count);
     int permutation_length=control_count+test_count;
@@ -973,15 +989,29 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
 
         //printf("%f %f %f ", control_mean, test_mean, mean_difference);
         char *string;
-        asprintf(&string, "%f %f %f ", control_mean, test_mean, mean_difference);
-        gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-        free(string);
+        as_return=asprintf(&string, "%f %f %f ", control_mean, test_mean, mean_difference);
+        if(as_return!=-1)
+          {
+            gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+            free(string);
+          }
+        else
+          {
+            printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+          }
 
         //printf("%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
         char *string2;
-        asprintf(&string2, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
-        gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
-        free(string2); 
+        as_return=asprintf(&string2, "%i %i %i %i %i ", permutations, permutation_length, control_count, test_count, counter);
+        if(as_return!=-1)
+          {
+            gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
+            free(string2);
+          }
+        else
+          {
+            printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+          } 
 
         //Get the mean of the permutation test statistics.
         dPermutationMean=gsl_stats_mean(means, 1, permutations);
@@ -993,26 +1023,47 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
           {
             //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", pValueTemp);
             char *string3;
-            asprintf(&string3, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", pValueTemp);
-            gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
-            free(string3);
+            as_return=asprintf(&string3, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "abs", pValueTemp);
+            if(as_return!=-1)
+              {
+                gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
+                free(string3);
+              }
+            else
+              {
+                printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+              }
                   
           }
         if(iTail==2)//upper
           {
             //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "upper", pValueTemp);
             char *string4;
-            asprintf(&string4, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "upper", pValueTemp);
-            gtk_text_buffer_insert_at_cursor(buffer, string4, -1);
-            free(string4); 
+            as_return=asprintf(&string4, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "upper", pValueTemp);
+            if(as_return!=-1)
+              {
+                gtk_text_buffer_insert_at_cursor(buffer, string4, -1);
+                free(string4);
+              }
+            else
+              {
+                printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+              } 
           }
         if(iTail==3)//lower
           {
             //printf("%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "lower", pValueTemp);
             char *string5;
-            asprintf(&string5, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "lower", pValueTemp);
-            gtk_text_buffer_insert_at_cursor(buffer, string5, -1);
-            free(string5); 
+            as_return=asprintf(&string5, "%f %f %s %f\n", dPermutationMean, gsl_stats_sd_m(means, 1, permutations, dPermutationMean), "lower", pValueTemp);
+            if(as_return!=-1)
+              {
+                gtk_text_buffer_insert_at_cursor(buffer, string5, -1);
+                free(string5);
+              }
+            else
+              {
+                printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+              } 
           }
        }
 
@@ -1504,6 +1555,7 @@ static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, dou
     int i=0;
     int plate=0;
     int size=0;
+    int as_return=0;
     double ProbValue=-1.0;
     GString *sAdjP=g_string_new(NULL);
     GtkTextBuffer *buffer;
@@ -1516,14 +1568,22 @@ static void print_monotone_pvalues(GtkTextView *textview, GPtrArray *sArray, dou
     char *string;
     if(iFunction==2)
       {
-        asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
+        as_return=asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value minP monotone_minP\n");
       }
     else if(iFunction==3)
       {
-        asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value maxT monotone_maxT\n");
+        as_return=asprintf(&string, "Plate Control Test ControlMean TestMean Difference Permutations PermutationLength ControlCount TestCount Count1 Count2 PermutationMean PermutationsStdDevS Side p-value maxT monotone_maxT\n");
       }
-    gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-    free(string);
+
+    if(as_return!=-1)
+      {
+        gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+        free(string);
+      }
+    else
+      {
+        printf("Error: asprintf couldn't allocate string in VelociRaptorPermutations.c\n");
+      }
 
     size=mPvaluesSorted->matrix->size1;
 

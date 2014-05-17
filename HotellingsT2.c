@@ -48,6 +48,7 @@ void hotellings_T2(int iRadioButton, double alpha, int ShowAll, int control, Gtk
      int columns=0;
      int iPlateSize=0;
      int iNumberOfPlates=0;
+     int as_return=0;
      //int retval=0;
      int i=0;
      int j=0;
@@ -65,60 +66,80 @@ void hotellings_T2(int iRadioButton, double alpha, int ShowAll, int control, Gtk
      if(iRadioButton==1)
        {
          //A record count of the data
-         asprintf(&sql1, "SELECT count(*) FROM Data;");
+         as_return=asprintf(&sql1, "SELECT count(*) FROM Data;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need a column count or group count
-         asprintf(&sql2, "SELECT max(Groups) FROM aux;");
+         as_return=asprintf(&sql2, "SELECT max(Groups) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need number of plates
-         asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         as_return=asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need plate size
-         asprintf(&sql4, "SELECT max(Wells) FROM aux;");
+         as_return=asprintf(&sql4, "SELECT max(Wells) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need data for data array
-         asprintf(&sql5, "SELECT Data FROM Data;");
+         as_return=asprintf(&sql5, "SELECT Data FROM Data;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
        }
 
      //iRadioButton==2 percent and groups
      if(iRadioButton==2)
        {
          //A record count of the data
-         asprintf(&sql1, "SELECT count(*) FROM Data;");
+         as_return=asprintf(&sql1, "SELECT count(*) FROM Data;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need a column count or group count
-         asprintf(&sql2, "SELECT max(Groups) FROM aux;");
+         as_return=asprintf(&sql2, "SELECT max(Groups) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need number of plates
-         asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         as_return=asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need plate size
-         asprintf(&sql4, "SELECT max(Wells) FROM aux;");
+         as_return=asprintf(&sql4, "SELECT max(Wells) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need data for data array
-         asprintf(&sql5, "SELECT Percent FROM Data;");
+         as_return=asprintf(&sql5, "SELECT Percent FROM Data;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
        }
 
      //iRadioButton==3 data and picks
      if(iRadioButton==3)
        {
          //A record count of the data
-         asprintf(&sql1, "SELECT count(*) FROM aux WHERE Picks!=0;");
+         as_return=asprintf(&sql1, "SELECT count(*) FROM aux WHERE Picks!=0;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need a column count or group count
-         asprintf(&sql2, "SELECT count(*) FROM (SELECT count(Picks) FROM aux WHERE Plate==1 AND Picks!=0 GROUP BY Picks);");
+         as_return=asprintf(&sql2, "SELECT count(*) FROM (SELECT count(Picks) FROM aux WHERE Plate==1 AND Picks!=0 GROUP BY Picks);");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need number of plates
-         asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         as_return=asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need plate size
-         asprintf(&sql4, "SELECT count(*) FROM aux WHERE Plate==1 AND Picks!=0;");
+         as_return=asprintf(&sql4, "SELECT count(*) FROM aux WHERE Plate==1 AND Picks!=0;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need data for data array
-         asprintf(&sql5, "SELECT Data FROM Data AS D1, Aux AS D2 WHERE D1.KeyID==D2.KeyID AND Picks!=0;");
+         as_return=asprintf(&sql5, "SELECT Data FROM Data AS D1, Aux AS D2 WHERE D1.KeyID==D2.KeyID AND Picks!=0;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
        }
 
      //iRadioButton==4 percent and picks
      if(iRadioButton==4)
        {
          //A record count of the data
-         asprintf(&sql1, "SELECT count(*) FROM aux WHERE Picks!=0;");
+         as_return=asprintf(&sql1, "SELECT count(*) FROM aux WHERE Picks!=0;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need a column count or group count
-         asprintf(&sql2, "SELECT count(*) FROM (SELECT count(Picks) FROM aux WHERE Plate==1 AND Picks!=0 GROUP BY Picks);");
+         as_return=asprintf(&sql2, "SELECT count(*) FROM (SELECT count(Picks) FROM aux WHERE Plate==1 AND Picks!=0 GROUP BY Picks);");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need number of plates
-         asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         as_return=asprintf(&sql3, "SELECT max(Plate) FROM aux;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need plate size
-         asprintf(&sql4, "SELECT count(*) FROM aux WHERE Plate==1 AND Picks!=0;");
+         as_return=asprintf(&sql4, "SELECT count(*) FROM aux WHERE Plate==1 AND Picks!=0;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
          //Need data for data array
-         asprintf(&sql5, "SELECT Percent FROM Data AS D1, Aux AS D2 WHERE D1.KeyID==D2.KeyID AND Picks!=0 ;");
+         as_return=asprintf(&sql5, "SELECT Percent FROM Data AS D1, Aux AS D2 WHERE D1.KeyID==D2.KeyID AND Picks!=0 ;");
+         if(as_return==-1)printf("Memory allocation error in asprintf.\n");
        }
 
      //printf("Connect to Database\n");
@@ -498,6 +519,7 @@ void print_t2_confidence_intervals_control(gsl_matrix *CSC2, gsl_matrix *Cx, dou
     {
        int i=0;
        int j=0;
+       int as_return=0;
        double temp=0;
        GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 
@@ -516,17 +538,31 @@ void print_t2_confidence_intervals_control(gsl_matrix *CSC2, gsl_matrix *Cx, dou
                 {
                   //printf("%i %i %i %f %f %f %f %f\n", plate, control+1, i+1+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                   char *string;
-                  asprintf(&string, "%i %i %i %f %f %f %f <uc%i-ut%i< %f\n", plate, control+1, i+1+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), control+1, i+1+1, gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows)))); 
-                  gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-                  free(string);
+                  as_return=asprintf(&string, "%i %i %i %f %f %f %f <uc%i-ut%i< %f\n", plate, control+1, i+1+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), control+1, i+1+1, gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
+                  if(as_return!=-1)
+                    { 
+                      gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+                      free(string);
+                    }
+                  else
+                    {
+                      printf("Memory allocation error in asprintf.\n");
+                    }
                 }
              else
                 {
                   //printf("%i %i %i %f %f %f %f %f\n", plate, control+1, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                   char *string;
-                  asprintf(&string, "%i %i %i %f %f %f %f <uc%i-ut%i< %f\n", plate, control+1, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), control+1, i+1, gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
-                  gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-                  free(string);
+                  as_return=asprintf(&string, "%i %i %i %f %f %f %f <uc%i-ut%i< %f\n", plate, control+1, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), control+1, i+1, gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
+                  if(as_return!=-1)
+                    {
+                      gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+                      free(string);
+                    }
+                  else
+                    {
+                      printf("Memory allocation error in asprintf.\n");
+                    }
                 }
            }
 
@@ -536,6 +572,7 @@ void print_t2_confidence_intervals_supplied(gsl_matrix *CSC2, gsl_matrix *Cx, gs
     {
        int i=0;
        int j=0;
+       int as_return=0;
        double temp=0;
        GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
        int Srows=SuppliedContrasts->size1;
@@ -603,9 +640,16 @@ void print_t2_confidence_intervals_supplied(gsl_matrix *CSC2, gsl_matrix *Cx, gs
                  }
                 //printf("%i %i %f %f %f %s %f %f\n", plate, i+1, alpha, T2, fdist, (char*)g_ptr_array_index(sArray, i), gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
                 char *string;
-                asprintf(&string, "%i %i %f %f %f %f <%s< %f\n", plate, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), (char*)g_ptr_array_index(sArray, i), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
-                gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-                free(string);
+                as_return=asprintf(&string, "%i %i %f %f %f %f <%s< %f\n", plate, i+1, alpha, T2, fdist, gsl_matrix_get(Cx, i, 0)-(sqrt(fdist))*(sqrt((temp/(double)rows))), (char*)g_ptr_array_index(sArray, i), gsl_matrix_get(Cx, i, 0)+(sqrt(fdist))*(sqrt((temp/(double)rows))));
+                if(as_return!=-1)
+                  {
+                    gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+                    free(string);
+                  }
+                else
+                  {
+                    printf("Memory allocation error in asprintf.\n");
+                  }
            }
        //printf("\n");
 
@@ -775,6 +819,7 @@ void z_factor(int iRadioButton, int iControl, GtkTextView *textview)
 */
       int i=0;
       int j=0;
+      int as_return=0;
       double ZFactor=0;
       int iCounter=0;
       int iPlates=0;
@@ -790,30 +835,42 @@ void z_factor(int iRadioButton, int iControl, GtkTextView *textview)
 
       if(iRadioButton==1)
         {
-          asprintf(&sql1, "SELECT avg(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
-          asprintf(&sql2, "SELECT stddev(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
-          asprintf(&sql3, "SELECT max(Groups) FROM aux;");
+          as_return=asprintf(&sql1, "SELECT avg(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql2, "SELECT stddev(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql3, "SELECT max(Groups) FROM aux;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
         }
    
       if(iRadioButton==2)
         {
-          asprintf(&sql1, "SELECT avg(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
-          asprintf(&sql2, "SELECT stddev(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
-          asprintf(&sql3, "SELECT max(Groups) FROM aux;");
+          as_return=asprintf(&sql1, "SELECT avg(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql2, "SELECT stddev(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Groups ORDER BY Plate,Groups;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql3, "SELECT max(Groups) FROM aux;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
         }
 
       if(iRadioButton==3)
         {
-          asprintf(&sql1, "SELECT avg(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
-          asprintf(&sql2, "SELECT stddev(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
-          asprintf(&sql3, "SELECT max(Picks) FROM aux;");
+          as_return=asprintf(&sql1, "SELECT avg(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql2, "SELECT stddev(T1.data) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql3, "SELECT max(Picks) FROM aux;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
         }
 
         if(iRadioButton==4)
         {
-          asprintf(&sql1, "SELECT avg(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
-          asprintf(&sql2, "SELECT stddev(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
-          asprintf(&sql3, "SELECT max(Picks) FROM aux;");
+          as_return=asprintf(&sql1, "SELECT avg(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql2, "SELECT stddev(T1.percent) FROM Data as T1,Aux as T2 WHERE T1. KeyID=T2.KeyID GROUP BY Plate,Picks ORDER BY Plate,Picks;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
+          as_return=asprintf(&sql3, "SELECT max(Picks) FROM aux;");
+          if(as_return==-1)printf("Memory allocation error in asprintf.\n");
         }
 
       apop_db_open("VelociRaptorData.db");
@@ -840,23 +897,31 @@ void z_factor(int iRadioButton, int iControl, GtkTextView *textview)
              {
               for(j=0;j<iGroups;j++)
                  {
-                   //exclude control
+                       //exclude control
                    if(iControl!=iCounter)
                      {
                        ZFactor=1.0-(3.0*gsl_vector_get(vStdDev, iCounter)+3.0*gsl_vector_get(vStdDev, iControl))/fabs(gsl_vector_get(vMean, iCounter)-gsl_vector_get(vMean, iControl));
                        //printf("%i %f %f %f %f %f\n", i+1, gsl_vector_get(vMean, iControl), gsl_vector_get(vMean, iCounter), gsl_vector_get(vStdDev, iControl), gsl_vector_get(vStdDev, iCounter), ZFactor);
                        char *string;
-                       asprintf(&string, "%i %f %f %f %f %f\n", i+1, gsl_vector_get(vMean, iControl), gsl_vector_get(vMean, iCounter), gsl_vector_get(vStdDev, iControl), gsl_vector_get(vStdDev, iCounter), ZFactor);
-                       gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-                       free(string);
+                       as_return=asprintf(&string, "%i %f %f %f %f %f\n", i+1, gsl_vector_get(vMean, iControl), gsl_vector_get(vMean, iCounter), gsl_vector_get(vStdDev, iControl), gsl_vector_get(vStdDev, iCounter), ZFactor);
+                       if(as_return!=-1)
+                         {
+                           gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+                           free(string);
+                         }
+                       else
+                         {
+                           printf("Memory allocation error in asprintf.\n");
+                         }
                      }
                     iCounter++;
                  }
                iControl=iControl+iGroups;
              }
          }
-
       apop_db_close(0);
+       
+
       if(vMean!=NULL)
         {
          gsl_vector_free(vMean);
@@ -883,6 +948,7 @@ void calculate_contingency_values(double alpha, GtkTextView *textview, int check
       char *sql6;
       char *sql7;
       char *sql8;
+      int as_return=0;
       int VectorSize=0;
       int i=0;
       double TempValue=0;
@@ -890,21 +956,29 @@ void calculate_contingency_values(double alpha, GtkTextView *textview, int check
       printf("Get Contingency Data\n");
       GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
       //Get rows
-      asprintf(&sql1, "SELECT MAX(RowID) FROM TempContingency GROUP BY Plate;");
+      as_return=asprintf(&sql1, "SELECT MAX(RowID) FROM TempContingency GROUP BY Plate;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get columns
-      asprintf(&sql2, "SELECT MAX(ColumnID) FROM TempContingency GROUP BY Plate;");
+      as_return=asprintf(&sql2, "SELECT MAX(ColumnID) FROM TempContingency GROUP BY Plate;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get total
-      asprintf(&sql3, "SELECT SUM(TestValue) FROM TempContingency GROUP BY Plate;");
+      as_return=asprintf(&sql3, "SELECT SUM(TestValue) FROM TempContingency GROUP BY Plate;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get X
-      asprintf(&sql4, "SELECT SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1ColumnID = T2ColumnID;");
+      as_return=asprintf(&sql4, "SELECT SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1ColumnID = T2ColumnID;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get Y
-      asprintf(&sql5, "SELECT  SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1RowID=T2RowID;");
+      as_return=asprintf(&sql5, "SELECT  SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1RowID=T2RowID;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get P
-      asprintf(&sql6, "SELECT SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1RowID <> T2RowID AND T1ColumnID <> T2ColumnID AND T1ColumnID < T2ColumnID;");
+      as_return=asprintf(&sql6, "SELECT SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1RowID <> T2RowID AND T1ColumnID <> T2ColumnID AND T1ColumnID < T2ColumnID;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get Q
-      asprintf(&sql7, "SELECT SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1RowID <> T2RowID AND T1ColumnID <> T2ColumnID AND T1ColumnID > T2ColumnID;");
+      as_return=asprintf(&sql7, "SELECT SUM(T1TestValue * T2TestValue) FROM TempCombinationsOf2 WHERE T1RowID <> T2RowID AND T1ColumnID <> T2ColumnID AND T1ColumnID > T2ColumnID;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
       //Get chi2
-      asprintf(&sql8, "SELECT (SELECT SUM(TestValue) FROM TempPlateNumber)*(SUM((T4.TestValue*T4.TestValue)/(T3.V1*T3.V2))-1) AS Chi2 FROM (SELECT R, C, V1, V2 FROM(SELECT RowID AS R, SUM(TestValue) AS V1 FROM TempPlateNumber GROUP BY RowID) AS T1, (SELECT ColumnID AS C, SUM(TestValue) AS V2 FROM TempPlateNumber GROUP BY ColumnID) AS T2) AS T3,(SELECT RowID AS R2, ColumnID AS C2, TestValue FROM TempPlateNumber) AS T4 WHERE T4.R2=T3.R  AND T4.C2=T3.C ORDER BY T4.R2;");
+      as_return=asprintf(&sql8, "SELECT (SELECT SUM(TestValue) FROM TempPlateNumber)*(SUM((T4.TestValue*T4.TestValue)/(T3.V1*T3.V2))-1) AS Chi2 FROM (SELECT R, C, V1, V2 FROM(SELECT RowID AS R, SUM(TestValue) AS V1 FROM TempPlateNumber GROUP BY RowID) AS T1, (SELECT ColumnID AS C, SUM(TestValue) AS V2 FROM TempPlateNumber GROUP BY ColumnID) AS T2) AS T3,(SELECT RowID AS R2, ColumnID AS C2, TestValue FROM TempPlateNumber) AS T4 WHERE T4.R2=T3.R  AND T4.C2=T3.C ORDER BY T4.R2;");
+      if(as_return==-1)printf("Memory allocation error in asprintf.\n");
 
       apop_db_open("VelociRaptorData.db");
       
@@ -983,16 +1057,30 @@ void calculate_contingency_values(double alpha, GtkTextView *textview, int check
          {
            //printf("%i %i %i %f %f %f %f %f %f %f\n", i+1, (int)gsl_vector_get(vRows,i), (int)gsl_vector_get(vColumns,i), gsl_vector_get(vTotal,i), gsl_vector_get(vX,i), gsl_vector_get(vY,i), gsl_vector_get(vP,i), gsl_vector_get(vQ,i), gsl_vector_get(vChi2,i), gsl_cdf_chisq_Qinv(alpha,((gsl_vector_get(vRows,i)-1)*(gsl_vector_get(vColumns,i)-1))));
            char *string;
-           asprintf(&string, "%i %i %i %f %f %f %f %f %f %f", i+1, (int)gsl_vector_get(vRows,i), (int)gsl_vector_get(vColumns,i), gsl_vector_get(vTotal,i), gsl_vector_get(vX,i), gsl_vector_get(vY,i), gsl_vector_get(vP,i), gsl_vector_get(vQ,i), gsl_vector_get(vChi2,i), gsl_cdf_chisq_Qinv(alpha,((gsl_vector_get(vRows,i)-1)*(gsl_vector_get(vColumns,i)-1))));
-           gtk_text_buffer_insert_at_cursor(buffer, string, -1);
-           free(string);
+           as_return=asprintf(&string, "%i %i %i %f %f %f %f %f %f %f", i+1, (int)gsl_vector_get(vRows,i), (int)gsl_vector_get(vColumns,i), gsl_vector_get(vTotal,i), gsl_vector_get(vX,i), gsl_vector_get(vY,i), gsl_vector_get(vP,i), gsl_vector_get(vQ,i), gsl_vector_get(vChi2,i), gsl_cdf_chisq_Qinv(alpha,((gsl_vector_get(vRows,i)-1)*(gsl_vector_get(vColumns,i)-1))));
+           if(as_return!=-1)
+             {
+               gtk_text_buffer_insert_at_cursor(buffer, string, -1);
+               free(string);
+             }
+           else
+             {
+               printf("Memory allocation error in asprintf.\n");
+             }
            //Pearson C
            if(check_box1==1)
              {
                char *string1;
-               asprintf(&string1, " %f", sqrt((gsl_vector_get(vChi2,i)/(gsl_vector_get(vChi2,i) + gsl_vector_get(vTotal,i)))));
-               gtk_text_buffer_insert_at_cursor(buffer, string1, -1);
-               free(string1);
+               as_return=asprintf(&string1, " %f", sqrt((gsl_vector_get(vChi2,i)/(gsl_vector_get(vChi2,i) + gsl_vector_get(vTotal,i)))));
+               if(as_return!=-1)
+                 {
+                   gtk_text_buffer_insert_at_cursor(buffer, string1, -1);
+                   free(string1);
+                 }
+               else
+                 {
+                   printf("Memory allocation error in asprintf.\n");
+                 }
              }
             //Pearson C*
             if(check_box2==1)
@@ -1007,17 +1095,31 @@ void calculate_contingency_values(double alpha, GtkTextView *textview, int check
                  {
                    temp=gsl_vector_get(vColumns,i);
                  }
-               asprintf(&string2, " %f", sqrt((gsl_vector_get(vChi2,i)/(gsl_vector_get(vChi2,i) + gsl_vector_get(vTotal,i))))/sqrt((temp-1)/temp));
-               gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
-               free(string2);
+               as_return=asprintf(&string2, " %f", sqrt((gsl_vector_get(vChi2,i)/(gsl_vector_get(vChi2,i) + gsl_vector_get(vTotal,i))))/sqrt((temp-1)/temp));
+               if(as_return!=-1)
+                 {
+                   gtk_text_buffer_insert_at_cursor(buffer, string2, -1);
+                   free(string2);
+                 }
+               else
+                 {
+                   printf("Memory allocation error in asprintf.\n");
+                 }
              }
             //Tshuprow's T
             if(check_box3==1)
              {
                char *string3;
-               asprintf(&string3, " %f", sqrt(gsl_vector_get(vChi2,i)/(gsl_vector_get(vTotal,1)*sqrt((gsl_vector_get(vRows,i)-1)*(gsl_vector_get(vColumns,i)-1)))));
-               gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
-               free(string3);
+               as_return=asprintf(&string3, " %f", sqrt(gsl_vector_get(vChi2,i)/(gsl_vector_get(vTotal,1)*sqrt((gsl_vector_get(vRows,i)-1)*(gsl_vector_get(vColumns,i)-1)))));
+               if(as_return!=-1)
+                 {
+                   gtk_text_buffer_insert_at_cursor(buffer, string3, -1);
+                   free(string3);
+                 }
+               else
+                 {
+                   printf("Memory allocation error in asprintf.\n");
+                 }
              }
             //Cramer's V
             if(check_box4==1)
@@ -1032,25 +1134,46 @@ void calculate_contingency_values(double alpha, GtkTextView *textview, int check
                  {
                    temp2=gsl_vector_get(vColumns,i);
                  }
-               asprintf(&string4, " %f", sqrt(gsl_vector_get(vChi2,i)/(gsl_vector_get(vTotal,1)*(temp2-1))  ));
-               gtk_text_buffer_insert_at_cursor(buffer, string4, -1);
-               free(string4);
+               as_return=asprintf(&string4, " %f", sqrt(gsl_vector_get(vChi2,i)/(gsl_vector_get(vTotal,1)*(temp2-1))  ));
+               if(as_return!=-1)
+                 {
+                   gtk_text_buffer_insert_at_cursor(buffer, string4, -1);
+                   free(string4);
+                 }
+               else
+                 {
+                   printf("Memory allocation error in asprintf.\n");
+                 }
              }
             //Somer's d
             if(check_box5==1)
              {
                char *string5;
-               asprintf(&string5, " %f", ((gsl_vector_get(vP,i)-gsl_vector_get(vQ,i))/(gsl_vector_get(vP,i) + gsl_vector_get(vQ,i) + gsl_vector_get(vY,i))));
-               gtk_text_buffer_insert_at_cursor(buffer, string5, -1);
-               free(string5);
+               as_return=asprintf(&string5, " %f", ((gsl_vector_get(vP,i)-gsl_vector_get(vQ,i))/(gsl_vector_get(vP,i) + gsl_vector_get(vQ,i) + gsl_vector_get(vY,i))));
+               if(as_return!=-1)
+                 {
+                   gtk_text_buffer_insert_at_cursor(buffer, string5, -1);
+                   free(string5);
+                 }
+               else
+                 {
+                   printf("Memory allocation error in asprintf.\n");
+                 }
              }
             //Gamma
             if(check_box6==1)
              {
                char *string6;
-               asprintf(&string6, " %f", ((gsl_vector_get(vP,i)-gsl_vector_get(vQ,i))/(gsl_vector_get(vP,i) + gsl_vector_get(vQ,i))));
-               gtk_text_buffer_insert_at_cursor(buffer, string6, -1);
-               free(string6);
+               as_return=asprintf(&string6, " %f", ((gsl_vector_get(vP,i)-gsl_vector_get(vQ,i))/(gsl_vector_get(vP,i) + gsl_vector_get(vQ,i))));
+               if(as_return!=-1)
+                 {
+                   gtk_text_buffer_insert_at_cursor(buffer, string6, -1);
+                   free(string6);
+                 }
+               else
+                 {
+                   printf("Memory allocation error in asprintf.\n");
+                 }
              }
             gtk_text_buffer_insert_at_cursor(buffer, "\n", -1);
          }

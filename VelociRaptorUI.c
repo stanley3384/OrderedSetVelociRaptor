@@ -478,6 +478,7 @@ static void change_selection_font(GtkWidget *button, GtkTextView *textview)
   {
     //Set the font for the textview.
     int i=0;
+    int as_return=0;
     static int tag_counter=0;
     GString *tag_name=g_string_new(NULL);
     GtkTextIter start, end;
@@ -489,10 +490,17 @@ static void change_selection_font(GtkWidget *button, GtkTextView *textview)
     for(i=0;i<tag_counter;i++)
        {
          char *string=NULL;
-         asprintf(&string, "tag%i", i);
-         gtk_text_buffer_remove_tag_by_name(buffer, string, &start, &end);
-         //printf("Remove Tag %s\n", string);
-         free(string);
+         as_return=asprintf(&string, "tag%i", i);
+         if(as_return!=-1)
+           {
+             gtk_text_buffer_remove_tag_by_name(buffer, string, &start, &end);
+             //printf("Remove Tag %s\n", string);
+             free(string);
+           }
+         else
+           {
+             printf("Memory allocation error in asprintf.\n");
+           }
        }
 
     if(!underline)
