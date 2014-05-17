@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.*/
+/* Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.  */
 
 void hotellings_T2(int iRadioButton, double alpha, int ShowAll, int control, GtkTextView *textview, GtkWidget *progress, gsl_matrix *SuppliedContrasts, int MatrixColumns);
 void build_contrast_matrix(int columns, int control, gsl_matrix *Contrasts);

@@ -1,5 +1,5 @@
 
-!Build mvdist.o with the following.
+!Build mvdist.o with the following.    
 !
 !gfortran -c mvdist.f90
 !
