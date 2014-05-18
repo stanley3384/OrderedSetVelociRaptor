@@ -26,7 +26,6 @@ if [ "$ANSWER" = "y" ]; then
     else
         echo "Make RaptorDirectoryTest"
         rm -rf RaptorDirectoryTest
-        rm -f master.zip
         mkdir RaptorDirectoryTest
         cd ./RaptorDirectoryTest
         echo "Get zip file"
