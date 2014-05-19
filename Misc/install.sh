@@ -14,18 +14,18 @@
 #
 #You should end up with the program and the install script in the new directory. 
 
-read -p "Do you wish to install the VelociRaptor program? (y/n) " ANSWER
-if [ "$ANSWER" = "y" ]; then
+read -p "Do you wish to install the VelociRaptor program? (y/n) " answer
+if [ "$answer" = "y" ]; then
     #Check sudo permission.
     sudo -v
-    RETURN=$?
-    if [ $RETURN -ne 0 ]; then
+    sudo_return=$?
+    if [ $sudo_return -ne 0 ]; then
         echo "Need sudo permission to install."
     else
         #See if github is available.
         ping -c 1 www.github.com
-        STATUS=$?
-        if [ $STATUS -ne 0 ]; then
+        ping_return=$?
+        if [ $ping_return -ne 0 ]; then
             echo "Can't find github. Make sure you have an active internet connection and retry."
         else
             echo "Make RaptorDirectoryTest"
