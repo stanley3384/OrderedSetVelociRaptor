@@ -1,11 +1,10 @@
 #!/bin/bash
 
-#An install script for the VelociRaptor program.
+#    An install script for the VelociRaptor program and Apophenia-0.99.
 #This is still being tested!!! It is just a collection of the steps in README.
 #Make sure to take a look at README before trying this script. Also take a 
 #look at the script so you can see what it is doing and modify as needed.
-
-#To use, make a new directory and copy the install.sh file to the new directory.
+#    To use, make a new directory and copy the install.sh file to the new directory.
 #A "test" directory would work fine. Then run the script.
 #
 # bash install.sh
