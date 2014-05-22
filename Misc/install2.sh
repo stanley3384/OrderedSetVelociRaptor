@@ -1,11 +1,12 @@
 #!/bin/bash
 
 #    An install script for the VelociRaptor program and Apophenia-0.999.
-#This is still being tested!!! It is just a collection of the steps in README.
-#Make sure to take a look at README before trying this script. Also take a 
-#look at the script so you can see what it is doing.
+#It is a collection of the steps in README. Make sure to take a look at
+#README before trying this script. Also take a look at the script so you
+#can see what it is doing.
 #    This script uses sed to make version changes so that everything compiles
-#correctly. Still testing things out.
+#correctly. Both the install.sh and install2.sh should set up the program
+#and the required dependencies on Ubuntu.
 #    To use, make a new directory and copy the install2.sh file to the new directory.
 #A "test" directory would work fine. Then run the script.
 #
