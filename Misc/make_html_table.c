@@ -17,8 +17,8 @@ C. Eric Cashon
 #include <apop.h>
 #include <gsl/gsl_vector.h>
 
-void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, char *bg_color, bool fields_found);
-void get_table_sql(char *sql, int precision, int font_size, char *bg_color);
+void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, char *bg_color, char *field_bg_color, bool fields_found);
+void get_table_sql(char *sql, int precision, int font_size, char *bg_color, char *field_bg_color);
 
 int main()
   {
@@ -31,12 +31,13 @@ int main()
     int precision=2;
     int font_size=12;
     char bg_color[]="white";
+    char field_bg_color[]="silver";
 
-    get_table_sql(sql, precision, font_size, bg_color);
+    get_table_sql(sql, precision, font_size, bg_color, field_bg_color);
        
     return 0;
   }
-void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, char *bg_color, bool fields_found)
+void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, char *bg_color, char *field_bg_color, bool fields_found)
   {
     int i=0;
     int j=0;
@@ -63,7 +64,7 @@ void make_html_table(apop_data *mTable, char *field_names[], int fields, int pre
       {
         for(i=0; i<fields; i++)
            {
-             fprintf(f, "<th scope=\"col\" bgcolor=\"silver\" style=\"border:1px solid #000000\">%s</th>\n", field_names[i]);
+             fprintf(f, "<th scope=\"col\" bgcolor=\"%s\" style=\"border:1px solid #000000\">%s</th>\n", field_bg_color, field_names[i]);
            }
         fprintf(f, "</tr></thead><tbody>\n");  
       }
@@ -71,7 +72,7 @@ void make_html_table(apop_data *mTable, char *field_names[], int fields, int pre
       {
         for(i=0;i<mTable->matrix->size2;i++)
            {
-             fprintf(f, "<th scope=\"col\" bgcolor=\"silver\" style=\"border:1px solid #000000\">%i</th>\n", i+1);
+             fprintf(f, "<th scope=\"col\" bgcolor=\"%s\" style=\"border:1px solid #000000\">Field%i</th>\n", field_bg_color, i+1);
            }
         fprintf(f, "</tr></thead><tbody>\n"); 
       }
@@ -94,7 +95,7 @@ void make_html_table(apop_data *mTable, char *field_names[], int fields, int pre
     fclose(f); 
     printf("table.html file created.\n");
   }
-void get_table_sql(char *sql, int precision, int font_size, char *bg_color)
+void get_table_sql(char *sql, int precision, int font_size, char *bg_color, char *field_bg_color)
   {
     int i=0;
     int commas=0;
@@ -108,7 +109,7 @@ void get_table_sql(char *sql, int precision, int font_size, char *bg_color)
     char c4='d';
     apop_data *mTable=NULL;
 
-    //Count commas for number of fields.
+    //Count commas between SELECT and FROM for number of fields.
     start=sql;
     end=strstr(sql,"FROM");
     if(end==NULL)
@@ -174,7 +175,7 @@ void get_table_sql(char *sql, int precision, int font_size, char *bg_color)
         apop_db_close(0);
 
         fields=commas+1;
-        make_html_table(mTable, field_names, fields, precision, font_size, bg_color, fields_found);
+        make_html_table(mTable, field_names, fields, precision, font_size, bg_color, field_bg_color, fields_found);
 
         if(mTable!=NULL)gsl_matrix_free(mTable->matrix);
         for(i=0;i<commas+1;i++)
