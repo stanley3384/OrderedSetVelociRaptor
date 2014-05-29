@@ -12,16 +12,17 @@ C. Eric Cashon
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <stdbool.h>
 #include <sqlite3.h>
 #include <apop.h>
 #include <gsl/gsl_vector.h>
 
-void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, int fields_found);
-void get_table_sql(char *sql, int precision, int font_size);
+void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, char *bg_color, bool fields_found);
+void get_table_sql(char *sql, int precision, int font_size, char *bg_color);
 
 int main()
   {
-    //Test some SQL strings. Case sensitive for capital SQL keywords. Bad things will happen if SELECT, AS and FROM aren't capitalized.
+    //Test some SQL strings. Case sensitive for capital SQL keywords(SELECT, AS and FROM).
 
     //char sql[]="SELECT * FROM data;";
     //char sql[]="SELECT percent FROM data;";
@@ -29,16 +30,16 @@ int main()
     //char sql[]="SELECT T4.plate AS plate1, count(T3.percent), avg(T3.percent) AS mean, stddev_samp(T3.percent) FROM data T3, aux T4 WHERE T3.KeyID=T4.KeyID AND T4.Picks!=0 GROUP BY T4.Picks,T4.Plate ORDER BY T4.Plate,T4.Picks;";
     int precision=2;
     int font_size=12;
+    char bg_color[]="white";
 
-    get_table_sql(sql, precision, font_size);
+    get_table_sql(sql, precision, font_size, bg_color);
        
     return 0;
   }
-void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, int fields_found)
+void make_html_table(apop_data *mTable, char *field_names[], int fields, int precision, int font_size, char *bg_color, bool fields_found)
   {
     int i=0;
     int j=0;
-    char color[]="white";
 
     FILE *f = fopen("table.html", "w");
       if(f == NULL)
@@ -58,7 +59,7 @@ void make_html_table(apop_data *mTable, char *field_names[], int fields, int pre
     fprintf(f, "<thead><tr>\n");
 
     //Print the field names.
-    if(fields_found==1)
+    if(fields_found==true)
       {
         for(i=0; i<fields; i++)
            {
@@ -81,7 +82,7 @@ void make_html_table(apop_data *mTable, char *field_names[], int fields, int pre
          fprintf(f, "<tr>\n");
          for(j=0;j<mTable->matrix->size2;j++)
             {
-              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%.*f</td>\n", color, precision, apop_data_get(mTable,i,j));
+              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%.*f</td>\n", bg_color, precision, apop_data_get(mTable,i,j));
             }
          fprintf(f, "</tr>\n");
        }
@@ -93,12 +94,12 @@ void make_html_table(apop_data *mTable, char *field_names[], int fields, int pre
     fclose(f); 
     printf("table.html file created.\n");
   }
-void get_table_sql(char *sql, int precision, int font_size)
+void get_table_sql(char *sql, int precision, int font_size, char *bg_color)
   {
     int i=0;
     int commas=0;
     int fields=0;
-    int fields_found=1;
+    bool fields_found=true;
     char *start;
     char *end;
     char c1='a';
@@ -110,70 +111,77 @@ void get_table_sql(char *sql, int precision, int font_size)
     //Count commas for number of fields.
     start=sql;
     end=strstr(sql,"FROM");
-    while(start<end)
+    if(end==NULL)
       {
-        c3=c2;
-        c2=c1;
-        c1=*start;
-        if(c3==' '&&c2=='*'&&c1==' ')
-          {
-            printf("No field names in sql string.\n");
-            fields_found=0;
-          }
-        if(*start==',')
-          {
-            commas++;
-          }
-        start++;
+        printf("Can't find FROM in the SQL statement.\n");
       }
-    //printf("Commas before FROM %i\n", commas);
+    else
+      {
+        while(start<end)
+          {
+            c3=c2;
+            c2=c1;
+            c1=*start;
+            if(c3==' '&&c2=='*'&&c1==' ')
+              {
+                printf("No field names in sql string.\n");
+                fields_found=false;
+              }
+            if(*start==',')
+              {
+                commas++;
+              }
+            start++;
+          }
+        //printf("Commas before FROM %i\n", commas);
 
-    //allocate array for fields.
-    char *field_names[commas+1];
-    int j=7;
-    int k=7;
-    start=sql+7;
+        //allocate array for fields.
+        char *field_names[commas+1];
+        int j=7;
+        int k=7;
+        start=sql+7;
 
-    while(start<end)
-       {
-         c4=c3;
-         c3=c2;
-         c2=c1;
-         c1=*start;
-         //printf("%c%c%c%c\n", c4,c3,c2,c1);
-         if(c4==' '&&c3=='A'&&c2=='S'&&c1==' ')
+        while(start<end)
            {
-             k=j+1;
-             printf("Found ' AS '\n");
+             c4=c3;
+             c3=c2;
+             c2=c1;
+             c1=*start;
+             //printf("%c%c%c%c\n", c4,c3,c2,c1);
+             if(c4==' '&&c3=='A'&&c2=='S'&&c1==' ')
+               {
+                 k=j+1;
+                 printf("Found ' AS '\n");
+               }
+             if(*start==','||start==end-1)
+               {
+                 field_names[i] = (char*)malloc((j-k+1) * sizeof(char));
+                 strncpy(field_names[i], sql+k, j-k);
+                 i++;
+                 k=j+2;
+               }
+             j++;
+             start++;
            }
-         if(*start==','||start==end-1)
+
+        for(i=0;i<commas+1;i++)
            {
-             field_names[i] = (char*)malloc((j-k+1) * sizeof(char));
-             strncpy(field_names[i], sql+k, j-k);
-             i++;
-             k=j+2;
+             printf("Field %s\n", field_names[i]);
            }
-         j++;
-         start++;
-       }
 
-    for(i=0;i<commas+1;i++)
-       {
-         printf("Field %s\n", field_names[i]);
-       }
+        apop_db_open("VelociRaptorData.db");
+        mTable=apop_query_to_data("%s", sql);
+        apop_db_close(0);
 
-    apop_db_open("VelociRaptorData.db");
-    mTable=apop_query_to_data("%s", sql);
-    apop_db_close(0);
+        fields=commas+1;
+        make_html_table(mTable, field_names, fields, precision, font_size, bg_color, fields_found);
 
-    fields=commas+1;
-    make_html_table(mTable, field_names, fields, precision, font_size, fields_found);
-
-    if(mTable!=NULL)gsl_matrix_free(mTable->matrix);
-    for(i=0;i<commas+1;i++)
-       {
-         if(field_names[i]!=NULL)free(field_names[i]);
-       }
+        if(mTable!=NULL)gsl_matrix_free(mTable->matrix);
+        for(i=0;i<commas+1;i++)
+           {
+             if(field_names[i]!=NULL)free(field_names[i]);
+           }
+    }
           
   }
 
