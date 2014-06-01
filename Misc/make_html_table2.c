@@ -93,7 +93,7 @@ int check_sql_for_select(char *sql)
       {
          strncpy(ap, replace3 , 4);
       }
-    if((fp=strstr(sql, " as ")))
+    if((ap=strstr(sql, " as ")))
       {
          strncpy(ap, replace3 , 4);
       }
