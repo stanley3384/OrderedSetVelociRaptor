@@ -2,7 +2,8 @@
                                        
 Test code for generating HTML tables from a SQLite database. Test on a small dataset. This one
 is better with the data format but doesn't load the values into a structure for further calculations.
-If you use Ben Klemens Apophenia library you can get some statistical calculations done with SQlite by adding the statistical functions to the SQL string. This can be a big help and add funtionality to
+If you use Ben Klemens Apophenia library you can get some statistical calculations done with SQlite
+by adding the statistical functions to the SQL string. This can be a big help and add funtionality to
 SQLite.
 
 Compile with;  gcc -Wall -std=c99 -g make_html_table2.c -lsqlite3 -o table3
@@ -219,6 +220,7 @@ void parse_sql_field_names(char *html_file_name, char *database_name, char *sql,
                   if(*start==','||start==end-1)
                     {
                       field_names[i] = (char*)malloc((j-k+1) * sizeof(char));
+                      if(field_names[i]!=NULL)memset(field_names[i], '\0', j-k+1);
                       if(field_names[i]==NULL)printf("Malloc error.\n");
                       strncpy(field_names[i], sql+k, j-k);
                       //printf("Count %i Length %i String %s\n", i, strlen(field_names[i]), field_names[i]);
@@ -271,7 +273,7 @@ static void make_html_table(char *html_file_name, char *database_name, char *sql
     //Print the field names.
     for(i=0; i<fields; i++)
        {
-         fprintf(f, "<th scope=\"col\" bgcolor=\"%s\" style=\"border:1px solid #000000\">%s</th>\n", field_bg_color, field_names[i]);
+         fprintf(f, "<th scope=\"col\" bgcolor=\"%s\" style=\"border:1px solid #000000\">&nbsp%s&nbsp</th>\n", field_bg_color, field_names[i]);
        }
     fprintf(f, "</tr></thead><tbody>\n");  
 
