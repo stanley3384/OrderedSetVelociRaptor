@@ -1,8 +1,9 @@
 /*
                                        
-Test code for generating HTML tables from a database. Still playing around with this. It needs 
-more work. Test on a small dataset. This one is better with the data format but doesn't load
-the values into a structure for further calculations.
+Test code for generating HTML tables from a SQLite database. Test on a small dataset. This one
+is better with the data format but doesn't load the values into a structure for further calculations.
+If you use Ben Klemens Apophenia library you can get some statistical calculations done with SQlite by adding the statistical functions to the SQL string. This can be a big help and add funtionality to
+SQLite.
 
 Compile with;  gcc -Wall -std=c99 -g make_html_table2.c -lsqlite3 -o table3
 
@@ -28,38 +29,41 @@ static int get_column_count(char *database_name, char *sql);
 
 int main()
   {
-    //Test some SQL strings.
     int check=0;
+    //Test some SQL strings including some bad ones.
+    //char *sql=NULL;
+    //char sql[]="selec fro;";
+    //char sql[]="SELECT FROM;";
     //char sql[]="SELECT * FROM data;";
     //char sql[]="SELECT percent FROM data;";
     char sql[]="SELECT T1.KeyID, T1.plate, T1.Groups AS G1, T2.data, T2.percent FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID;";
     
-    //Check if file exists? SQLite will create it automatically if it doesn't.
+    //Check if file exists? SQLite will create it automatically if it doesn't. Use the VelociRaptor db for testing.
     char database_name[]="VelociRaptorData.db";
     char html_file_name[]="table3.html";
-    //For floats.
+    //For returned floats.
     int precision=2;
     int font_size=12;
     char bg_color[]="white";
     char field_bg_color[]="silver";
 
-     check=check_sql_for_select(sql);
+    check=check_sql_for_select(sql);
     
-     if(check==0)
-       {
-         printf("%s\n", sql);
-         parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color, field_bg_color);
-       }
-     else
-       {
-         printf("SQL check failed.\n");
-       }
+    if(check==0)
+      {
+        printf("%s\n", sql);
+        parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color, field_bg_color);
+      }
+    else
+      {
+        printf("SQL statement doesn't check out.\n");
+      }
        
     return 0;
   }
 int check_sql_for_select(char *sql)
   {
-    //Some basic SQL statement checking.
+    //Some basic SQL statement checking and string replacement.
     int check=0;
     char replace1[]="SELECT ";
     char replace2[]=" FROM ";
@@ -68,44 +72,48 @@ int check_sql_for_select(char *sql)
     char *fp=NULL;
     char *ap=NULL;
     
-    //Capitalize Select.
-    if((sp=strstr(sql, "select ")))
+    if(sql!=NULL&&strlen(sql)>12)
       {
-         strncpy(sp, replace1 , 7);
-      }
-    if((sp=strstr(sql, "Select ")))
-      {
-         strncpy(sp, replace1 , 7);
+        //Capitalize Select.
+        if((sp=strstr(sql, "select ")))
+          {
+             strncpy(sp, replace1 , 7);
+          }
+        if((sp=strstr(sql, "Select ")))
+          {
+             strncpy(sp, replace1 , 7);
+          }
+        //Capitalize From.
+        if((fp=strstr(sql, " from ")))
+          {
+             strncpy(fp, replace2 , 6);
+          }
+        if((fp=strstr(sql, " From ")))
+          {
+             strncpy(fp, replace2 , 6);
+          }
+        //Capitalize As
+        if((ap=strstr(sql, " As ")))
+          {
+             strncpy(ap, replace3 , 4);
+          }
+        if((ap=strstr(sql, " as ")))
+          {
+             strncpy(ap, replace3 , 4);
+          }
       }
 
-    //Capitalize From.
-    if((fp=strstr(sql, " from ")))
+    if(sql!=NULL&&strlen(sql)>12)
       {
-         strncpy(fp, replace2 , 6);
-      }
-    if((fp=strstr(sql, " From ")))
-      {
-         strncpy(fp, replace2 , 6);
-      }
-
-    //Capitalize As
-    if((ap=strstr(sql, " As ")))
-      {
-         strncpy(ap, replace3 , 4);
-      }
-    if((ap=strstr(sql, " as ")))
-      {
-         strncpy(ap, replace3 , 4);
-      }
-
-    if(strstr(sql, "SELECT ")&&strstr(sql, " FROM"))
-      {
-        check=0;
+        if(strstr(sql, "SELECT ")&&strstr(sql, " FROM"))
+          {
+            check=0;
+          }
       }
     else
       {
         check=1;
-        printf("The SQL statement needs SELECT and FROM keywords.\n");
+        printf("The SQL statement needs SELECT and FROM keywords with fields and tables.\n");
       }
       
     return check;
