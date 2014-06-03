@@ -135,8 +135,8 @@ void parse_sql_field_names(char *html_file_name, char *database_name, char *sql,
     char c2='b';
     char c3='c';
     char c4='d';
-    sqlite3 *handle;
-    sqlite3_stmt *stmt;
+    sqlite3 *handle=NULL;
+    sqlite3_stmt *stmt=NULL;
 
     //Count commas between SELECT and FROM for number of fields.
     start=sql;
@@ -186,15 +186,14 @@ void parse_sql_field_names(char *html_file_name, char *database_name, char *sql,
                }
              else
                {
-                 sqlite3_prepare_v2(handle,sql,-1,&stmt,0);
                  for(i=0;i<field_count;i++)
                     {
                       as_return=asprintf(&field_names[i], "%s", sqlite3_column_name(stmt, i));
                       if(as_return==-1)printf("Memory allocation failed in asprintf.\n");
                     }
-                 sqlite3_finalize(stmt);
-                 sqlite3_close(handle);
                 }
+             sqlite3_finalize(stmt);
+             sqlite3_close(handle);
            }
 
         //Field names in the SQL statement so use those.
@@ -292,8 +291,8 @@ static void get_data_for_query(FILE *f, char *database_name, char *sql, int prec
     int column_count=0;
     int column_type=0;
     int sql_return=0;
-    sqlite3 *handle;
-    sqlite3_stmt *stmt;
+    sqlite3 *handle=NULL;
+    sqlite3_stmt *stmt=NULL;
 
     sqlite3_open(database_name,&handle);
     sql_return=sqlite3_prepare_v2(handle,sql,-1,&stmt,0);
@@ -360,8 +359,8 @@ static int get_column_count(char *database_name, char *sql)
   {
     int column_count=0;
     int sql_return=0;
-    sqlite3 *handle;
-    sqlite3_stmt *stmt;
+    sqlite3 *handle=NULL;
+    sqlite3_stmt *stmt=NULL;
 
     sqlite3_open(database_name,&handle);   
     sql_return=sqlite3_prepare_v2(handle,sql,-1,&stmt,0);
@@ -373,9 +372,9 @@ static int get_column_count(char *database_name, char *sql)
     else
       {
         column_count=sqlite3_column_count(stmt);
-        sqlite3_finalize(stmt);
-        sqlite3_close(handle);
       }
 
+    sqlite3_finalize(stmt);
+    sqlite3_close(handle);
     return column_count;
   }
