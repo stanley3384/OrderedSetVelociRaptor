@@ -25,6 +25,7 @@ Compiled on Ubuntu version 12.04 LTS using a netbook as the test computer. Gedit
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_cdf.h>
@@ -36,6 +37,7 @@ Compiled on Ubuntu version 12.04 LTS using a netbook as the test computer. Gedit
 #include "VelociRaptorGlobal.h"
 #include "VelociRaptorPrinting.h"
 #include "VelociRaptorPermutations.h"
+#include "VelociRaptorHtmlTable.h"
 
 //Global variables.   
 const gchar *pPlateNumberText=NULL;
@@ -89,6 +91,7 @@ static void clear_format_event(GtkButton*, gpointer);
 static void heatmap_dialog(GtkButton *button, gpointer data);
 static void rise_fall_text_dialog(GtkButton*, gpointer);
 static void heatmap_html_dialog(GtkButton*, gpointer);
+static void html_table_dialog(GtkButton*, gpointer);
 static void send_text_to_database_dialog(GtkButton*, gpointer);
 static void test_data_button_clicked(GtkButton*, gpointer, int, double, int);
 static void text_button_clicked(GtkButton*, GtkTextView*);
@@ -119,7 +122,7 @@ static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
+     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
       
      //For printing
      Widgets *w;
@@ -181,6 +184,7 @@ int main(int argc, char *argv[])
      ConditionalItem=gtk_menu_item_new_with_label("Conditional Format Platemap");
      RiseFallItem=gtk_menu_item_new_with_label("Rise Fall Platemap");
      HtmlItem=gtk_menu_item_new_with_label("Heatmap Platemap HTML");
+     HtmlTableItem=gtk_menu_item_new_with_label("SQL Query to HTML");
 
      FileMenu6=gtk_menu_new();
      AboutItem=gtk_menu_item_new_with_label("About");
@@ -209,6 +213,7 @@ int main(int argc, char *argv[])
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), ConditionalItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), RiseFallItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), HtmlItem);
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), HtmlTableItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu6), AboutItem);
 
 
@@ -270,6 +275,7 @@ int main(int argc, char *argv[])
      g_signal_connect(G_OBJECT(ConditionalItem), "activate", G_CALLBACK(format_text_dialog), textview);
      g_signal_connect(G_OBJECT(RiseFallItem), "activate", G_CALLBACK(rise_fall_text_dialog), textview);
      g_signal_connect(G_OBJECT(HtmlItem), "activate", G_CALLBACK(heatmap_html_dialog), NULL);
+     g_signal_connect(G_OBJECT(HtmlTableItem), "activate", G_CALLBACK(html_table_dialog), NULL);
      g_signal_connect(G_OBJECT(BuildBoardItem), "activate", G_CALLBACK(send_text_to_database_dialog), textview);
 
      //For printing.
@@ -2822,7 +2828,7 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
      GtkWidget *dialog, *table, *entry1, *entry2, *label1, *label2, *label3, *label4, *label5, *label6, *radio1, *radio2, *combo1, *combo2, *combo3, *content_area, *action_area;
     int result;
     
-    g_print("Send Data from Database to HTML\n");
+    g_print("Send Plate Data from Database to HTML\n");
 
      dialog=gtk_dialog_new_with_buttons("Heatmap Platemap HTML", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -2919,6 +2925,110 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
             heatmap_to_html_sql(iRadioButton, rows, columns+1, precision, font_size, gradient);
           }
 
+       }
+     gtk_widget_destroy(dialog);
+  
+  }
+static void html_table_dialog(GtkButton *button, gpointer p)
+  {
+    GtkWidget *dialog, *table, *textview, *scrolled_win, *label1, *label2, *label3, *label4, *expand1, *expand2, *expand3, *combo1, *combo2, *content_area, *action_area;
+    GtkTextBuffer *buffer1;
+    int result;
+    
+    g_print("Send Tablular Data from Database to HTML\n");
+
+     dialog=gtk_dialog_new_with_buttons("Tabular Data to HTML", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+     textview=gtk_text_view_new();
+     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
+     scrolled_win=gtk_scrolled_window_new(NULL, NULL); 
+     gtk_container_add(GTK_CONTAINER(scrolled_win), textview);
+     buffer1=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+     gtk_text_buffer_insert_at_cursor(buffer1, "SELECT * FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID AND T1.KeyID<11;", -1);
+
+     label1=gtk_label_new("Output data in tabular format in\n HTML. File name table.html");
+     label2=gtk_label_new("SQL Statement");      
+     label3=gtk_label_new("Precision");
+     label4=gtk_label_new("Font Size"); 
+ 
+     expand1=gtk_label_new(" "); 
+     expand2=gtk_label_new(" "); 
+     expand3=gtk_label_new(" "); 
+     
+     combo1=gtk_combo_box_text_new();
+     
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "0", "0");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "1", "1");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "2", "2");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "3", "3");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "4", "4");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 2);
+
+     combo2=gtk_combo_box_text_new();
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "0", "6");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "1", "7");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "2", "8");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "3", "9");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "4", "10");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "5", "11");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "6", "12");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "7", "13");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "8", "14");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 4);
+     
+     table=gtk_table_new(7,7,FALSE);
+     gtk_table_attach_defaults(GTK_TABLE(table), label1, 1, 5, 0, 1);
+     gtk_table_attach(GTK_TABLE(table), label2, 0, 2, 1, 2, GTK_FILL,GTK_FILL,0,0);
+     gtk_table_attach(GTK_TABLE(table), expand1, 0, 1, 2, 3, GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), expand2, 0, 1, 3, 4, GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), expand3, 0, 1, 4, 5, GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), scrolled_win, 0, 7, 2, 5, GTK_FILL,GTK_FILL,0,0);    
+     gtk_table_attach(GTK_TABLE(table), combo1, 2, 3, 5, 6, GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), combo2, 2, 3, 6, 7, GTK_SHRINK,GTK_SHRINK,0,0);  
+     gtk_table_attach(GTK_TABLE(table), label3, 1, 2, 5, 6, GTK_SHRINK,GTK_SHRINK,0,0);
+     gtk_table_attach(GTK_TABLE(table), label4, 1, 2, 6, 7, GTK_SHRINK,GTK_SHRINK,0,0);
+
+     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
+     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+        int check=0;
+        char database_name[]="VelociRaptorData.db";
+        char html_file_name[]="table.html";
+        char bg_color[]="white";
+        char field_bg_color[]="silver";
+        GtkTextIter start1;
+        GtkTextIter end1;
+
+        int precision=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1)));
+        int font_size=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2)));
+        gtk_text_buffer_get_bounds(buffer1, &start1, &end1);
+        gchar *sql=gtk_text_buffer_get_text(buffer1, &start1, &end1, TRUE);
+      
+        check=check_sql_for_select(sql);
+    
+        if(check==0)
+          {
+            printf("%s\n", sql);
+            parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color, field_bg_color);
+      }
+        else
+          {
+            printf("Unable to parse SQL statement.\n");
+            simple_message_dialog("Unable to parse SQL statement.");
+          }
+       
        }
      gtk_widget_destroy(dialog);
   
