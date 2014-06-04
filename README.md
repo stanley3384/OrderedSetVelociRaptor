@@ -5,13 +5,14 @@
 Heatmap
 ![ScreenShot](/HeatmapReadme.jpg)
 
---The data sets can also be output to HTML in a heatmapped microtiter plate format or in tablular format. If there is a need to customize a layout with HTML there is a Python script along with a couple C programs that make it easy to customize a layout with HTML. With a little HTML and CSS you can get a print layout exactly how you want it.
+--The data sets can also be output to HTML from the application in a heatmapped microtiter plate format or in tablular format. If there is a need to customize a layout with HTML there is a Python script along with a couple C programs that make it easy to customize a layout with HTML. With a little HTML and CSS you can get a print layout exactly how you want it.
 
 Heatmap HTML's
 ![Screenshot2](/Heatmap2.jpg)
 
+![Screenshot3](/table1.jpg)
 
-![Screenshot3](/Heatmap3.jpg)
+![Screenshot4](/Heatmap3.jpg)
 
 
 --The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu. First download the OrderedSetVelociRaptor-master.zip file into a new folder.
