@@ -9,7 +9,7 @@ cecashon@aol.com
 */
 
 int check_sql_for_select(char *sql);
-void parse_sql_field_names(char *html_file_name, char *database_name, char *sql, int precision, int font_size, char *bg_color, char *field_bg_color);
+void parse_sql_field_names(char *html_file_name, char *database_name, char *sql, int precision, int font_size, char *bg_color, char *field_bg_color, char *font_color);
 
 
 
