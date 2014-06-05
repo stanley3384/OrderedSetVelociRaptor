@@ -2980,11 +2980,14 @@ static void html_table_dialog(GtkButton *button, gpointer p)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "8", "14");
      gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 4);
 
+     //The 17 html standard colors are: aqua, black, blue, fuchsia, gray, green, lime, maroon, navy, olive, orange, purple, red, silver, teal, white, and yellow.
+
      combo3=gtk_combo_box_text_new();     
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "0", "black");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "1", "white");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "2", "blue");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "3", "orange");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "4", "olive");
      gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
 
      combo4=gtk_combo_box_text_new();     
@@ -2992,7 +2995,9 @@ static void html_table_dialog(GtkButton *button, gpointer p)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "1", "blue");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "2", "black");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "3", "purple");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "4", "aqua");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "4", "red");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "5", "maroon");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo4), "6", "teal");
      gtk_combo_box_set_active(GTK_COMBO_BOX(combo4), 0);
 
      combo5=gtk_combo_box_text_new();     
@@ -3001,6 +3006,8 @@ static void html_table_dialog(GtkButton *button, gpointer p)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "2", "navy");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "3", "lime");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "4", "yellow");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "5", "aqua");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "6", "fuchsia");
      gtk_combo_box_set_active(GTK_COMBO_BOX(combo5), 0);
      
      table=gtk_table_new(10,6,FALSE);
@@ -3037,9 +3044,6 @@ static void html_table_dialog(GtkButton *button, gpointer p)
         int check=0;
         char database_name[]="VelociRaptorData.db";
         char html_file_name[]="table.html";
-        //char bg_color[]="white";
-        //char field_bg_color[]="silver";
-        //char font_color[]="blue";
         GtkTextIter start1;
         GtkTextIter end1;
 

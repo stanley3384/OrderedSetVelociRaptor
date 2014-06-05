@@ -3,15 +3,12 @@
 
 For tabular HTML output from SQLite.
 
-Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
+Copyright (c) 2014 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
-
-The 17 standard colors are: aqua, black, blue, fuchsia, gray, green, lime, maroon, navy, olive, orange, purple, red, silver, teal, white, and yellow.
 
 C. Eric Cashon
 */
 
-//#define _GNU_SOURCE
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <stdlib.h>
