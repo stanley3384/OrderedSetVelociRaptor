@@ -2910,7 +2910,7 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
     for(i=0;i<plates;i++)
        {
         //Write the score table 
-        fprintf(f, "<table align=\"center\"><caption>Score %i</caption><tr>\n", i+1);
+        fprintf(f, "<table align=\"center\" style=\"border-collapse:collapse;\"><caption>Score %i</caption><tr>\n", i+1);
         for(j=0;j<8;j++)
            {
              diff = high[i] - low[i];
@@ -2962,6 +2962,7 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
 
     fclose(f); 
     printf("heatmap.html file created.\n");
+    simple_message_dialog("heatmap.html file created.");
   }
 void heatmap_to_html_gradient(double test_data[], int rows, int columns, int plate_size, int plates, int precision, int font_size, int gradient)
   {
