@@ -2146,8 +2146,9 @@ void draw_veloci_raptor(GtkWidget *widget, gpointer data)
       { 140, 10 }, 
       { 165, 75 }, 
       { 490, 100 },
-      { 790, 225 }, 
-      { 900, 380 },
+      { 790, 225 },
+      { 860, 310 }, 
+      //{ 900, 380 }, curve nose
       { 860, 420 },
       { 820, 380 },
       { 780, 420 },
@@ -2187,10 +2188,15 @@ void draw_veloci_raptor(GtkWidget *widget, gpointer data)
     //Draw raptor points and fill in green.
     cairo_scale(raptor, ScaleWidth, ScaleHeight);
 
+    //Draw point to point.
     for(j = 0; j < 20; j++)
        {
-        cairo_line_to(raptor, points[j][0], points[j][1]);
+         cairo_line_to(raptor, points[j][0], points[j][1]);
        }
+
+    //Draw curve at nose.
+    cairo_move_to (raptor, 860, 310);
+    cairo_curve_to(raptor, 900, 380, 900, 380, 860, 420);
 
     cairo_close_path(raptor);
     cairo_set_source_rgb(raptor, 0, 1, 0);
