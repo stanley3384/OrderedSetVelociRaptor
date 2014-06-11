@@ -61,7 +61,7 @@ make
 
 ./VelociRaptor
 
---Or, if you want to run the above lines in an install script, there is an install.sh file in the Misc folder that will accomplish this. You would just need to copy the install script to a new folder and run it. It is recommended that you take a look at the script before running it to see how it works.
+--Or, if you want to run the above lines in an install script, there is an install.sh file in the Misc folder that will accomplish this. You would just need to copy the install script to a new folder and run it. It is recommended that you take a look at the script before running it to see how it works. That way you can modify it and see how the pieces fit together. 
 
 ./install.sh
 
