@@ -73,21 +73,20 @@ static void click_drawing(GtkWidget *widget, gpointer data)
     gtk_widget_queue_draw_area(widget, 0, 0, 800, 400);  
   }
 static void draw_veloci_raptor(GtkWidget *widget, int move)
-  {
-    
+  {    
     GdkWindow *DefaultWindow=NULL;
-    cairo_t *cr;
+    cairo_t *cr1;
     cairo_t *cr2;
     cairo_t *cr3;
     cairo_t *cr4;
     cairo_t *raptor;
-    cairo_pattern_t *pat3;
-    gint i;
-    gint j;
+    cairo_pattern_t *pattern;
+    gint i=0;
+    gint j=0;
     int height=250;
     int width=250;
-    double ScaleWidth;
-    double ScaleHeight;
+    double ScaleWidth=0;
+    double ScaleHeight=0;
     int points[21][2] = { 
       { 40, 85 }, 
       { 105, 75 }, 
@@ -112,12 +111,11 @@ static void draw_veloci_raptor(GtkWidget *widget, int move)
       { 90, 125 },
       { 40, 85 } 
   };
-    g_print("Draw Raptor %i\n", move);
+    g_print("Draw Dino %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
-    //if(GDK_WINDOW(DefaultWindow)!=NULL)
-       //g_print("Got GDK Window\n");
 
-    cr = gdk_cairo_create(DefaultWindow);
+    //Built in pieces. Should probably put together into one context.
+    cr1 = gdk_cairo_create(DefaultWindow);
     cr2 = gdk_cairo_create(DefaultWindow);
     cr3 = gdk_cairo_create(DefaultWindow);
     cr4 = gdk_cairo_create(DefaultWindow);
@@ -145,13 +143,13 @@ static void draw_veloci_raptor(GtkWidget *widget, int move)
     cairo_fill(raptor);
 
      //Set up black ellipses.
-    cairo_scale(cr, ScaleWidth, ScaleHeight);
-    cairo_set_source_rgba(cr, 0, 0, 0, 1);
-    cairo_set_line_width(cr, 5.0);
-    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
-    cairo_translate(cr, move, 0);
-    cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
-    cairo_save(cr);
+    cairo_scale(cr1, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgba(cr1, 0, 0, 0, 1);
+    cairo_set_line_width(cr1, 5.0);
+    cairo_translate(cr1, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr1, move, 0);
+    cairo_arc(cr1, 0, 0, 60, 0, 2 * G_PI);
+    cairo_save(cr1);
   
     //Set up red ellipses.
     cairo_scale(cr2, ScaleWidth, ScaleHeight);
@@ -183,12 +181,12 @@ static void draw_veloci_raptor(GtkWidget *widget, int move)
       {
          if(i==0||i%2==0)
            {
-            cairo_rotate(cr, i*G_PI/36);
-            cairo_scale(cr, 0.3, 1);
-            cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
-            cairo_restore(cr);
-            cairo_stroke(cr);
-            cairo_save(cr);
+            cairo_rotate(cr1, i*G_PI/36);
+            cairo_scale(cr1, 0.3, 1);
+            cairo_arc(cr1, 0, 0, 60, 0, 2 * G_PI);
+            cairo_restore(cr1);
+            cairo_stroke(cr1);
+            cairo_save(cr1);
            }
          else
            {
@@ -202,17 +200,19 @@ static void draw_veloci_raptor(GtkWidget *widget, int move)
        }
 
     //Pattern for the center eye ellipse.
-    pat3 = cairo_pattern_create_linear(-120.0, 30.0, 120.0, 30.0);
-    cairo_pattern_add_color_stop_rgb(pat3, 0.1, 0, 0, 0);
-    cairo_pattern_add_color_stop_rgb(pat3, 0.5, 0, 0.5, 1);
-    cairo_pattern_add_color_stop_rgb(pat3, 0.9, 0, 0, 0);
+    pattern = cairo_pattern_create_linear(-120.0, 30.0, 120.0, 30.0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.1, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.5, 0, 0.5, 1);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.9, 0, 0, 0);
 
     //Draw center elipse of eye.
     cairo_rotate(cr3, 18 * G_PI/36);
     cairo_scale(cr3, 0.3, 1);
     cairo_arc(cr3, 0, 0, 60, 0, 2 * G_PI);
     cairo_close_path(cr3);
-    cairo_set_source(cr3, pat3);
+    //Blink eye.
+    if(g_random_double()>0.97){cairo_fill(cr3);}
+    else{cairo_set_source(cr3, pattern);}
     cairo_fill(cr3);
 
     //Draw center circle for the eye.
@@ -222,12 +222,12 @@ static void draw_veloci_raptor(GtkWidget *widget, int move)
     cairo_close_path(cr4);
     cairo_fill(cr4);
   
-    cairo_destroy(cr);
+    cairo_destroy(cr1);
     cairo_destroy(cr2);
     cairo_destroy(cr3);
     cairo_destroy(cr4);
     cairo_destroy(raptor);
-    cairo_pattern_destroy(pat3);
+    cairo_pattern_destroy(pattern);
 
   }
 
