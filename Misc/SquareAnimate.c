@@ -3,13 +3,14 @@
 
 Simple animation with GTK+ and Cairo. Click to start movement. Testing things out.
 
-Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -Wall -o square
+Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -lm -Wall -o square
 
 C. Eric Cashon
 
 */
 
 #include <gtk/gtk.h>
+#include <math.h>
 
 int move=1001;
 
@@ -76,21 +77,30 @@ static void draw_square(GtkWidget *widget, int move)
   {    
     GdkWindow *DefaultWindow=NULL;
     cairo_t *square=NULL;
+    cairo_t *line=NULL;
 
     g_print("Draw Square %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
     square = gdk_cairo_create(DefaultWindow);
+    line = gdk_cairo_create(DefaultWindow);
 
     //Rotate around center of square so move there.
     cairo_translate(square, 30+move+50, 130+50);
-    cairo_rotate(square, (2*G_PI)*move/500);
+    cairo_rotate(square, ((2.0*G_PI*move)/500+G_PI/4.0));
     //Move back to to the corner of the square and draw the square.
     cairo_translate(square, -50, -50);
     cairo_set_source_rgb(square, 0.5, 0, 0.5);
     cairo_rectangle(square, 0, 0, 100.0, 100.0);
     cairo_fill(square);
+    //Put a line in for the square to roll on.
+    cairo_set_source_rgb(line, 0, 0, 0);
+    cairo_move_to(line, 0, 130+50+sqrt(5000.0));
+    cairo_line_to(line, 1000, 130+50+sqrt(5000.0));
+    cairo_set_line_width(line, 3.0);
+    cairo_stroke(line);
 
     cairo_destroy(square);
+    cairo_destroy(line);
 
   }
 
