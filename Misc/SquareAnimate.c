@@ -2,6 +2,7 @@
 /*
 
 Simple animation with GTK+ and Cairo. Click to start movement. Testing things out.
+Roll a square, have it disappear and reappear. Magic Square.
 
 Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -lm -Wall -o square
 
@@ -25,11 +26,12 @@ int main (int argc, char *argv[])
     gtk_init(&argc, &argv);
     
     GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);
+    gtk_window_set_default_size(GTK_WINDOW(window), 950, 350);
+    gtk_window_set_title(GTK_WINDOW(window), "Magic Square");
     g_signal_connect(window, "destroy", G_CALLBACK(close_window), NULL);
 
     GtkWidget *SquareDrawing = gtk_drawing_area_new();
-    gtk_widget_set_size_request(SquareDrawing, 800, 400);
+    gtk_widget_set_size_request(SquareDrawing, 800, 350);
     gtk_widget_set_events(SquareDrawing, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(G_OBJECT(SquareDrawing), "button_press_event", G_CALLBACK(click_drawing), NULL); 
     g_signal_connect(G_OBJECT(SquareDrawing), "draw", G_CALLBACK(start_drawing), NULL); 
@@ -53,7 +55,7 @@ static void start_drawing(GtkWidget *widget, gpointer data)
     if(move<1000)
       {
         draw_square(widget, move);
-        gtk_widget_queue_draw_area(widget, 0, 0, 800, 400);
+        gtk_widget_queue_draw_area(widget, 0, 0, 800, 350);
       }
    
     else
@@ -71,7 +73,7 @@ static void realize_drawing(GtkWidget *widget, gpointer data)
 static void click_drawing(GtkWidget *widget, gpointer data)
   {
     move=0;
-    gtk_widget_queue_draw_area(widget, 0, 0, 800, 400);  
+    gtk_widget_queue_draw_area(widget, 0, 0, 800, 350);  
   }
 static void draw_square(GtkWidget *widget, int move)
   {    
@@ -103,10 +105,6 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_destroy(line);
 
   }
-
-
-
-
 
 
 
