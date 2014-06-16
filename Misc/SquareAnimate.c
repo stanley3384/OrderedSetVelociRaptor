@@ -76,33 +76,44 @@ static void click_drawing(GtkWidget *widget, gpointer data)
     gtk_widget_queue_draw_area(widget, 0, 0, 800, 350);  
   }
 static void draw_square(GtkWidget *widget, int move)
-  {    
+  {  
     GdkWindow *DefaultWindow=NULL;
     cairo_t *square=NULL;
-    cairo_t *line=NULL;
+    cairo_t *line1=NULL;
+    cairo_t *line2=NULL;
 
     g_print("Draw Square %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
     square = gdk_cairo_create(DefaultWindow);
-    line = gdk_cairo_create(DefaultWindow);
+    line1 = gdk_cairo_create(DefaultWindow);
+    line2 = gdk_cairo_create(DefaultWindow);
 
     //Rotate around center of square so move there.
     cairo_translate(square, 30+move+50, 130+50);
-    cairo_rotate(square, ((2.0*G_PI*move)/500+G_PI/4.0));
+    //Rotate the square. Tip the square on end with pi/4 to start. 
+    cairo_rotate(square, (((move/10)*G_PI/25.0)+G_PI/4.0));
     //Move back to to the corner of the square and draw the square.
     cairo_translate(square, -50, -50);
     cairo_set_source_rgb(square, 0.5, 0, 0.5);
     cairo_rectangle(square, 0, 0, 100.0, 100.0);
     cairo_fill(square);
     //Put a line in for the square to roll on.
-    cairo_set_source_rgb(line, 0, 0, 0);
-    cairo_move_to(line, 0, 130+50+sqrt(5000.0));
-    cairo_line_to(line, 1000, 130+50+sqrt(5000.0));
-    cairo_set_line_width(line, 3.0);
-    cairo_stroke(line);
-
+    cairo_set_source_rgb(line1, 0, 0, 0);
+    cairo_move_to(line1, 0, 130+50+sqrt(5000.0));
+    cairo_line_to(line1, 1000, 130+50+sqrt(5000.0));
+    cairo_set_line_width(line1, 3.0);
+    cairo_stroke(line1);
+    //Make a line in the square.
+    cairo_set_source_rgb(line2, 0, 1.0, 0);
+    cairo_set_line_width(line2, 2.0);
+    cairo_move_to(line2,30+50+move, 130+50);
+    cairo_arc(line2, 30+50+move, 130+50, sqrt(5000.0), (((move/10)*G_PI/25.0)+G_PI/2.0), (((move/10)*G_PI/25.0)+G_PI/2.0));
+    cairo_line_to(line2, 30+50+move, 130+50);
+    cairo_stroke_preserve(line2);
+       
     cairo_destroy(square);
-    cairo_destroy(line);
+    cairo_destroy(line1);
+    cairo_destroy(line2);
 
   }
 
