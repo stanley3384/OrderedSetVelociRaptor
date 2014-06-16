@@ -2,7 +2,7 @@
 /*
 
 Simple animation with GTK+ and Cairo. Click to start movement. Testing things out.
-Roll a square, have it disappear and reappear. Magic Square.
+Roll a square, build a bridge, have the square disappear and reappear. Magic Square.
 
 Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -lm -Wall -o square
 
@@ -77,16 +77,19 @@ static void click_drawing(GtkWidget *widget, gpointer data)
   }
 static void draw_square(GtkWidget *widget, int move)
   {  
+    int i=0;
     GdkWindow *DefaultWindow=NULL;
     cairo_t *square=NULL;
     cairo_t *line1=NULL;
     cairo_t *line2=NULL;
+    cairo_t *line3=NULL;
 
     g_print("Draw Square %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
     square = gdk_cairo_create(DefaultWindow);
     line1 = gdk_cairo_create(DefaultWindow);
     line2 = gdk_cairo_create(DefaultWindow);
+    line3 = gdk_cairo_create(DefaultWindow);     
 
     //Rotate around center of square so move there.
     cairo_translate(square, 30+move+50, 130+50);
@@ -110,10 +113,22 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_arc(line2, 30+50+move, 130+50, sqrt(5000.0), (((move/10)*G_PI/25.0)+G_PI/2.0), (((move/10)*G_PI/25.0)+G_PI/2.0));
     cairo_line_to(line2, 30+50+move, 130+50);
     cairo_stroke_preserve(line2);
-       
+    //Build a bridge. This code needs to be rearranged with the draw area to speed things up.
+    cairo_set_source_rgb(line3, 0, 1.0, 0);
+    cairo_set_line_width(line3, 2.0);
+    for(i=0;i<move;i+=10)
+       {
+         cairo_move_to(line3,30+50+i, 130+50);
+         cairo_arc(line3, 30+50+i, 130+50, sqrt(5000.0), (((i/10)*G_PI/25.0)+G_PI/2.0), (((i/10)*G_PI/25.0)+G_PI/2.0));
+         cairo_line_to(line3, 30+50+i, 130+50);
+         cairo_stroke_preserve(line3);
+       }
+    //}
+
     cairo_destroy(square);
     cairo_destroy(line1);
     cairo_destroy(line2);
+    cairo_destroy(line3);
 
   }
 
