@@ -50,14 +50,27 @@ static void close_window(GtkWidget *widget, gpointer data)
   }
 static void start_drawing(GtkWidget *widget, gpointer data)
   {
+    int i=0;
     move+=5;
 
-    if(move<1000)
+    //Move drawing area to reduce re-draw area.
+    if(move<640){i=move-5;}
+    else if(move>=640&&move<=1000){i=640;}
+    else{i=0;}
+
+    if(move<=1000)
       {
-        draw_square(widget, move);
-        gtk_widget_queue_draw_area(widget, 0, 0, 800, 350);
-      }
-   
+        if(move!=1000)
+          {
+            draw_square(widget, move);
+            gtk_widget_queue_draw_area(widget, i, 30, 160, 250);
+          }
+        else
+          {
+            draw_square(widget, 0);
+            gtk_widget_queue_draw_area(widget, 0, 0, 800, 350);
+          }
+      }  
     else
       {
         draw_square(widget, 0);        
@@ -123,7 +136,6 @@ static void draw_square(GtkWidget *widget, int move)
          cairo_line_to(line3, 30+50+i, 130+50);
          cairo_stroke_preserve(line3);
        }
-    //}
 
     cairo_destroy(square);
     cairo_destroy(line1);
