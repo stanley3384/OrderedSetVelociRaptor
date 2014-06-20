@@ -14,6 +14,9 @@ Heatmap HTML's
 
 ![Screenshot4](/Heatmap3.jpg)
 
+--There are various graphical items in the Misc folder also.
+![Screenshot4](/wave1.jpg)
+
 
 --The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu. First download the OrderedSetVelociRaptor-master.zip file into a new folder.
 
