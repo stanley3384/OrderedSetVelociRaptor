@@ -2,8 +2,8 @@
 /*
 
 Simple animation with GTK+ and Cairo. Click to start movement. Testing things out.
-Roll a square, build a bridge(wave mechanics), have the square disappear and
-reappear. Magic Square.
+Roll a square, build a "bridge" wave, sine wave and cosine wave. Have the
+square disappear and reappear. Magic Square.
 
 Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -lm -Wall -o square
 
@@ -92,6 +92,7 @@ static void click_drawing(GtkWidget *widget, gpointer data)
 static void draw_square(GtkWidget *widget, int move)
   {  
     int i=0;
+    double x1=0;
     double y1=0;
     GdkWindow *DefaultWindow=NULL;
     cairo_t *square=NULL;
@@ -99,6 +100,7 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_t *line2=NULL;
     cairo_t *line3=NULL;
     cairo_t *line4=NULL;
+    cairo_t *line5=NULL;
 
     g_print("Draw Square %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
@@ -106,7 +108,8 @@ static void draw_square(GtkWidget *widget, int move)
     line1 = gdk_cairo_create(DefaultWindow);
     line2 = gdk_cairo_create(DefaultWindow);
     line3 = gdk_cairo_create(DefaultWindow);
-    line4 = gdk_cairo_create(DefaultWindow);       
+    line4 = gdk_cairo_create(DefaultWindow);
+    line5 = gdk_cairo_create(DefaultWindow);        
 
     //Rotate around center of square so move there.
     cairo_translate(square, 30+move+50, 130+50);
@@ -130,32 +133,46 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_arc(line2, 30+50+move, 130+50, sqrt(5000.0), (((move/10)*G_PI/25.0)+G_PI/2.0), (((move/10)*G_PI/25.0)+G_PI/2.0));
     cairo_line_to(line2, 30+50+move, 130+50);
     cairo_stroke_preserve(line2);
-    //Build a bridge. This code needs to be rearranged with the draw area to speed things up.
+    //Set line colors and width.
     cairo_set_line_width(line3, 2.0);
     cairo_set_source_rgb(line3, 0, 1.0, 0);
     cairo_set_line_width(line4, 2.0);
     cairo_set_source_rgb(line4, 0, 0, 1.0);
+    cairo_set_line_width(line5, 2.0);
+    cairo_set_source_rgb(line5, 1, 0, 0);
     for(i=0;i<move;i+=10)
        {
          //The bridge.
-         cairo_set_source_rgb(line3, 0, 1.0, 0);
          cairo_move_to(line3,30+50+i, 130+50);
          cairo_arc(line3, 30+50+i, 130+50, sqrt(5000.0), (((i/10)*G_PI/25.0)+G_PI/2.0), (((i/10)*G_PI/25.0)+G_PI/2.0));
          cairo_line_to(line3, 30+50+i, 130+50);
          cairo_stroke_preserve(line3);
          //The sine wave.
-         cairo_set_source_rgb(line4, 0, 0, 1.0);
-         y1=(sqrt(5000.0))*sin(((i/10)*G_PI/25.0)+G_PI/2.0);
+         y1=(sqrt(5000.0))*sin(((i/10.0)*G_PI/25.0)+G_PI/2.0);
          cairo_move_to(line4, 30+50+i, 130+50);
-         cairo_line_to(line4, 30+50+i, 130+50+y1);
+         cairo_line_to(line4, 30+50+i, 130+50+(int)y1);
          cairo_stroke_preserve(line4);
+         //The cosine wave. Rotate slightly off the x-axis.
+         x1=(sqrt(5000.0))*cos(((i/10.0)*G_PI/25.0)+G_PI/2.0);
+         if(x1>=0)
+           {
+             cairo_arc(line5, 30+50+i, 130+50, (int)floor(x1), G_PI/8, G_PI/8);
+           }
+         else
+           {
+             cairo_arc(line5, 30+50+i, 130+50, (int)floor(fabs(x1)), G_PI+G_PI/8, G_PI+G_PI/8);
+           }
+         cairo_line_to(line5, 30+50+i, 130+50);
+         cairo_stroke_preserve(line5);        
        }
 
+    //clean-up.
     cairo_destroy(square);
     cairo_destroy(line1);
     cairo_destroy(line2);
     cairo_destroy(line3);
     cairo_destroy(line4);
+    cairo_destroy(line5);
 
   }
 
