@@ -138,7 +138,7 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_set_source_rgb(line3, 0, 1.0, 0);
     cairo_set_line_width(line4, 2.0);
     cairo_set_source_rgb(line4, 0, 0, 1.0);
-    cairo_set_line_width(line5, 2.0);
+    cairo_set_line_width(line5, 0.5);
     cairo_set_source_rgb(line5, 1, 0, 0);
     for(i=0;i<move;i+=10)
        {
