@@ -5,6 +5,8 @@ Simple animation with GTK+ and Cairo. Click to start movement. Testing things ou
 Roll a square, build a "bridge" wave, sine wave and cosine wave. Have the
 square disappear and reappear. Magic Square.
 
+Euler's formula(e^ix=cosx+isinx) might be a better description for this.
+
 Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -lm -Wall -o square
 
 C. Eric Cashon
