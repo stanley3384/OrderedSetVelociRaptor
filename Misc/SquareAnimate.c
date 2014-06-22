@@ -64,7 +64,7 @@ static void start_drawing(GtkWidget *widget, gpointer data)
         if(move!=1000)
           {
             draw_square(widget, move);
-            gtk_widget_queue_draw_area(widget, i, 30, 160, 250);
+            gtk_widget_queue_draw_area(widget, i, 30, 170, 250);
           }
         else
           {
@@ -96,6 +96,7 @@ static void draw_square(GtkWidget *widget, int move)
     double y1=0;
     GdkWindow *DefaultWindow=NULL;
     cairo_t *square=NULL;
+    cairo_t *circle=NULL;
     cairo_t *line1=NULL;
     cairo_t *line2=NULL;
     cairo_t *line3=NULL;
@@ -105,6 +106,7 @@ static void draw_square(GtkWidget *widget, int move)
     g_print("Draw Square %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
     square = gdk_cairo_create(DefaultWindow);
+    circle = gdk_cairo_create(DefaultWindow);
     line1 = gdk_cairo_create(DefaultWindow);
     line2 = gdk_cairo_create(DefaultWindow);
     line3 = gdk_cairo_create(DefaultWindow);
@@ -120,6 +122,13 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_set_source_rgb(square, 0.5, 0, 0.5);
     cairo_rectangle(square, 0, 0, 100.0, 100.0);
     cairo_fill(square);
+    //Add a circle around the square.
+    cairo_translate(circle, 30+move+50, 130+50);
+    cairo_set_source_rgb(circle, 1, 1, 0);
+    cairo_set_line_width(circle, 4.0);
+    cairo_arc(circle, 0, 0, sqrt(5000.0), 0, 2*M_PI);
+    cairo_close_path(circle);
+    cairo_stroke_preserve(circle);
     //Put a line in for the square to roll on.
     cairo_set_source_rgb(line1, 0, 0, 0);
     cairo_move_to(line1, 0, 130+50+sqrt(5000.0));
@@ -168,6 +177,7 @@ static void draw_square(GtkWidget *widget, int move)
 
     //clean-up.
     cairo_destroy(square);
+    cairo_destroy(circle);
     cairo_destroy(line1);
     cairo_destroy(line2);
     cairo_destroy(line3);
