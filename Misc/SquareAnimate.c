@@ -3,7 +3,7 @@
 
 Simple animation with GTK+ and Cairo. Click to start movement. Testing things out.
 Roll a square, build a cycloid "bridge" wave, sine wave and cosine wave. Have the
-square disappear and reappear. Magic Square.
+square disappear and reappear. Magic Square. Change around as needed.
 
 Compile with; gcc SquareAnimate.c `pkg-config --cflags --libs gtk+-3.0` -lm -Wall -o square
 
@@ -64,7 +64,7 @@ static void start_drawing(GtkWidget *widget, gpointer data)
         if(move!=1000)
           {
             draw_square(widget, move);
-            gtk_widget_queue_draw_area(widget, i, 30, 170, 250);
+            gtk_widget_queue_draw_area(widget, i, 30, 170, 350);
           }
         else
           {
@@ -102,6 +102,7 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_t *line3=NULL;
     cairo_t *line4=NULL;
     cairo_t *line5=NULL;
+    cairo_t *line6=NULL;
 
     g_print("Draw Square %i\n", move);
     DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
@@ -111,7 +112,8 @@ static void draw_square(GtkWidget *widget, int move)
     line2 = gdk_cairo_create(DefaultWindow);
     line3 = gdk_cairo_create(DefaultWindow);
     line4 = gdk_cairo_create(DefaultWindow);
-    line5 = gdk_cairo_create(DefaultWindow);        
+    line5 = gdk_cairo_create(DefaultWindow);
+    line6 = gdk_cairo_create(DefaultWindow);         
 
     //Rotate around center of square so move there.
     cairo_translate(square, 30+move+50, 130+50);
@@ -128,7 +130,7 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_set_line_width(circle, 4.0);
     cairo_arc(circle, 0, 0, sqrt(5000.0), 0, 2*M_PI);
     cairo_close_path(circle);
-    cairo_stroke_preserve(circle);
+    cairo_stroke(circle);
     //Put a line in for the square to roll on.
     cairo_set_source_rgb(line1, 0, 0, 0);
     cairo_move_to(line1, 0, 130+50+sqrt(5000.0));
@@ -141,26 +143,27 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_move_to(line2,30+50+move, 130+50);
     cairo_arc(line2, 30+50+move, 130+50, sqrt(5000.0), (((move/10)*G_PI/25.0)+G_PI/2.0), (((move/10)*G_PI/25.0)+G_PI/2.0));
     cairo_line_to(line2, 30+50+move, 130+50);
-    cairo_stroke_preserve(line2);
+    cairo_stroke(line2);
     //Set line colors and width.
     cairo_set_line_width(line3, 2.0);
     cairo_set_source_rgb(line3, 0, 1.0, 0);
     cairo_set_line_width(line4, 2.0);
     cairo_set_source_rgb(line4, 0, 0, 1.0);
-    cairo_set_line_width(line5, 0.5);
+    cairo_set_line_width(line5, 1.0);
     cairo_set_source_rgb(line5, 1, 0, 0);
+    cairo_set_line_width(line6, 40.0);
     for(i=0;i<move;i+=10)
        {
          //The bridge.
          cairo_move_to(line3,30+50+i, 130+50);
          cairo_arc(line3, 30+50+i, 130+50, sqrt(5000.0), (((i/10)*G_PI/25.0)+G_PI/2.0), (((i/10)*G_PI/25.0)+G_PI/2.0));
          cairo_line_to(line3, 30+50+i, 130+50);
-         cairo_stroke_preserve(line3);
+         cairo_stroke(line3);
          //The sine wave.
          y1=(sqrt(5000.0))*sin(((i/10.0)*G_PI/25.0)+G_PI/2.0);
          cairo_move_to(line4, 30+50+i, 130+50);
          cairo_line_to(line4, 30+50+i, 130+50+(int)y1);
-         cairo_stroke_preserve(line4);
+         cairo_stroke(line4);
          //The cosine wave. Rotate slightly off the x-axis.
          x1=(sqrt(5000.0))*cos(((i/10.0)*G_PI/25.0)+G_PI/2.0);
          if(x1>=0)
@@ -172,7 +175,12 @@ static void draw_square(GtkWidget *widget, int move)
              cairo_arc(line5, 30+50+i, 130+50, (int)floor(fabs(x1)), G_PI+G_PI/8, G_PI+G_PI/8);
            }
          cairo_line_to(line5, 30+50+i, 130+50);
-         cairo_stroke_preserve(line5);        
+         cairo_stroke(line5); 
+         //The sine cosine color component line. 
+         cairo_set_source_rgb(line6, fabs(x1)/sqrt(5000), 0, fabs(y1)/sqrt(5000)); 
+         cairo_move_to(line6, 30+50+i, 130+50+110);
+         cairo_line_to(line6, 30+50+i+10, 130+50+110);
+         cairo_stroke(line6);       
        }
 
     //clean-up.
@@ -183,6 +191,7 @@ static void draw_square(GtkWidget *widget, int move)
     cairo_destroy(line3);
     cairo_destroy(line4);
     cairo_destroy(line5);
+    cairo_destroy(line6);
 
   }
 
