@@ -972,11 +972,11 @@ void plot_matrix_now(gsl_matrix *data, int graph, int lower_bound, int upper_bou
                 }
                
               //apophenia 0.99
-              apop_opts.output_type='p';apop_opts.output_pipe=gp;apop_matrix_print(data, NULL);
+              //apop_opts.output_type='p';apop_opts.output_pipe=gp;apop_matrix_print(data, NULL);
               
 
               //apophenia 0.999
-              //apop_matrix_print(data, .output_type='p', .output_pipe=gp);
+              apop_matrix_print(data, .output_type='p', .output_pipe=gp);
 
               fflush(gp);
               pclose(gp);
