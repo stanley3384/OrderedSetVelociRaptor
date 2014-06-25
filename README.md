@@ -32,12 +32,16 @@ sudo apt-get install make gcc libgsl0-dev libsqlite3-dev
 
 wget https://github.com/b-k/Apophenia/archive/pkg.zip
 
---unzip and build library
+--unzip and build the library.
 
 unzip pkg.zip
+
 cd Apophenia-pkg
+
 ./configure
+
 make
+
 sudo make install
 
 --After Apophenia is installed, install GTK+, gfortran and gnuplot.
@@ -49,12 +53,15 @@ sudo apt-get install libgtk-3-dev gnuplot gfortran
 --Move back to the main folder and get the VelociRaptor files.
 
 cd ../
+
 wget https://github.com/cecashon/OrderedSetVelociRaptor/archive/master.zip
 
 --Unzip and build the program.
 
 unzip master.zip
+
 cd ./OrderedSetVelociRaptor-master
+
 make 
 
 --Start the program with
