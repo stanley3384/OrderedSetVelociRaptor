@@ -13,31 +13,40 @@ COMPILE6=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -fopenmp -Wall -D_GNU_SOURC
 COMPILE7=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -D_GNU_SOURCE=1 -O2 -c VelociRaptorHtmlTable.c -o VelociRaptorHtmlTable.o `pkg-config --libs gtk+-3.0`
 
 executable:$(OBJECTS)
-	gcc $(CFLAGS) $(OBJECTS) VelociRaptorUI.c $(LINKFLAGS) -o $(PROGNAME)
+	@echo [CC] VelociRaptor
+	@gcc $(CFLAGS) $(OBJECTS) VelociRaptorUI.c $(LINKFLAGS) -o $(PROGNAME)
 
 mvdist.o: mvdist.f90
-	$(COMPILE1)
+	@echo [FC] $@
+	@$(COMPILE1)
 
 FortranInterop.o: FortranInterop.f90
-	$(COMPILE1) 
+	@echo [FC] $@
+	@$(COMPILE1) 
 
 HotellingsT2.o: HotellingsT2.c
-	$(COMPILE2)
+	@echo [CC] $@
+	@$(COMPILE2)
 
 VelociRaptorMath.o: VelociRaptorMath.c
-	$(COMPILE3)
+	@echo [CC] $@
+	@$(COMPILE3)
 
 VelociRaptorUI_Validation.o: VelociRaptorUI_Validation.c
-	$(COMPILE4)
+	@echo [CC] $@
+	@$(COMPILE4)
 
 VelociRaptorPrinting.o: VelociRaptorPrinting.c
-	$(COMPILE5)
+	@echo [CC] $@
+	@$(COMPILE5)
 
 VelociRaptorPermutations.o: VelociRaptorPermutations.c
-	$(COMPILE6)
+	@echo [CC] $@
+	@$(COMPILE6)
 
 VelociRaptorHtmlTable.o: VelociRaptorHtmlTable.c
-	$(COMPILE7)
+	@echo [CC] $@
+	@$(COMPILE7)
 
 run: executable
 	./$(PROGNAME)
