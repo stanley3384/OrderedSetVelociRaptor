@@ -77,3 +77,5 @@ make
 C. Eric Cashon
 
 --Thank you Github and the work of all that made it possible to put together.
+
+![Screenshot5](/dino.png)
