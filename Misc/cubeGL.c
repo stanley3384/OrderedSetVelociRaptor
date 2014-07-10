@@ -2,15 +2,18 @@
 
     Test some OpenGL.
 
-    gcc cubeGL.c -o cubeGL -lglut -lGL -lGLU
+    gcc -Wall cubeGL.c -o cubeGL -lglut -lGL -lGLU -lm
+
+    C. Eric Cashon
 
 */
 
-
+#include <math.h>
 #include <time.h>
 #include <GL/glut.h>
 
 GLfloat angle= 0.0;
+GLfloat scale= 1.0;
 GLfloat bez_points[4][3] = {{ -1.0, -1.0, 1.0}, { 1.0, -1.0, 1.0}, {-1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
 
 void init(void)
@@ -29,7 +32,8 @@ void drawString(void *font, float x, float y, float z, char *str)
   }
 void spin(void)
   {
-    angle+= 1.0;
+    angle+=1.0;
+    scale-=0.002;
     glutPostRedisplay();
   }
 void display(void)
@@ -54,6 +58,9 @@ void display(void)
     glRotatef(angle, 1, 0, 0);
     glRotatef(angle, 0, 1, 0);
     glRotatef(angle, 0, 0, 1);
+
+    if(fabs(scale)>=1.004)scale=1.0;
+    glScalef(fabs(scale), fabs(scale), fabs(scale));
 
     glColor3f(0.0, 0.0, 1.0);
     glBegin(GL_POLYGON);
