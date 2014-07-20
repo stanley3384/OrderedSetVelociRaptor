@@ -1,7 +1,6 @@
 /*
 
-    Test code for some eigen vectors and values. Still trying to figure this one out.
-    Square like random points.
+    Test code for some eigen vectors and values. Try cubic data.
 
     gcc -Wall eigenGL.c -o eigenGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
 
@@ -18,6 +17,8 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_cdf.h>
+#include <gsl/gsl_randist.h>
 
 
 GLfloat angle= 0.0;
@@ -25,7 +26,8 @@ gsl_matrix *test_data_points= NULL;
 double test_data_means[3];
 double eigen_vectors[3][3];
 double eigen_values[3];
-int records=100;
+double eigen_distance[3];
+int records=1000;
 
 
 void get_data_points(int records)
@@ -35,21 +37,46 @@ void get_data_points(int records)
    const gsl_rng_type *T;
    gsl_rng *r;
    gsl_rng_env_setup();
-   T = gsl_rng_default;
+   T = gsl_rng_mt19937;
    r = gsl_rng_alloc(T);
    //Global
    test_data_points=gsl_matrix_alloc(records, 3);
     
-   //Get some test data.
+   //Get some test data from random uniform distribution.
+   
    for(i=0; i<records; i++ )
     {
       for(j=0;j<3;j++)
          {
-           if(j==0||j==1)gsl_matrix_set(test_data_points, i, j, 3*gsl_rng_uniform(r));
-           else gsl_matrix_set(test_data_points, i, j, gsl_rng_uniform(r));
+           gsl_matrix_set(test_data_points, i, j, gsl_rng_uniform(r));
            test_data_means[j]+=gsl_matrix_get(test_data_points, i, j);
          }
     }
+   
+
+   //Get some test data from equally spaced points in a cube. For 1000 records.
+   /*
+   int k=0;
+   int l=0;
+   int row=0;
+   for(i=0;i<10;i++)
+     {  
+       for(j=0;j<10;j++)
+         {  
+           for(k=0;k<10;k++)
+             { 
+               for(l=0;l<3;l++)
+                 {
+                   if(l==0)gsl_matrix_set(test_data_points, row, l, (double)(k)/9.0);
+                   if(l==1)gsl_matrix_set(test_data_points, row, l, (double)(j)/9.0);
+                   if(l==2)gsl_matrix_set(test_data_points, row, l, (double)(i)/9.0);
+                   test_data_means[l]+=gsl_matrix_get(test_data_points, row, l);
+                 }
+               row++;
+             }
+         }               
+     }
+   */
 
    //Get means.
    for(i=0;i<3;i++)
@@ -77,9 +104,8 @@ void get_data_points(int records)
    gsl_matrix *evec = gsl_matrix_alloc(3, 3);
    gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(3);
    gsl_eigen_symmv(covariance, eval, evec, w);
-   //Sort
-   gsl_eigen_symmv_sort(eval, evec, GSL_EIGEN_SORT_ABS_DESC);
-   gsl_eigen_symmv_free (w);
+   //gsl_eigen_symmv_sort(eval, evec, GSL_EIGEN_SORT_ABS_DESC);
+   gsl_eigen_symmv_free(w);
    for(i = 0; i < 3; i++)
       {
         printf ("eigenvalue = %f\n", gsl_vector_get(eval, i));
@@ -90,6 +116,7 @@ void get_data_points(int records)
              eigen_vectors[i][j]=gsl_matrix_get(evec, i, j);
            }
       }
+   
    gsl_vector_free(eval);
    gsl_matrix_free(evec);
    gsl_matrix_free(covariance);
@@ -112,7 +139,7 @@ void display(void)
     glClearColor(0.0, 0.0, 0.0, 0.0); 
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    gluLookAt(7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    gluLookAt(4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
     glRotatef(angle, 0.0, 1.0, 0.0);
   
@@ -121,19 +148,19 @@ void display(void)
     glBegin(GL_LINES);
     glColor3f(1.0, 0.0, 0.0);
     glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(3.0, 0.0, 0.0);
+    glVertex3f(2.0, 0.0, 0.0);
     glEnd();
 	
     glBegin(GL_LINES);
     glColor3f(0.0, 1.0, 0.0);
     glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(0.0, 3.0, 0.0);
+    glVertex3f(0.0, 2.0, 0.0);
     glEnd();
 	
     glBegin(GL_LINES);
     glColor3f(0.0, 0.0, 1.0);
     glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(0.0, 0.0, 3.0);
+    glVertex3f(0.0, 0.0, 2.0);
     glEnd();
     
     //Draw test points.

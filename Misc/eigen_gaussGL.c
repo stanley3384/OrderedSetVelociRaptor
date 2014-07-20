@@ -1,7 +1,6 @@
 /*
 
-    Test code for some eigen vectors and values. Still trying to figure this one out.
-    Gaussian distribution.
+    Test code for some eigen vectors and values. Try Gaussian distribution.
 
     gcc -Wall eigen_gaussGL.c -o eigen_gaussGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
 
