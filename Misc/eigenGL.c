@@ -1,6 +1,7 @@
 /*
 
-    Test code for some eigen vectors and values. Try cubic data.
+    Test code for some eigen vectors and values. Try cubic uniform random data and 
+cubic lattice data. Right click to select between the two.
 
     gcc -Wall eigenGL.c -o eigenGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
 
@@ -28,12 +29,17 @@ double eigen_vectors[3][3];
 double eigen_values[3];
 double eigen_distance[3];
 int records=1000;
+//For menu
+static int window;
+static int menu_id; 
 
-
-void get_data_points(int records)
+void get_data_points(int records, int dist)
  {
    int i=0;
    int j=0;
+   int k=0;
+   int l=0;
+   int row=0;
    const gsl_rng_type *T;
    gsl_rng *r;
    gsl_rng_env_setup();
@@ -43,40 +49,40 @@ void get_data_points(int records)
    test_data_points=gsl_matrix_alloc(records, 3);
     
    //Get some test data from random uniform distribution.
-   
-   for(i=0; i<records; i++ )
+   if(dist==1)
     {
-      for(j=0;j<3;j++)
-         {
-           gsl_matrix_set(test_data_points, i, j, gsl_rng_uniform(r));
-           test_data_means[j]+=gsl_matrix_get(test_data_points, i, j);
-         }
+     for(i=0; i<records; i++ )
+      {
+        for(j=0;j<3;j++)
+           {
+             gsl_matrix_set(test_data_points, i, j, gsl_rng_uniform(r));
+             test_data_means[j]+=gsl_matrix_get(test_data_points, i, j);
+           }
+      }
     }
    
-
    //Get some test data from equally spaced points in a cube. For 1000 records.
-   /*
-   int k=0;
-   int l=0;
-   int row=0;
-   for(i=0;i<10;i++)
-     {  
-       for(j=0;j<10;j++)
-         {  
-           for(k=0;k<10;k++)
-             { 
-               for(l=0;l<3;l++)
-                 {
-                   if(l==0)gsl_matrix_set(test_data_points, row, l, (double)(k)/9.0);
-                   if(l==1)gsl_matrix_set(test_data_points, row, l, (double)(j)/9.0);
-                   if(l==2)gsl_matrix_set(test_data_points, row, l, (double)(i)/9.0);
-                   test_data_means[l]+=gsl_matrix_get(test_data_points, row, l);
-                 }
-               row++;
-             }
-         }               
+   if(dist==2)
+     {
+      for(i=0;i<10;i++)
+        {  
+          for(j=0;j<10;j++)
+            {  
+              for(k=0;k<10;k++)
+                { 
+                  for(l=0;l<3;l++)
+                    {
+                      if(l==0)gsl_matrix_set(test_data_points, row, l, (double)(k)/9.0);
+                      if(l==1)gsl_matrix_set(test_data_points, row, l, (double)(j)/9.0);
+                      if(l==2)gsl_matrix_set(test_data_points, row, l, (double)(i)/9.0);
+                      test_data_means[l]+=gsl_matrix_get(test_data_points, row, l);
+                    }
+                  row++;
+                }
+            }               
+        }
      }
-   */
+   
 
    //Get means.
    for(i=0;i<3;i++)
@@ -210,13 +216,33 @@ void keyboard(unsigned char key, int x, int y)
     //escape key
     if (key==27)exit(0);
   }
+void menu(int num)
+  {
+    if(num==1)
+      {
+        get_data_points(records, 1);
+      }
+    if(num==2)
+      {
+        get_data_points(records, 2);
+      }
+    glutPostRedisplay();
+  } 
+void createMenu(void)
+  {     
+    menu_id = glutCreateMenu(menu);
+    glutAddMenuEntry("Uniform Random", 1);
+    glutAddMenuEntry("Cubic Lattice", 2);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+ } 
 int main(int argc, char **argv)
   {
     glutInit(&argc, argv);
     glutInitWindowSize(500, 500);
     glutInitWindowPosition (100, 100);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutCreateWindow("eigenGL");
+    window = glutCreateWindow("eigenGL");
+    createMenu(); 
     init();
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
@@ -224,7 +250,7 @@ int main(int argc, char **argv)
     glutIdleFunc(spin); 
 
     //Get some random data points.
-    get_data_points(records);
+    get_data_points(records, 1);
   
     glutMainLoop();
     return 0;
