@@ -45,8 +45,8 @@ void get_data_points(int records, int dist)
    gsl_rng_env_setup();
    T = gsl_rng_mt19937;
    r = gsl_rng_alloc(T);
-   //Global
-   test_data_points=gsl_matrix_alloc(records, 3);
+   //Global variable. Allocate once.
+   if(test_data_points==NULL) test_data_points=gsl_matrix_alloc(records, 3);
     
    //Get some test data from random uniform distribution.
    if(dist==1)
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboard);
     glutIdleFunc(spin); 
 
-    //Get some random data points.
+    //Get some random data points to start with.
     get_data_points(records, 1);
   
     glutMainLoop();
