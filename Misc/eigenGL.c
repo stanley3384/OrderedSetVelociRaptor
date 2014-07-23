@@ -233,10 +233,13 @@ void menu(int num)
   } 
 void stop_rotation(int button, int state, int x, int y)
   {
-    if(state==GLUT_DOWN)
-      {
-        if(rotate==true) rotate=false;
-        else rotate=true;
+    if(button==GLUT_LEFT_BUTTON)
+      { 
+        if(state==GLUT_DOWN)
+          {
+            if(rotate==true) rotate=false;
+            else rotate=true;
+          }
       }
   }
 void createMenu(void)
