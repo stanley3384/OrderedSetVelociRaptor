@@ -24,15 +24,14 @@ the rotation.
 #include <gsl/gsl_randist.h>
 
 
-GLfloat angle=0.0;
-bool rotate=true;
-gsl_matrix *test_data_points= NULL;
-double test_data_means[3];
-double eigen_vectors[3][3];
-double eigen_values[3];
-double eigen_distance[3];
-int records=1000;
-//For menu
+static GLfloat angle=0.0;
+static bool rotate=true;
+static gsl_matrix *test_data_points= NULL;
+static double test_data_means[3];
+static double eigen_vectors[3][3];
+static double eigen_values[3];
+static int records=1000;
+//For menu.
 static int window;
 static int menu_id; 
 
