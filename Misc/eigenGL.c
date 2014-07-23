@@ -1,15 +1,17 @@
 /*
 
     Test code for some eigen vectors and values. Try cubic uniform random data and 
-cubic lattice data. Right click to select between the two.
+cubic lattice data. Right click to select between the two and left click to stop
+the rotation.
 
-    gcc -Wall eigenGL.c -o eigenGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
+    gcc -Wall -std=c99 eigenGL.c -o eigenGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
 
     C. Eric Cashon
 
 */
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include <GL/glut.h>
 #include <gsl/gsl_math.h>
@@ -22,7 +24,8 @@ cubic lattice data. Right click to select between the two.
 #include <gsl/gsl_randist.h>
 
 
-GLfloat angle= 0.0;
+GLfloat angle=0.0;
+bool rotate=true;
 gsl_matrix *test_data_points= NULL;
 double test_data_means[3];
 double eigen_vectors[3][3];
@@ -137,7 +140,7 @@ void init(void)
  }
 void spin(void)
   {
-    angle+=1.0;
+    if(rotate==true) angle+=1.0;
     glutPostRedisplay();
   }
 void display(void)
@@ -228,6 +231,14 @@ void menu(int num)
       }
     glutPostRedisplay();
   } 
+void stop_rotation(int button, int state, int x, int y)
+  {
+    if(state==GLUT_DOWN)
+      {
+        if(rotate==true) rotate=false;
+        else rotate=true;
+      }
+  }
 void createMenu(void)
   {     
     menu_id = glutCreateMenu(menu);
@@ -247,6 +258,7 @@ int main(int argc, char **argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
+    glutMouseFunc(stop_rotation);
     glutIdleFunc(spin); 
 
     //Get some random data points to start with.
