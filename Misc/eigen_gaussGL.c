@@ -1,14 +1,16 @@
 /*
 
-    Test code for some eigen vectors and values. Try Gaussian distribution.
+    Test code for some eigen vectors and values. Try Gaussian distribution. Left click
+to stop rotation.
 
-    gcc -Wall eigen_gaussGL.c -o eigen_gaussGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
+    gcc -Wall -std=c99 eigen_gaussGL.c -o eigen_gaussGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
 
     C. Eric Cashon
 
 */
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include <GL/glut.h>
 #include <gsl/gsl_math.h>
@@ -21,13 +23,14 @@
 #include <gsl/gsl_randist.h>
 
 
-GLfloat angle= 0.0;
-gsl_matrix *test_data_points= NULL;
-double test_data_means[3];
-double eigen_vectors[3][3];
-double eigen_values[3];
-double eigen_distance[3];
-int records=1000;
+static GLfloat angle= 0.0;
+static bool rotate=true;
+static gsl_matrix *test_data_points= NULL;
+static double test_data_means[3];
+static double eigen_vectors[3][3];
+static double eigen_values[3];
+static double eigen_distance[3];
+static int records=1000;
 
 
 void get_data_points(int records)
@@ -120,7 +123,7 @@ void init(void)
  }
 void spin(void)
   {
-    angle+=1.0;
+    if(rotate==true) angle+=1.0;
     glutPostRedisplay();
   }
 void display(void)
@@ -204,6 +207,17 @@ void keyboard(unsigned char key, int x, int y)
     //escape key
     if (key==27)exit(0);
   }
+void stop_rotation(int button, int state, int x, int y)
+  {
+    if(button==GLUT_LEFT_BUTTON)
+      { 
+        if(state==GLUT_DOWN)
+          {
+            if(rotate==true) rotate=false;
+            else rotate=true;
+          }
+      }
+  }
 int main(int argc, char **argv)
   {
     glutInit(&argc, argv);
@@ -215,6 +229,7 @@ int main(int argc, char **argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
+    glutMouseFunc(stop_rotation);
     glutIdleFunc(spin); 
 
     //Get some random data points.
