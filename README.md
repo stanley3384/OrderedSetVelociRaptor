@@ -15,6 +15,8 @@ Heatmap and Table HTML's
 ![Screenshot4](/Heatmap3.jpg)
 
 --There are various graphical items in the Misc folder in both 2d and 3d. Take a look at the OpenGL graphing programs with eigen vectors and values. They provide an interesting view of data.
+
+Magic Square
 ![Screenshot4](/wave1.jpg)
 
 
