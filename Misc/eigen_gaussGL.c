@@ -1,7 +1,7 @@
 /*
 
     Test code for some eigen vectors and values. Try Gaussian distribution. Left click
-to stop rotation.
+to stop rotation. Right click to pick ellipsoid.
 
     gcc -Wall -std=c99 eigen_gaussGL.c -o eigen_gaussGL -lglut -lGL -lGLU -lm -lgsl -lgslcblas
 
@@ -31,9 +31,12 @@ static double eigen_vectors[3][3];
 static double eigen_values[3];
 static double eigen_distance[3];
 static int records=1000;
+//For menu.
+static int window;
+static int menu_id; 
 
 
-void get_data_points(int records)
+void get_data_points(int records, int dist)
  {
    int i=0;
    int j=0;
@@ -42,19 +45,34 @@ void get_data_points(int records)
    gsl_rng_env_setup();
    T = gsl_rng_mt19937;
    r = gsl_rng_alloc(T);
-   //Global
-   test_data_points=gsl_matrix_alloc(records, 3);
+   //Global variable. Allocate once.
+   if(test_data_points==NULL) test_data_points=gsl_matrix_alloc(records, 3);
     
    //Get some test data.
-   for(i=0; i<records; i++ )
-    {
-      for(j=0;j<3;j++)
-         {
-           if(j==0)gsl_matrix_set(test_data_points, i, j, gsl_ran_gaussian(r, 2.0));
-           else gsl_matrix_set(test_data_points, i, j, gsl_ran_gaussian(r, 1.0));
-           test_data_means[j]+=gsl_matrix_get(test_data_points, i, j);
-         }
-    }
+   if(dist==2)
+     {
+       for(i=0; i<records; i++ )
+          {
+            for(j=0;j<3;j++)
+               {
+                 if(j==0)gsl_matrix_set(test_data_points, i, j, gsl_ran_gaussian(r, 2.0));
+                 else gsl_matrix_set(test_data_points, i, j, gsl_ran_gaussian(r, 1.0));
+                 test_data_means[j]+=gsl_matrix_get(test_data_points, i, j);
+               }
+           }
+     }
+   else
+     {
+       for(i=0; i<records; i++ )
+          {
+            for(j=0;j<3;j++)
+               {
+                 if(j==0)gsl_matrix_set(test_data_points, i, j, gsl_ran_gaussian(r, 1.0));
+                 else gsl_matrix_set(test_data_points, i, j, gsl_ran_gaussian(r, 1.0));
+                 test_data_means[j]+=gsl_matrix_get(test_data_points, i, j);
+               }
+           }
+     }
 
    //Get means.
    for(i=0;i<3;i++)
@@ -207,6 +225,18 @@ void keyboard(unsigned char key, int x, int y)
     //escape key
     if (key==27)exit(0);
   }
+void menu(int num)
+  {
+    if(num==1)
+      {
+        get_data_points(records, 1);
+      }
+    if(num==2)
+      {
+        get_data_points(records, 2);
+      }
+    glutPostRedisplay();
+  } 
 void stop_rotation(int button, int state, int x, int y)
   {
     if(button==GLUT_LEFT_BUTTON)
@@ -218,13 +248,21 @@ void stop_rotation(int button, int state, int x, int y)
           }
       }
   }
+void createMenu(void)
+  {     
+    menu_id = glutCreateMenu(menu);
+    glutAddMenuEntry("Gaussian Random", 1);
+    glutAddMenuEntry("2x-axis Gaussian Random", 2);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+ } 
 int main(int argc, char **argv)
   {
     glutInit(&argc, argv);
     glutInitWindowSize(800, 500);
     glutInitWindowPosition (100, 100);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutCreateWindow("eigen_gaussGL");
+    window=glutCreateWindow("eigen_gaussGL");
+    createMenu(); 
     init();
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
@@ -233,7 +271,7 @@ int main(int argc, char **argv)
     glutIdleFunc(spin); 
 
     //Get some random data points.
-    get_data_points(records);
+    get_data_points(records, 1);
   
     glutMainLoop();
     return 0;
