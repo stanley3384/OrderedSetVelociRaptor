@@ -1,22 +1,21 @@
 
 /*
 
-From; An example of using GtkGLExt in C
-      Written by Davyd Madeley <davyd@madeley.id.au> and made available under a
-      BSD license.
-  
-Test code derived from the above reference. GTK2 example code. Put a couple of axis lines to rotate around and a pyramid in.
+     Test Code. Get an OpenGL example working in GTK3. Dependent on Xlib though. 
+
+gcc -Wall gtk3GL.c -o gtk3GL -lGL -lGLU -lX11 -lm `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
-
-gcc gtk_GL.c -o gtk_GL `pkg-config --cflags --libs gtk+-2.0 gtkglext-1.0 gtkglext-x11-1.0`
-
-
 */
 
-#include <gtk/gtk.h>
-#include <gtk/gtkgl.h>
-#include <GL/gl.h>
+#include<X11/Xlib.h>
+#include<GL/glx.h>
+#include<GL/gl.h>
+#include<GL/glu.h>
+#include<gtk/gtk.h>
+#include<gdk/gdkx.h>
+#include<stdio.h>
+#include<stdlib.h>
 
 float boxv[][3] = {
 	{ -0.5, -0.5, -0.5 },
@@ -37,19 +36,19 @@ float pyramidv[][3]={
         {0.0, 0.0, 1.5}
 };
 
+static GdkWindow *DrawingWindow=NULL;
+static Window X_window;
+static Display *X_display;
+static GLXContext X_context;
+static XVisualInfo *X_visual;
+static XWindowAttributes X_attributes;
+static GLint attributes[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
 static float ALPHA=1.0;
 static float ang=0.0;
 
-static gboolean expose(GtkWidget *da, GdkEventExpose *event, gpointer user_data)
-  {
-    GdkGLContext *glcontext = gtk_widget_get_gl_context(da);
-    GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable(da);
-
-    if(!gdk_gl_drawable_gl_begin(gldrawable, glcontext))
-      {
-	g_assert_not_reached ();
-      }
-
+static void drawGL(GtkWidget *da, gpointer data)
+ {
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPushMatrix();
 	
@@ -180,91 +179,68 @@ static gboolean expose(GtkWidget *da, GdkEventExpose *event, gpointer user_data)
     glEnd();
 
     glPopMatrix ();
+    glXSwapBuffers(X_display, X_window);
 
-    if(gdk_gl_drawable_is_double_buffered(gldrawable))
-      {
-	gdk_gl_drawable_swap_buffers(gldrawable);
-      }
-    else
-      {
-	glFlush();
-      }
-
-    gdk_gl_drawable_gl_end(gldrawable);
-
-    return TRUE;
-}
-
-static gboolean configure (GtkWidget *da, GdkEventConfigure *event, gpointer user_data)
-  {
-    GdkGLContext *glcontext = gtk_widget_get_gl_context(da);
-    GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable(da);
-
-    if(!gdk_gl_drawable_gl_begin(gldrawable, glcontext))
-      {
-	g_assert_not_reached();
-      }
-
-    glLoadIdentity();
-    glViewport(0, 0, da->allocation.width, da->allocation.height);
-    glOrtho(-10,10,-10,10,-20050,10000);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glScalef(5.0, 5.0, 5.0);
-	
-    gdk_gl_drawable_gl_end(gldrawable);
-
-    return TRUE;
  }
-static gboolean rotate(gpointer user_data)
+static void configureGL(GtkWidget *da, gpointer data)
  {
-   GtkWidget *da = GTK_WIDGET(user_data);
+   printf("Congigure GL\n");
+   DrawingWindow=gtk_widget_get_window(GTK_WIDGET(da));
 
+   if(DrawingWindow==NULL)
+     {
+       printf("Couldn't get GdkWindow\n");
+     }
+   else
+     {
+       X_window=gdk_x11_window_get_xid(GDK_WINDOW(DrawingWindow));
+       X_display=gdk_x11_get_default_xdisplay();
+       X_visual=glXChooseVisual(X_display, 0, attributes);
+       X_context=glXCreateContext(X_display, X_visual, NULL, GL_TRUE);
+     }
+
+   XGetWindowAttributes(X_display, X_window, &X_attributes);
+   glXMakeCurrent(X_display, X_window, X_context);
+   XMapWindow(X_display, X_window);
+   printf("Viewport %i %i\n", (int)X_attributes.width, (int)X_attributes.height);
+   glViewport(0, 0, X_attributes.width, X_attributes.height);
+   glOrtho(-10,10,-10,10,-20050,10000);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glScalef(5.0, 5.0, 5.0);
+ }
+static gboolean rotate(gpointer data)
+ {
+   GtkWidget *da = GTK_WIDGET(data);
    ang++;
-
-   gdk_window_invalidate_rect(da->window, &da->allocation, FALSE);
-   gdk_window_process_updates(da->window, FALSE);
-
+   gtk_widget_queue_draw_area(da, 0, 0, 500, 500);  
    return TRUE;
  }
 int main(int argc, char **argv)
  {
    GtkWidget *window=NULL;
    GtkWidget *da=NULL;
-   GdkGLConfig *glconfig;
 
    gtk_init(&argc, &argv);
-   gtk_gl_init(&argc, &argv);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_default_size(GTK_WINDOW (window), 500, 500);
+   gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
    da=gtk_drawing_area_new();
+   gtk_widget_set_double_buffered(da, FALSE);
 
-   gtk_container_add(GTK_CONTAINER (window), da);
-   g_signal_connect_swapped(window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
-   gtk_widget_set_events(da, GDK_EXPOSURE_MASK);
+   gtk_container_add(GTK_CONTAINER(window), da);
+   g_signal_connect_swapped(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    gtk_widget_show(window);
 
-   glconfig=gdk_gl_config_new_by_mode(GDK_GL_MODE_RGB | GDK_GL_MODE_DEPTH | GDK_GL_MODE_DOUBLE);
+   g_signal_connect(da, "configure-event", G_CALLBACK(configureGL), NULL);
+   g_signal_connect(da, "draw", G_CALLBACK(drawGL), NULL);
 
-   if(!glconfig)
-     {
-	g_assert_not_reached();
-     }
+   gtk_widget_show_all(window);
 
-   if(!gtk_widget_set_gl_capability(da, glconfig, NULL, TRUE, GDK_GL_RGBA_TYPE))
-     {
-	g_assert_not_reached ();
-     }
+   g_timeout_add(1000/60, rotate, da);
 
-   g_signal_connect(da, "configure-event", G_CALLBACK (configure), NULL);
-   g_signal_connect(da, "expose-event", G_CALLBACK (expose), NULL);
-
-   gtk_widget_show_all (window);
-
-   g_timeout_add (1000/60, rotate, da);
-
-   gtk_main ();
+   gtk_main();
+   return 0;
 }
 
