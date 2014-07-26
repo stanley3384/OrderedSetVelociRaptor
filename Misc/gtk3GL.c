@@ -36,6 +36,8 @@ float pyramidv[][3]={
         {0.0, 0.0, 1.5}
 };
 
+static GtkWidget *window=NULL;
+static GtkWidget *da=NULL;
 static GdkWindow *DrawingWindow=NULL;
 static Window X_window;
 static Display *X_display;
@@ -45,6 +47,7 @@ static XWindowAttributes X_attributes;
 static GLint attributes[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
 static float ALPHA=1.0;
 static float ang=0.0;
+static guint timer_id;
 
 static void drawGL(GtkWidget *da, gpointer data)
  {
@@ -211,15 +214,19 @@ static void configureGL(GtkWidget *da, gpointer data)
  }
 static gboolean rotate(gpointer data)
  {
-   GtkWidget *da = GTK_WIDGET(data);
    ang++;
-   gtk_widget_queue_draw_area(da, 0, 0, 500, 500);  
+   gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, 500, 500);  
    return TRUE;
+ }
+void close_program()
+ {
+   //timer can trigger warnings when closing program.
+   g_source_remove(timer_id);
+   printf("Quit Program\n");
+   gtk_main_quit();
  }
 int main(int argc, char **argv)
  {
-   GtkWidget *window=NULL;
-   GtkWidget *da=NULL;
 
    gtk_init(&argc, &argv);
 
@@ -229,7 +236,7 @@ int main(int argc, char **argv)
    gtk_widget_set_double_buffered(da, FALSE);
 
    gtk_container_add(GTK_CONTAINER(window), da);
-   g_signal_connect_swapped(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+   g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
    gtk_widget_show(window);
 
@@ -238,7 +245,7 @@ int main(int argc, char **argv)
 
    gtk_widget_show_all(window);
 
-   g_timeout_add(1000/60, rotate, da);
+   timer_id=g_timeout_add(1000/60, rotate, da);
 
    gtk_main();
    return 0;
