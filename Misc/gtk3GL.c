@@ -51,8 +51,8 @@ static guint timer_id;
 
 static void drawGL(GtkWidget *da, gpointer data)
  {
-    glClearColor(1.0, 1.0, 1.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
     glPushMatrix();
 	
     //Rotate around x-axis
@@ -207,9 +207,7 @@ static void configureGL(GtkWidget *da, gpointer data)
    XMapWindow(X_display, X_window);
    printf("Viewport %i %i\n", (int)X_attributes.width, (int)X_attributes.height);
    glViewport(0, 0, X_attributes.width, X_attributes.height);
-   glOrtho(-10,10,-10,10,-20050,10000);
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glOrtho(-10,10,-10,10,-10,10);
    glScalef(5.0, 5.0, 5.0);
  }
 static gboolean rotate(gpointer data)
