@@ -3,7 +3,12 @@
 
      Test Code. Get an OpenGL example working in GTK3. Dependent on Xlib though. 
 
-gcc -Wall gtk3GL.c -o gtk3GL -lGL -lGLU -lX11 -lm `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
+Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK, it works.
+    vblank_mode=0 glxgears
+    glxinfo
+
+Compile with
+    gcc -Wall gtk3GL.c -o gtk3GL -lGL -lGLU -lX11 -lm `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
