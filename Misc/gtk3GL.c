@@ -234,11 +234,24 @@ int main(int argc, char **argv)
    gtk_init(&argc, &argv);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+   gtk_window_set_title(GTK_WINDOW(window), "GTK3 OpenGL");
    gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+
+   GtkWidget *grid1=gtk_grid_new();
+
+   GtkWidget *label1=gtk_label_new("OpenGL Drawing Area");
+   gtk_widget_set_hexpand(label1, TRUE);
+
    da=gtk_drawing_area_new();
    gtk_widget_set_double_buffered(da, FALSE);
+   gtk_widget_set_hexpand(da, TRUE);
+   gtk_widget_set_vexpand(da, TRUE);
 
-   gtk_container_add(GTK_CONTAINER(window), da);
+   gtk_container_add(GTK_CONTAINER(window), grid1);
+
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da, 0, 1, 1, 1);
+  
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
    gtk_widget_show(window);
