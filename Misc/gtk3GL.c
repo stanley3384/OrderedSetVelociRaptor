@@ -7,6 +7,9 @@ Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK,
     vblank_mode=0 glxgears
     glxinfo
 
+About Xlib windows and displays.
+    http://www.sbin.org/doc/Xlib/chapt_03.html
+
 Compile with
     gcc -Wall gtk3GL.c -o gtk3GL -lGL -lGLU -lX11 -lm `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
 
@@ -53,6 +56,7 @@ static GLint attributes[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, No
 static float ALPHA=1.0;
 static float ang=0.0;
 static guint timer_id;
+static float scaleGL=2.5;
 
 static void drawGL(GtkWidget *da, gpointer data)
  {
@@ -62,6 +66,9 @@ static void drawGL(GtkWidget *da, gpointer data)
 	
     //Rotate around x-axis
     glRotatef(ang, 1.0, 0.0, 0.0);
+
+    //Scale
+    glScalef(scaleGL, scaleGL, scaleGL);
   
     glShadeModel(GL_FLAT);
 
@@ -212,16 +219,20 @@ static void configureGL(GtkWidget *da, gpointer data)
    XMapWindow(X_display, X_window);
    printf("Viewport %i %i\n", (int)X_attributes.width, (int)X_attributes.height);
    glViewport(0, 0, X_attributes.width, X_attributes.height);
-   glOrtho(-10,10,-10,10,-10,10);
-   glScalef(5.0, 5.0, 5.0);
+   glOrtho(-10,10,-10,10,-100,100);
+   glScalef(2.5, 2.5, 2.5);
  }
 static gboolean rotate(gpointer data)
  {
    ang++;
-   gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, 500, 500);  
+   gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, 500, 550);  
    return TRUE;
  }
-void close_program()
+static void scale_drawing(GtkRange *range,  gpointer data)
+ {  
+   scaleGL=2.5-gtk_range_get_value(range)/5.0;     
+ }
+static void close_program()
  {
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
@@ -235,12 +246,17 @@ int main(int argc, char **argv)
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "GTK3 OpenGL");
-   gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+   gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
 
    GtkWidget *grid1=gtk_grid_new();
 
-   GtkWidget *label1=gtk_label_new("OpenGL Drawing Area");
+   GtkWidget *label1=gtk_label_new("OpenGL Drawing Area with Scale Slider");
    gtk_widget_set_hexpand(label1, TRUE);
+
+   GtkWidget *scale1=gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,1,10,1);
+   gtk_widget_set_hexpand(scale1, TRUE);
+   gtk_range_set_increments(GTK_RANGE(scale1),1,1);
+   g_signal_connect(GTK_RANGE(scale1), "value_changed", G_CALLBACK(scale_drawing), NULL);
 
    da=gtk_drawing_area_new();
    gtk_widget_set_double_buffered(da, FALSE);
@@ -250,7 +266,8 @@ int main(int argc, char **argv)
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
    gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), da, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da, 0, 2, 1, 1);
   
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
