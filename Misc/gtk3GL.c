@@ -52,11 +52,12 @@ static Display *X_display;
 static GLXContext X_context;
 static XVisualInfo *X_visual;
 static XWindowAttributes X_attributes;
-static GLint attributes[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
+static GLint attributes[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
 static float ALPHA=1.0;
 static float ang=0.0;
 static guint timer_id;
 static float scaleGL=2.5;
+static float rotation[]={1.0 , 0.0, 0.0};
 
 static void drawGL(GtkWidget *da, gpointer data)
  {
@@ -65,7 +66,7 @@ static void drawGL(GtkWidget *da, gpointer data)
     glPushMatrix();
 	
     //Rotate around x-axis
-    glRotatef(ang, 1.0, 0.0, 0.0);
+    glRotatef(ang, rotation[0], rotation[1], rotation[2]);
 
     //Scale
     glScalef(scaleGL, scaleGL, scaleGL);
@@ -232,6 +233,27 @@ static void scale_drawing(GtkRange *range,  gpointer data)
  {  
    scaleGL=2.5-gtk_range_get_value(range)/5.0;     
  }
+static void rotation_axis(GtkWidget *axis, gpointer data)
+ {
+   if(*(int*)data==0)
+     {
+       rotation[0]=1.0;
+       rotation[1]=0.0;
+       rotation[2]=0.0;
+     }
+   else if(*(int*)data==1)
+     {
+       rotation[0]=0.0;
+       rotation[1]=1.0;
+       rotation[2]=0.0;
+     }
+   else
+     {
+       rotation[0]=0.0;
+       rotation[1]=0.0;
+       rotation[2]=1.0;
+     }
+ }
 static void close_program()
  {
    //timer can trigger warnings when closing program.
@@ -241,12 +263,31 @@ static void close_program()
  }
 int main(int argc, char **argv)
  {
-
+   GtkWidget *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item;
+   int x1=0;
+   int y1=1;
+   int z1=2;
    gtk_init(&argc, &argv);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "GTK3 OpenGL");
    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
+
+   rotate_menu=gtk_menu_new();
+   rotate_x=gtk_menu_item_new_with_label("Rotate x-axis");
+   rotate_y=gtk_menu_item_new_with_label("Rotate y-axis");
+   rotate_z=gtk_menu_item_new_with_label("Rotate z-axis");
+   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_x);
+   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_y);
+   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_z);
+   g_signal_connect(rotate_x, "activate", G_CALLBACK(rotation_axis), &x1);
+   g_signal_connect(rotate_y, "activate", G_CALLBACK(rotation_axis), &y1);
+   g_signal_connect(rotate_z, "activate", G_CALLBACK(rotation_axis), &z1);
+   menu_bar=gtk_menu_bar_new();
+   gtk_widget_show(menu_bar);
+   rotate_item=gtk_menu_item_new_with_label("Rotate");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(rotate_item), rotate_menu);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), rotate_item);
 
    GtkWidget *grid1=gtk_grid_new();
 
@@ -265,9 +306,10 @@ int main(int argc, char **argv)
 
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
-   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), da, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), menu_bar, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da, 0, 3, 1, 1);
   
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
