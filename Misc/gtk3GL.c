@@ -24,6 +24,7 @@ C. Eric Cashon
 #include<gdk/gdkx.h>
 #include<stdio.h>
 #include<stdlib.h>
+#include<stdbool.h>
 
 float boxv[][3] = {
 	{ -0.5, -0.5, -0.5 },
@@ -58,6 +59,7 @@ static float ang=0.0;
 static guint timer_id;
 static float scaleGL=2.5;
 static float rotation[]={1.0 , 0.0, 0.0};
+static bool rotate_drawing=true;
 
 static void drawGL(GtkWidget *da, gpointer data)
  {
@@ -225,9 +227,17 @@ static void configureGL(GtkWidget *da, gpointer data)
  }
 static gboolean rotate(gpointer data)
  {
-   ang++;
-   gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, 500, 550);  
+   if(rotate_drawing==true)
+     {
+       ang++;
+       gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, 500, 550); 
+     } 
    return TRUE;
+ }
+static void stop_rotation(GtkWidget *da, gpointer data)
+ {
+   if(rotate_drawing==true) rotate_drawing=false;
+   else rotate_drawing=true;
  }
 static void scale_drawing(GtkRange *range,  gpointer data)
  {  
@@ -303,6 +313,8 @@ int main(int argc, char **argv)
    gtk_widget_set_double_buffered(da, FALSE);
    gtk_widget_set_hexpand(da, TRUE);
    gtk_widget_set_vexpand(da, TRUE);
+   gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK);
+   g_signal_connect(da, "button-press-event", G_CALLBACK(stop_rotation), NULL);
 
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
