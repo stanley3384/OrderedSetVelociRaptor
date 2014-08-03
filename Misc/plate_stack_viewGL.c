@@ -11,7 +11,7 @@ About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
 
 Compile with
-    gcc -Wall plate_stack_view.c -o plate_stack_view -lGL -lGLU -lX11 -lm -lm -lgsl -lgslcblas `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
+    gcc -Wall plate_stack_viewGL.c -o plate_stack_viewGL -lGL -lGLU -lX11 -lm -lm -lgsl -lgslcblas `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
@@ -44,11 +44,13 @@ static float scaleGL=2.5;
 static float rotation[]={1.0 , 0.0, 0.0};
 static bool rotate_drawing=true;
 static gsl_matrix *test_data_points= NULL;
-static int plate=0;
-static int rows=0;
-static int columns=0;
 
-void get_data_points(int rows1, int columns1, int plate1)
+//Set some values to test.
+static int rows=8;
+static int columns=12;
+static int plates=7;
+
+void get_data_points(int rows1, int columns1, int plates1)
  {
    int i=0;
    int j=0;
@@ -59,15 +61,11 @@ void get_data_points(int rows1, int columns1, int plate1)
    T = gsl_rng_mt19937;
    r = gsl_rng_alloc(T);
 
-   //Save to global variable for multiple redraws.
-   plate=plate1;
-   rows=rows1;
-   columns=columns1;
-   //Global variable. Allocate once.
-   if(test_data_points==NULL) test_data_points=gsl_matrix_alloc(plate*rows, columns);
+   //Global variable. Allocate once. Free on exit.
+   if(test_data_points==NULL) test_data_points=gsl_matrix_alloc(plates*rows, columns);
    //printf("rows %i columns %i\n", test_data_points->size1, test_data_points->size2);
 
-   for(i=0;i<plate;i++)
+   for(i=0;i<plates;i++)
       {
         for(j=0;j<rows;j++)
            {
@@ -100,28 +98,29 @@ static void drawGL(GtkWidget *da, gpointer data)
     glShadeModel(GL_FLAT);
     
     //Axis lines
+    glLineWidth(4.0);
     glBegin(GL_LINES);
     glColor3f(1.0, 0.0, 0.0);
     glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(1.8, 0.0, 0.0);
+    glVertex3f(rows, 0.0, 0.0);
     glEnd();
 	
     glBegin(GL_LINES);
     glColor3f(0.0, 1.0, 0.0);
     glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(0.0, 1.8, 0.0);
+    glVertex3f(0.0, columns, 0.0);
     glEnd();
 	
     glBegin(GL_LINES);
     glColor3f(1.0, 0.0, 1.0);
     glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(0.0, 0.0, 1.8);
+    glVertex3f(0.0, 0.0, plates);
     glEnd();
 
     glPointSize(8.0);
     glBegin(GL_POINTS);
-    //glColor4f(0.0, 1.0, 0.0, 1.0);
-    for(i=0; i<plate; i++)
+    
+    for(i=0; i<plates; i++)
        {
          for(j=0; j<rows; j++)
             {
@@ -172,8 +171,6 @@ static void configureGL(GtkWidget *da, gpointer data)
    glOrtho(-10,10,-10,10,-100,100);
    glScalef(2.5, 2.5, 2.5);
 
-   //Test some random points in plate format.
-   get_data_points(8, 12, 7);
  }
 static gboolean rotate(gpointer data)
  {
@@ -218,6 +215,8 @@ static void close_program()
  {
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
+   //free matrix on exit.
+   gsl_matrix_free(test_data_points);
    printf("Quit Program\n");
    gtk_main_quit();
  }
@@ -280,6 +279,9 @@ int main(int argc, char **argv)
    g_signal_connect(da, "draw", G_CALLBACK(drawGL), NULL);
 
    gtk_widget_show_all(window);
+
+   //Test some random points in plate format.
+   get_data_points(rows, columns, plates);
 
    timer_id=g_timeout_add(1000/10, rotate, da);
 
