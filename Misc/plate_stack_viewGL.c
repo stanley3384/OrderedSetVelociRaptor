@@ -79,12 +79,23 @@ void get_data_points(int rows1, int columns1, int plates1)
            }
       }
  }
+static void heatmap_rgb(double temp1, double high, double low, float rgb[])
+ {
+    //reset rgb
+    rgb[0]=0.0;
+    rgb[1]=0.0;
+    rgb[2]=1.0;
+    rgb[2]=rgb[2]-(temp1*(high-low));
+    rgb[0]=rgb[0]+(temp1*(high-low));
+    //printf("Value %f red %f blue %f scale %f\n", temp1, rgb[2], rgb[0], temp1*(high-low));
+ }
 static void drawGL(GtkWidget *da, gpointer data)
  {
     int i=0;
     int j=0;
     int k=0;
-    double temp1=0;
+    double temp1=0.0;
+    float rgb[]={0.0, 0.0, 1.0};
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glPushMatrix();
@@ -127,16 +138,9 @@ static void drawGL(GtkWidget *da, gpointer data)
               for(k=0;k<columns;k++)
                  {
                    temp1=gsl_matrix_get(test_data_points, i*rows+j, k);
-                   if(temp1<0.9)
-                     {
-                       glColor4f(0.0, 0.0, 1.0, 1.0);
-                       glVertex3f(j/3.0,k,i);
-                     }
-                   else
-                     {
-                       glColor4f(1.0, 0.0, 0.0, 1.0);
-                       glVertex3f(j/3.0,k,i);
-                     }
+                   heatmap_rgb(temp1, 1.0, 0.0, rgb);
+                   glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
+                   glVertex3f(j/3.0,k,i);
                  }
             }
        }
