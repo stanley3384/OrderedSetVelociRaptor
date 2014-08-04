@@ -81,13 +81,25 @@ void get_data_points(int rows1, int columns1, int plates1)
  }
 static void heatmap_rgb(double temp1, double high, double low, float rgb[])
  {
-    //reset rgb
-    rgb[0]=0.0;
-    rgb[1]=0.0;
-    rgb[2]=1.0;
-    rgb[2]=rgb[2]-(temp1*(high-low));
-    rgb[0]=rgb[0]+(temp1*(high-low));
-    //printf("Value %f red %f blue %f scale %f\n", temp1, rgb[2], rgb[0], temp1*(high-low));
+    //reset rgb. <50% red to green. >50% green to blue.
+    if(temp1<(high-low)/2.0)
+      {
+        rgb[0]=1.0;
+        rgb[1]=0.0;
+        rgb[2]=0.0;
+        rgb[0]=rgb[0]-(temp1*(high-low));
+        rgb[1]=rgb[1]+(temp1*(high-low));
+      }
+    else
+      {
+       rgb[0]=0.0;
+       rgb[1]=1.0;
+       rgb[2]=0.0;
+       rgb[1]=rgb[1]-(temp1*(high-low));
+       rgb[2]=rgb[2]+(temp1*(high-low));
+      }
+    
+    //printf("Value %f red %f green %f blue %f scale %f\n", temp1, rgb[0], rgb[1], rgb[2], temp1*(high-low));
  }
 static void drawGL(GtkWidget *da, gpointer data)
  {
@@ -95,7 +107,7 @@ static void drawGL(GtkWidget *da, gpointer data)
     int j=0;
     int k=0;
     double temp1=0.0;
-    float rgb[]={0.0, 0.0, 1.0};
+    float rgb[]={0.0, 0.0, 0.0};
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glPushMatrix();
