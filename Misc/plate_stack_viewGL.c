@@ -89,27 +89,52 @@ void get_data_points(int rows1, int columns1, int plates1)
  }
 static void heatmap_rgb(double temp1, double high, double low, float rgb[])
  {
+    //temp2 for check values.
+    double temp2=temp1;
     //Scale temp1 for rgb. Positive values.
-    temp1=temp1/((high-low));
-    //Reset rgb. >50% green to red. <50% green to blue.
+    temp1=temp2/((high-low));
+   
+    //Get colors for rgb.
+    //red to green.
     if(temp1>0.50)
       {
-        rgb[0]=0.0;
-        rgb[1]=1.0;
-        rgb[2]=0.0;
-        rgb[0]=rgb[0]+temp1;
-        rgb[1]=rgb[1]-temp1;
+        temp1=(temp1-0.50)*2.0;
+        if(temp1>0.50)
+          {
+            rgb[0]=1.0;
+            rgb[1]=0.0;
+            rgb[2]=0.0;
+            rgb[1]=rgb[1]+2*(1.0-temp1);
+          }
+        else
+          {
+            rgb[0]=1.0;
+            rgb[1]=1.0;
+            rgb[2]=0.0;
+            rgb[0]=rgb[0]-(1.0-temp1);
+          }
       }
+    //green to blue.
     else
       {
-       rgb[0]=0.0;
-       rgb[1]=1.0;
-       rgb[2]=0.0;
-       rgb[1]=rgb[1]-(1.0-temp1);
-       rgb[2]=rgb[2]+(1.0-temp1);
+        temp1=temp1*2.0;
+        if(temp1>0.50)
+          {
+            rgb[0]=0.0;
+            rgb[1]=1.0;
+            rgb[2]=0.0;
+            rgb[2]=rgb[2]+2*(1.0-temp1);
+          }
+        else
+         {
+            rgb[0]=0.0;
+            rgb[1]=1.0;
+            rgb[2]=1.0;
+            rgb[1]=rgb[1]-(1.0-temp1);
+         }
       }
-    
-    //printf("Scaled %f high %f low %f red %f green %f blue %f\n", temp1, high, low, rgb[0], rgb[1], rgb[2]);
+
+    //printf("Scaled %f high %f low %f red %f green %f blue %f\n", temp2, high, low, rgb[0], rgb[1], rgb[2]);
  }
 static void drawGL(GtkWidget *da, gpointer data)
  {
