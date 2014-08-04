@@ -44,6 +44,8 @@ static float scaleGL=2.5;
 static float rotation[]={1.0 , 0.0, 0.0};
 static bool rotate_drawing=true;
 static gsl_matrix *test_data_points= NULL;
+static double high=0;
+static double low=0;
 
 //Set some values to test.
 static int rows=8;
@@ -65,6 +67,7 @@ void get_data_points(int rows1, int columns1, int plates1)
    if(test_data_points==NULL) test_data_points=gsl_matrix_alloc(plates*rows, columns);
    //printf("rows %i columns %i\n", test_data_points->size1, test_data_points->size2);
 
+   //Load test data.
    for(i=0;i<plates;i++)
       {
         for(j=0;j<rows;j++)
@@ -72,34 +75,41 @@ void get_data_points(int rows1, int columns1, int plates1)
               for(k=0;k<columns;k++)
                  {
                    //printf("plate %i row %i column %i plate_counter %i counter %i matrix_row %i matrix_column %i\n", i, j, k, (columns*j)+k, (rows*columns*i)+(columns*j)+k, i*rows+j, k);
-                   gsl_matrix_set(test_data_points, i*rows+j, k, gsl_rng_uniform(r));
+                   gsl_matrix_set(test_data_points, i*rows+j, k, 10.0*gsl_rng_uniform(r));
                    //printf("%f ", gsl_matrix_get(test_data_points, i*rows+j, k));
                  }
              // printf("\n");
            }
       }
+   
+   //Get min and max.
+   low=gsl_matrix_min(test_data_points);
+   high=gsl_matrix_max(test_data_points);
+
  }
 static void heatmap_rgb(double temp1, double high, double low, float rgb[])
  {
-    //reset rgb. >50% green to red. <50% green to blue.
-    if(temp1>(high-low)/2.0)
+    //Scale temp1 for rgb. Positive values.
+    temp1=temp1/((high-low));
+    //Reset rgb. >50% green to red. <50% green to blue.
+    if(temp1>0.50)
       {
         rgb[0]=0.0;
         rgb[1]=1.0;
         rgb[2]=0.0;
-        rgb[0]=rgb[0]+(temp1*(high-low));
-        rgb[1]=rgb[1]-(temp1*(high-low));
+        rgb[0]=rgb[0]+temp1;
+        rgb[1]=rgb[1]-temp1;
       }
     else
       {
        rgb[0]=0.0;
        rgb[1]=1.0;
        rgb[2]=0.0;
-       rgb[1]=rgb[1]-((1.0-temp1)*(high-low));
-       rgb[2]=rgb[2]+((1.0-temp1)*(high-low));
+       rgb[1]=rgb[1]-(1.0-temp1);
+       rgb[2]=rgb[2]+(1.0-temp1);
       }
     
-    //printf("Value %f red %f green %f blue %f scale %f\n", temp1, rgb[0], rgb[1], rgb[2], temp1*(high-low));
+    //printf("Scaled %f high %f low %f red %f green %f blue %f\n", temp1, high, low, rgb[0], rgb[1], rgb[2]);
  }
 static void drawGL(GtkWidget *da, gpointer data)
  {
@@ -150,7 +160,7 @@ static void drawGL(GtkWidget *da, gpointer data)
               for(k=0;k<columns;k++)
                  {
                    temp1=gsl_matrix_get(test_data_points, i*rows+j, k);
-                   heatmap_rgb(temp1, 1.0, 0.0, rgb);
+                   heatmap_rgb(temp1, high, low, rgb);
                    glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
                    glVertex3f(j/3.0,k,i);
                  }
