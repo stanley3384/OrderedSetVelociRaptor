@@ -11,7 +11,7 @@ About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
 
 Compile with
-    gcc -Wall plate_stack_viewGL.c -o plate_stack_viewGL -lGL -lGLU -lX11 -lm -lm -lgsl -lgslcblas `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
+    gcc -Wall plate_stack_viewGL.c -o plate_stack_viewGL -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
@@ -22,12 +22,13 @@ C. Eric Cashon
 #include<GL/glu.h>
 #include<gtk/gtk.h>
 #include<gdk/gdkx.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include<gsl/gsl_matrix.h>
+#include<gsl/gsl_rng.h>
+#include<gsl/gsl_randist.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
+#include<sqlite3.h>
 
 static GtkWidget *window=NULL;
 static GtkWidget *da=NULL;
@@ -47,12 +48,18 @@ static gsl_matrix *test_data_points= NULL;
 static double high=0;
 static double low=0;
 
-//Set some values to test.
+//Set some values to test. 
 static int rows=8;
 static int columns=12;
 static int plates=7;
+/*
+No row, column or plate checking for data from database.
+Change to true only if you have a database setup. For testing.
+*/
+static bool db_connection=false;
 
-void get_data_points(int rows1, int columns1, int plates1)
+
+static void get_data_points(int rows1, int columns1, int plates1)
  {
    int i=0;
    int j=0;
@@ -74,7 +81,7 @@ void get_data_points(int rows1, int columns1, int plates1)
            {
               for(k=0;k<columns;k++)
                  {
-                   //printf("plate %i row %i column %i plate_counter %i counter %i matrix_row %i matrix_column %i\n", i, j, k, (columns*j)+k, (rows*columns*i)+(columns*j)+k, i*rows+j, k);
+                   //printf("plate %i row %i column %i plate_counter %i counter %i matrix_row %i matrix_column %i\n", i, j, k, (columns*j)+k, (rows*columns*i)+(columns*j)+k, i*rows+j, k);                  
                    gsl_matrix_set(test_data_points, i*rows+j, k, 10.0*gsl_rng_uniform(r));
                    //printf("%f ", gsl_matrix_get(test_data_points, i*rows+j, k));
                  }
@@ -87,12 +94,51 @@ void get_data_points(int rows1, int columns1, int plates1)
    high=gsl_matrix_max(test_data_points);
 
  }
+static void get_db_data(int rows1, int columns1, int plates1)
+ {
+   int i=0;
+   int j=0;
+   int k=0;
+   int counter=0;
+   sqlite3 *cnn;
+   sqlite3_stmt *stmt1;
+   char sql1[]="SELECT percent FROM data;";
+
+   //Global variable. Allocate once. Free on exit.
+   if(test_data_points==NULL) test_data_points=gsl_matrix_alloc(plates*rows, columns);
+
+   sqlite3_open("VelociRaptorData.db",&cnn);
+   sqlite3_prepare_v2(cnn,sql1,-1,&stmt1,0);
+
+   //Load data from database.
+   for(i=0;i<plates;i++)
+      {
+        for(j=0;j<rows;j++)
+           {
+              for(k=0;k<columns;k++)
+                 {                  
+                   sqlite3_step(stmt1);                  
+                   gsl_matrix_set(test_data_points, i*rows+j, k, sqlite3_column_double(stmt1, 0));
+                   counter++;
+                 }
+           }
+      }
+
+   sqlite3_finalize(stmt1);
+   sqlite3_close(cnn); 
+ 
+   //Get min and max.
+   low=gsl_matrix_min(test_data_points);
+   high=gsl_matrix_max(test_data_points);
+   printf("records %i high %f low %f\n", counter, high, low);
+
+ }
 static void heatmap_rgb(double temp1, double high, double low, float rgb[])
  {
-    //temp2 for check values.
+    //temp2 for checking values.
     double temp2=temp1;
-    //Scale temp1 for rgb. Positive values.
-    temp1=temp2/((high-low));
+    //Scale temp1 for rgb.
+    temp1=(temp2-low)/((high-low));
    
     //Get colors for rgb.
     //red to green.
@@ -176,8 +222,7 @@ static void drawGL(GtkWidget *da, gpointer data)
     glEnd();
 
     glPointSize(8.0);
-    glBegin(GL_POINTS);
-    
+    glBegin(GL_POINTS);    
     for(i=0; i<plates; i++)
        {
          for(j=0; j<rows; j++)
@@ -193,7 +238,7 @@ static void drawGL(GtkWidget *da, gpointer data)
        }
     glEnd();
 
-    glPopMatrix ();
+    glPopMatrix();
     glXSwapBuffers(X_display, X_window);
 
  }
@@ -332,7 +377,8 @@ int main(int argc, char **argv)
    gtk_widget_show_all(window);
 
    //Test some random points in plate format.
-   get_data_points(rows, columns, plates);
+   if(db_connection==true) get_db_data(rows, columns, plates);
+   else get_data_points(rows, columns, plates);
 
    timer_id=g_timeout_add(1000/10, rotate, da);
 
