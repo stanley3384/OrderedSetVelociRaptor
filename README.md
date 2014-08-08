@@ -38,7 +38,7 @@ wget https://github.com/b-k/Apophenia/archive/pkg.zip
 
 unzip pkg.zip
 
-cd Apophenia-pkg
+cd apophenia-pkg
 
 ./configure
 

@@ -39,7 +39,7 @@ if [ "$answer" = "y" ]; then
             echo "Unzip Apophenia"
             unzip pkg.zip
             echo "Move to apophenia package directory"
-            cd ./Apophenia-pkg
+            cd ./apophenia-pkg
             echo "Configure"
             ./configure
             echo "Make"
