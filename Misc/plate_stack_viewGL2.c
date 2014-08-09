@@ -13,7 +13,7 @@ About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
 
 Compile with
-    gcc -Wall -O2 plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
+    gcc -Wall -O2 `pkg-config --cflags gtk+-3.0` plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
