@@ -13,7 +13,7 @@ About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
 
 Compile with
-    gcc -Wall plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
+    gcc -Wall -O2 plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --cflags --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
@@ -56,6 +56,334 @@ static bool setting_rgb=true;
 static bool setting_above=false;
 static double setting_percent=0.10;
 
+static void data_db_dialog(GtkWidget *menu, gpointer p);
+static void data_test_dialog(GtkWidget *menu, gpointer p);
+static void setting_above_dialog(GtkWidget *menu, gpointer p);
+static void close_program(void);
+static void get_data_points(void);
+static void get_db_data(int iRadioButton);
+static void heatmap_rgb(double temp1, double high, double low, float rgb[]);
+static void heatmap_above(double temp1, double high, double low, float rgb[]);
+static void set_heatmap(GtkWidget *menu, gpointer data);
+static void drawGL(GtkWidget *da, gpointer data);
+static void configureGL(GtkWidget *da, gpointer data);
+static gboolean rotate(gpointer data);
+static void stop_rotation(GtkWidget *da, gpointer data);
+static void scale_drawing(GtkRange *range,  gpointer data);
+static void rotation_axis(GtkWidget *axis, gpointer data);
+
+
+int main(int argc, char **argv)
+ {
+   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above;
+   int x1=0;
+   int y1=1;
+   int z1=2;
+   int set_rgb=0;
+   int set_above=1;
+   gtk_init(&argc, &argv);
+
+   window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+   gtk_window_set_title(GTK_WINDOW(window), "Platemap Viewer 3d");
+   gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
+
+   data_menu=gtk_menu_new();
+   data_db=gtk_menu_item_new_with_label("Database");
+   data_test=gtk_menu_item_new_with_label("Test");
+   gtk_menu_shell_append(GTK_MENU_SHELL(data_menu), data_db);
+   gtk_menu_shell_append(GTK_MENU_SHELL(data_menu), data_test);
+   g_signal_connect(data_db, "activate", G_CALLBACK(data_db_dialog), NULL);
+   g_signal_connect(data_test, "activate", G_CALLBACK(data_test_dialog), NULL);
+
+   rotate_menu=gtk_menu_new();
+   rotate_x=gtk_menu_item_new_with_label("Rotate x-axis");
+   rotate_y=gtk_menu_item_new_with_label("Rotate y-axis");
+   rotate_z=gtk_menu_item_new_with_label("Rotate z-axis");
+   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_x);
+   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_y);
+   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_z);
+   g_signal_connect(rotate_x, "activate", G_CALLBACK(rotation_axis), &x1);
+   g_signal_connect(rotate_y, "activate", G_CALLBACK(rotation_axis), &y1);
+   g_signal_connect(rotate_z, "activate", G_CALLBACK(rotation_axis), &z1);
+
+   settings_menu=gtk_menu_new();
+   settings_rgb=gtk_menu_item_new_with_label("Heatmap RGB");
+   settings_above=gtk_menu_item_new_with_label("Heatmap Above");
+   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_rgb);
+   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_above);
+   g_signal_connect(settings_rgb, "activate", G_CALLBACK(set_heatmap), &set_rgb);
+   g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_dialog), &set_above);
+
+   menu_bar=gtk_menu_bar_new();
+   gtk_widget_show(menu_bar);
+   data_item=gtk_menu_item_new_with_label("Data");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(data_item), data_menu);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), data_item);
+   rotate_item=gtk_menu_item_new_with_label("Rotate");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(rotate_item), rotate_menu);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), rotate_item);
+   settings_item=gtk_menu_item_new_with_label("Settings");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_item), settings_menu);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), settings_item);
+
+   GtkWidget *label1=gtk_label_new("Microtiter Platemap Stack");
+   gtk_widget_set_hexpand(label1, TRUE);
+
+   GtkWidget *scale1=gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,1,20,1);
+   gtk_widget_set_hexpand(scale1, TRUE);
+   gtk_range_set_increments(GTK_RANGE(scale1),1,1);
+   g_signal_connect(GTK_RANGE(scale1), "value_changed", G_CALLBACK(scale_drawing), NULL);
+
+   da=gtk_drawing_area_new();
+   gtk_widget_set_double_buffered(da, FALSE);
+   gtk_widget_set_hexpand(da, TRUE);
+   gtk_widget_set_vexpand(da, TRUE);
+   gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK);
+   g_signal_connect(da, "button-press-event", G_CALLBACK(stop_rotation), NULL);
+
+   GtkWidget *grid1=gtk_grid_new();
+   gtk_container_add(GTK_CONTAINER(window), grid1);
+
+   gtk_grid_attach(GTK_GRID(grid1), menu_bar, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da, 0, 3, 1, 1);
+  
+   g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
+
+   gtk_widget_show(window);
+
+   g_signal_connect(da, "configure-event", G_CALLBACK(configureGL), NULL);
+   g_signal_connect(da, "draw", G_CALLBACK(drawGL), NULL);
+
+   gtk_widget_show_all(window);
+
+   //Start with some random data points.
+   rows=8;
+   columns=12;
+   plates=7;
+   get_data_points();
+
+   timer_id=g_timeout_add(1000/10, rotate, da);
+
+   gtk_main();
+   return 0;
+  }
+static void data_db_dialog(GtkWidget *menu, gpointer p)
+  {
+     GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *radio1, *radio2, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("VelociRaptor Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
+
+     radio1=gtk_radio_button_new_with_label(NULL, "Data");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Percent");
+     
+     label1=gtk_label_new("Database Column"); 
+     label2=gtk_label_new("      Plates");
+     label3=gtk_label_new("      Rows");
+     label4=gtk_label_new("      Columns"); 
+       
+     entry1=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "7");
+  
+     entry2=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 3);
+     gtk_entry_set_text(GTK_ENTRY(entry2), "8");
+
+     entry3=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 3);
+     gtk_entry_set_text(GTK_ENTRY(entry3), "12");    
+     
+     grid1=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid1), radio1, 0, 1, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid1), radio2, 0, 2, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid1), entry1, 2, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), entry2, 2, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), entry3, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label3, 0, 4, 1, 1); 
+     gtk_grid_attach(GTK_GRID(grid1), label4, 0, 5, 1, 1);         
+ 
+     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
+     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+        int iRadioButton=0;
+        int check1=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        int check2=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        int check3=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
+
+        if(check1<1||check2<1||check3<1)
+          {
+             printf("Rows, columns and plates need to be 1 or greater.\n");
+          }
+        else
+          {
+            //The globals
+            plates=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+            rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+            columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
+
+            if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
+              {
+                iRadioButton=1;
+                get_db_data(iRadioButton);
+              }
+            if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
+              {
+                iRadioButton=2;
+                get_db_data(iRadioButton);
+              }
+
+          }
+       }
+
+     gtk_widget_destroy(dialog);
+  
+  }
+static void data_test_dialog(GtkWidget *menu, gpointer p)
+  {
+     GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
+     
+     label1=gtk_label_new("Uniform Random");
+     label2=gtk_label_new("      Plates");  
+     label3=gtk_label_new("      Rows");
+     label4=gtk_label_new("      Columns"); 
+         
+     entry1=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "7");
+
+     entry2=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 3);
+     gtk_entry_set_text(GTK_ENTRY(entry2), "8"); 
+
+     entry3=gtk_entry_new();
+     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 3);
+     gtk_entry_set_text(GTK_ENTRY(entry3), "12");   
+     
+     grid1=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid1), entry1, 2, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), entry2, 2, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), entry3, 2, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label3, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label4, 0, 3, 1, 1);          
+ 
+     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
+     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+        int check1=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        int check2=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        int check3=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
+
+        if(check1<1||check2<1||check3<1)
+          {
+             printf("Rows, columns and plates need to be 1 or greater.\n");
+          }
+        else
+          {
+             //Set the globals.
+             plates=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+             rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+             columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
+
+             printf("Plates %i Rows %i Columns %i\n", plates, rows, columns);
+             get_data_points();
+          }
+
+       }
+     gtk_widget_destroy(dialog);
+  
+  }
+static void setting_above_dialog(GtkWidget *menu, gpointer p)
+  {
+     GtkWidget *dialog, *grid1, *combo1, *label1, *label2, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
+     
+     label1=gtk_label_new("Set Percent Above");
+     label2=gtk_label_new("      Percent");  
+         
+     combo1=gtk_combo_box_text_new();     
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "0", "1");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "1", "5");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "2", "10");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "3", "20");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "4", "30");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 2);
+     
+     grid1=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid1), combo1, 2, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 1, 1, 1);        
+ 
+     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
+     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+        setting_percent=(100.0-atof(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1))))/100.0;
+        int set=1;
+        set_heatmap(dialog, &set);
+       }
+
+     gtk_widget_destroy(dialog);
+  
+  }
+static void close_program()
+ {
+   //timer can trigger warnings when closing program.
+   g_source_remove(timer_id);
+   //free matrix on exit.
+   gsl_matrix_free(test_data_points);
+   printf("Quit Program\n");
+   gtk_main_quit();
+ }
 static void get_data_points()
  {
    int i=0;
@@ -421,315 +749,5 @@ static void rotation_axis(GtkWidget *axis, gpointer data)
        rotation[2]=1.0;
      }
  }
-static void close_program()
- {
-   //timer can trigger warnings when closing program.
-   g_source_remove(timer_id);
-   //free matrix on exit.
-   gsl_matrix_free(test_data_points);
-   printf("Quit Program\n");
-   gtk_main_quit();
- }
-static void data_db_dialog(GtkWidget *menu, gpointer p)
-  {
-     GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *radio1, *radio2, *content_area, *action_area;
-    int result;
 
-     dialog=gtk_dialog_new_with_buttons("VelociRaptor Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
-     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
-     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
-
-     radio1=gtk_radio_button_new_with_label(NULL, "Data");
-     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Percent");
-     
-     label1=gtk_label_new("Database Column"); 
-     label2=gtk_label_new("      Plates");
-     label3=gtk_label_new("      Rows");
-     label4=gtk_label_new("      Columns"); 
-       
-     entry1=gtk_entry_new();
-     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
-     gtk_entry_set_text(GTK_ENTRY(entry1), "7");
-  
-     entry2=gtk_entry_new();
-     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 3);
-     gtk_entry_set_text(GTK_ENTRY(entry2), "8");
-
-     entry3=gtk_entry_new();
-     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 3);
-     gtk_entry_set_text(GTK_ENTRY(entry3), "12");    
-     
-     grid1=gtk_grid_new();
-     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
-     gtk_grid_attach(GTK_GRID(grid1), radio1, 0, 1, 3, 1);
-     gtk_grid_attach(GTK_GRID(grid1), radio2, 0, 2, 3, 1);
-     gtk_grid_attach(GTK_GRID(grid1), entry1, 2, 3, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), entry2, 2, 4, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), entry3, 2, 5, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 3, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), label3, 0, 4, 1, 1); 
-     gtk_grid_attach(GTK_GRID(grid1), label4, 0, 5, 1, 1);         
- 
-     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
-     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
-
-     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
-     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
-     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
-
-     gtk_widget_show_all(dialog);
-     result=gtk_dialog_run(GTK_DIALOG(dialog));
-
-     if(result==GTK_RESPONSE_OK)
-       {
-        int iRadioButton=0;
-        int check1=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int check2=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int check3=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
-
-        if(check1<1||check2<1||check3<1)
-          {
-             printf("Rows, columns and plates need to be 1 or greater.\n");
-          }
-        else
-          {
-            //The globals
-            plates=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-            rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-            columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
-
-            if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
-              {
-                iRadioButton=1;
-                get_db_data(iRadioButton);
-              }
-            if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
-              {
-                iRadioButton=2;
-                get_db_data(iRadioButton);
-              }
-
-          }
-       }
-
-     gtk_widget_destroy(dialog);
-  
-  }
-static void data_test_dialog(GtkWidget *menu, gpointer p)
-  {
-     GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *content_area, *action_area;
-    int result;
-
-     dialog=gtk_dialog_new_with_buttons("Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
-     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
-     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
-     
-     label1=gtk_label_new("Uniform Random");
-     label2=gtk_label_new("      Plates");  
-     label3=gtk_label_new("      Rows");
-     label4=gtk_label_new("      Columns"); 
-         
-     entry1=gtk_entry_new();
-     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
-     gtk_entry_set_text(GTK_ENTRY(entry1), "7");
-
-     entry2=gtk_entry_new();
-     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 3);
-     gtk_entry_set_text(GTK_ENTRY(entry2), "8"); 
-
-     entry3=gtk_entry_new();
-     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 3);
-     gtk_entry_set_text(GTK_ENTRY(entry3), "12");   
-     
-     grid1=gtk_grid_new();
-     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
-     gtk_grid_attach(GTK_GRID(grid1), entry1, 2, 1, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), entry2, 2, 2, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), entry3, 2, 3, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 1, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), label3, 0, 2, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), label4, 0, 3, 1, 1);          
- 
-     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
-     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
-
-     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
-     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
-     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
-
-     gtk_widget_show_all(dialog);
-     result=gtk_dialog_run(GTK_DIALOG(dialog));
-
-     if(result==GTK_RESPONSE_OK)
-       {
-        int check1=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int check2=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int check3=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
-
-        if(check1<1||check2<1||check3<1)
-          {
-             printf("Rows, columns and plates need to be 1 or greater.\n");
-          }
-        else
-          {
-             //Set the globals.
-             plates=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-             rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-             columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
-
-             printf("Plates %i Rows %i Columns %i\n", plates, rows, columns);
-             get_data_points(rows, columns, plates);
-          }
-
-       }
-     gtk_widget_destroy(dialog);
-  
-  }
-static void setting_above_dialog(GtkWidget *menu, gpointer p)
-  {
-     GtkWidget *dialog, *grid1, *combo1, *label1, *label2, *content_area, *action_area;
-    int result;
-
-     dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
-     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
-     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
-     
-     label1=gtk_label_new("Set Percent Above");
-     label2=gtk_label_new("      Percent");  
-         
-     combo1=gtk_combo_box_text_new();     
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "0", "1");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "1", "5");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "2", "10");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "3", "20");
-     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "4", "30");
-     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 2);
-     
-     grid1=gtk_grid_new();
-     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
-     gtk_grid_attach(GTK_GRID(grid1), combo1, 2, 1, 1, 1);
-     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 1, 1, 1);        
- 
-     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
-     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
-
-     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
-     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
-     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
-
-     gtk_widget_show_all(dialog);
-     result=gtk_dialog_run(GTK_DIALOG(dialog));
-
-     if(result==GTK_RESPONSE_OK)
-       {
-        setting_percent=(100.0-atof(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1))))/100.0;
-        int set=1;
-        set_heatmap(dialog, &set);
-       }
-
-     gtk_widget_destroy(dialog);
-  
-  }
-int main(int argc, char **argv)
- {
-   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above;
-   int x1=0;
-   int y1=1;
-   int z1=2;
-   int set_rgb=0;
-   int set_above=1;
-   gtk_init(&argc, &argv);
-
-   window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(window), "Platemap Viewer 3d");
-   gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
-
-   data_menu=gtk_menu_new();
-   data_db=gtk_menu_item_new_with_label("Database");
-   data_test=gtk_menu_item_new_with_label("Test");
-   gtk_menu_shell_append(GTK_MENU_SHELL(data_menu), data_db);
-   gtk_menu_shell_append(GTK_MENU_SHELL(data_menu), data_test);
-   g_signal_connect(data_db, "activate", G_CALLBACK(data_db_dialog), NULL);
-   g_signal_connect(data_test, "activate", G_CALLBACK(data_test_dialog), NULL);
-
-   rotate_menu=gtk_menu_new();
-   rotate_x=gtk_menu_item_new_with_label("Rotate x-axis");
-   rotate_y=gtk_menu_item_new_with_label("Rotate y-axis");
-   rotate_z=gtk_menu_item_new_with_label("Rotate z-axis");
-   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_x);
-   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_y);
-   gtk_menu_shell_append(GTK_MENU_SHELL(rotate_menu), rotate_z);
-   g_signal_connect(rotate_x, "activate", G_CALLBACK(rotation_axis), &x1);
-   g_signal_connect(rotate_y, "activate", G_CALLBACK(rotation_axis), &y1);
-   g_signal_connect(rotate_z, "activate", G_CALLBACK(rotation_axis), &z1);
-
-   settings_menu=gtk_menu_new();
-   settings_rgb=gtk_menu_item_new_with_label("Heatmap RGB");
-   settings_above=gtk_menu_item_new_with_label("Heatmap Above");
-   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_rgb);
-   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_above);
-   g_signal_connect(settings_rgb, "activate", G_CALLBACK(set_heatmap), &set_rgb);
-   g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_dialog), &set_above);
-
-   menu_bar=gtk_menu_bar_new();
-   gtk_widget_show(menu_bar);
-   data_item=gtk_menu_item_new_with_label("Data");
-   gtk_menu_item_set_submenu(GTK_MENU_ITEM(data_item), data_menu);
-   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), data_item);
-   rotate_item=gtk_menu_item_new_with_label("Rotate");
-   gtk_menu_item_set_submenu(GTK_MENU_ITEM(rotate_item), rotate_menu);
-   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), rotate_item);
-   settings_item=gtk_menu_item_new_with_label("Settings");
-   gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_item), settings_menu);
-   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), settings_item);
-
-   GtkWidget *label1=gtk_label_new("Microtiter Platemap Stack");
-   gtk_widget_set_hexpand(label1, TRUE);
-
-   GtkWidget *scale1=gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,1,20,1);
-   gtk_widget_set_hexpand(scale1, TRUE);
-   gtk_range_set_increments(GTK_RANGE(scale1),1,1);
-   g_signal_connect(GTK_RANGE(scale1), "value_changed", G_CALLBACK(scale_drawing), NULL);
-
-   da=gtk_drawing_area_new();
-   gtk_widget_set_double_buffered(da, FALSE);
-   gtk_widget_set_hexpand(da, TRUE);
-   gtk_widget_set_vexpand(da, TRUE);
-   gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK);
-   g_signal_connect(da, "button-press-event", G_CALLBACK(stop_rotation), NULL);
-
-   GtkWidget *grid1=gtk_grid_new();
-   gtk_container_add(GTK_CONTAINER(window), grid1);
-
-   gtk_grid_attach(GTK_GRID(grid1), menu_bar, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), da, 0, 3, 1, 1);
-  
-   g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
-
-   gtk_widget_show(window);
-
-   g_signal_connect(da, "configure-event", G_CALLBACK(configureGL), NULL);
-   g_signal_connect(da, "draw", G_CALLBACK(drawGL), NULL);
-
-   gtk_widget_show_all(window);
-
-   //Start with some random data points.
-   rows=8;
-   columns=12;
-   plates=7;
-   get_data_points();
-
-   timer_id=g_timeout_add(1000/10, rotate, da);
-
-   gtk_main();
-   return 0;
-}
 
