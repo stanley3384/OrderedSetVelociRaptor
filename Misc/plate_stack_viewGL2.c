@@ -2,7 +2,8 @@
 /*
 
      Test Code. A 3d stacked heatmapped microtiter platemap. Version 2. Add menu and dialogs
-to get uniform random data and database data dynamically.
+to get uniform random data and database data dynamically. Provide a couple of heatmap settings
+also.
 
 Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK, it works.
     vblank_mode=0 glxgears
@@ -51,6 +52,9 @@ static double low=0;
 static int rows=0;
 static int columns=0;
 static int plates=0;
+static bool setting_rgb=true;
+static bool setting_above=false;
+static double setting_percent=0.10;
 
 static void get_data_points()
  {
@@ -262,6 +266,35 @@ static void heatmap_rgb(double temp1, double high, double low, float rgb[])
 
     //printf("Scaled %f high %f low %f red %f green %f blue %f\n", temp2, high, low, rgb[0], rgb[1], rgb[2]);
  }
+static void heatmap_above(double temp1, double high, double low, float rgb[])
+ {
+    temp1=(temp1-low)/((high-low));
+    if(temp1>setting_percent)
+      {
+        rgb[0]=1.0;
+        rgb[1]=0.0;
+        rgb[2]=0.0;
+      }
+    else
+      {
+        rgb[0]=0.0;
+        rgb[1]=0.0;
+        rgb[2]=1.0;
+      }    
+ }
+static void set_heatmap(GtkWidget *menu, gpointer data)
+ {
+    if(*(int*)data==0) 
+     {
+       setting_rgb=true;
+       setting_above=false;
+     }
+    else
+     {
+       setting_rgb=false;
+       setting_above=true;
+     }
+ }
 static void drawGL(GtkWidget *da, gpointer data)
  {
     int i=0;
@@ -310,7 +343,8 @@ static void drawGL(GtkWidget *da, gpointer data)
               for(k=0;k<columns;k++)
                  {
                    temp1=gsl_matrix_get(test_data_points, i*rows+j, k);
-                   heatmap_rgb(temp1, high, low, rgb);
+                   if(setting_rgb==true) heatmap_rgb(temp1, high, low, rgb);
+                   if(setting_above==true) heatmap_above(temp1, high, low, rgb);
                    glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
                    glVertex3f(j/3.0,k,i);
                  }
@@ -400,8 +434,6 @@ static void data_db_dialog(GtkWidget *menu, gpointer p)
   {
      GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *radio1, *radio2, *content_area, *action_area;
     int result;
-    
-    g_print("Get VelociRaptor Data\n");
 
      dialog=gtk_dialog_new_with_buttons("VelociRaptor Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -489,8 +521,6 @@ static void data_test_dialog(GtkWidget *menu, gpointer p)
   {
      GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *content_area, *action_area;
     int result;
-    
-    g_print("Get Test Data\n");
 
      dialog=gtk_dialog_new_with_buttons("Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -559,12 +589,61 @@ static void data_test_dialog(GtkWidget *menu, gpointer p)
      gtk_widget_destroy(dialog);
   
   }
+static void setting_above_dialog(GtkWidget *menu, gpointer p)
+  {
+     GtkWidget *dialog, *grid1, *combo1, *label1, *label2, *content_area, *action_area;
+    int result;
+
+     dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+     gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
+     
+     label1=gtk_label_new("Set Percent Above");
+     label2=gtk_label_new("      Percent");  
+         
+     combo1=gtk_combo_box_text_new();     
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "0", "1");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "1", "5");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "2", "10");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "3", "20");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "4", "30");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 2);
+     
+     grid1=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid1), combo1, 2, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 1, 1, 1);        
+ 
+     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid1), 30);
+
+     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+     gtk_container_set_border_width(GTK_CONTAINER(content_area), 10);
+     gtk_container_add(GTK_CONTAINER(content_area), grid1); 
+     gtk_container_set_border_width(GTK_CONTAINER(action_area), 10);
+
+     gtk_widget_show_all(dialog);
+     result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+     if(result==GTK_RESPONSE_OK)
+       {
+        setting_percent=(100.0-atof(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1))))/100.0;
+        int set=1;
+        set_heatmap(dialog, &set);
+       }
+
+     gtk_widget_destroy(dialog);
+  
+  }
 int main(int argc, char **argv)
  {
-   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item;
+   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above;
    int x1=0;
    int y1=1;
    int z1=2;
+   int set_rgb=0;
+   int set_above=1;
    gtk_init(&argc, &argv);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -590,6 +669,14 @@ int main(int argc, char **argv)
    g_signal_connect(rotate_y, "activate", G_CALLBACK(rotation_axis), &y1);
    g_signal_connect(rotate_z, "activate", G_CALLBACK(rotation_axis), &z1);
 
+   settings_menu=gtk_menu_new();
+   settings_rgb=gtk_menu_item_new_with_label("Heatmap RGB");
+   settings_above=gtk_menu_item_new_with_label("Heatmap Above");
+   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_rgb);
+   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_above);
+   g_signal_connect(settings_rgb, "activate", G_CALLBACK(set_heatmap), &set_rgb);
+   g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_dialog), &set_above);
+
    menu_bar=gtk_menu_bar_new();
    gtk_widget_show(menu_bar);
    data_item=gtk_menu_item_new_with_label("Data");
@@ -598,6 +685,9 @@ int main(int argc, char **argv)
    rotate_item=gtk_menu_item_new_with_label("Rotate");
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(rotate_item), rotate_menu);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), rotate_item);
+   settings_item=gtk_menu_item_new_with_label("Settings");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_item), settings_menu);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), settings_item);
 
    GtkWidget *label1=gtk_label_new("Microtiter Platemap Stack");
    gtk_widget_set_hexpand(label1, TRUE);
