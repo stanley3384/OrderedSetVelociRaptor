@@ -14,7 +14,7 @@ Heatmap and Table HTML's
 
 ![Screenshot4](/Heatmap3.jpg)
 
---There are various graphical items in the Misc folder in both 2d and 3d. Take a look at the OpenGL graphing programs with eigen vectors and values. They provide an interesting view of data.
+--There are various graphical items in the Misc folder in both 2d and 3d. Take a look at the OpenGL graphing programs with eigen vectors and values. Or the plate_stack_viewGL2 program for a 3d stacked heatmapped view of microtiter plate data.
 
 Magic Square
 ![Screenshot4](/wave1.jpg)
