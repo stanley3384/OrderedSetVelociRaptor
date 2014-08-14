@@ -30,9 +30,9 @@ int main (int argc, char *argv[])
     GtkWidget *RaptorDrawing = gtk_drawing_area_new();
     gtk_widget_set_size_request (RaptorDrawing, 800, 400);
     gtk_widget_set_events(RaptorDrawing, GDK_BUTTON_PRESS_MASK);
-    g_signal_connect(G_OBJECT(RaptorDrawing), "button_press_event", G_CALLBACK(click_drawing), NULL); 
-    g_signal_connect(G_OBJECT(RaptorDrawing), "draw", G_CALLBACK(start_drawing), NULL); 
-    g_signal_connect(G_OBJECT(RaptorDrawing), "realize", G_CALLBACK(realize_drawing), NULL); 
+    g_signal_connect(RaptorDrawing, "button_press_event", G_CALLBACK(click_drawing), NULL); 
+    g_signal_connect(RaptorDrawing, "draw", G_CALLBACK(start_drawing), NULL); 
+    g_signal_connect(RaptorDrawing, "realize", G_CALLBACK(realize_drawing), NULL); 
 
     gtk_container_add(GTK_CONTAINER(window), RaptorDrawing); 
 

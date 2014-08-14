@@ -34,9 +34,9 @@ int main (int argc, char *argv[])
     GtkWidget *SquareDrawing = gtk_drawing_area_new();
     gtk_widget_set_size_request(SquareDrawing, 950, 350);
     gtk_widget_set_events(SquareDrawing, GDK_BUTTON_PRESS_MASK);
-    g_signal_connect(G_OBJECT(SquareDrawing), "button_press_event", G_CALLBACK(click_drawing), NULL); 
-    g_signal_connect(G_OBJECT(SquareDrawing), "draw", G_CALLBACK(start_drawing), NULL); 
-    g_signal_connect(G_OBJECT(SquareDrawing), "realize", G_CALLBACK(realize_drawing), NULL); 
+    g_signal_connect(SquareDrawing, "button_press_event", G_CALLBACK(click_drawing), NULL); 
+    g_signal_connect(SquareDrawing, "draw", G_CALLBACK(start_drawing), NULL); 
+    g_signal_connect(SquareDrawing, "realize", G_CALLBACK(realize_drawing), NULL); 
 
     gtk_container_add(GTK_CONTAINER(window), SquareDrawing); 
 
