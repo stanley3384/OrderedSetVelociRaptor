@@ -117,8 +117,8 @@ static void build_aux_table_dialog(GtkWidget*, GtkWidget*);
 static void build_combo_table_dialog(GtkWidget*, GtkWidget*);
 static void build_permutation_table_dialog(GtkWidget*, GtkWidget*);
 static void about_dialog(GtkWidget*, GtkWidget*);
-static void draw_veloci_raptor(GtkWidget*, gpointer);
-static void draw_veloci_raptor_feet(GtkWidget*, gpointer);
+static gboolean draw_veloci_raptor(GtkWidget*, cairo_t *cr, gpointer);
+static gboolean draw_veloci_raptor_feet(GtkWidget*, cairo_t *cr, gpointer);
 
 int main(int argc, char *argv[])
     {
@@ -2114,32 +2114,27 @@ static void about_dialog(GtkWidget *menu, GtkWidget *window)
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), authors);
     gtk_widget_set_size_request(dialog, 400,370);
 
-    content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    gtk_widget_set_size_request(content_area, 250,300);
-    RaptorDrawing = gtk_drawing_area_new();
-    gtk_widget_set_size_request(RaptorDrawing, 400,220);
-    gtk_container_add (GTK_CONTAINER(content_area), RaptorDrawing);   
+    content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_widget_set_size_request(content_area, 400,300);
+    //gtk_container_set_border_width(GTK_CONTAINER(content_area), 100);
+    RaptorDrawing=gtk_drawing_area_new();
+    gtk_widget_set_size_request(RaptorDrawing, 300,250);
+    gtk_container_add(GTK_CONTAINER(content_area), RaptorDrawing);   
     g_signal_connect(G_OBJECT(RaptorDrawing), "draw", G_CALLBACK(draw_veloci_raptor), NULL); 
 
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
   }
-void draw_veloci_raptor(GtkWidget *widget, gpointer data)
+static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
-    cairo_t *cr;
-    cairo_t *cr2;
-    cairo_t *cr3;
-    cairo_t *cr4;
-    cairo_t *raptor;
-    cairo_pattern_t *pat3;
-    gint i;
-    gint j;
-    gint width;
-    gint height;
-    double ScaleWidth;
-    double ScaleHeight;
-    GdkWindow *DefaultWindow=NULL;
+    cairo_pattern_t *pattern=NULL;
+    int i=0;
+    int move=330;
+    int height=220;
+    int width=250;
+    double ScaleWidth=0;
+    double ScaleHeight=0;
     int points[21][2] = { 
       { 40, 85 }, 
       { 105, 75 }, 
@@ -2164,139 +2159,117 @@ void draw_veloci_raptor(GtkWidget *widget, gpointer data)
       { 90, 125 },
       { 40, 85 } 
   };
-    g_print("Draw Raptor\n");
-
-    DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
-    //if(GDK_WINDOW(DefaultWindow)!=NULL)
-       //g_print("Got GDK Window\n");
-
-    cr = gdk_cairo_create(DefaultWindow);
-    cr2 = gdk_cairo_create(DefaultWindow);
-    cr3 = gdk_cairo_create(DefaultWindow);
-    cr4 = gdk_cairo_create(DefaultWindow);
-    raptor = gdk_cairo_create(DefaultWindow);
-
-    width=gdk_window_get_width(DefaultWindow);
-    height=gdk_window_get_height(DefaultWindow); 
-    //g_print("Width=%i\n",width);
-    //g_print("Height=%i\n",height);
-
+    g_print("Draw Dino\n");
+    
     //Scaled from a 1024x576 screen. Original graphic.
     ScaleWidth=width/1024.0;
     ScaleHeight=height/576.0;
 
+    //Clear the surface.
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 0.0, 0.1, 0.8, 1.0);
+    cairo_paint(cr);
+    cairo_restore(cr);
+    
+    cairo_save(cr);
     //Draw raptor points and fill in green.
-    cairo_scale(raptor, ScaleWidth, ScaleHeight);
-
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
     //Draw point to point.
-    for(j = 0; j < 20; j++)
+    for(i=0; i<20; i++)
        {
-         cairo_line_to(raptor, points[j][0], points[j][1]);
+         cairo_line_to(cr, points[i][0]+move, points[i][1]);
        }
-
     //Draw curve at nose.
-    cairo_move_to (raptor, 860, 310);
-    cairo_curve_to(raptor, 900, 380, 900, 380, 860, 420);
+    cairo_move_to(cr, 860+move, 310);
+    cairo_curve_to(cr, 900+move, 380, 900+move, 380, 860+move, 420);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0, 1, 0);
+    cairo_fill(cr);
+    cairo_stroke(cr);
+    cairo_restore(cr);
 
-    cairo_close_path(raptor);
-    cairo_set_source_rgb(raptor, 0, 1, 0);
-    cairo_fill(raptor);
-
-    //Set up black ellipses.
+    //Set up rotated black ellipses.
+    cairo_save(cr);
     cairo_scale(cr, ScaleWidth, ScaleHeight);
     cairo_set_source_rgba(cr, 0, 0, 0, 1);
-    cairo_set_line_width(cr, 5.0);
+    cairo_set_line_width(cr, 7.0);
     cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
-    cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
-    cairo_save(cr);
-  
-    //Set up red ellipses.
-    cairo_scale(cr2, ScaleWidth, ScaleHeight);
-    cairo_set_source_rgba(cr2, 1, 0, 0, 1);
-    cairo_set_line_width(cr2, 2.0);
-    cairo_translate(cr2, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
-    cairo_arc(cr2, 0, 0, 60, 0, 2 * G_PI);
-    cairo_save(cr2);
-
-    //Set up center ellipse of the eye.
-    cairo_scale(cr3, ScaleWidth, ScaleHeight);
-    cairo_set_source_rgb(cr3, 0, 0, 0);
-    cairo_set_line_width(cr3, 3);
-    cairo_translate(cr3, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
-    cairo_save(cr3);
-  
-    //Set up round center of the eye.
-    cairo_scale(cr4, ScaleWidth, ScaleHeight);
-    cairo_set_source_rgb(cr4, 0, 0, 0);
-    cairo_set_line_width(cr4, 3);
-    cairo_translate(cr4, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
-    cairo_save(cr4);
-
-    //Rotated ellipses for the eye.
-    for ( i = 0; i < 36; i++)
+    cairo_translate(cr, move, 0);
+    for( i=0; i<36; i+=2)
       {
-         if(i==0||i%2==0)
-           {
-            cairo_rotate(cr, i*G_PI/36);
-            cairo_scale(cr, 0.3, 1);
-            cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
-            cairo_restore(cr);
-            cairo_stroke(cr);
-            cairo_save(cr);
-           }
-         else
-           {
-            cairo_rotate(cr2, i * G_PI/36);
-            cairo_scale(cr2, 0.3, 1);
-            cairo_arc(cr2, 0, 0, 60, 0, 2 * G_PI);
-            cairo_restore(cr2);
-            cairo_stroke(cr2);
-            cairo_save(cr2);
-           }
-       }
+        cairo_save(cr);
+        cairo_rotate(cr, i*G_PI/36);
+        cairo_scale(cr, 0.3, 1);
+        cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+      }
+    cairo_restore(cr);
+
+    //Set up rotated purple ellipses.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgba(cr, 1, 0, 1.0, 1);
+    cairo_set_line_width(cr, 3.0);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    for(i=1; i<36; i+=2)
+      {
+        cairo_save(cr);
+        cairo_rotate(cr, i*G_PI/36);
+        cairo_scale(cr, 0.3, 1);
+        cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+      }
+    cairo_restore(cr);
 
     //Pattern for the center eye ellipse.
-    pat3 = cairo_pattern_create_linear(-120.0, 30.0, 120.0, 30.0);
-    cairo_pattern_add_color_stop_rgb(pat3, 0.1, 0, 0, 0);
-    cairo_pattern_add_color_stop_rgb(pat3, 0.5, 0, 0.5, 1);
-    cairo_pattern_add_color_stop_rgb(pat3, 0.9, 0, 0, 0);
+    pattern = cairo_pattern_create_linear(-120.0, 30.0, 120.0, 30.0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.1, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.5, 0, 0.5, 1);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.9, 0, 0, 0);
 
     //Draw center elipse of eye.
-    cairo_rotate(cr3, 18 * G_PI/36);
-    cairo_scale(cr3, 0.3, 1);
-    cairo_arc(cr3, 0, 0, 60, 0, 2 * G_PI);
-    cairo_close_path(cr3);
-    cairo_set_source(cr3, pat3);
-    cairo_fill(cr3);
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 3);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    cairo_rotate(cr, 18 * G_PI/36);
+    cairo_scale(cr, 0.3, 1);
+    cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+    cairo_close_path(cr);
+    cairo_set_source(cr, pattern);
+    cairo_fill(cr);
+    cairo_restore(cr);
 
     //Draw center circle for the eye.
-    cairo_rotate(cr4, 18*G_PI/36);
-    cairo_scale(cr4, 0.3, 1);
-    cairo_arc(cr4, 0, 0, 15, 0, 2 * G_PI);
-    cairo_close_path(cr4);
-    cairo_fill(cr4);
-  
-    cairo_destroy(cr);
-    cairo_destroy(cr2);
-    cairo_destroy(cr3);
-    cairo_destroy(cr4);
-    cairo_destroy(raptor);
-    cairo_pattern_destroy(pat3);
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 3);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    cairo_rotate(cr, 18*G_PI/36);
+    cairo_scale(cr, 0.3, 1);
+    cairo_arc(cr, 0, 0, 15, 0, 2 * G_PI);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+    cairo_restore(cr);
 
+    cairo_pattern_destroy(pattern);
+    return TRUE;
   }
-static void draw_veloci_raptor_feet(GtkWidget *widget, gpointer data)
+static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer data)
  {   
   int i=0;
   int j=0;
   int width=0;
   int ScaleWidthCount=0;
   int FootCount=0;
-  cairo_t *cr=NULL;
-  GdkWindow *DefaultWindow=NULL;
-
-  DefaultWindow=gtk_widget_get_window(GTK_WIDGET(widget));
-
-  width=gdk_window_get_width(DefaultWindow);
+  
   ScaleWidthCount=width-1024;
 
   if(ScaleWidthCount<=0)
@@ -2307,8 +2280,6 @@ static void draw_veloci_raptor_feet(GtkWidget *widget, gpointer data)
     {
       FootCount=22+ScaleWidthCount%50;
     } 
-
-  cr=gdk_cairo_create(DefaultWindow);
 
   int points[9][2] = { 
     { -70, -200 }, 
@@ -2361,10 +2332,8 @@ static void draw_veloci_raptor_feet(GtkWidget *widget, gpointer data)
          cairo_fill(cr);
          cairo_translate(cr, 0, -340); 
      }
-   if(cr!=NULL)
-     {
-       cairo_destroy(cr);
-     } 
+
+   return TRUE;
   }
 static void get_text_file(GtkWidget *menu, GtkWidget *window)
   {
