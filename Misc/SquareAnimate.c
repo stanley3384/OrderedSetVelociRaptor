@@ -14,13 +14,16 @@ C. Eric Cashon
 #include <gtk/gtk.h>
 #include <math.h>
 
-int move=1001;
+#define move_ulimit 1000
+int move=0;
+gboolean moving=FALSE;
+gint timer_id=0;
 
 static void close_window(GtkWidget *widget, gpointer data);
-static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
+static gboolean start_drawing(gpointer widget);
 static void click_drawing(GtkWidget *widget, gpointer data);
 static void realize_drawing(GtkWidget *widget, gpointer data);
-static gboolean draw_square(GtkWidget *widget, cairo_t *cr, int move);
+static gboolean draw_square(GtkWidget *widget, cairo_t *cr, gpointer data);
 
 int main (int argc, char *argv[])
  {
@@ -35,7 +38,7 @@ int main (int argc, char *argv[])
     gtk_widget_set_size_request(SquareDrawing, 950, 350);
     gtk_widget_set_events(SquareDrawing, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(SquareDrawing, "button_press_event", G_CALLBACK(click_drawing), NULL); 
-    g_signal_connect(SquareDrawing, "draw", G_CALLBACK(start_drawing), NULL); 
+    g_signal_connect(SquareDrawing, "draw", G_CALLBACK(draw_square), NULL); 
     g_signal_connect(SquareDrawing, "realize", G_CALLBACK(realize_drawing), NULL); 
 
     gtk_container_add(GTK_CONTAINER(window), SquareDrawing); 
@@ -47,35 +50,23 @@ int main (int argc, char *argv[])
   }
 static void close_window(GtkWidget *widget, gpointer data)
   {
-    gtk_main_quit ();
+    //Remove timer on exit.
+    if(moving)
+      {
+        g_source_remove(timer_id);
+      }
+    gtk_main_quit();
   }
-static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
+static gboolean start_drawing(gpointer widget)
   {
-    move+=5;
     GtkAllocation allocation;
-    GdkWindow *win=gtk_widget_get_window(widget);
+    GdkWindow *win=gtk_widget_get_window(GTK_WIDGET(widget));
     gtk_widget_get_allocation(GTK_WIDGET(widget), &allocation);
 
-    if(move<=1000)
-      {
-        if(move!=1000)
-          {
-            draw_square(widget, cr, move);
-            gdk_window_invalidate_rect(win, &allocation, FALSE);
-          }
-        else
-          {
-            draw_square(widget, cr, 0);
-            gdk_window_invalidate_rect(win, &allocation, FALSE);
-          }
-      }  
-    else
-      {
-        draw_square(widget, cr, 0);        
-      }
-        
-     g_usleep(30000);
-     return TRUE;
+    gdk_window_invalidate_rect(win, &allocation, FALSE);
+
+    if(move>move_ulimit) return FALSE;
+    else return TRUE;
       
   }
 static void realize_drawing(GtkWidget *widget, gpointer data)
@@ -84,10 +75,13 @@ static void realize_drawing(GtkWidget *widget, gpointer data)
   }
 static void click_drawing(GtkWidget *widget, gpointer data)
   {
+    //If animation is running, don't start a new timer.
+    if(!moving) timer_id=g_timeout_add(30, start_drawing, widget);         
     move=0;
+    moving=TRUE;
     gtk_widget_queue_draw_area(widget, 0, 0, 950, 350);  
   }
-static gboolean draw_square(GtkWidget *widget, cairo_t *cr, int move)
+static gboolean draw_square(GtkWidget *widget, cairo_t *cr, gpointer data)
   {  
     int i=0;
     double x1=0;
@@ -173,6 +167,17 @@ static gboolean draw_square(GtkWidget *widget, cairo_t *cr, int move)
          cairo_stroke(cr);       
        }
   
+    if(moving) move+=5;
+
+    //Cancel timer.
+    if(move>move_ulimit)
+      {
+        g_source_remove(timer_id);
+        moving=FALSE;
+        move=0;
+        gtk_widget_queue_draw_area(widget, 0, 0, 950, 350);  
+      }
+
     return TRUE;
 
   }

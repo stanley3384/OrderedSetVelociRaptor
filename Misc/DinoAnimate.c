@@ -11,27 +11,30 @@ C. Eric Cashon
 
 #include <gtk/gtk.h>
 
-int move=4001;
+#define move_ulimit 4000
+int move=0;
+gboolean moving=FALSE;
+gint timer_id=0;
 
 static void close_window(GtkWidget *widget, gpointer data);
-static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
+static gboolean start_drawing(gpointer data);
 static void click_drawing(GtkWidget *widget, gpointer data);
 static void realize_drawing(GtkWidget *widget, gpointer data);
-static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, int move);
+static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data);
 
 int main (int argc, char *argv[])
  {
     gtk_init(&argc, &argv);
     
     GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size(GTK_WINDOW(window), 900, 400);
+    gtk_window_set_default_size(GTK_WINDOW(window), 900, 300);
     g_signal_connect(window, "destroy", G_CALLBACK(close_window), NULL);
 
     GtkWidget *RaptorDrawing = gtk_drawing_area_new();
-    gtk_widget_set_size_request (RaptorDrawing, 800, 400);
+    gtk_widget_set_size_request (RaptorDrawing, 900, 300);
     gtk_widget_set_events(RaptorDrawing, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(RaptorDrawing, "button_press_event", G_CALLBACK(click_drawing), NULL); 
-    g_signal_connect(RaptorDrawing, "draw", G_CALLBACK(start_drawing), NULL); 
+    g_signal_connect(RaptorDrawing, "draw", G_CALLBACK(draw_veloci_raptor), NULL); 
     g_signal_connect(RaptorDrawing, "realize", G_CALLBACK(realize_drawing), NULL); 
 
     gtk_container_add(GTK_CONTAINER(window), RaptorDrawing); 
@@ -43,27 +46,23 @@ int main (int argc, char *argv[])
   }
 static void close_window(GtkWidget *widget, gpointer data)
   {
+    //Remove timer on exit.
+    if(moving)
+      {
+        g_source_remove(timer_id);
+      }
     gtk_main_quit ();
   }
-static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
+static gboolean start_drawing(gpointer widget)
   {
-    move+=20;
     GtkAllocation allocation;
-    GdkWindow *win=gtk_widget_get_window(widget);
+    GdkWindow *win=gtk_widget_get_window(GTK_WIDGET(widget));
     gtk_widget_get_allocation(GTK_WIDGET(widget), &allocation);
 
-    if(move<4000)
-      {
-        draw_veloci_raptor(widget, cr, move);
-        gdk_window_invalidate_rect(win, &allocation, FALSE);
-      }   
-    else
-      {
-        draw_veloci_raptor(widget, cr, 0);        
-      }
-     
-     return TRUE;
-      
+    gdk_window_invalidate_rect(win, &allocation, FALSE);
+
+    if(move>move_ulimit) return FALSE;
+    else return TRUE;      
   }
 static void realize_drawing(GtkWidget *widget, gpointer data)
   {
@@ -71,10 +70,13 @@ static void realize_drawing(GtkWidget *widget, gpointer data)
   }
 static void click_drawing(GtkWidget *widget, gpointer data)
   {
+    //If animation is running, don't start a new timer.
+    if(!moving) timer_id=g_timeout_add(30, start_drawing, widget);         
     move=0;
-    gtk_widget_queue_draw_area(widget, 0, 0, 900, 400);  
+    moving=TRUE;
+    gtk_widget_queue_draw_area(widget, 0, 0, 900, 300);  
   }
-static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, int move)
+static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data)
   {        
     cairo_pattern_t *pattern;
     gint i=0;
@@ -114,7 +116,7 @@ static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, int move)
 
     //Clear the surface.
     cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, 0.0, 0.1, 0.8, 1.0);
     cairo_paint(cr);
     cairo_restore(cr);
     
@@ -209,6 +211,17 @@ static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, int move)
     cairo_restore(cr);
   
     cairo_pattern_destroy(pattern);
+
+    if(moving) move+=40;
+
+    //Cancel timer.
+    if(move>move_ulimit)
+      {
+        g_source_remove(timer_id);
+        moving=FALSE;
+        move=0;
+        gtk_widget_queue_draw_area(widget, 0, 0, 900, 300);  
+      }
 
     return TRUE;
 
