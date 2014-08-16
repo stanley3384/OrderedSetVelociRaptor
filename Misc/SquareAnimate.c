@@ -79,7 +79,7 @@ static void click_drawing(GtkWidget *widget, gpointer data)
     if(!moving) timer_id=g_timeout_add(30, start_drawing, widget);         
     move=0;
     moving=TRUE;
-    gtk_widget_queue_draw_area(widget, 0, 0, 950, 350);  
+    gtk_widget_queue_draw_area(widget, 0, 0, gtk_widget_get_allocated_width(widget), gtk_widget_get_allocated_height(widget));  
   }
 static gboolean draw_square(GtkWidget *widget, cairo_t *cr, gpointer data)
   {  
@@ -175,7 +175,7 @@ static gboolean draw_square(GtkWidget *widget, cairo_t *cr, gpointer data)
         g_source_remove(timer_id);
         moving=FALSE;
         move=0;
-        gtk_widget_queue_draw_area(widget, 0, 0, 950, 350);  
+        gtk_widget_queue_draw_area(widget, 0, 0, gtk_widget_get_allocated_width(widget), gtk_widget_get_allocated_height(widget));  
       }
 
     return TRUE;
