@@ -22,9 +22,6 @@ C. Eric Cashon
 #include<GL/glu.h>
 #include<gtk/gtk.h>
 #include<gdk/gdkx.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<stdbool.h>
 
 static GtkWidget *window=NULL;
 static GtkWidget *da=NULL;
@@ -38,7 +35,7 @@ static GLint attributes[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, Non
 static float angle=0.0;
 static guint timer_id=0;
 static float scaleGL=2.0;
-static bool rotate_drawing=true;
+static gboolean rotate_drawing=TRUE;
 //Bezier points for the letter G.
 GLfloat bezier_G1[4][3] = {{1.0, -0.2, 1.0}, {1.0, -1.1, -1.0}, {1.0, 1.1, -1.0}, {1.0, 0.2, 1.0}};
 GLfloat bezier_G2[4][3] = {{-1.0, -0.2, 1.0}, {-1.0, -1.1, -1.0}, {-1.0, 1.1, -1.0}, {-1.0, 0.2, 1.0}};
@@ -198,12 +195,12 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
  }
 static void configureGL(GtkWidget *da, gpointer data)
  {
-   printf("Congigure GL\n");
+   g_print("Congigure GL\n");
    DrawingWindow=gtk_widget_get_window(GTK_WIDGET(da));
 
    if(DrawingWindow==NULL)
      {
-       printf("Couldn't get GdkWindow\n");
+       g_print("Couldn't get GdkWindow\n");
      }
    else
      {
@@ -228,7 +225,7 @@ static void configureGL(GtkWidget *da, gpointer data)
  }
 static gboolean rotate(gpointer data)
  {
-   if(rotate_drawing==true)
+   if(rotate_drawing==TRUE)
      {
        angle++;
        gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, gtk_widget_get_allocated_width(data), gtk_widget_get_allocated_height(data)); 
@@ -237,19 +234,19 @@ static gboolean rotate(gpointer data)
  }
 static void stop_rotation(GtkWidget *da, gpointer data)
  {
-   if(rotate_drawing==true) rotate_drawing=false;
-   else rotate_drawing=true;
+   if(rotate_drawing==TRUE) rotate_drawing=FALSE;
+   else rotate_drawing=TRUE;
  }
 static void scale_drawing(GtkRange *range,  gpointer data)
  {  
    scaleGL=2.0-gtk_range_get_value(range)/5.0;
-   printf("Scale %f\n", scaleGL);     
+   g_print("Scale %f\n", scaleGL);     
  }
 static void close_program()
  {
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
-   printf("Quit Program\n");
+   g_print("Quit Program\n");
    gtk_main_quit();
  }
 int main(int argc, char **argv)
