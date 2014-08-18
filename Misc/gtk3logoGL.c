@@ -40,7 +40,18 @@ static gboolean rotate_drawing=TRUE;
 GLfloat bezier_G1[4][3] = {{1.0, -0.2, 1.0}, {1.0, -1.1, -1.0}, {1.0, 1.1, -1.0}, {1.0, 0.2, 1.0}};
 GLfloat bezier_G2[4][3] = {{-1.0, -0.2, 1.0}, {-1.0, -1.1, -1.0}, {-1.0, 1.1, -1.0}, {-1.0, 0.2, 1.0}};
 
-
+static gboolean draw_cairo(GtkWidget *da2, cairo_t *cr, gpointer data)
+ {
+   g_print("Cairo Draw\n");
+   cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+   cairo_paint(cr);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); 
+   cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(cr, 38);
+   cairo_move_to(cr, 50, 30);
+   cairo_show_text(cr, "Cairo Drawing Text"); 
+   return TRUE; 
+ }
 static gboolean drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
  {
     int i=0;
@@ -287,7 +298,7 @@ int main(int argc, char **argv)
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Powered by GTK+");
-   gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
+   gtk_window_set_default_size(GTK_WINDOW(window), 500, 600);
 
    GtkWidget *label1=gtk_label_new("OpenGL Drawing Area with Scale Slider");
    gtk_widget_set_hexpand(label1, TRUE);
@@ -299,17 +310,22 @@ int main(int argc, char **argv)
 
    da=gtk_drawing_area_new();
    gtk_widget_set_double_buffered(da, FALSE);
-   gtk_widget_set_hexpand(da, TRUE);
-   gtk_widget_set_vexpand(da, TRUE);
+   gtk_widget_set_size_request(da, 500,500);
    gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK);
    g_signal_connect(da, "button-press-event", G_CALLBACK(stop_rotation), NULL);
+
+   GtkWidget *da2=gtk_drawing_area_new();
+   gtk_widget_set_hexpand(da2, TRUE);
+   gtk_widget_set_vexpand(da2, TRUE);
+   g_signal_connect(da2, "draw", G_CALLBACK(draw_cairo), NULL);
 
    GtkWidget *grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
    gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
    gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), da, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da2, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da, 0, 3, 1, 1);
   
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
