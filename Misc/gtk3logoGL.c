@@ -27,9 +27,9 @@ static GtkWidget *window=NULL;
 static GtkWidget *da=NULL;
 static GdkWindow *DrawingWindow=NULL;
 static Window X_window;
-static Display *X_display;
+static Display *X_display=NULL;
 static GLXContext X_context;
-static XVisualInfo *X_visual;
+static XVisualInfo *X_visual=NULL;
 static XWindowAttributes X_attributes;
 static GLint attributes[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
 static float angle=0.0;
@@ -41,7 +41,7 @@ GLfloat bezier_G1[4][3] = {{1.0, -0.2, 1.0}, {1.0, -1.1, -1.0}, {1.0, 1.1, -1.0}
 GLfloat bezier_G2[4][3] = {{-1.0, -0.2, 1.0}, {-1.0, -1.1, -1.0}, {-1.0, 1.1, -1.0}, {-1.0, 0.2, 1.0}};
 
 
-static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
+static gboolean drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
  {
     int i=0;
     GLfloat line_width=7.0;
@@ -62,85 +62,86 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     glLineWidth(line_width);
     glColor3f(1.0, 0.0, 0.0);
     glBegin(GL_POLYGON);
-    glVertex3f(point2, point2, point1);
-    glVertex3f(point1, point2, point1);
-    glVertex3f(point1, point1, point1);
     glVertex3f(point2, point1, point1);
+    glVertex3f(point1, point1, point1);
+    glVertex3f(point1, point1, point2);
+    glVertex3f(point2, point1, point2);
     glEnd();
     //Draw T on red1.
-    glColor3f(0.0, 0.0, 0.0);
+    glColor3f(0.0, 0.0, 0.0);  
     glBegin(GL_LINES);
-    glVertex3f(-0.4, -0.4, point1);
-    glVertex3f(-0.4, 0.4, point1);
+    glVertex3f(0.4, point1, -0.4);
+    glVertex3f(0.4, point1, 0.4);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(-0.4, 0.0, point1);
-    glVertex3f(0.5, 0.0, point1);
+    glVertex3f(-0.5, point1, 0.0);
+    glVertex3f(0.4, point1, 0.0);
     glEnd();
+    
 
     //red2
     glColor3f(1.0, 0.0, 0.0);
     glBegin(GL_POLYGON);
-    glVertex3f(point2, point1, point2);
-    glVertex3f(point1, point1, point2);
-    glVertex3f(point1, point2, point2);
     glVertex3f(point2, point2, point2);
+    glVertex3f(point1, point2, point2);
+    glVertex3f(point1, point2, point1);
+    glVertex3f(point2, point2, point1);
     glEnd();
     //Draw T on red2.
     glColor3f(0.0, 0.0, 0.0);
     glBegin(GL_LINES);
-    glVertex3f(0.4, 0.4, point2);
-    glVertex3f(0.4, -0.4, point2);
+    glVertex3f(-0.4, point2, 0.4);
+    glVertex3f(-0.4, point2, -0.4);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(0.4, 0.0, point2);
-    glVertex3f(-0.5, 0.0, point2);
+    glVertex3f(0.5, point2, 0.0);
+    glVertex3f(-0.4, point2, 0.0);
     glEnd();
 
     //green1
     glColor3f(0.0, 1.0, 0.0);
     glBegin(GL_POLYGON);
-    glVertex3f(point2, point1, point1);
+    glVertex3f(point2, point2, point1);
+    glVertex3f(point1, point2, point1);
     glVertex3f(point1, point1, point1);
-    glVertex3f(point1, point1, point2);
-    glVertex3f(point2, point1, point2);
+    glVertex3f(point2, point1, point1);
     glEnd();
     //Draw K on green1.
     glColor3f(0.0, 0.0, 0.0);
     glBegin(GL_LINES);
-    glVertex3f(-0.4, point1, -0.3);
-    glVertex3f(0.4, point1, -0.3);
+    glVertex3f(-0.4, -0.3, point1);
+    glVertex3f(0.4, -0.3, point1);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(0.0, point1, -0.3);
-    glVertex3f(0.4, point1, 0.3);
+    glVertex3f(0.0, -0.3, point1);
+    glVertex3f(0.4, 0.3, point1);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(0.0, point1, -0.3);
-    glVertex3f(-0.4, point1, 0.3);
+    glVertex3f(0.0, -0.3, point1);
+    glVertex3f(-0.4, 0.3, point1);
     glEnd();
 
     //green2
     glColor3f(0.0, 1.0, 0.0);
     glBegin(GL_POLYGON);
-    glVertex3f(point2, point2, point2);
+    glVertex3f(point2, point1, point2);
+    glVertex3f(point1, point1, point2);
     glVertex3f(point1, point2, point2);
-    glVertex3f(point1, point2, point1);
-    glVertex3f(point2, point2, point1);
+    glVertex3f(point2, point2, point2);
     glEnd();
     //Draw K on green2.
     glColor3f(0.0, 0.0, 0.0);
     glBegin(GL_LINES);
-    glVertex3f(-0.4, point2, -0.3);
-    glVertex3f(0.4, point2, -0.3);
+    glVertex3f(-0.4, 0.3, point2);
+    glVertex3f(0.4, 0.3, point2);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(0.0, point2, -0.3);
-    glVertex3f(0.4, point2, 0.3);
+    glVertex3f(0.0, 0.3, point2);
+    glVertex3f(-0.4, -0.3, point2);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(0.0, point2, -0.3);
-    glVertex3f(-0.4, point2, 0.3);
+    glVertex3f(0.0, 0.3, point2);
+    glVertex3f(0.4, -0.3, point2);
     glEnd();
 
     //blue1
@@ -188,9 +189,40 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     glVertex3f(point2, -0.2, 0.2);
     glVertex3f(point2, -0.2, 0.1);
     glEnd(); 
+
+    //Black lines on box edges.
+    glBegin (GL_LINES);
+    glColor3f(0.0, 0.0, 0.0);
+    glVertex3f(point2, point2, point2);
+    glVertex3f(point1, point2, point2);	
+    glVertex3f(point1, point2, point2);
+    glVertex3f(point1, point1, point2);	
+    glVertex3f(point1, point1, point2);
+    glVertex3f(point2, point1, point2);	
+    glVertex3f(point2, point1, point2);
+    glVertex3f(point2, point2, point2);	
+    glVertex3f(point2, point2, point1);
+    glVertex3f(point1, point2, point1);	
+    glVertex3f(point1, point2, point1);
+    glVertex3f(point1, point1, point1);	
+    glVertex3f(point1, point1, point1);
+    glVertex3f(point2, point1, point1);	
+    glVertex3f(point2, point1, point1);
+    glVertex3f(point2, point2, point1);	
+    glVertex3f(point2, point2, point2);
+    glVertex3f(point2, point2, point1);	
+    glVertex3f(point1, point2, point2);
+    glVertex3f(point1, point2, point1);	
+    glVertex3f(point1, point1, point2);
+    glVertex3f(point1, point1, point1);	
+    glVertex3f(point2, point1, point2);
+    glVertex3f(point2, point1, point1);
+    glEnd ();
+
  
     glPopMatrix ();
     glXSwapBuffers(X_display, X_window);
+    return TRUE;
 
  }
 static void configureGL(GtkWidget *da, gpointer data)
