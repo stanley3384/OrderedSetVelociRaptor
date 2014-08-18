@@ -58,6 +58,7 @@ static double setting_percent=0.10;
 
 static void data_db_dialog(GtkWidget *menu, gpointer p);
 static void data_test_dialog(GtkWidget *menu, gpointer p);
+static void about_dialog(GtkWidget *menu, gpointer p);
 static void setting_above_dialog(GtkWidget *menu, gpointer p);
 static void close_program(void);
 static void get_data_points(void);
@@ -75,7 +76,7 @@ static void rotation_axis(GtkWidget *axis, gpointer data);
 
 int main(int argc, char **argv)
  {
-   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above;
+   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *help_menu, *help_about, *help_item;
    int x1=0;
    int y1=1;
    int z1=2;
@@ -114,6 +115,11 @@ int main(int argc, char **argv)
    g_signal_connect(settings_rgb, "activate", G_CALLBACK(set_heatmap), &set_rgb);
    g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_dialog), &set_above);
 
+   help_menu=gtk_menu_new();
+   help_about=gtk_menu_item_new_with_label("About");
+   gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), help_about);
+   g_signal_connect(help_about, "activate", G_CALLBACK(about_dialog), NULL);
+
    menu_bar=gtk_menu_bar_new();
    gtk_widget_show(menu_bar);
    data_item=gtk_menu_item_new_with_label("Data");
@@ -125,6 +131,9 @@ int main(int argc, char **argv)
    settings_item=gtk_menu_item_new_with_label("Settings");
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_item), settings_menu);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), settings_item);
+   help_item=gtk_menu_item_new_with_label("Help");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(help_item), help_menu);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), help_item);
 
    GtkWidget *label1=gtk_label_new("Microtiter Platemap Stack");
    gtk_widget_set_hexpand(label1, TRUE);
@@ -374,6 +383,27 @@ static void setting_above_dialog(GtkWidget *menu, gpointer p)
 
      gtk_widget_destroy(dialog);
   
+  }
+static void about_dialog(GtkWidget *menu, gpointer p)
+  {
+    GtkWidget *dialog;
+    const gchar *authors[]={"C. Eric Cashon", NULL};
+
+    dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Platemap Viewer 3d");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "With GTK+ and OpenGL");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2014 C. Eric Cashon");
+    gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), authors);
+
+    //gtk_widget_set_size_request(dialog, 400,370);
+    //content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    //gtk_widget_set_size_request(content_area, 400,300);
+    //gtk_container_set_border_width(GTK_CONTAINER(content_area), 100);
+    
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
   }
 static void close_program()
  {
