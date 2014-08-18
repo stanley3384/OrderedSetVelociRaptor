@@ -132,16 +132,16 @@ static gboolean drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     //Draw K on green2.
     glColor3f(0.0, 0.0, 0.0);
     glBegin(GL_LINES);
-    glVertex3f(-0.4, 0.3, point2);
-    glVertex3f(0.4, 0.3, point2);
-    glEnd();
-    glBegin(GL_LINES);
-    glVertex3f(0.0, 0.3, point2);
+    glVertex3f(0.4, -0.3, point2);
     glVertex3f(-0.4, -0.3, point2);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(0.0, 0.3, point2);
-    glVertex3f(0.4, -0.3, point2);
+    glVertex3f(0.0, -0.3, point2);
+    glVertex3f(0.4, 0.3, point2);
+    glEnd();
+    glBegin(GL_LINES);
+    glVertex3f(0.0, -0.3, point2);
+    glVertex3f(-0.4, 0.3, point2);
     glEnd();
 
     //blue1
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
    gtk_init(&argc, &argv);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(window), "GTK+ Logo");
+   gtk_window_set_title(GTK_WINDOW(window), "Powered by GTK+");
    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
 
    GtkWidget *label1=gtk_label_new("OpenGL Drawing Area with Scale Slider");
