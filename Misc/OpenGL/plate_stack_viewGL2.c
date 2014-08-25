@@ -54,17 +54,19 @@ static int columns=0;
 static int plates=0;
 static bool setting_rgb=true;
 static bool setting_above=false;
+static bool setting_below=false;
 static double setting_percent=0.10;
 
 static void data_db_dialog(GtkWidget *menu, gpointer p);
 static void data_test_dialog(GtkWidget *menu, gpointer p);
 static void about_dialog(GtkWidget *menu, gpointer p);
-static void setting_above_dialog(GtkWidget *menu, gpointer p);
+static void setting_above_below_dialog(GtkWidget *menu, gpointer p);
 static void close_program(void);
 static void get_data_points(void);
 static void get_db_data(int iRadioButton);
 static void heatmap_rgb(double temp1, double high, double low, float rgb[]);
 static void heatmap_above(double temp1, double high, double low, float rgb[]);
+static void heatmap_below(double temp1, double high, double low, float rgb[]);
 static void set_heatmap(GtkWidget *menu, gpointer data);
 static void drawGL(GtkWidget *da, gpointer data);
 static void configureGL(GtkWidget *da, gpointer data);
@@ -76,12 +78,13 @@ static void rotation_axis(GtkWidget *axis, gpointer data);
 
 int main(int argc, char **argv)
  {
-   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *help_menu, *help_about, *help_item;
+   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *settings_below, *help_menu, *help_about, *help_item;
    int x1=0;
    int y1=1;
    int z1=2;
    int set_rgb=0;
    int set_above=1;
+   int set_below=2;
    gtk_init(&argc, &argv);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -110,10 +113,13 @@ int main(int argc, char **argv)
    settings_menu=gtk_menu_new();
    settings_rgb=gtk_menu_item_new_with_label("Heatmap RGB");
    settings_above=gtk_menu_item_new_with_label("Heatmap Above");
+   settings_below=gtk_menu_item_new_with_label("Heatmap Below");
    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_rgb);
    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_above);
+   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_below);
    g_signal_connect(settings_rgb, "activate", G_CALLBACK(set_heatmap), &set_rgb);
-   g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_dialog), &set_above);
+   g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_below_dialog), &set_above);
+   g_signal_connect(settings_below, "activate", G_CALLBACK(setting_above_below_dialog), &set_below);
 
    help_menu=gtk_menu_new();
    help_about=gtk_menu_item_new_with_label("About");
@@ -258,7 +264,6 @@ static void data_db_dialog(GtkWidget *menu, gpointer p)
                 iRadioButton=2;
                 get_db_data(iRadioButton);
               }
-
           }
        }
 
@@ -337,16 +342,18 @@ static void data_test_dialog(GtkWidget *menu, gpointer p)
      gtk_widget_destroy(dialog);
   
   }
-static void setting_above_dialog(GtkWidget *menu, gpointer p)
+static void setting_above_below_dialog(GtkWidget *menu, gpointer p)
   {
      GtkWidget *dialog, *grid1, *combo1, *label1, *label2, *content_area, *action_area;
-    int result;
+     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     if(*(int*)p==1) dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     else dialog=gtk_dialog_new_with_buttons("Heatmap Below", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
      
-     label1=gtk_label_new("Set Percent Above");
+     if(*(int*)p==1) label1=gtk_label_new("Set Percent Above");
+     else label1=gtk_label_new("Set Percent Below");
      label2=gtk_label_new("      Percent");  
          
      combo1=gtk_combo_box_text_new();     
@@ -376,8 +383,18 @@ static void setting_above_dialog(GtkWidget *menu, gpointer p)
 
      if(result==GTK_RESPONSE_OK)
        {
-        setting_percent=(100.0-atof(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1))))/100.0;
-        int set=1;
+        int set=0;
+        if(*(int*)p==1)
+          {
+            set=1; //Above
+            setting_percent=(100.0-atof(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1))))/100.0;
+          }
+        else
+          {
+            set=2; //Below
+            setting_percent=(atof(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1))))/100.0;
+          }
+
         set_heatmap(dialog, &set);
        }
 
@@ -396,11 +413,6 @@ static void about_dialog(GtkWidget *menu, gpointer p)
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2014 C. Eric Cashon");
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), authors);
 
-    //gtk_widget_set_size_request(dialog, 400,370);
-    //content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    //gtk_widget_set_size_request(content_area, 400,300);
-    //gtk_container_set_border_width(GTK_CONTAINER(content_area), 100);
-    
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
@@ -640,17 +652,41 @@ static void heatmap_above(double temp1, double high, double low, float rgb[])
         rgb[2]=1.0;
       }    
  }
+static void heatmap_below(double temp1, double high, double low, float rgb[])
+ {
+    temp1=(temp1-low)/((high-low));
+    if(temp1<setting_percent)
+      {
+        rgb[0]=1.0;
+        rgb[1]=1.0;
+        rgb[2]=0.0;
+      }
+    else
+      {
+        rgb[0]=0.0;
+        rgb[1]=0.0;
+        rgb[2]=1.0;
+      }    
+ }
 static void set_heatmap(GtkWidget *menu, gpointer data)
  {
     if(*(int*)data==0) 
      {
        setting_rgb=true;
        setting_above=false;
+       setting_below=false;
+     }
+    else if(*(int*)data==1)
+     {
+       setting_rgb=false;
+       setting_above=true;
+       setting_below=false;
      }
     else
      {
        setting_rgb=false;
-       setting_above=true;
+       setting_above=false;
+       setting_below=true;
      }
  }
 static void drawGL(GtkWidget *da, gpointer data)
@@ -693,20 +729,54 @@ static void drawGL(GtkWidget *da, gpointer data)
     glEnd();
 
     glPointSize(8.0);
-    glBegin(GL_POINTS);    
-    for(i=0; i<plates; i++)
-       {
-         for(j=0; j<rows; j++)
-            {
-              for(k=0;k<columns;k++)
-                 {
-                   temp1=gsl_matrix_get(test_data_points, i*rows+j, k);
-                   if(setting_rgb==true) heatmap_rgb(temp1, high, low, rgb);
-                   if(setting_above==true) heatmap_above(temp1, high, low, rgb);
-                   glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
-                   glVertex3f(j/3.0,k,i);
-                 }
-            }
+    glBegin(GL_POINTS); 
+    if(setting_rgb==true)
+      {   
+        for(i=0; i<plates; i++)
+           {
+             for(j=0; j<rows; j++)
+                {
+                  for(k=0;k<columns;k++)
+                     {
+                       temp1=gsl_matrix_get(test_data_points, i*rows+j, k);
+                       heatmap_rgb(temp1, high, low, rgb);
+                       glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
+                       glVertex3f(j/3.0,k,i);
+                     }
+                }
+           }
+       }
+    else if(setting_above==true)
+      {   
+        for(i=0; i<plates; i++)
+           {
+             for(j=0; j<rows; j++)
+                {
+                  for(k=0;k<columns;k++)
+                     {
+                       temp1=gsl_matrix_get(test_data_points, i*rows+j, k);
+                       heatmap_above(temp1, high, low, rgb);
+                       glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
+                       glVertex3f(j/3.0,k,i);
+                     }
+                }
+           }
+       }
+    else//(setting_below==true)
+      {   
+        for(i=0; i<plates; i++)
+           {
+             for(j=0; j<rows; j++)
+                {
+                  for(k=0;k<columns;k++)
+                     {
+                       temp1=gsl_matrix_get(test_data_points, i*rows+j, k);  
+                       heatmap_below(temp1, high, low, rgb);
+                       glColor4f(rgb[0], rgb[1], rgb[2], 1.0);
+                       glVertex3f(j/3.0,k,i);
+                     }
+                }
+           }
        }
     glEnd();
 
