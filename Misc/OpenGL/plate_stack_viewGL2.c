@@ -13,7 +13,7 @@ About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
 
 Compile with
-    gcc -Wall -O2 `pkg-config --cflags gtk+-3.0` plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0 gdk-x11-3.0`
+    gcc -Wall -std=c99 -O2 `pkg-config --cflags gtk+-3.0` plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
@@ -57,6 +57,7 @@ static bool setting_above=false;
 static bool setting_below=false;
 static double setting_percent=0.10;
 
+typedef struct{GtkWidget *sEntry; GtkWidget *sDA;}sEntryDA;
 static void data_db_dialog(GtkWidget *menu, gpointer p);
 static void data_test_dialog(GtkWidget *menu, gpointer p);
 static void about_dialog(GtkWidget *menu, gpointer p);
@@ -72,13 +73,15 @@ static void drawGL(GtkWidget *da, gpointer data);
 static void configureGL(GtkWidget *da, gpointer data);
 static gboolean rotate(gpointer data);
 static void stop_rotation(GtkWidget *da, gpointer data);
+static void stop_advance_rotation(GtkWidget *da, sEntryDA *data);
 static void scale_drawing(GtkRange *range,  gpointer data);
 static void rotation_axis(GtkWidget *axis, gpointer data);
 
 
 int main(int argc, char **argv)
  {
-   GtkWidget *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *settings_below, *help_menu, *help_about, *help_item;
+   GtkWidget *label1, *entry1, *button1, *button2, *scale1, *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *settings_below, *help_menu, *help_about, *help_item;
+   sEntryDA *EntryDA;
    int x1=0;
    int y1=1;
    int z1=2;
@@ -141,10 +144,21 @@ int main(int argc, char **argv)
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(help_item), help_menu);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), help_item);
 
-   GtkWidget *label1=gtk_label_new("Microtiter Platemap Stack");
+   label1=gtk_label_new("Microtiter Platemap Stack Scale");
    gtk_widget_set_hexpand(label1, TRUE);
 
-   GtkWidget *scale1=gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,1,20,1);
+   entry1=gtk_entry_new();
+   gtk_widget_set_halign(entry1, GTK_ALIGN_END);
+   gtk_entry_set_width_chars(GTK_ENTRY(entry1), 6);
+   gtk_entry_set_text(GTK_ENTRY(entry1), "1");
+
+   button1=gtk_button_new_with_label("Stop+Advance");
+   gtk_widget_set_halign(button1, GTK_ALIGN_START);
+   button2=gtk_button_new_with_label("Start Rotation");
+   gtk_widget_set_halign(button2, GTK_ALIGN_START);
+   g_signal_connect(button2, "clicked", G_CALLBACK(stop_rotation), NULL);
+
+   scale1=gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,1,20,1);
    gtk_widget_set_hexpand(scale1, TRUE);
    gtk_range_set_increments(GTK_RANGE(scale1),1,1);
    g_signal_connect(GTK_RANGE(scale1), "value_changed", G_CALLBACK(scale_drawing), NULL);
@@ -156,13 +170,21 @@ int main(int argc, char **argv)
    gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK);
    g_signal_connect(da, "button-press-event", G_CALLBACK(stop_rotation), NULL);
 
+   EntryDA=g_slice_new(sEntryDA);
+   EntryDA->sEntry=GTK_WIDGET(entry1);
+   EntryDA->sDA=GTK_WIDGET(da);
+   g_signal_connect(button1, "clicked", G_CALLBACK(stop_advance_rotation), (gpointer) EntryDA);
+
    GtkWidget *grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
    gtk_grid_attach(GTK_GRID(grid1), menu_bar, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), da, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 4, 1);
+   gtk_grid_attach(GTK_GRID(grid1), scale1, 0, 2, 4, 1);
+   gtk_grid_attach(GTK_GRID(grid1), entry1, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button1, 1, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button2, 2, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), da, 0, 4, 4, 1);
   
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
@@ -815,7 +837,7 @@ static gboolean rotate(gpointer data)
    if(rotate_drawing==true)
      {
        ang++;
-       gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, 500, 550); 
+       gtk_widget_queue_draw_area(GTK_WIDGET(da), 0, 0, gtk_widget_get_allocated_width(data), gtk_widget_get_allocated_height(data)); 
      } 
    return true;
  }
@@ -823,6 +845,14 @@ static void stop_rotation(GtkWidget *da, gpointer data)
  {
    if(rotate_drawing==true) rotate_drawing=false;
    else rotate_drawing=true;
+ }
+static void stop_advance_rotation(GtkWidget *button, sEntryDA *data)
+ {
+   int entry_value=0;
+   entry_value=atoi(gtk_entry_get_text(GTK_ENTRY(data->sEntry)));
+   rotate_drawing=false;
+   ang=ang+entry_value;
+   gtk_widget_queue_draw_area(GTK_WIDGET(data->sDA), 0, 0, gtk_widget_get_allocated_width(data->sDA), gtk_widget_get_allocated_height(data->sDA)); 
  }
 static void scale_drawing(GtkRange *range,  gpointer data)
  {  
