@@ -55,6 +55,7 @@ static int plates=0;
 static bool setting_rgb=true;
 static bool setting_above=false;
 static bool setting_below=false;
+static bool setting_toggle=false;
 static double setting_percent=0.10;
 
 typedef struct{GtkWidget *sEntry; GtkWidget *sDA;}sEntryDA;
@@ -69,6 +70,7 @@ static void heatmap_rgb(double temp1, double high, double low, float rgb[]);
 static void heatmap_above(double temp1, double high, double low, float rgb[]);
 static void heatmap_below(double temp1, double high, double low, float rgb[]);
 static void set_heatmap(GtkWidget *menu, gpointer data);
+static void setting_toggle_background(GtkWidget *menu, gpointer data);
 static void drawGL(GtkWidget *da, gpointer data);
 static void configureGL(GtkWidget *da, gpointer data);
 static gboolean rotate(gpointer data);
@@ -80,7 +82,7 @@ static void rotation_axis(GtkWidget *axis, gpointer data);
 
 int main(int argc, char **argv)
  {
-   GtkWidget *label1, *entry1, *button1, *button2, *scale1, *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *settings_below, *help_menu, *help_about, *help_item;
+   GtkWidget *label1, *entry1, *button1, *button2, *scale1, *data_menu, *data_db, *data_test, *data_item, *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *settings_menu, *settings_item, *settings_rgb, *settings_above, *settings_below, *settings_toggle, *help_menu, *help_about, *help_item;
    sEntryDA *EntryDA;
    int x1=0;
    int y1=1;
@@ -117,12 +119,15 @@ int main(int argc, char **argv)
    settings_rgb=gtk_menu_item_new_with_label("Heatmap RGB");
    settings_above=gtk_menu_item_new_with_label("Heatmap Above");
    settings_below=gtk_menu_item_new_with_label("Heatmap Below");
+   settings_toggle=gtk_menu_item_new_with_label("Toggle Background");
    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_rgb);
    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_above);
    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_below);
+   gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_toggle);
    g_signal_connect(settings_rgb, "activate", G_CALLBACK(set_heatmap), &set_rgb);
    g_signal_connect(settings_above, "activate", G_CALLBACK(setting_above_below_dialog), &set_above);
    g_signal_connect(settings_below, "activate", G_CALLBACK(setting_above_below_dialog), &set_below);
+   g_signal_connect(settings_toggle, "activate", G_CALLBACK(setting_toggle_background), NULL);
 
    help_menu=gtk_menu_new();
    help_about=gtk_menu_item_new_with_label("About");
@@ -711,6 +716,11 @@ static void set_heatmap(GtkWidget *menu, gpointer data)
        setting_below=true;
      }
  }
+static void setting_toggle_background(GtkWidget *menu, gpointer data)
+ {
+   if(setting_toggle==false) setting_toggle=true;
+   else setting_toggle=false;
+ }
 static void drawGL(GtkWidget *da, gpointer data)
  {
     int i=0;
@@ -718,7 +728,9 @@ static void drawGL(GtkWidget *da, gpointer data)
     int k=0;
     double temp1=0.0;
     float rgb[]={0.0, 0.0, 0.0};
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+
+    if(setting_toggle==false) glClearColor(0.0, 0.0, 0.0, 0.0);
+    else glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glPushMatrix();
 	
