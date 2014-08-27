@@ -178,7 +178,7 @@ int main(int argc, char **argv)
    EntryDA=g_slice_new(sEntryDA);
    EntryDA->sEntry=GTK_WIDGET(entry1);
    EntryDA->sDA=GTK_WIDGET(da);
-   g_signal_connect(button1, "clicked", G_CALLBACK(stop_advance_rotation), (gpointer) EntryDA);
+   g_signal_connect(button1, "clicked", G_CALLBACK(stop_advance_rotation), EntryDA);
 
    GtkWidget *grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
