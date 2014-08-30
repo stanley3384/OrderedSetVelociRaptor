@@ -880,7 +880,16 @@ static void set_shaders()
    g_mapped_file_unref(mapFS);
 
    glCompileShader(v);
+   GLint isCompiled=0;
+   glGetShaderiv(v, GL_COMPILE_STATUS, &isCompiled);
+   if(isCompiled == GL_FALSE) g_print("Vertex shader didn't compile!\n");
+   else g_print("Vertex shader compiled.\n");
+
+   isCompiled=0;
    glCompileShader(f);
+   glGetShaderiv(f, GL_COMPILE_STATUS, &isCompiled);
+   if(isCompiled == GL_FALSE) g_print("Fragment shader didn't compile!\n");
+   else g_print("Fragment shader compiled.\n");
 
    //global p
    p = glCreateProgram();
@@ -888,6 +897,11 @@ static void set_shaders()
    glAttachShader(p,v);
 
    glLinkProgram(p);
+   GLint isLinked = 0;
+   glGetProgramiv(p, GL_LINK_STATUS, &isLinked);
+   if(isLinked == GL_FALSE) g_print("Couldn't link shaders!\n");
+   else g_print("Shaders linked.\n");
+
    glUseProgram(p);
   }
 static gboolean rotate(gpointer data)
