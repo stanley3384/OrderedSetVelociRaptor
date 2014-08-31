@@ -1,7 +1,7 @@
 
 /*
 
-     Test Code. A 3d stacked heatmapped microtiter platemap. Version 3. Try vertex and fragment shaders. Still learning how they work. 
+     Test Code. A 3d stacked heatmapped microtiter platemap. Version 3. Try vertex and fragment shaders. Still learning how they work. This just compiles and sets the shaders.
 
 Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK, it works.
     vblank_mode=0 glxgears
@@ -56,7 +56,7 @@ static bool setting_below=false;
 static bool setting_toggle=false;
 static double setting_percent=0.10;
 //For vertex and fragment shaders.
-static GLuint v,f,p;
+static GLuint vShader,fShader,pShader;
 
 typedef struct{GtkWidget *sEntry; GtkWidget *sDA;}sEntryDA;
 static void data_db_dialog(GtkWidget *menu, gpointer p);
@@ -859,9 +859,9 @@ static void set_shaders()
    const char *vs = NULL;
    const char *fs = NULL;
 
-   //global v and f
-   v = glCreateShader(GL_VERTEX_SHADER);
-   f = glCreateShader(GL_FRAGMENT_SHADER);
+   //global vShader and fShader
+   vShader = glCreateShader(GL_VERTEX_SHADER);
+   fShader = glCreateShader(GL_FRAGMENT_SHADER);
 
    mapVS = g_mapped_file_new("plate.vert", FALSE, NULL);
    g_print("vertex shader chars %i\n", g_mapped_file_get_length(mapVS));
@@ -873,36 +873,49 @@ static void set_shaders()
    fs=g_mapped_file_get_contents(mapFS);
    //g_print("%s\n", fs);
 
-   glShaderSource(v, 1, &vs, NULL);
-   glShaderSource(f, 1, &fs, NULL);
+   glShaderSource(vShader, 1, &vs, NULL);
+   glShaderSource(fShader, 1, &fs, NULL);
 
    g_mapped_file_unref(mapVS);
    g_mapped_file_unref(mapFS);
 
-   glCompileShader(v);
+   glCompileShader(vShader);
    GLint isCompiled=0;
-   glGetShaderiv(v, GL_COMPILE_STATUS, &isCompiled);
+   glGetShaderiv(vShader, GL_COMPILE_STATUS, &isCompiled);
    if(isCompiled == GL_FALSE) g_print("Vertex shader didn't compile!\n");
    else g_print("Vertex shader compiled.\n");
 
    isCompiled=0;
-   glCompileShader(f);
-   glGetShaderiv(f, GL_COMPILE_STATUS, &isCompiled);
+   glCompileShader(fShader);
+   glGetShaderiv(fShader, GL_COMPILE_STATUS, &isCompiled);
    if(isCompiled == GL_FALSE) g_print("Fragment shader didn't compile!\n");
    else g_print("Fragment shader compiled.\n");
 
    //global p
-   p = glCreateProgram();
-   glAttachShader(p,f);
-   glAttachShader(p,v);
+   pShader = glCreateProgram();
+   glAttachShader(pShader,fShader);
+   glAttachShader(pShader,vShader);
 
-   glLinkProgram(p);
+   glLinkProgram(pShader);
    GLint isLinked = 0;
-   glGetProgramiv(p, GL_LINK_STATUS, &isLinked);
+   glGetProgramiv(pShader, GL_LINK_STATUS, &isLinked);
    if(isLinked == GL_FALSE) g_print("Couldn't link shaders!\n");
    else g_print("Shaders linked.\n");
 
-   glUseProgram(p);
+   //Check info log.
+   int infologLength=0;
+   int charsWritten=0;
+   char *infoLog=NULL;
+   glGetProgramiv(pShader ,GL_INFO_LOG_LENGTH ,&infologLength);
+   if(infologLength>0)
+     {
+       infoLog=(char *)malloc(infologLength);
+       glGetProgramInfoLog(pShader, infologLength, &charsWritten, infoLog);
+       if(charsWritten>0) g_print("Info Log %s\n",infoLog);
+       free(infoLog);
+     }
+
+   glUseProgram(pShader);
   }
 static gboolean rotate(gpointer data)
  {
