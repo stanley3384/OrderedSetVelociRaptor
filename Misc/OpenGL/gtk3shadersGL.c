@@ -123,7 +123,8 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     //Scale
     glScalef(scaleGL, scaleGL, scaleGL);
 
-    //A plane.
+    //A purple plane that is changed in the shader to yellow.
+    glColor4f(1.0, 0.0, 1.0, 0.5);
     glBegin(GL_QUADS);
     glVertex3f(1.0, 1.0, 0.0);
     glVertex3f(1.0, -1.0, 0.0);
@@ -132,16 +133,19 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     glEnd();
 
     //Axis lines
+    glColor4f(1.0, 0.0, 0.0, 1.0);
     glBegin(GL_LINES);
     glVertex3f(0.0, 0.0, 0.0);
     glVertex3f(1.8, 0.0, 0.0);
     glEnd();
 	
+    glColor4f(0.0, 1.0, 0.0, 1.0);
     glBegin(GL_LINES);
     glVertex3f(0.0, 0.0, 0.0);
     glVertex3f(0.0, 1.8, 0.0);
     glEnd();
 	
+    glColor4f(0.0, 0.0, 1.0, 1.0);
     glBegin(GL_LINES);
     glVertex3f(0.0, 0.0, 0.0);
     glVertex3f(0.0, 0.0, 1.8);
