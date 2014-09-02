@@ -1,7 +1,7 @@
 
 /*
 
-     Test Code. A 3d stacked heatmapped microtiter platemap. Version 3. Try vertex and fragment shaders. Still learning how they work. This just compiles and sets the shaders.
+     Test Code. A 3d stacked heatmapped microtiter platemap. Version 3. Try vertex and fragment shaders. Still learning how they work. This just compiles and sets the shaders. The shaders aren't active. See gtk3shadersGL.c for working shaders.
 
 Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK, it works.
     vblank_mode=0 glxgears
@@ -11,7 +11,7 @@ About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
 
 Compile with
-    gcc -Wall -std=c99 -O2 `pkg-config --cflags gtk+-3.0` plate_stack_viewGL3.c -o shaders -lGL -lGLU -lGLEW -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0 gdk-x11-3.0`
+    gcc -Wall -std=c99 -O2 `pkg-config --cflags gtk+-3.0` plate_stack_viewGL3.c -o plate_stack_viewGL3 -lGL -lGLU -lGLEW -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0 gdk-x11-3.0`
 
 C. Eric Cashon
 */
@@ -56,7 +56,7 @@ static bool setting_below=false;
 static bool setting_toggle=false;
 static double setting_percent=0.10;
 //For vertex and fragment shaders.
-static GLuint vShader,fShader,pShader;
+GLuint vShader,fShader,pShader;
 
 typedef struct{GtkWidget *sEntry; GtkWidget *sDA;}sEntryDA;
 static void data_db_dialog(GtkWidget *menu, gpointer p);
@@ -71,7 +71,7 @@ static void heatmap_above(double temp1, double high, double low, float rgb[]);
 static void heatmap_below(double temp1, double high, double low, float rgb[]);
 static void set_heatmap(GtkWidget *menu, gpointer data);
 static void setting_toggle_background(GtkWidget *menu, gpointer data);
-static void drawGL(GtkWidget *da, gpointer data);
+static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data);
 static void configureGL(GtkWidget *da, gpointer data);
 static void set_shaders();
 static gboolean rotate(gpointer data);
@@ -729,7 +729,7 @@ static void setting_toggle_background(GtkWidget *menu, gpointer data)
    if(setting_toggle==false) setting_toggle=true;
    else setting_toggle=false;
  }
-static void drawGL(GtkWidget *da, gpointer data)
+static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
  {
     int i=0;
     int j=0;
@@ -823,12 +823,22 @@ static void drawGL(GtkWidget *da, gpointer data)
     glEnd();
 
     glPopMatrix();
+
+    //Check GL errors
+    GLenum glErr;
+    glErr = glGetError();
+    while (glErr != GL_NO_ERROR)
+    {
+        printf("glError %s\n", gluErrorString(glErr));
+        glErr = glGetError();
+    }
+
     glXSwapBuffers(X_display, X_window);
 
  }
 static void configureGL(GtkWidget *da, gpointer data)
  {
-   printf("Congigure GL\n");
+   printf("Configure GL\n");
    DrawingWindow=gtk_widget_get_window(GTK_WIDGET(da));
 
    if(DrawingWindow==NULL)
@@ -891,7 +901,7 @@ static void set_shaders()
    if(isCompiled == GL_FALSE) g_print("Fragment shader didn't compile!\n");
    else g_print("Fragment shader compiled.\n");
 
-   //global p
+   //global pShader
    pShader = glCreateProgram();
    glAttachShader(pShader,fShader);
    glAttachShader(pShader,vShader);
