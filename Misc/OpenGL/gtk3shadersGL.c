@@ -43,6 +43,7 @@ static float rotation[]={1.0 , 0.0, 0.0};
 static bool rotate_drawing=true;
 //For vertex and fragment shaders.
 GLuint vShader,fShader,pShader;
+GLfloat SquareVertices[]={1.0,1.0,0.0,1.0,-1.0,0.0,-1.0,-1.0,0.0,-1.0,1.0,0.0};
 
 static void set_shaders()
  {
@@ -123,14 +124,9 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     //Scale
     glScalef(scaleGL, scaleGL, scaleGL);
 
-    //A purple plane that is changed in the shader to yellow.
-    glColor4f(1.0, 0.0, 1.0, 0.5);
-    glBegin(GL_QUADS);
-    glVertex3f(1.0, 1.0, 0.0);
-    glVertex3f(1.0, -1.0, 0.0);
-    glVertex3f(-1.0, -1.0, 0.0);
-    glVertex3f(-1.0, 1.0, 0.0);    
-    glEnd();
+    //Draw a square in purple.
+    glColor4f(1.0, 0.0, 1.0, 0.5);        
+    glDrawArrays(GL_QUADS, 0, 4);        
 
     //Axis lines
     glColor4f(1.0, 0.0, 0.0, 1.0);
@@ -189,9 +185,12 @@ static void configureGL(GtkWidget *da, gpointer data)
        glMatrixMode(GL_PROJECTION);
        glLoadIdentity();
        glViewport(0, 0, X_attributes.width, X_attributes.height);	
-       // Set the perspective.
+       //Set the perspective.
        gluPerspective(45,X_attributes.width/X_attributes.height,1,1000);
        glMatrixMode(GL_MODELVIEW);
+       //Set Square Array.
+       glEnableClientState(GL_VERTEX_ARRAY);
+       glVertexPointer(3, GL_FLOAT, 0, SquareVertices); 
      }
  }
 static gboolean rotate(gpointer data)
