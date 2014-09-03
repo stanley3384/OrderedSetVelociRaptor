@@ -10,3 +10,9 @@ sudo apt-get install freeglut3-dev
 
 ![ScreenShot](/Misc/platemapGL1.jpg)
 
+--If you want to test out vertex and fragment shaders the gtk3shadersGL.c program is a simple program using the dynamic pipeline in OpenGL.
+
+Shaders
+
+![ScreenShot](/Misc/vertex.jpg)
+
