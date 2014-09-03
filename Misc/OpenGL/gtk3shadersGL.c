@@ -43,7 +43,9 @@ static float rotation[]={1.0 , 0.0, 0.0};
 static bool rotate_drawing=true;
 //For vertex and fragment shaders.
 GLuint vShader,fShader,pShader;
-GLfloat SquareVertices[]={1.0,1.0,0.0,1.0,-1.0,0.0,-1.0,-1.0,0.0,-1.0,1.0,0.0};
+GLfloat SquareVertices[]={1.0,1.0,0.0, 1.0,-1.0,0.0, -1.0,-1.0,0.0, -1.0,1.0,0.0};
+//Change red to yellow in shaders.
+GLfloat Colors[]={1.0,0.0,0.0,0.5, 1.0,0.0,0.0,0.5, 0.0,0.0,1.0,1.0, 0.0,0.0,1.0,1.0};
 
 static void set_shaders()
  {
@@ -109,6 +111,11 @@ static void set_shaders()
      }
 
    glUseProgram(pShader);
+
+   //Get versions
+   printf("OpenGL %s\n", glGetString(GL_VERSION));
+   printf("GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
 
   }
 static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
@@ -176,6 +183,7 @@ static void configureGL(GtkWidget *da, gpointer data)
        printf("Configure GL\n");
        //Initialize glew.
        glewExperimental=GL_TRUE;
+       printf("Initialize GLEW with GL version 2.0\n");
        GLenum err=glewInit();
        if(err != GLEW_OK) printf("Error: %s\n", glewGetErrorString(err)); 
        if(glewIsSupported("GL_VERSION_2_0")) printf("Ready for OpenGL 2.0\n");
@@ -190,7 +198,9 @@ static void configureGL(GtkWidget *da, gpointer data)
        glMatrixMode(GL_MODELVIEW);
        //Set Square Array.
        glEnableClientState(GL_VERTEX_ARRAY);
+       glEnableClientState(GL_COLOR_ARRAY);
        glVertexPointer(3, GL_FLOAT, 0, SquareVertices); 
+       glColorPointer(4, GL_FLOAT, 0, Colors);
      }
  }
 static gboolean rotate(gpointer data)
