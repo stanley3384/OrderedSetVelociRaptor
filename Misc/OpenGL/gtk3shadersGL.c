@@ -1,11 +1,12 @@
 
 /*
 
-     Test Code. Get OpenGL working with shaders in GTK3. Uses plate.vert and plate.frag shaders. Change around as needed.
+     Test Code. Get OpenGL working with shaders in GTK3. Uses plate.vert and plate.frag shaders. Change around as needed. Try a glu tessellator for shading.
      The http://www.lighthouse3d.com/opengl/glsl/ tutorial is very helpful.
 
 Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK, it works.
     vblank_mode=0 glxgears
+    glxinfo | grep "OpenGL version"
     glxinfo
 
 About Xlib windows and displays.
@@ -19,6 +20,7 @@ C. Eric Cashon
 
 #include<X11/Xlib.h>
 #include<GL/glew.h>
+#include<GL/glu.h>
 #include<GL/glx.h>
 #include<gtk/gtk.h>
 #include<gdk/gdkx.h>
@@ -44,8 +46,12 @@ static bool rotate_drawing=true;
 //For vertex and fragment shaders.
 GLuint vShader,fShader,pShader;
 GLfloat SquareVertices[]={1.0,1.0,0.0, 1.0,-1.0,0.0, -1.0,-1.0,0.0, -1.0,1.0,0.0};
-//Change red to yellow in shaders.
+//Change red to purple in shaders.
 GLfloat Colors[]={1.0,0.0,0.0,0.5, 1.0,0.0,0.0,0.5, 0.0,0.0,1.0,1.0, 0.0,0.0,1.0,1.0};
+//Create glu tessellator points.
+GLdouble TessSquare[16][3]={{1.0,1.0,0.0}, {1.0,-1.0,0.0}, {-1.0,-1.0,0.0}, {-1.0,1.0,0.0}, {0.75,0.75,0.0}, {0.75,-0.75,0.0}, {-0.75,-0.75,0.0}, {-0.75,0.75,0.0}, {0.5,0.5,0.0}, {0.5,-0.5,0.0}, {-0.5,-0.5,0.0}, {-0.5,0.5,0.0}, {0.25,0.25,0.0}, {0.25,-0.25,0.0}, {-0.25,-0.25,0.0}, {-0.25,0.25,0.0}};
+GLUtesselator *tess=NULL;
+bool tessellate=false;
 
 static void set_shaders()
  {
@@ -53,6 +59,7 @@ static void set_shaders()
    GMappedFile *mapFS;
    const char *vs = NULL;
    const char *fs = NULL;
+   GLint isCompiled=0;
 
    //global vShader and fShader
    vShader = glCreateShader(GL_VERTEX_SHADER);
@@ -75,7 +82,6 @@ static void set_shaders()
    g_mapped_file_unref(mapFS);
 
    glCompileShader(vShader);
-   GLint isCompiled=0;
    glGetShaderiv(vShader, GL_COMPILE_STATUS, &isCompiled);
    if(isCompiled == GL_FALSE) g_print("Vertex shader didn't compile!\n");
    else g_print("Vertex shader compiled.\n");
@@ -115,11 +121,13 @@ static void set_shaders()
    //Get versions
    printf("OpenGL %s\n", glGetString(GL_VERSION));
    printf("GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
+   printf("GLU %s\n", gluGetString(GLU_VERSION));
 
   }
 static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
  {
+    int i=0;
+    int j=0;
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
@@ -131,9 +139,39 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
     //Scale
     glScalef(scaleGL, scaleGL, scaleGL);
 
-    //Draw a square in purple.
-    glColor4f(1.0, 0.0, 1.0, 0.5);        
-    glDrawArrays(GL_QUADS, 0, 4);        
+    //Draw a square.
+    if(tessellate==false)
+      {        
+        glDrawArrays(GL_QUADS, 0, 4);
+      } 
+
+    //The tessellator.
+    if(tessellate==true)
+      {  
+        gluTessBeginPolygon(tess, NULL);
+        for(i=0;i<4;i++)
+           {
+             gluTessBeginContour(tess);
+             for(j=0;j<4;j++)
+                {
+                  gluTessVertex(tess, TessSquare[4*i+j], TessSquare[4*i+j]);
+                }
+             gluTessEndContour(tess); 
+           }
+        gluTessEndPolygon(tess); 
+
+        //Line loops around contours.
+        for(i=0;i<4;i++)
+           {
+             glBegin(GL_LINE_LOOP);
+             for(j=0;j<4;j++)
+                {
+                  glVertex3f(TessSquare[4*i+j][0], TessSquare[4*i+j][1], TessSquare[4*i+j][2]);
+                }
+             glEnd(); 
+           }
+        
+      }     
 
     //Axis lines
     glColor4f(1.0, 0.0, 0.0, 1.0);
@@ -156,6 +194,28 @@ static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
 
     glXSwapBuffers(X_display, X_window);
  }
+void beginCallback(GLenum which)
+{
+   glBegin(which);
+}
+void endCallback(void)
+{
+   glEnd();
+}
+void errorCallback(GLenum errorCode)
+{
+   const GLubyte *estring;
+   estring = gluErrorString(errorCode);
+   fprintf (stderr, "Tessellation Error: %s\n", estring);
+   exit(0);
+}
+void vertexCallback(GLvoid *vertex)
+{
+   const GLdouble *pointer;
+   pointer = (GLdouble *) vertex;
+   glColor3dv(pointer+3);
+   glVertex3dv(vertex);
+}
 static void configureGL(GtkWidget *da, gpointer data)
  {
    printf("Configure\n");
@@ -201,6 +261,16 @@ static void configureGL(GtkWidget *da, gpointer data)
        glEnableClientState(GL_COLOR_ARRAY);
        glVertexPointer(3, GL_FLOAT, 0, SquareVertices); 
        glColorPointer(4, GL_FLOAT, 0, Colors);
+       //Set tessellator and callback functions.
+       tess = gluNewTess();
+       gluTessCallback(tess, GLU_TESS_VERTEX, (GLvoid (*) ()) &vertexCallback);
+       gluTessCallback(tess, GLU_TESS_BEGIN, (GLvoid (*) ()) &beginCallback);
+       gluTessCallback(tess, GLU_TESS_END, (GLvoid (*) ()) &endCallback);
+       gluTessCallback(tess, GLU_TESS_ERROR, (GLvoid (*) ()) &errorCallback);
+       gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_POSITIVE); 
+       //gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD);
+       //gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO);
+       glShadeModel(GL_SMOOTH);
      }
  }
 static gboolean rotate(gpointer data)
@@ -242,8 +312,23 @@ static void rotation_axis(GtkWidget *axis, gpointer data)
        rotation[2]=1.0;
      }
  }
+static void draw_glu_tessellation(GtkWidget *menu_item, gpointer data)
+ {
+   if(tessellate==true)
+      {
+        tessellate=false;
+        gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), "Glu Tessellate True");
+      }
+   else
+      {
+        tessellate=true;
+        gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), "Glu Tessellate False");
+      }
+ }
 static void close_program()
  {
+   //Remove tessellator.
+   gluDeleteTess(tess);
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
    printf("Quit Program\n");
@@ -251,7 +336,7 @@ static void close_program()
  }
 int main(int argc, char **argv)
  {
-   GtkWidget *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item;
+   GtkWidget *rotate_menu, *rotate_x, *rotate_y, *rotate_z, *menu_bar, *rotate_item, *draw_menu, *draw_item, *draw_tess;
    int x1=0;
    int y1=1;
    int z1=2;
@@ -271,11 +356,18 @@ int main(int argc, char **argv)
    g_signal_connect(rotate_x, "activate", G_CALLBACK(rotation_axis), &x1);
    g_signal_connect(rotate_y, "activate", G_CALLBACK(rotation_axis), &y1);
    g_signal_connect(rotate_z, "activate", G_CALLBACK(rotation_axis), &z1);
+   draw_menu=gtk_menu_new();
+   draw_tess=gtk_menu_item_new_with_label("Glu Tessellate True");
+   gtk_menu_shell_append(GTK_MENU_SHELL(draw_menu), draw_tess);
+   g_signal_connect(draw_tess, "activate", G_CALLBACK(draw_glu_tessellation), NULL);
    menu_bar=gtk_menu_bar_new();
    gtk_widget_show(menu_bar);
    rotate_item=gtk_menu_item_new_with_label("Rotate");
+   draw_item=gtk_menu_item_new_with_label("Draw");
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(rotate_item), rotate_menu);
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(draw_item), draw_menu);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), rotate_item);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), draw_item);
 
    GtkWidget *label1=gtk_label_new("OpenGL Drawing Area with Scale Slider");
    gtk_widget_set_hexpand(label1, TRUE);
