@@ -8,6 +8,7 @@ Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK,
     vblank_mode=0 glxgears
     glxinfo | grep "OpenGL version"
     glxinfo
+    xrandr
 
 About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
@@ -33,9 +34,9 @@ static GtkWidget *window=NULL;
 static GtkWidget *da=NULL;
 static GdkWindow *DrawingWindow=NULL;
 static Window X_window;
-static Display *X_display;
+static Display *X_display=NULL;
 static GLXContext X_context;
-static XVisualInfo *X_visual;
+static XVisualInfo *X_visual=NULL;
 static XWindowAttributes X_attributes;
 static GLint attributes[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
 static float ang=0.0;
@@ -48,17 +49,17 @@ GLuint vShader,fShader,pShader;
 GLfloat SquareVertices[]={1.0,1.0,0.0, 1.0,-1.0,0.0, -1.0,-1.0,0.0, -1.0,1.0,0.0};
 //Change red to purple in shaders.
 GLfloat Colors[]={1.0,0.0,0.0,0.5, 1.0,0.0,0.0,0.5, 0.0,0.0,1.0,1.0, 0.0,0.0,1.0,1.0};
-//Create glu tessellator points.
+//For glu tessellator.
 GLdouble TessSquare[16][3]={{1.0,1.0,0.0}, {1.0,-1.0,0.0}, {-1.0,-1.0,0.0}, {-1.0,1.0,0.0}, {0.75,0.75,0.0}, {0.75,-0.75,0.0}, {-0.75,-0.75,0.0}, {-0.75,0.75,0.0}, {0.5,0.5,0.0}, {0.5,-0.5,0.0}, {-0.5,-0.5,0.0}, {-0.5,0.5,0.0}, {0.25,0.25,0.0}, {0.25,-0.25,0.0}, {-0.25,-0.25,0.0}, {-0.25,0.25,0.0}};
 GLUtesselator *tess=NULL;
 bool tessellate=false;
 
 static void set_shaders()
  {
-   GMappedFile *mapVS;
-   GMappedFile *mapFS;
-   const char *vs = NULL;
-   const char *fs = NULL;
+   GMappedFile *mapVS=NULL;
+   GMappedFile *mapFS=NULL;
+   const char *vs=NULL;
+   const char *fs=NULL;
    GLint isCompiled=0;
 
    //global vShader and fShader
@@ -66,12 +67,12 @@ static void set_shaders()
    fShader = glCreateShader(GL_FRAGMENT_SHADER);
 
    mapVS = g_mapped_file_new("plate.vert", FALSE, NULL);
-   g_print("vertex shader chars %i\n", g_mapped_file_get_length(mapVS));
+   g_print("Vertex Shader chars %i\n", g_mapped_file_get_length(mapVS));
    vs=g_mapped_file_get_contents(mapVS);
    //g_print("%s\n", vs);
 
    mapFS = g_mapped_file_new("plate.frag", FALSE, NULL);
-   g_print("fragment shader chars %i\n", g_mapped_file_get_length(mapFS));
+   g_print("Fragment Shader chars %i\n", g_mapped_file_get_length(mapFS));
    fs=g_mapped_file_get_contents(mapFS);
    //g_print("%s\n", fs);
 
@@ -84,13 +85,13 @@ static void set_shaders()
    glCompileShader(vShader);
    glGetShaderiv(vShader, GL_COMPILE_STATUS, &isCompiled);
    if(isCompiled == GL_FALSE) g_print("Vertex shader didn't compile!\n");
-   else g_print("Vertex shader compiled.\n");
+   else g_print("Vertex Shader Compiled\n");
 
    isCompiled=0;
    glCompileShader(fShader);
    glGetShaderiv(fShader, GL_COMPILE_STATUS, &isCompiled);
    if(isCompiled == GL_FALSE) g_print("Fragment shader didn't compile!\n");
-   else g_print("Fragment shader compiled.\n");
+   else g_print("Fragment Shader Compiled\n");
 
    //global pShader
    pShader = glCreateProgram();
@@ -101,7 +102,7 @@ static void set_shaders()
    GLint isLinked = 0;
    glGetProgramiv(pShader, GL_LINK_STATUS, &isLinked);
    if(isLinked == GL_FALSE) g_print("Couldn't link shaders!\n");
-   else g_print("Shaders linked.\n");
+   else g_print("Shaders Linked\n");
 
    //Check info log.
    int infologLength=0;
@@ -218,29 +219,38 @@ void vertexCallback(GLvoid *vertex)
 }
 static void configureGL(GtkWidget *da, gpointer data)
  {
-   printf("Configure\n");
+   printf("Get Drawing Area\n");
    DrawingWindow=gtk_widget_get_window(GTK_WIDGET(da));
 
    if(DrawingWindow==NULL)
      {
-       printf("Couldn't get GdkWindow!\n");
+        printf("Couldn't get GdkWindow!\n");
+     }
+   else if(gtk_widget_get_allocated_width(da)<2)
+     {
+        printf("Drawing Width %i\n", gtk_widget_get_allocated_width(da));
      }
    else
      {
+       //Check current color depth.
+       GdkScreen *g_screen=gdk_screen_get_default();
+       GdkVisual *g_visual=gdk_screen_get_system_visual(g_screen);
+       printf("Current Color Depth %i\n", gdk_visual_get_depth(g_visual));
+       //Get x window.
        X_window=gdk_x11_window_get_xid(GDK_WINDOW(DrawingWindow));
        X_display=gdk_x11_get_default_xdisplay();
+       //Get best visual for glX. 
        X_visual=glXChooseVisual(X_display, 0, attributes);
        X_context=glXCreateContext(X_display, X_visual, NULL, GL_TRUE);
-     }
-
-   XGetWindowAttributes(X_display, X_window, &X_attributes);
-   glXMakeCurrent(X_display, X_window, X_context);
-   XMapWindow(X_display, X_window);
-   printf("Viewport %i %i\n", (int)X_attributes.width, (int)X_attributes.height);
+       XGetWindowAttributes(X_display, X_window, &X_attributes);
+       glXMakeCurrent(X_display, X_window, X_context);
+       XMapWindow(X_display, X_window);
+      }
 
    if((int)X_attributes.width>1)
      {
        printf("Configure GL\n");
+       printf("GL Viewport Width %i Height %i ColorDepth %i\n", (int)X_attributes.width, (int)X_attributes.height, (int)X_attributes.depth);
        //Initialize glew.
        glewExperimental=GL_TRUE;
        printf("Initialize GLEW with GL version 2.0\n");
@@ -327,6 +337,8 @@ static void draw_glu_tessellation(GtkWidget *menu_item, gpointer data)
  }
 static void close_program()
  {
+   glXDestroyContext(X_display, X_context);
+   XFree(X_visual);
    //Remove tessellator.
    gluDeleteTess(tess);
    //timer can trigger warnings when closing program.
