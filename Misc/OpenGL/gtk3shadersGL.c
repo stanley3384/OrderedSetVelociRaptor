@@ -38,7 +38,8 @@ static Display *X_display=NULL;
 static GLXContext X_context;
 static XVisualInfo *X_visual=NULL;
 static XWindowAttributes X_attributes;
-static GLint attributes[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
+//Let glXChooseVisual pick color depth. Start with a low color depth of 8.
+static GLint attributes[] = {GLX_RGBA, GLX_DEPTH_SIZE, 8, GLX_DOUBLEBUFFER, None};
 static float ang=0.0;
 static guint timer_id;
 static float scaleGL=2.5;
@@ -232,15 +233,36 @@ static void configureGL(GtkWidget *da, gpointer data)
      }
    else
      {
-       //Check current color depth.
        GdkScreen *g_screen=gdk_screen_get_default();
        GdkVisual *g_visual=gdk_screen_get_system_visual(g_screen);
+       //Get list of available color depths.
+       GList *screen_list=gdk_screen_list_visuals(g_screen);
+       GList *temp=NULL;
+       int depth1=0;
+       int depth2=0;
+       printf("Available Color Depths ");
+       temp=screen_list;
+       if(temp!=NULL)
+         {
+           while(temp!=NULL)
+             {
+               depth1=gdk_visual_get_depth(GDK_VISUAL(temp->data));
+               if(depth1!=depth2) printf("%i ", depth1);
+               depth2=depth1;
+               temp=temp->next;
+             }
+           printf("\n");
+         }
+       else printf("Couldn't get color depths!\n");
+       g_list_free(screen_list);
+       //Check current color depth.
        printf("Current Color Depth %i\n", gdk_visual_get_depth(g_visual));
        //Get x window.
        X_window=gdk_x11_window_get_xid(GDK_WINDOW(DrawingWindow));
        X_display=gdk_x11_get_default_xdisplay();
        //Get best visual for glX. 
        X_visual=glXChooseVisual(X_display, 0, attributes);
+       if(X_visual==NULL) printf("Couldn't get GL display visual!\n");
        X_context=glXCreateContext(X_display, X_visual, NULL, GL_TRUE);
        XGetWindowAttributes(X_display, X_window, &X_attributes);
        glXMakeCurrent(X_display, X_window, X_context);
