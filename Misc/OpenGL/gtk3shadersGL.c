@@ -124,6 +124,11 @@ static void set_shaders()
    printf("OpenGL %s\n", glGetString(GL_VERSION));
    printf("GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
    printf("GLU %s\n", gluGetString(GLU_VERSION));
+   int major=0;
+   int minor=0;
+   glXQueryVersion(X_display, &major, &minor);
+   printf("GLX version %i %i\n", major, minor);
+   printf("GLEW %s\n", glewGetString(GLEW_VERSION));
 
   }
 static void drawGL(GtkWidget *da, cairo_t *cr, gpointer data)
