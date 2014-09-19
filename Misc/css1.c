@@ -1,7 +1,7 @@
 
 /*
 
-Test code for trying out some CSS with GTK.
+Test code for trying out some CSS with GTK. A couple of color gradients on buttons and a colored event box under text.
 
 //gcc -Wall css1.c -o css1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -41,11 +41,13 @@ static gboolean event_box_button_press(GtkWidget *event_box, GdkEvent *event, Gt
  }
 int main(int argc, char **argv)
  {
-   GtkWidget *window, *label1, *label2, *button1, *button2, *button3, *button_label1, *button_label2, *button_label3, *event_box1, *grid1;
+   GtkWidget *window, *label1, *label2, *button1, *button2, *button3, *button4, *button_label1, *button_label2, *button_label3, *button_label4, *event_box1, *grid1;
    gchar css_string[]="GtkButton{background: blue}\n\
                        GtkEventBox{background: yellow}\n\
-                       GtkButton#css_button3{background-image: -gtk-gradient (linear, left top, left bottom, color-stop(0.0,rgba(34,97,170,1)), color-stop(0.50,rgba(56,145,218,1)), color-stop(0.51,rgba(34,131,216,1)), color-stop(1.00,rgba(134,191,234,1)));}\n\
+                       GtkButton#css_button3{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,0,1)), color-stop(0.5,rgba(0,255,0,1)), color-stop(1.0,rgba(0,0,255,1)));}\n\
+                       GtkButton#css_button4{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
                        GtkButton#css_button3:focused{background: purple}\n\
+                       GtkButton#css_button4:focused{background: purple}\n\
                        GtkWindow{background: green}\n\
                        GtkButton:focused{background: purple}";
    GtkCssProvider *provider;
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Label and ButtonLabel");
-   gtk_window_set_default_size(GTK_WINDOW(window), 250, 120);
+   gtk_window_set_default_size(GTK_WINDOW(window), 250, 150);
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    label1=gtk_label_new("label1");
@@ -95,7 +97,14 @@ int main(int argc, char **argv)
    button_label3=gtk_bin_get_child(GTK_BIN(button3));
    g_signal_connect(button3, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label3));
    g_signal_connect(button3, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label3));
-   gtk_widget_set_name(GTK_WIDGET(button3), "css_button3");   
+   gtk_widget_set_name(GTK_WIDGET(button3), "css_button3"); 
+
+   button4=gtk_button_new_with_label("button4");
+   gtk_widget_set_hexpand(button4, TRUE);
+   button_label4=gtk_bin_get_child(GTK_BIN(button4));
+   g_signal_connect(button4, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label4));
+   g_signal_connect(button4, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label4));
+   gtk_widget_set_name(GTK_WIDGET(button4), "css_button4");    
 
    grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
@@ -105,6 +114,7 @@ int main(int argc, char **argv)
    gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 1, 1);
    gtk_grid_attach(GTK_GRID(grid1), button2, 0, 3, 1, 1);
    gtk_grid_attach(GTK_GRID(grid1), button3, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button4, 0, 5, 1, 1);
    
    provider = gtk_css_provider_new();
    display = gdk_display_get_default();
