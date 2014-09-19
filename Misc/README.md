@@ -17,3 +17,8 @@ Shaders
 
 ![ScreenShot](/Misc/vertex.jpg)
 
+
+--There are a variety of other programs that are small test programs. Good for figuring out how a certain technology works and easy to change around. 
+
+C. Eric Cashon
+
