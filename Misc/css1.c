@@ -43,12 +43,13 @@ int main(int argc, char **argv)
  {
    GtkWidget *window, *label1, *label2, *button1, *button2, *button3, *button4, *button_label1, *button_label2, *button_label3, *button_label4, *event_box1, *grid1;
    gchar css_string[]="GtkButton{background: blue}\n\
+                       GtkLabel{color: black}\n\
                        GtkEventBox{background: yellow}\n\
                        GtkButton#css_button3{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,0,1)), color-stop(0.5,rgba(0,255,0,1)), color-stop(1.0,rgba(0,0,255,1)));}\n\
                        GtkButton#css_button4{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
                        GtkButton#css_button3:focused{background: purple}\n\
                        GtkButton#css_button4:focused{background: purple}\n\
-                       GtkWindow{background: green}\n\
+                       GtkWindow{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
                        GtkButton:focused{background: purple}";
    GtkCssProvider *provider;
    GdkDisplay *display;
@@ -60,6 +61,7 @@ int main(int argc, char **argv)
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Label and ButtonLabel");
    gtk_window_set_default_size(GTK_WINDOW(window), 250, 150);
+   gtk_container_set_border_width(GTK_CONTAINER(window), 10);
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    label1=gtk_label_new("label1");
