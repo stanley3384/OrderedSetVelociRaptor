@@ -39,9 +39,29 @@ static gboolean event_box_button_press(GtkWidget *event_box, GdkEvent *event, Gt
    g_print("Click\n");
    return TRUE;
  }
+gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
+ {
+   guint width=gtk_widget_get_allocated_width(widget);
+   guint height=gtk_widget_get_allocated_height(widget);
+   cairo_pattern_t *radial1;  
+  
+   cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+   cairo_paint(cr);
+   cairo_translate(cr, width/2, height/2);
+  
+   r1 = cairo_pattern_create_radial(0, 0, 10, 0, 0, 250);  
+   cairo_pattern_add_color_stop_rgb(r1, 0.3, 0.0, 0.0, 1.0);
+   cairo_pattern_add_color_stop_rgb(r1, 0.0, 1.0, 0.0, 0.0);
+   cairo_set_source(cr, radial1);
+   cairo_arc(cr, 0, 0, 150, 0, G_PI * 2);
+   cairo_fill(cr);     
+         
+   cairo_pattern_destroy(radial1);
+   return FALSE;
+ }
 int main(int argc, char **argv)
  {
-   GtkWidget *window, *label1, *label2, *button1, *button2, *button3, *button4, *button_label1, *button_label2, *button_label3, *button_label4, *event_box1, *grid1;
+   GtkWidget *window, *label1, *label2, *button1, *button2, *button3, *button4, *button_label1, *button_label2, *button_label3, *button_label4, *event_box1, *drawing_area1, *grid1;
    gchar css_string[]="GtkButton{background: blue}\n\
                        GtkLabel{color: black}\n\
                        GtkEventBox{background: yellow}\n\
@@ -60,7 +80,7 @@ int main(int argc, char **argv)
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Label and ButtonLabel");
-   gtk_window_set_default_size(GTK_WINDOW(window), 250, 150);
+   gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -108,6 +128,10 @@ int main(int argc, char **argv)
    g_signal_connect(button4, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label4));
    gtk_widget_set_name(GTK_WIDGET(button4), "css_button4");    
 
+   drawing_area1=gtk_drawing_area_new();
+   gtk_widget_set_size_request (drawing_area1, 300, 150);
+   g_signal_connect (G_OBJECT(drawing_area1), "draw", G_CALLBACK(draw_radial_color), NULL);
+   
    grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
@@ -117,6 +141,7 @@ int main(int argc, char **argv)
    gtk_grid_attach(GTK_GRID(grid1), button2, 0, 3, 1, 1);
    gtk_grid_attach(GTK_GRID(grid1), button3, 0, 4, 1, 1);
    gtk_grid_attach(GTK_GRID(grid1), button4, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), drawing_area1, 0, 6, 3, 1);
    
    provider = gtk_css_provider_new();
    display = gdk_display_get_default();
