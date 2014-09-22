@@ -1,7 +1,7 @@
 
 /*
 
-Test code for trying out some CSS with GTK. A couple of color gradients on buttons and a colored event box under text.
+Test code for trying out some CSS with GTK. A couple of color gradients on buttons, a colored event box under text and a drawing area with some animation.
 
 //gcc -Wall css1.c -o css1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -9,6 +9,8 @@ C. Eric Cashon
 */
 
 #include<gtk/gtk.h>
+
+gint timer_id=0;
 
 static gboolean change_font_color_enter(GtkWidget *button, GdkEvent *event, GtkLabel *label)
  {
@@ -41,6 +43,8 @@ static gboolean event_box_button_press(GtkWidget *event_box, GdkEvent *event, Gt
  }
 gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
+   static guint radius=100;
+
    guint width=gtk_widget_get_allocated_width(widget);
    guint height=gtk_widget_get_allocated_height(widget);
    cairo_pattern_t *radial1;  
@@ -49,15 +53,29 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
    cairo_paint(cr);
    cairo_translate(cr, width/2, height/2);
   
-   r1 = cairo_pattern_create_radial(0, 0, 10, 0, 0, 250);  
-   cairo_pattern_add_color_stop_rgb(r1, 0.3, 0.0, 0.0, 1.0);
-   cairo_pattern_add_color_stop_rgb(r1, 0.0, 1.0, 0.0, 0.0);
+   if(radius>1500) radius=100;
+   radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, radius);  
+   cairo_pattern_add_color_stop_rgb(radial1, 0.3, 0.0, 0.0, 1.0);
+   cairo_pattern_add_color_stop_rgb(radial1, 0.0, 1.0, 0.0, 0.0);
    cairo_set_source(cr, radial1);
-   cairo_arc(cr, 0, 0, 150, 0, G_PI * 2);
+   cairo_arc(cr, 0, 0, 300, 0, G_PI * 2);
    cairo_fill(cr);     
          
    cairo_pattern_destroy(radial1);
-   return FALSE;
+   radius+=20;
+   return TRUE;
+ }
+static gboolean animate_drawing_area(gpointer data)
+ {  
+   gtk_widget_queue_draw_area(GTK_WIDGET(data), 0, 0, gtk_widget_get_allocated_width(GTK_WIDGET(data)), gtk_widget_get_allocated_height(GTK_WIDGET(data)));  
+   return TRUE;
+ }
+static void close_program()
+ {
+   //timer can trigger warnings when closing program.
+   g_source_remove(timer_id);
+   printf("Quit Program\n");
+   gtk_main_quit();
  }
 int main(int argc, char **argv)
  {
@@ -82,7 +100,7 @@ int main(int argc, char **argv)
    gtk_window_set_title(GTK_WINDOW(window), "Label and ButtonLabel");
    gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-   g_signal_connect_swapped(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+   g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
    label1=gtk_label_new("label1");
    gtk_widget_set_hexpand(label1, TRUE);
@@ -152,6 +170,8 @@ int main(int argc, char **argv)
    g_object_unref(provider);
 
    gtk_widget_show_all(window);
+
+   timer_id=g_timeout_add(100, animate_drawing_area, drawing_area1);
 
    gtk_main();
    return 0;
