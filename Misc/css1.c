@@ -45,6 +45,9 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
    static guint radius=100;
 
+   GTimer *timer1=g_timer_new();
+   //Block UI for testing.
+   //usleep(500000);
    guint width=gtk_widget_get_allocated_width(widget);
    guint height=gtk_widget_get_allocated_height(widget);
    cairo_pattern_t *radial1;  
@@ -59,10 +62,16 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
    cairo_pattern_add_color_stop_rgb(radial1, 0.0, 1.0, 0.0, 0.0);
    cairo_set_source(cr, radial1);
    cairo_arc(cr, 0, 0, 300, 0, G_PI * 2);
-   cairo_fill(cr);     
-         
+   cairo_fill(cr); 
+
+   radius+=20;    
+       
    cairo_pattern_destroy(radial1);
-   radius+=20;
+
+   g_timer_stop(timer1);
+   g_print("Draw Timer %f\n", g_timer_elapsed(timer1, NULL));  
+   g_timer_destroy(timer1);
+   
    return TRUE;
  }
 static gboolean animate_drawing_area(gpointer data)
