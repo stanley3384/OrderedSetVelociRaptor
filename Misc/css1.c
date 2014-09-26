@@ -15,7 +15,7 @@ int busy=0;
 guint radius_t=100;
 //Use the threaded code path or not. Set before compiling.
 gboolean use_thread_code=TRUE;
-//Set the code path in the threaded code to use the thread or not. Need to have use_thread_code=TRUE create a worker thread.
+//Set the code path in the threaded code to use the thread or not. Need to have use_thread_code=TRUE to create a worker thread. FALSE will follow the threaded code path but it won't create the worker thread. Good for a comparison with the simpler non-threaded code.
 gboolean thread_code_path=TRUE;
 
 //For threading.
@@ -97,7 +97,7 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
    g_print("Start Drawing\n");
    cairo_t *cr2=cairo_create(cairo_surface1);
   
-   //Slow the drawing thread down.
+   //Slow the drawing thread down. Cairo can draw very fast.
    usleep(300000);
    //Draw on surface.
    cairo_pattern_t *radial1;    
@@ -118,7 +118,7 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
 
    g_print("End Drawing\n");
    cairo_destroy(cr2);
-   busy=0;
+   g_atomic_int_set(&busy, 0);
    gdk_threads_add_idle((GSourceFunc)end_thread, g_thread_self());
    return NULL;
  }
@@ -134,19 +134,7 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
        height_t=gtk_widget_get_allocated_height(widget);
        cairo_surface1 = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
      }
-   
-   if(drawing>0&&g_atomic_int_get(&busy)==0)
-     {
-       busy=1;
-       g_print("Drawing %i\n", drawing);
-       if(thread_code_path) g_print("Start Thread\n");
-       if(thread_code_path) g_thread_new("drawing_thread", (GThreadFunc)draw_radial_color_t2, cairo_surface1);
-       else draw_radial_color_t2(cairo_surface1);
-       check_drawing++;
-     }
-   else g_print("Skip Drawing\n");
-
-   if(check_drawing>drawing)
+    if(check_drawing>drawing&&g_atomic_int_get(&busy)==0)
      {
        g_print("Update Surface\n");  
        cairo_set_source_surface(cr, cairo_surface1, 0, 0);
@@ -154,9 +142,25 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
        drawing++;
        check_drawing=drawing;
      }
+
+   if(drawing>0&&g_atomic_int_get(&busy)==0)
+     {
+       g_atomic_int_set(&busy, 1);
+       g_print("Drawing %i\n", drawing);
+       if(thread_code_path) g_print("Start Thread\n");
+       if(thread_code_path) g_thread_new("drawing_thread", (GThreadFunc)draw_radial_color_t2, cairo_surface1);
+       else draw_radial_color_t2(cairo_surface1);
+       check_drawing++;
+     }
+   else g_print("Skip Drawing\n");
      
-   //Skip first draw.
-   if(drawing==0) drawing++;
+   //Draw blue background on first draw.
+   if(drawing==0)
+     {
+       drawing++;
+       cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+       cairo_paint(cr);
+     }
   
    return TRUE;
  }
@@ -169,6 +173,7 @@ static gboolean animate_drawing_area(gpointer data)
  }
 static void close_program()
  {
+   cairo_surface_destroy(cairo_surface1);
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
    printf("Quit Program\n");
