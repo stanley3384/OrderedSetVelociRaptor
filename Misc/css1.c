@@ -85,16 +85,17 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
    
    return TRUE;
  }
-//With threads
+
+//Drawing code with a worker thread.
 static gboolean end_thread(GThread *thread)
-{
-  g_thread_join(thread);
-  return FALSE;
-}
+ {
+   g_thread_join(thread);
+   return FALSE;
+ }
 static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
  {
-   //Context to draw with.
    g_print("Start Drawing\n");
+   //Cairo context to draw with.
    cairo_t *cr2=cairo_create(cairo_surface1);
   
    //Slow the drawing thread down. Cairo can draw very fast.
@@ -127,13 +128,15 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
    static guint drawing=0;
    static guint check_drawing=0;
 
+   //Initialize a independent drawing surface.
    if(drawing==0)
      {
-       //Initialize a drawing surface.
        width_t=gtk_widget_get_allocated_width(widget);
        height_t=gtk_widget_get_allocated_height(widget);
        cairo_surface1 = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
      }
+
+    //A new drawing is ready.
     if(check_drawing>drawing&&g_atomic_int_get(&busy)==0)
      {
        g_print("Update Surface\n");  
@@ -143,6 +146,7 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
        check_drawing=drawing;
      }
 
+   //Start a drawing thread and send the surface to be drawn on.
    if(drawing>0&&g_atomic_int_get(&busy)==0)
      {
        g_atomic_int_set(&busy, 1);
