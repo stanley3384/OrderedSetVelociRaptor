@@ -1,7 +1,7 @@
 
 /*
 
-Test code for trying out some CSS with GTK. A couple of color gradients on buttons, a colored event box under text and a drawing area with some animation.
+Test code for trying out some CSS with GTK. A couple of color gradients on buttons, a colored event box under text and a drawing area with some animation. Add a worker thread for testing what it takes to bind up the UI on heavy draws. 
 
 //gcc -Wall css1.c -o css1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -11,6 +11,17 @@ C. Eric Cashon
 #include<gtk/gtk.h>
 
 gint timer_id=0;
+int busy=0;
+guint radius_t=100;
+//Use the threaded code path or not. Set before compiling.
+gboolean use_thread_code=TRUE;
+//Set the code path in the threaded code to use the thread or not. Need to have use_thread_code=TRUE create a worker thread.
+gboolean thread_code_path=TRUE;
+
+//For threading.
+cairo_surface_t *cairo_surface1=NULL;
+guint width_t=0;
+guint height_t=0;
 
 static gboolean change_font_color_enter(GtkWidget *button, GdkEvent *event, GtkLabel *label)
  {
@@ -47,7 +58,7 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
 
    GTimer *timer1=g_timer_new();
    //Block UI for testing.
-   //usleep(500000);
+   usleep(300000);
    guint width=gtk_widget_get_allocated_width(widget);
    guint height=gtk_widget_get_allocated_height(widget);
    cairo_pattern_t *radial1;  
@@ -74,9 +85,86 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
    
    return TRUE;
  }
+//With threads
+static gboolean end_thread(GThread *thread)
+{
+  g_thread_join(thread);
+  return FALSE;
+}
+static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
+ {
+   //Context to draw with.
+   g_print("Start Drawing\n");
+   cairo_t *cr2=cairo_create(cairo_surface1);
+  
+   //Slow the drawing thread down.
+   usleep(300000);
+   //Draw on surface.
+   cairo_pattern_t *radial1;    
+   cairo_set_source_rgba(cr2, 0.0, 0.0, 1.0, 1.0);
+   cairo_paint(cr2);
+   cairo_translate(cr2, width_t/2, height_t/2);  
+   if(radius_t>1500) radius_t=100;
+   radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, radius_t);  
+   cairo_pattern_add_color_stop_rgb(radial1, 0.3, 0.0, 0.0, 1.0);
+   cairo_pattern_add_color_stop_rgb(radial1, 0.0, 1.0, 0.0, 0.0);
+   cairo_set_source(cr2, radial1);
+   cairo_arc(cr2, 0, 0, 300, 0, G_PI * 2);
+   cairo_fill(cr2); 
+   cairo_translate(cr2, width_t*2, height_t*2);
+   radius_t+=20;           
+   cairo_pattern_destroy(radial1);
+   cairo_paint(cr2);
+
+   g_print("End Drawing\n");
+   cairo_destroy(cr2);
+   busy=0;
+   gdk_threads_add_idle((GSourceFunc)end_thread, g_thread_self());
+   return NULL;
+ }
+gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
+ {
+   static guint drawing=0;
+   static guint check_drawing=0;
+
+   if(drawing==0)
+     {
+       //Initialize a drawing surface.
+       width_t=gtk_widget_get_allocated_width(widget);
+       height_t=gtk_widget_get_allocated_height(widget);
+       cairo_surface1 = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
+     }
+   
+   if(drawing>0&&g_atomic_int_get(&busy)==0)
+     {
+       busy=1;
+       g_print("Drawing %i\n", drawing);
+       if(thread_code_path) g_print("Start Thread\n");
+       if(thread_code_path) g_thread_new("drawing_thread", (GThreadFunc)draw_radial_color_t2, cairo_surface1);
+       else draw_radial_color_t2(cairo_surface1);
+       check_drawing++;
+     }
+   else g_print("Skip Drawing\n");
+
+   if(check_drawing>drawing)
+     {
+       g_print("Update Surface\n");  
+       cairo_set_source_surface(cr, cairo_surface1, 0, 0);
+       cairo_paint(cr);  
+       drawing++;
+       check_drawing=drawing;
+     }
+     
+   //Skip first draw.
+   if(drawing==0) drawing++;
+  
+   return TRUE;
+ }
 static gboolean animate_drawing_area(gpointer data)
  {  
-   gtk_widget_queue_draw_area(GTK_WIDGET(data), 0, 0, gtk_widget_get_allocated_width(GTK_WIDGET(data)), gtk_widget_get_allocated_height(GTK_WIDGET(data)));  
+   g_print("Timer Fired\n");
+   gtk_widget_queue_draw_area(GTK_WIDGET(data), 0, 0, gtk_widget_get_allocated_width(GTK_WIDGET(data)), gtk_widget_get_allocated_height(GTK_WIDGET(data)));
+      
    return TRUE;
  }
 static void close_program()
@@ -157,7 +245,9 @@ int main(int argc, char **argv)
 
    drawing_area1=gtk_drawing_area_new();
    gtk_widget_set_size_request (drawing_area1, 300, 150);
-   g_signal_connect (G_OBJECT(drawing_area1), "draw", G_CALLBACK(draw_radial_color), NULL);
+   if(use_thread_code) gtk_widget_set_double_buffered(drawing_area1, FALSE);
+   if(use_thread_code) g_signal_connect(G_OBJECT(drawing_area1), "draw", G_CALLBACK(draw_radial_color_t1), NULL);
+   else g_signal_connect(G_OBJECT(drawing_area1), "draw", G_CALLBACK(draw_radial_color), NULL);
    
    grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
@@ -180,7 +270,7 @@ int main(int argc, char **argv)
 
    gtk_widget_show_all(window);
 
-   timer_id=g_timeout_add(100, animate_drawing_area, drawing_area1);
+   timer_id=gdk_threads_add_timeout(100, animate_drawing_area, drawing_area1);
 
    gtk_main();
    return 0;
