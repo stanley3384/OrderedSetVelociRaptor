@@ -3,16 +3,18 @@
 
 Test code for trying out some CSS with GTK. A couple of color gradients on buttons, a colored event box under text and a drawing area with some animation. Add a worker thread for testing what it takes to bind up the UI on heavy draws. 
 
-//gcc -Wall css1.c -o css1 `pkg-config --cflags --libs gtk+-3.0`
+gcc -Wall css1.c -o css1 `pkg-config --cflags --libs gtk+-3.0`
 
 C. Eric Cashon
+
 */
 
 #include<gtk/gtk.h>
 
 gint timer_id=0;
-int busy=0;
+gint busy=0;
 guint radius_t=100;
+
 //Use the threaded code path or not. Set before compiling.
 gboolean use_thread_code=TRUE;
 //Set the code path in the threaded code to use the thread or not. Need to have use_thread_code=TRUE to create a worker thread. FALSE will follow the threaded code path but it won't create the worker thread. Good for a comparison with the simpler non-threaded code.
@@ -20,6 +22,7 @@ gboolean thread_code_path=TRUE;
 
 //For threading.
 cairo_surface_t *cairo_surface1=NULL;
+GTimer *timer2=NULL;
 guint width_t=0;
 guint height_t=0;
 
@@ -94,7 +97,7 @@ static gboolean end_thread(GThread *thread)
  }
 static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
  {
-   g_print("Start Drawing\n");
+   //g_print("Start Drawing\n");
    //Cairo context to draw with.
    cairo_t *cr2=cairo_create(cairo_surface1);
   
@@ -117,29 +120,41 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
    cairo_pattern_destroy(radial1);
    cairo_paint(cr2);
 
-   g_print("End Drawing\n");
+   //g_print("End Drawing\n");
    cairo_destroy(cr2);
    g_atomic_int_set(&busy, 0);
    gdk_threads_add_idle((GSourceFunc)end_thread, g_thread_self());
+   g_timer_stop(timer2);
+   g_print("Thread Draw Timer %f\n", g_timer_elapsed(timer2, NULL));  
    return NULL;
  }
 gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
    static guint drawing=0;
    static guint check_drawing=0;
+   gint width=gtk_widget_get_allocated_width(widget);
+   gint height=gtk_widget_get_allocated_height(widget);
+
+   //Reallocate surface when screen size changes.
+   if(width!=width_t||height!=height_t)
+     {
+       width_t=width;
+       height_t=height;
+       cairo_surface_destroy(cairo_surface1);
+       cairo_surface1=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
+     }
 
    //Initialize a independent drawing surface.
    if(drawing==0)
      {
-       width_t=gtk_widget_get_allocated_width(widget);
-       height_t=gtk_widget_get_allocated_height(widget);
-       cairo_surface1 = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
+       cairo_surface1=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
+       timer2=g_timer_new();
      }
 
     //A new drawing is ready.
     if(check_drawing>drawing&&g_atomic_int_get(&busy)==0)
      {
-       g_print("Update Surface\n");  
+       //g_print("Update Surface\n");  
        cairo_set_source_surface(cr, cairo_surface1, 0, 0);
        cairo_paint(cr);  
        drawing++;
@@ -149,8 +164,9 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
    //Start a drawing thread and send the surface to be drawn on.
    if(drawing>0&&g_atomic_int_get(&busy)==0)
      {
+       g_timer_start(timer2);
        g_atomic_int_set(&busy, 1);
-       g_print("Drawing %i\n", drawing);
+       //g_print("Drawing %i\n", drawing);
        if(thread_code_path) g_print("Start Thread\n");
        if(thread_code_path) g_thread_new("drawing_thread", (GThreadFunc)draw_radial_color_t2, cairo_surface1);
        else draw_radial_color_t2(cairo_surface1);
@@ -170,13 +186,14 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
  }
 static gboolean animate_drawing_area(gpointer data)
  {  
-   g_print("Timer Fired\n");
+   //g_print("Timer Fired\n");
    gtk_widget_queue_draw_area(GTK_WIDGET(data), 0, 0, gtk_widget_get_allocated_width(GTK_WIDGET(data)), gtk_widget_get_allocated_height(GTK_WIDGET(data)));
       
    return TRUE;
  }
 static void close_program()
  {
+   if(use_thread_code) g_timer_destroy(timer2);
    cairo_surface_destroy(cairo_surface1);
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
