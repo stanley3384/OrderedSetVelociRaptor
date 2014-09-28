@@ -136,17 +136,22 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
    gint height=gtk_widget_get_allocated_height(widget);
 
    //Reallocate surface when screen size changes.
-   if(width!=width_t||height!=height_t)
+   if(drawing!=0)
      {
-       width_t=width;
-       height_t=height;
-       cairo_surface_destroy(cairo_surface1);
-       cairo_surface1=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
+       if(width!=width_t||height!=height_t)
+         {
+           width_t=width;
+           height_t=height;
+           cairo_surface_destroy(cairo_surface1);
+           cairo_surface1=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
+         }
      }
 
    //Initialize a independent drawing surface.
    if(drawing==0)
      {
+       width_t=width;
+       height_t=height;
        cairo_surface1=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width_t, height_t);
        timer2=g_timer_new();
      }
