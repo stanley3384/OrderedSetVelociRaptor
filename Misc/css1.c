@@ -10,10 +10,12 @@ C. Eric Cashon
 */
 
 #include<gtk/gtk.h>
+#include<stdlib.h>
 
 gint timer_id=0;
 gint busy=0;
 guint radius_t=100;
+guint sleep_value=1000000;
 
 //Use the threaded code path or not. Set before compiling.
 gboolean use_thread_code=TRUE;
@@ -61,7 +63,7 @@ gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
 
    GTimer *timer1=g_timer_new();
    //Block UI for testing.
-   usleep(300000);
+   g_usleep(sleep_value);
    guint width=gtk_widget_get_allocated_width(widget);
    guint height=gtk_widget_get_allocated_height(widget);
    cairo_pattern_t *radial1;  
@@ -102,7 +104,7 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
    cairo_t *cr2=cairo_create(cairo_surface1);
   
    //Slow the drawing thread down. Cairo can draw very fast.
-   usleep(300000);
+   g_usleep(g_atomic_int_get(&sleep_value));
    //Draw on surface.
    cairo_pattern_t *radial1;    
    cairo_set_source_rgba(cr2, 0.0, 0.0, 1.0, 1.0);
@@ -123,7 +125,7 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
    //g_print("End Drawing\n");
    cairo_destroy(cr2);
    g_atomic_int_set(&busy, 0);
-   gdk_threads_add_idle((GSourceFunc)end_thread, g_thread_self());
+   if(thread_code_path) gdk_threads_add_idle((GSourceFunc)end_thread, g_thread_self());
    g_timer_stop(timer2);
    g_print("Thread Draw Timer %f\n", g_timer_elapsed(timer2, NULL));  
    return NULL;
@@ -172,12 +174,15 @@ gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
        g_timer_start(timer2);
        g_atomic_int_set(&busy, 1);
        //g_print("Drawing %i\n", drawing);
-       if(thread_code_path) g_print("Start Thread\n");
+       if(thread_code_path)
+         { 
+           //g_print("Start Thread\n");
+         }
        if(thread_code_path) g_thread_new("drawing_thread", (GThreadFunc)draw_radial_color_t2, cairo_surface1);
        else draw_radial_color_t2(cairo_surface1);
        check_drawing++;
      }
-   else g_print("Skip Drawing\n");
+   else //g_print("Skip Drawing\n");
      
    //Draw blue background on first draw.
    if(drawing==0)
@@ -196,6 +201,26 @@ static gboolean animate_drawing_area(gpointer data)
       
    return TRUE;
  }
+static void set_sleep(GtkWidget *combo1, gpointer *data)
+ {
+   g_print("Timer\n");
+   if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo1)))==0) 
+     {
+       g_atomic_int_set(&sleep_value, 0);
+     }
+   else if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo1)))==1) 
+     {
+       g_atomic_int_set(&sleep_value, 1000000);
+     }
+   else if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo1)))==2) 
+     {
+       g_atomic_int_set(&sleep_value, 2000000);
+     }
+   else
+     {
+       g_atomic_int_set(&sleep_value, 3000000);
+     }    
+ }
 static void close_program()
  {
    if(use_thread_code) g_timer_destroy(timer2);
@@ -207,9 +232,10 @@ static void close_program()
  }
 int main(int argc, char **argv)
  {
-   GtkWidget *window, *label1, *label2, *button1, *button2, *button3, *button4, *button_label1, *button_label2, *button_label3, *button_label4, *event_box1, *drawing_area1, *grid1;
+   GtkWidget *window, *combo1, *label1, *label2, *button1, *button2, *button3, *button4, *button_label1, *button_label2, *button_label3, *button_label4, *event_box1, *drawing_area1, *grid1;
    gchar css_string[]="GtkButton{background: blue}\n\
                        GtkLabel{color: black}\n\
+                       GtkComboBoxText{color: white}\n\
                        GtkEventBox{background: yellow}\n\
                        GtkButton#css_button3{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,0,1)), color-stop(0.5,rgba(0,255,0,1)), color-stop(1.0,rgba(0,0,255,1)));}\n\
                        GtkButton#css_button4{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
@@ -230,6 +256,14 @@ int main(int argc, char **argv)
    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
 
+   combo1=gtk_combo_box_text_new();     
+   gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "0", "Timer 0 Second");
+   gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "1", "Timer 1 Second.");
+   gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "2", "Timer 2 Seconds");
+   gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "3", "Timer 3 Seconds");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 1);
+   g_signal_connect(combo1, "changed", G_CALLBACK(set_sleep), NULL);
+     
    label1=gtk_label_new("label1");
    gtk_widget_set_hexpand(label1, TRUE);
 
@@ -283,13 +317,14 @@ int main(int argc, char **argv)
    grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
 
-   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), event_box1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), button2, 0, 3, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), button3, 0, 4, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), button4, 0, 5, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), drawing_area1, 0, 6, 3, 1);
+   gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), event_box1, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button1, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button2, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button3, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button4, 0, 6, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), drawing_area1, 0, 7, 3, 1);
    
    provider = gtk_css_provider_new();
    display = gdk_display_get_default();
