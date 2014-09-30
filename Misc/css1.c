@@ -50,8 +50,12 @@ int main(int argc, char **argv)
                        GtkLabel{color: black}\n\
                        GtkComboBoxText{color: white}\n\
                        GtkEventBox{background: yellow}\n\
+                       GtkButton#css_button1{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,255,0,1)), color-stop(1.0,rgba(0,0,255,1)));}\n\
+                       GtkButton#css_button2{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
                        GtkButton#css_button3{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,0,1)), color-stop(0.5,rgba(0,255,0,1)), color-stop(1.0,rgba(0,0,255,1)));}\n\
                        GtkButton#css_button4{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
+                       GtkButton#css_button1:focused{background: purple}\n\
+                       GtkButton#css_button2:focused{background: purple}\n\
                        GtkButton#css_button3:focused{background: purple}\n\
                        GtkButton#css_button4:focused{background: purple}\n\
                        GtkWindow{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,255,1)), color-stop(1.0,rgba(255,255,0,1)));}\n\
@@ -106,12 +110,14 @@ int main(int argc, char **argv)
    button_label1=gtk_bin_get_child(GTK_BIN(button1));
    g_signal_connect(button1, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label1));
    g_signal_connect(button1, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label1));
+   gtk_widget_set_name(GTK_WIDGET(button1), "css_button1"); 
 
    button2=gtk_button_new_with_label("button2");
    gtk_widget_set_hexpand(button2, TRUE);
    button_label2=gtk_bin_get_child(GTK_BIN(button2));
    g_signal_connect(button2, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label2));
    g_signal_connect(button2, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label2));
+   gtk_widget_set_name(GTK_WIDGET(button2), "css_button2"); 
 
    button3=gtk_button_new_with_label("button3");
    gtk_widget_set_hexpand(button3, TRUE);
