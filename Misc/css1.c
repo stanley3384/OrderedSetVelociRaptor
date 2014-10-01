@@ -32,7 +32,7 @@ static gboolean change_font_color_enter(GtkWidget *button, GdkEvent *event, GtkL
 static gboolean change_font_color_leave(GtkWidget *button, GdkEvent *event, GtkLabel *label);
 static gboolean change_font_color_enter_event(GtkWidget *event_box, GdkEvent *event, GtkLabel *label);
 static gboolean change_font_color_leave_event(GtkWidget *event_box, GdkEvent *event, GtkLabel *label);
-static gboolean event_box_button_press(GtkWidget *event_box, GdkEvent *event, GtkLabel *label);
+static gboolean widget_clicked(GtkWidget *event_box, GdkEvent *event, GtkLabel *label);
 gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean end_thread(GThread *thread);
 static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1);
@@ -103,13 +103,14 @@ int main(int argc, char **argv)
    gtk_widget_set_events(event_box1, GDK_BUTTON_PRESS_MASK);
    g_signal_connect(event_box1, "enter-notify-event", G_CALLBACK(change_font_color_enter_event), GTK_LABEL(label2));
    g_signal_connect(event_box1, "leave-notify-event", G_CALLBACK(change_font_color_leave_event), GTK_LABEL(label2)); 
-   g_signal_connect(event_box1, "button-press-event", G_CALLBACK(event_box_button_press), GTK_LABEL(label2)); 
+   g_signal_connect(event_box1, "button-press-event", G_CALLBACK(widget_clicked), GTK_LABEL(label2)); 
 
    button1=gtk_button_new_with_label("button1");
    gtk_widget_set_hexpand(button1, TRUE);
    button_label1=gtk_bin_get_child(GTK_BIN(button1));
    g_signal_connect(button1, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label1));
    g_signal_connect(button1, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label1));
+   g_signal_connect(button1, "button-press-event", G_CALLBACK(widget_clicked), NULL); 
    gtk_widget_set_name(GTK_WIDGET(button1), "css_button1"); 
 
    button2=gtk_button_new_with_label("button2");
@@ -117,6 +118,7 @@ int main(int argc, char **argv)
    button_label2=gtk_bin_get_child(GTK_BIN(button2));
    g_signal_connect(button2, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label2));
    g_signal_connect(button2, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label2));
+   g_signal_connect(button2, "button-press-event", G_CALLBACK(widget_clicked), NULL); 
    gtk_widget_set_name(GTK_WIDGET(button2), "css_button2"); 
 
    button3=gtk_button_new_with_label("button3");
@@ -124,6 +126,7 @@ int main(int argc, char **argv)
    button_label3=gtk_bin_get_child(GTK_BIN(button3));
    g_signal_connect(button3, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label3));
    g_signal_connect(button3, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label3));
+   g_signal_connect(button3, "button-press-event", G_CALLBACK(widget_clicked), NULL); 
    gtk_widget_set_name(GTK_WIDGET(button3), "css_button3"); 
 
    button4=gtk_button_new_with_label("button4");
@@ -131,6 +134,7 @@ int main(int argc, char **argv)
    button_label4=gtk_bin_get_child(GTK_BIN(button4));
    g_signal_connect(button4, "enter-notify-event", G_CALLBACK(change_font_color_enter), GTK_LABEL(button_label4));
    g_signal_connect(button4, "leave-notify-event", G_CALLBACK(change_font_color_leave), GTK_LABEL(button_label4));
+   g_signal_connect(button4, "button-press-event", G_CALLBACK(widget_clicked), NULL); 
    gtk_widget_set_name(GTK_WIDGET(button4), "css_button4");    
 
    drawing_area1=gtk_drawing_area_new();
@@ -190,10 +194,10 @@ static gboolean change_font_color_leave_event(GtkWidget *event_box, GdkEvent *ev
    gtk_label_set_markup(GTK_LABEL(label), "<span foreground=\"black\">label2</span>");
    return TRUE;
  }
-static gboolean event_box_button_press(GtkWidget *event_box, GdkEvent *event, GtkLabel *label)
+static gboolean widget_clicked(GtkWidget *event_box, GdkEvent *event, GtkLabel *label)
  {
    g_print("Click\n");
-   return TRUE;
+   return FALSE;
  }
 gboolean draw_radial_color(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
@@ -391,10 +395,10 @@ static void set_sleep(GtkWidget *combo2, gpointer *data)
  }
 static void close_program()
  {
-   if(use_thread_code) g_timer_destroy(timer2);
-   cairo_surface_destroy(cairo_surface1);
    //timer can trigger warnings when closing program.
    g_source_remove(timer_id);
+   if(use_thread_code) g_timer_destroy(timer2);
+   cairo_surface_destroy(cairo_surface1);
    printf("Quit Program\n");
    gtk_main_quit();
  }
