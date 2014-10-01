@@ -273,7 +273,7 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1)
    g_atomic_int_set(&busy, 0);
    if(thread_code_path) gdk_threads_add_idle((GSourceFunc)end_thread, g_thread_self());
    g_timer_stop(timer2);
-   g_print("Thread Draw Timer %f\n", g_timer_elapsed(timer2, NULL));  
+   if(timer2) g_print("Thread Draw Timer %f\n", g_timer_elapsed(timer2, NULL));  
    return NULL;
  }
 gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data)
