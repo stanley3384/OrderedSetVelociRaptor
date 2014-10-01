@@ -11,6 +11,7 @@ C. Eric Cashon
 
 #include<gtk/gtk.h>
 #include<stdlib.h>
+#include <unistd.h>
 
 gint timer_id=0;
 gint busy=0;
@@ -87,11 +88,14 @@ int main(int argc, char **argv)
    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo2), "3", "Timer 2 Seconds");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 1);
    g_signal_connect(combo2, "changed", G_CALLBACK(set_sleep), NULL);
-     
-   label1=gtk_label_new("label1");
+    
+   glong threads=sysconf(_SC_NPROCESSORS_ONLN);
+   gchar *str_label1=g_strdup_printf("Processors %ld", threads); 
+   label1=gtk_label_new(str_label1);
    gtk_widget_set_hexpand(label1, TRUE);
+   g_free(str_label1);
 
-   label2=gtk_label_new("label2");
+   label2=gtk_label_new("Event Box");
    gtk_widget_set_hexpand(label2, TRUE);
    gtk_widget_set_name (GTK_WIDGET(label2), "css_label2"); 
 
@@ -186,12 +190,12 @@ static gboolean change_font_color_leave(GtkWidget *button, GdkEvent *event, GtkL
  }
 static gboolean change_font_color_enter_event(GtkWidget *event_box, GdkEvent *event, GtkLabel *label)
  {
-   gtk_label_set_markup(GTK_LABEL(label), "<span foreground=\"white\">label2</span>");
+   gtk_label_set_markup(GTK_LABEL(label), "<span foreground=\"white\">Event Box</span>");
    return TRUE;
  }
 static gboolean change_font_color_leave_event(GtkWidget *event_box, GdkEvent *event, GtkLabel *label)
  {
-   gtk_label_set_markup(GTK_LABEL(label), "<span foreground=\"black\">label2</span>");
+   gtk_label_set_markup(GTK_LABEL(label), "<span foreground=\"black\">Event Box</span>");
    return TRUE;
  }
 static gboolean widget_clicked(GtkWidget *event_box, GdkEvent *event, GtkLabel *label)
