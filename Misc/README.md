@@ -25,5 +25,7 @@ Threads
 ![ScreenShot](/Misc/threads.jpg)
 
 
+--There are a lot of 2d and 3d drawing capabilities on computers. Very useful for data visualization and a little bit of fun drawing with color. 
+
 C. Eric Cashon
 
