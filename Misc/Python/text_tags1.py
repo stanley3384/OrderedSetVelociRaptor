@@ -1,19 +1,23 @@
 #!/user/bin/python
 
 #
-# Test code for capturing a signal from a TextTag
+# Test code for capturing a signal from a TextTag. Use a timer to block the motion signal.
 #
 # C. Eric Cashon
 
 from gi.repository import Gtk, Gdk
+from gi.repository import GObject
 
 class TextBox(Gtk.TextView):
     def __init__(self):
         Gtk.TextView.__init__(self)
+        GObject.timeout_add(1000, self.BlockMotionSignal) 
+        self.block1=False
+        self.block2=False
         self.counter=0
         self.set_wrap_mode(2)
         self.set_has_tooltip(True)
-        self.connect("motion-notify-event", self.SetToolTip)
+        self.signal1_id=self.connect("motion-notify-event", self.SetToolTip)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("Some Text Some phrase.")
         self.start1 = self.textbuffer.get_start_iter()
@@ -21,7 +25,7 @@ class TextBox(Gtk.TextView):
         self.start1.forward_chars(10)
         self.end1 = self.textbuffer.get_end_iter()
         self.tag1 = self.textbuffer.create_tag("yellow_tag", background="yellow")
-        self.tag1.connect("event", self.TagEvent)
+        self.signal2_id=self.tag1.connect("event", self.TagEvent)
         self.textbuffer.apply_tag(self.tag1, self.start1, self.end1)
 
     def TagEvent(self, tag, widget, event, iter):
@@ -36,12 +40,31 @@ class TextBox(Gtk.TextView):
             print("Dialog Closed")
             dialog.destroy()
         self.counter+=1
+        self.tag1.handler_block(self.signal2_id)
+        self.handler_block(self.signal1_id)
+        self.block1=True
+        self.block2=True
         return True
 
     def SetToolTip(self, event, data):
         print ("Motion Notify TextBox")
         self.set_tooltip_text("TextBox")
+        self.handler_block(self.signal1_id)
+        self.tag1.handler_block(self.signal2_id)
+        self.block1=True
+        self.block2=True
         return False
+
+    def BlockMotionSignal(self):
+        print ("Timer Unblock")
+        if self.block1==True:
+            self.handler_unblock(self.signal1_id)
+            self.block1=False
+        if self.block2==True:
+            self.tag1.handler_unblock(self.signal2_id)
+            self.block2=False
+        return True
+        
    
 class MainWindow(Gtk.Window):
     def __init__(self):
