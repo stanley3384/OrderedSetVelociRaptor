@@ -4,6 +4,8 @@
 
   gcc -Wall -g string_compare1.c -o string_compare1 `pkg-config --cflags --libs gtk+-3.0`
   Valgrind ./string_compare
+
+  C. Eric Cashon
 */
 
 #include<gtk/gtk.h>
@@ -50,10 +52,14 @@ int main()
     fclose(f);
 
     //Get names from file. Open new file pointer or else bad things happen with Valgrind.
-    char buffer[1000];
-    memset(buffer, '\0', 1000);
     FILE *f2=fopen("file.txt", "r");
-    fread(buffer, sizeof(char), 1000, f2);
+    fseeko(f2, 0 , SEEK_END);
+    off_t file_length=ftello(f2);
+    fseeko(f2, 0 , SEEK_SET);
+    g_print("File Length %u\n", (unsigned int)file_length);
+    char buffer[file_length+1];
+    memset(buffer, '\0', file_length+1);
+    fread(buffer, sizeof(char), file_length, f2);
     fclose(f2);
     g_print("%s\n", buffer);
 

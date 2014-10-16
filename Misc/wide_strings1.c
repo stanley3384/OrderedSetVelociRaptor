@@ -10,6 +10,8 @@ valgrind ./wide_strings1
 
 http://stackoverflow.com/questions/15573104/wchar-t-valgrind-issue-invalid-read-of-size-8
 
+C. Eric Cashon
+
 */
 
 #include<stdio.h>
