@@ -38,7 +38,7 @@ int main()
     if(login_exists==true) printf("Found Existing Login\n");
     else printf("New Login Created\n");
 
-    login_exists=delete_login_password("Eric", "password2");
+    login_exists=delete_login_password("admin", "password");
     if(login_exists==true) printf("Login Deleted\n");
     else printf("No Login to Delete\n");
 
@@ -49,6 +49,7 @@ int main()
     return 0;
   }
 //Initialize a default admin and password table. Don't drop table if it already exists.
+//Set admin=2. Don't allow admin=2 to be deleted. Always one admin present in table.
 static bool initialize_admin_login_password()
   {
     int sql_return=0;
@@ -129,7 +130,8 @@ static bool delete_login_password(char *login, char *password)
     int sql_return=0;
     sqlite3 *cnn=NULL;
     sqlite3_stmt *stmt1=NULL;
-    char *sql1=sqlite3_mprintf("SELECT login, password FROM Passwords WHERE login=='%q' AND password=='%q';", login, password);
+    //Don't delete if admin=2. Always have one login.
+    char *sql1=sqlite3_mprintf("SELECT login, password FROM Passwords WHERE login=='%q' AND password=='%q' AND admin!=2;", login, password);
     char *sql2=sqlite3_mprintf("DELETE FROM Passwords WHERE login=='%q' AND password=='%q';", login, password);
 
     sqlite3_open("password.db",&cnn);   
