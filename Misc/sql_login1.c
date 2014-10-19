@@ -1,6 +1,6 @@
 
 /*
-Test code for sqlite. Try some basic user logins.
+Test code for sqlite. Try some basic user logins and shift the password one character.
 
 Compile with
     gcc -Wall sql_login1.c -o sql_login1 -lsqlite3 
@@ -12,8 +12,10 @@ C. Eric Cashon
 
 #include<sqlite3.h>
 #include<stdio.h>
+#include<string.h>
 #include<stdbool.h>
 
+static void shift_character_one(char password[]);
 static bool initialize_admin_login_password();
 static bool check_login_password(int *admin, char *login, char *password);
 static bool insert_login_password(int admin, char *login, char *password);
@@ -25,16 +27,23 @@ int main()
     bool table_created=false;
     bool login_exists=false;
     int admin=0;
+    char user_name[]="Eric";
+    char password[]="Vaccinium_ovatum";
+    char new_password[]="Phaseolus_coccineus";
 
     table_created=initialize_admin_login_password();
     if(table_created==true) printf("A New Password Table Created\n");
     else printf("Password Table Already Exists\n");
 
-    login_exists=check_login_password(&admin, "Eric", "password1");
+    shift_character_one(password);
+    shift_character_one(new_password);
+    printf("Shift Password One %s\n", password);
+
+    login_exists=check_login_password(&admin, user_name, password);
     if(login_exists==true) printf("Found Login. Admin %i\n", admin);
     else printf("No Login Found\n");
 
-    login_exists=insert_login_password(1, "Eric", "password1");
+    login_exists=insert_login_password(1, user_name, password);
     if(login_exists==true) printf("Found Existing Login\n");
     else printf("New Login Created\n");
 
@@ -42,14 +51,27 @@ int main()
     if(login_exists==true) printf("Login Deleted\n");
     else printf("No Login to Delete\n");
 
-    login_exists=update_login_password("Eric", "password1", "Eric", "password3");
+    login_exists=update_login_password(user_name, password, "Eric", new_password);
     if(login_exists==true) printf("Login Updated\n");
     else printf("No Login to Update\n");
 
     return 0;
   }
-//Initialize a default admin and password table. Don't drop table if it already exists.
-//Set admin=2. Don't allow admin=2 to be deleted. Always one admin present in table.
+//For asci. Don't shift ~ or 126. End of printable chars.
+static void shift_character_one(char password[])
+  {
+    int i=0;
+    int length=strlen(password);
+    for(i=0;i<length;i++)
+       {
+         if(password[i]!='~') password[i]=password[i]+1;
+       }
+  }
+/*
+Initialize a default admin and password table. Don't drop table if it already exists.
+Set admin=2. Don't allow admin=2 to be deleted. The default admin and password can
+be changed but admin=2 can't be deleted. Always one admin present in table.
+*/
 static bool initialize_admin_login_password()
   {
     int sql_return=0;
