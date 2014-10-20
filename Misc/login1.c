@@ -113,7 +113,7 @@ int main(int argc, char **argv)
    gtk_widget_set_vexpand(label1, TRUE);
 
    GtkWidget *button1=gtk_button_new_with_label("button1");
-   gtk_widget_set_hexpand(label1, TRUE);
+   gtk_widget_set_hexpand(button1, TRUE);
    g_signal_connect(button1, "clicked", G_CALLBACK(button_clicked), NULL); 
 
    GtkWidget *grid1=gtk_grid_new();
