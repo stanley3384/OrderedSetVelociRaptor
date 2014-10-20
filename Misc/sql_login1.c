@@ -12,15 +12,18 @@ C. Eric Cashon
 
 #include<sqlite3.h>
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<stdbool.h>
 
 static void shift_character_one(char password[]);
+static void shift_character_minus_one(char password[]);
+static void print_passwords_table(void);
 static bool initialize_admin_login_password();
-static bool check_login_password(int *admin, char *login, char *password);
-static bool insert_login_password(int admin, char *login, char *password);
-static bool delete_login_password(char *login, char *password);
-static bool update_login_password(char *login_old, char *password_old, char *login_new, char *password_new);
+static bool check_login_password(int *admin, const char *login, const char *password);
+static bool insert_login_password(int admin, const char *login, const char *password);
+static bool delete_login_password(const char *login, const char *password);
+static bool update_login_password(const char *login_old, const char *password_old, const char *login_new, const char *password_new);
 
 int main()
   {
@@ -55,6 +58,8 @@ int main()
     if(login_exists==true) printf("Login Updated\n");
     else printf("No Login to Update\n");
 
+    print_passwords_table();
+
     return 0;
   }
 //For asci. Don't shift ~ or 126. End of printable chars.
@@ -66,6 +71,45 @@ static void shift_character_one(char password[])
        {
          if(password[i]!='~') password[i]=password[i]+1;
        }
+  }
+static void shift_character_minus_one(char password[])
+  {
+    int i=0;
+    int length=strlen(password);
+    for(i=0;i<length;i++)
+       {
+         if(password[i]!='~') password[i]=password[i]-1;
+       }
+  }
+static void print_passwords_table(void)
+  {
+    int sql_return=0;
+    int length=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    char *sql1="SELECT admin, login, password FROM Passwords;";
+
+    printf("Password Table\n");
+    sqlite3_open("password.db",&cnn);   
+    sqlite3_prepare_v2(cnn,sql1,-1,&stmt1,0);
+    sql_return=sqlite3_step(stmt1);
+    while(sql_return==SQLITE_ROW)
+      {
+        length=sqlite3_column_bytes(stmt1, 2)+1;
+        if(length>1)
+          {
+            char *password=(char*)malloc(length * sizeof(char));
+            strcpy(password, (char*)sqlite3_column_text(stmt1, 2));
+            //Default password for admin=2 that isn't shifted.
+            if(strcmp(password, "password")!=0) shift_character_minus_one(password);
+            printf("  %i %s %s\n", sqlite3_column_int(stmt1, 0), sqlite3_column_text(stmt1, 1), password);
+            free(password);
+          }
+        sql_return=sqlite3_step(stmt1);
+      }
+   
+    sqlite3_finalize(stmt1);   
+    sqlite3_close(cnn); 
   }
 /*
 Initialize a default admin and password table. Don't drop table if it already exists.
@@ -97,7 +141,7 @@ static bool initialize_admin_login_password()
     return table_created; 
   }
 //Check if there is already a login and return the admin status of the login.
-static bool check_login_password(int *admin, char *login, char *password)
+static bool check_login_password(int *admin, const char *login, const char *password)
   {
     bool login_exists=false;
     int sql_return=0;
@@ -119,7 +163,7 @@ static bool check_login_password(int *admin, char *login, char *password)
     sqlite3_free(sql1);
     return login_exists;
   }
-static bool insert_login_password(int admin, char *login, char *password)
+static bool insert_login_password(int admin, const char *login, const char *password)
   {
     bool login_exists=false;
     int sql_return=0;
@@ -146,7 +190,7 @@ static bool insert_login_password(int admin, char *login, char *password)
 
     return login_exists;
   } 
-static bool delete_login_password(char *login, char *password)
+static bool delete_login_password(const char *login, const char *password)
   {
     bool login_exists=false;
     int sql_return=0;
@@ -173,7 +217,7 @@ static bool delete_login_password(char *login, char *password)
     
     return login_exists;
   }
-static bool update_login_password(char *login_old, char *password_old, char *login_new, char *password_new)
+static bool update_login_password(const char *login_old, const char *password_old, const char *login_new, const char *password_new)
   {
     bool login_exists=false;
     int sql_return=0;
