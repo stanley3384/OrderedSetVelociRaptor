@@ -2,6 +2,9 @@
 /*
 Test code for the mcrypt encryption library.
 
+Started with this code
+  https://gist.github.com/bricef/2436364
+
 Get the dev library
   apt-get install libmcrypt-dev
 
@@ -32,7 +35,7 @@ int main()
   char *buffer=NULL;
   char IV[]="AAAAAAAAAAAAAAAA";
   char key[]="0123456789abcdef";
-  int keysize=16; /* 128 bits */
+  int keysize=16;
   int buffer_len=0;
  
   buffer_len=strlen(string);
