@@ -22,23 +22,21 @@ C. Eric Cashon
 #include<string.h>
 #include<mcrypt.h> 
 
-int encrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len);
-int decrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len);
+static int encrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len);
+static int decrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len);
 
 int main()
  {
   int i=0;
   int j=0;
-  int k=0;
   //A string to encrypt.
   char string[]="A string to encrypt of some uncertain size."; 
   char *buffer=NULL;
   char IV[]="AAAAAAAAAAAAAAAA";
   char key[]="0123456789abcdef";
   int keysize=16;
-  int buffer_len=0;
- 
-  buffer_len=strlen(string);
+  
+  int buffer_len=strlen(string);
   //Pad string for a block of 16.
   if(buffer_len<16) 
     {
@@ -48,23 +46,23 @@ int main()
     }
   else
     {
-      j=buffer_len/16;
-      k=buffer_len%16;
-      if(k>0)
+      i=buffer_len/16;
+      j=buffer_len%16;
+      if(j>0)
         {
-          buffer_len=j*16+16;
+          buffer_len=i*16+16;
           buffer=(char*)malloc((buffer_len+1) * sizeof(char));
           memset(buffer, '\0', buffer_len+1);
         }
       else
         {
-          buffer_len=j*16;
+          buffer_len=i*16;
           buffer=(char*)malloc((buffer_len+1) * sizeof(char));
           memset(buffer, '\0', buffer_len+1);
         }
     }
   strcpy(buffer, string);
- 
+   
   printf("Start String\n");
   printf("  %s\n", buffer);
   encrypt_string(buffer, buffer_len, IV, key, keysize);
@@ -81,7 +79,7 @@ int main()
   free(buffer);
 
   return 0;
-} 
+ } 
 int encrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len)
  {
    int i=0;
