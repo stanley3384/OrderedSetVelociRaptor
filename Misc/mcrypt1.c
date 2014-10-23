@@ -1,6 +1,6 @@
 
 /*
-Test code for the mcrypt encryption library.
+Test code for the mcrypt encryption library. Could replace char shift in sql_login_ui1.c.
 
 Started with this code
   https://gist.github.com/bricef/2436364
@@ -22,47 +22,26 @@ C. Eric Cashon
 #include<string.h>
 #include<mcrypt.h> 
 
+static int allocate_buffer_block(char **buffer, int length);
 static int encrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len);
 static int decrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len);
 
 int main()
  {
   int i=0;
-  int j=0;
   //A string to encrypt.
   char string[]="A string to encrypt of some uncertain size."; 
   char *buffer=NULL;
   char IV[]="AAAAAAAAAAAAAAAA";
   char key[]="0123456789abcdef";
-  int keysize=16;
-  
-  int buffer_len=strlen(string);
-  //Pad string for a block of 16.
-  if(buffer_len<16) 
-    {
-      buffer_len=16;
-      buffer=(char*)malloc((buffer_len+1) * sizeof(char));
-      memset(buffer, '\0', buffer_len+1);
-    }
-  else
-    {
-      i=buffer_len/16;
-      j=buffer_len%16;
-      if(j>0)
-        {
-          buffer_len=i*16+16;
-          buffer=(char*)malloc((buffer_len+1) * sizeof(char));
-          memset(buffer, '\0', buffer_len+1);
-        }
-      else
-        {
-          buffer_len=i*16;
-          buffer=(char*)malloc((buffer_len+1) * sizeof(char));
-          memset(buffer, '\0', buffer_len+1);
-        }
-    }
+  int keysize=16; 
+  int buffer_len=0;
+  int length=strlen(string);
+
+  //Get a block sized buffer to put the string in and return it's length.
+  buffer_len=allocate_buffer_block(&buffer, length);
   strcpy(buffer, string);
-   
+ 
   printf("Start String\n");
   printf("  %s\n", buffer);
   encrypt_string(buffer, buffer_len, IV, key, keysize);
@@ -80,6 +59,38 @@ int main()
 
   return 0;
  } 
+static int allocate_buffer_block(char **buffer, int length)
+ {
+   int i=0;
+   int j=0;
+   
+  //Pad string for a block of 16.
+  if(length<16) 
+    {
+      length=16;
+      *buffer=(char*)malloc((length+1) * sizeof(char));
+      memset(*buffer, '\0', length+1);
+    }
+  else
+    {
+      i=length/16;
+      j=length%16;
+      if(j>0)
+        {
+          length=i*16+16;
+          *buffer=(char*)malloc((length+1) * sizeof(char));
+          memset(*buffer, '\0', length+1);
+        }
+      else
+        {
+          length=i*16;
+          *buffer=(char*)malloc((length+1) * sizeof(char));
+          memset(*buffer, '\0', length+1);
+        }
+    }
+  
+  return length;
+ }
 int encrypt_string(void *buffer, int buffer_len, void *IV, void *key, int key_len)
  {
    int i=0;
