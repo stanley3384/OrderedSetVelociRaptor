@@ -38,37 +38,48 @@ int main()
   int buffer_len=0;
   int length=strlen(string);
 
-  //Get a block sized buffer to put the string in and return it's length.
-  buffer_len=allocate_buffer_block(&buffer, length);
-  strcpy(buffer, string);
- 
-  printf("Start String\n");
-  printf("  %s\n", buffer);
-  encrypt_string(buffer, buffer_len, IV, key, keysize);
-  printf("Encrypted String\n  ");
-  for(i=0;i<strlen(buffer);i++)
-     {
-       printf("%i ", (int)buffer[i]);
-     }
-  printf("\n");
-  decrypt_string(buffer, buffer_len, IV, key, keysize);
-  printf("Decrypted String\n");
-  printf("  %s\n", buffer);
+  //Check for a minimum string length.
+  if(length>3)
+    {
+      //Get a block sized buffer to put the string in and return it's length.
+      buffer_len=allocate_buffer_block(&buffer, length);
+    }
 
-  free(buffer);
+  if(buffer_len>0)
+    {
+      strcpy(buffer, string); 
+      printf("Start String\n");
+      printf("  %s\n", buffer);
+      encrypt_string(buffer, buffer_len, IV, key, keysize);
+      printf("Encrypted String\n  ");
+      for(i=0;i<strlen(buffer);i++)
+         {
+           printf("%i ", (int)buffer[i]);
+         }
+      printf("\n");
+      decrypt_string(buffer, buffer_len, IV, key, keysize);
+      printf("Decrypted String\n");
+      printf("  %s\n", buffer);
+      free(buffer);
+    }
 
   return 0;
  } 
 static int allocate_buffer_block(char **buffer, int length)
  {
-   int i=0;
-   int j=0;
+  int i=0;
+  int j=0;
    
   //Pad string for a block of 16.
   if(length<16) 
     {
       length=16;
       *buffer=(char*)malloc((length+1) * sizeof(char));
+      if(*buffer==NULL)
+        {
+          printf("Malloc Error\n");
+          return 0;
+        }
       memset(*buffer, '\0', length+1);
     }
   else
@@ -79,12 +90,22 @@ static int allocate_buffer_block(char **buffer, int length)
         {
           length=i*16+16;
           *buffer=(char*)malloc((length+1) * sizeof(char));
+          if(*buffer==NULL)
+            {
+              printf("Malloc Error\n");
+              return 0;
+            }
           memset(*buffer, '\0', length+1);
         }
       else
         {
           length=i*16;
           *buffer=(char*)malloc((length+1) * sizeof(char));
+          if(*buffer==NULL)
+            {
+              printf("Malloc Error\n");
+              return 0;
+            }
           memset(*buffer, '\0', length+1);
         }
     }
