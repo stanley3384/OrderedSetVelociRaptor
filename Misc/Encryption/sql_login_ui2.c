@@ -1,9 +1,13 @@
 
 /*
-  Test code for a login UI. Shifts characters one for the passwords stored in the database.
-  Initialize table first then you can add some names and passwords. 
+  Test code for a login UI. Uses mcrypt and two fish encryption for the passwords stored in the database.
+  Initialize table first then you can add some names and passwords. This uses a blob to store the byte
+  data in the table so if you have used sql_login_ui1 program drop and re-initialize the table.
 
-  gcc -Wall sql_login_ui1.c -o sql_login_ui1 `pkg-config --cflags --libs gtk+-3.0` -lsqlite3 
+Get the mcrypt dev library
+  apt-get install libmcrypt-dev
+
+  gcc -Wall sql_login_ui2.c -o sql_login_ui2 `pkg-config --cflags --libs gtk+-3.0` -lsqlite3 -lmcrypt 
 
   C. Eric Cashon
 */
@@ -15,6 +19,12 @@
 #include<stdlib.h>
 #include<string.h>
 #include<stdbool.h>
+#include<mcrypt.h> 
+
+//For mcrypt.
+char IV[]="AAAAAAAAAAAAAAAA";
+char key[]="0123456789abcdef";
+int key_len=16; 
 
 typedef struct
   {
@@ -26,15 +36,16 @@ static void close_program(void);
 static void run_database_command(GtkWidget *widget, Widgets *w);
 static void message_dialog(gchar *message);
 static void update_login_dialog(gchar *user_name, gchar *password, Widgets *w);
-//Database code
-static void shift_character_one(char password[]);
-static void shift_character_minus_one(char password[]);
+//Database code.
 static void print_passwords_table(void);
 static bool initialize_admin_login_password(void);
 static bool check_login_password(int *admin, const char *login, const char *password);
 static bool insert_login_password(int admin, const char *login, const char *password);
 static bool delete_login_password(const char *login, const char *password);
 static bool update_login_password(const char *login_old, const char *password_old, const char *login_new, const char *password_new);
+static int allocate_buffer_block(char **buffer, int length);
+static int encrypt_string(void *buffer, int buffer_len);
+static int decrypt_string(void *buffer, int buffer_len);
 
 int main(int argc, char **argv)
  {
@@ -66,7 +77,7 @@ int main(int argc, char **argv)
    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "6", "Print Passwords Table");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 1);
 
-   GtkWidget *label3=gtk_label_new("Char Shift Encryption");
+   GtkWidget *label3=gtk_label_new("Two Fish Encryption");
    gtk_widget_set_hexpand(label1, TRUE);
    gtk_widget_set_vexpand(label1, TRUE);
 
@@ -105,6 +116,8 @@ static void run_database_command(GtkWidget *widget, Widgets *w)
  {
    gboolean login_exists=FALSE;
    gint admin=0;
+   gchar *buffer=NULL;
+   gint buffer_len=0;
    guint length1=gtk_entry_get_text_length(GTK_ENTRY(w->entry1));
    guint length2=gtk_entry_get_text_length(GTK_ENTRY(w->entry2));
    gchar *user_name=g_strdup(gtk_entry_get_text(GTK_ENTRY(w->entry1)));
@@ -123,40 +136,80 @@ static void run_database_command(GtkWidget *widget, Widgets *w)
          {
            switch(combo_id)
             {
-              case 0:
-                if(strcmp(password, "password")!=0) shift_character_one(password);
-                login_exists=insert_login_password(1, user_name, password);
+              case 0: //Add admin.
+                if(strcmp(password, "password")!=0)
+                  {
+                    buffer_len=allocate_buffer_block(&buffer, length2);
+                    strcpy(buffer, password); 
+                    encrypt_string(buffer, buffer_len);
+                  }
+                login_exists=insert_login_password(1, user_name, buffer);
                 if(!login_exists) gtk_label_set_text(GTK_LABEL(w->label3), "New Administrator Created");
                 else gtk_label_set_text(GTK_LABEL(w->label3), "Couldn't Create Administrator");
                 break;
-              case 1:
-                if(strcmp(password, "password")!=0) shift_character_one(password);
-                login_exists=insert_login_password(0, user_name, password);
+              case 1: //Add user.
+                if(strcmp(password, "password")!=0)
+                  {
+                    buffer_len=allocate_buffer_block(&buffer, length2);
+                    strcpy(buffer, password); 
+                    encrypt_string(buffer, buffer_len);
+                  }
+                login_exists=insert_login_password(0, user_name, buffer);
                 if(!login_exists) gtk_label_set_text(GTK_LABEL(w->label3), "New Login Created");
                 else gtk_label_set_text(GTK_LABEL(w->label3), "Couldn't Create New Login");
                 break;
-              case 2:
-                if(strcmp(password, "password")!=0) shift_character_one(password);
-                login_exists=check_login_password(&admin, user_name, password);
+              case 2: //Update login
+                if(strcmp(password, "password")!=0)
+                  {
+                    buffer_len=allocate_buffer_block(&buffer, length2);
+                    strcpy(buffer, password); 
+                    encrypt_string(buffer, buffer_len);
+                    login_exists=check_login_password(&admin, user_name, buffer);
+                  }
+                else
+                  {
+                    login_exists=check_login_password(&admin, user_name, "password");
+                  }
                 if(!login_exists)
                   {
                     gtk_label_set_text(GTK_LABEL(w->label3), "Login Doesn't Exist");
                   }
                 else
                   {
-                    if(strcmp(password, "password")!=0) shift_character_minus_one(password);
-                    update_login_dialog(user_name, password, w);
+                    if(strcmp(password, "password")!=0)
+                      {
+                        decrypt_string(buffer, buffer_len);
+                        update_login_dialog(user_name, buffer, w);
+                      }
+                    else
+                      {
+                        update_login_dialog(user_name, password, w);
+                      }
                   }
                 break;
-              case 3:
-                if(strcmp(password, "password")!=0) shift_character_one(password);
-                login_exists=delete_login_password(user_name, password);
+              case 3: //Delete login.
+                if(strcmp(password, "password")!=0)
+                  {
+                    buffer_len=allocate_buffer_block(&buffer, length2);
+                    strcpy(buffer, password); 
+                    encrypt_string(buffer, buffer_len);
+                  }
+                login_exists=delete_login_password(user_name, buffer);
                 if(login_exists) gtk_label_set_text(GTK_LABEL(w->label3), "Login Deleted");
                 else gtk_label_set_text(GTK_LABEL(w->label3), "Couldn't Delete Login");
                 break;
-              case 4:
-                if(strcmp(password, "password")!=0) shift_character_one(password);
-                login_exists=check_login_password(&admin, user_name, password);
+              case 4: //Check if login exists.
+                if(strcmp(password, "password")!=0)
+                  {
+                    buffer_len=allocate_buffer_block(&buffer, length2);
+                    strcpy(buffer, password); 
+                    encrypt_string(buffer, buffer_len);
+                    login_exists=check_login_password(&admin, user_name, buffer);
+                  }
+                else
+                  {
+                    login_exists=check_login_password(&admin, user_name, "password");
+                  }
                 if(login_exists) gtk_label_set_text(GTK_LABEL(w->label3), "Login Exists");
                 else gtk_label_set_text(GTK_LABEL(w->label3), "Login Doesn't Exist");
                 break;
@@ -164,7 +217,7 @@ static void run_database_command(GtkWidget *widget, Widgets *w)
         }
      }
 
-   if(combo_id==5)
+   if(combo_id==5) //Initialize table.
      {
        login_exists=initialize_admin_login_password();
        if(login_exists) gtk_label_set_text(GTK_LABEL(w->label3), "New Table Created");
@@ -174,6 +227,7 @@ static void run_database_command(GtkWidget *widget, Widgets *w)
 
    g_free(user_name);
    g_free(password);
+   if(buffer!=NULL) g_free(buffer);
  }
 static void message_dialog(gchar *message)
  {
@@ -243,9 +297,14 @@ static void update_login_dialog(gchar *user_name, gchar *password, Widgets *w)
 
    if(result==GTK_RESPONSE_OK)
      {
+       gchar *buffer1=NULL;
+       gchar *buffer2=NULL;
+       gint buffer_len1=0;
+       gint buffer_len2=0;
        gboolean check=FALSE;
        guint length1=gtk_entry_get_text_length(GTK_ENTRY(entry3));
        guint length2=gtk_entry_get_text_length(GTK_ENTRY(entry4));
+       guint length3=gtk_entry_get_text_length(GTK_ENTRY(entry2));
        if(length1<=2||length2<=4)
          {
            g_print("The new user_name > 2 chars and new password > 4 chars\n");
@@ -255,38 +314,126 @@ static void update_login_dialog(gchar *user_name, gchar *password, Widgets *w)
          {
            gchar *new_user_name=g_strdup(gtk_entry_get_text(GTK_ENTRY(entry3)));
            gchar *new_password=g_strdup(gtk_entry_get_text(GTK_ENTRY(entry4)));
-           if(strcmp(password, "password")!=0) shift_character_one(password);
-           shift_character_one(new_password);
-           check=update_login_password(user_name, password, new_user_name, new_password);
+           if(strcmp(password, "password")!=0)
+             {
+               buffer_len1=allocate_buffer_block(&buffer1, length2);
+               strcpy(buffer1, password); 
+               encrypt_string(buffer1, buffer_len1);
+               buffer_len2=allocate_buffer_block(&buffer2, length3);
+               strcpy(buffer2, new_password); 
+               encrypt_string(buffer2, buffer_len2);
+               check=update_login_password(user_name, buffer1, new_user_name, buffer2);
+              }
+           else
+              {
+                buffer_len2=allocate_buffer_block(&buffer2, length3);
+                strcpy(buffer2, new_password); 
+                encrypt_string(buffer2, buffer_len2);
+                check=update_login_password(user_name, password, new_user_name, buffer2);
+              }
            if(check) gtk_label_set_text(GTK_LABEL(w->label3), "Login Updated");
            else gtk_label_set_text(GTK_LABEL(w->label3), "Couldn't Update Login");
            g_free(new_user_name);
            g_free(new_password);
+           if(buffer1!=NULL) g_free(buffer1);
+           if(buffer2!=NULL) g_free(buffer2);
          }
      }
     
      gtk_widget_destroy(dialog);
  }   
 //Database code.
-//For asci. Don't shift ~ or 126. End of printable chars.
-static void shift_character_one(char password[])
-  {
-    int i=0;
-    int length=strlen(password);
-    for(i=0;i<length;i++)
-       {
-         if(password[i]!='~') password[i]=password[i]+1;
-       }
-  }
-static void shift_character_minus_one(char password[])
-  {
-    int i=0;
-    int length=strlen(password);
-    for(i=0;i<length;i++)
-       {
-         if(password[i]!='~') password[i]=password[i]-1;
-       }
-  }
+static int allocate_buffer_block(char **buffer, int length)
+ {
+  int i=0;
+  int j=0;
+   
+  //Pad string for a block of 16.
+  if(length<16) 
+    {
+      length=16;
+      *buffer=(char*)malloc((length+1) * sizeof(char));
+      if(*buffer==NULL)
+        {
+          printf("Malloc Error\n");
+          return 0;
+        }
+      memset(*buffer, '\0', length+1);
+    }
+  else
+    {
+      i=length/16;
+      j=length%16;
+      if(j>0)
+        {
+          length=i*16+16;
+          *buffer=(char*)malloc((length+1) * sizeof(char));
+          if(*buffer==NULL)
+            {
+              printf("Malloc Error\n");
+              return 0;
+            }
+          memset(*buffer, '\0', length+1);
+        }
+      else
+        {
+          length=i*16;
+          *buffer=(char*)malloc((length+1) * sizeof(char));
+          if(*buffer==NULL)
+            {
+              printf("Malloc Error\n");
+              return 0;
+            }
+          memset(*buffer, '\0', length+1);
+        }
+    }
+  
+  return length;
+ }
+int encrypt_string(void *buffer, int buffer_len)
+ {
+   int i=0;
+   MCRYPT td = mcrypt_module_open("twofish", NULL, "cfb", NULL);
+   //MCRYPT td = mcrypt_module_open("rijndael-128", NULL, "cbc", NULL);
+   int blocksize = mcrypt_enc_get_block_size(td);
+   if(buffer_len % blocksize != 0)
+     {
+       printf("Blocksize Error %i %i\n", buffer_len, blocksize);
+       return 1;
+     }
+   i=mcrypt_generic_init(td, key, key_len, IV);
+   if(i<0)
+     {
+       mcrypt_perror(i);
+       return 1;
+     }
+   mcrypt_generic(td, buffer, buffer_len);
+   mcrypt_generic_deinit(td);
+   mcrypt_module_close(td);
+   return 0;
+ } 
+int decrypt_string(void *buffer, int buffer_len)
+ {
+   int i=0;
+   MCRYPT td = mcrypt_module_open("twofish", NULL, "cfb", NULL);
+   //MCRYPT td = mcrypt_module_open("rijndael-128", NULL, "cbc", NULL);
+   int blocksize = mcrypt_enc_get_block_size(td);
+   if(buffer_len % blocksize != 0)
+     {
+       printf("Blocksize Error %i %i\n", buffer_len, blocksize);
+       return 1;
+     }
+   i=mcrypt_generic_init(td, key, key_len, IV);
+   if(i<0)
+     {
+       mcrypt_perror(i);
+       return 1;
+     }
+   mdecrypt_generic(td, buffer, buffer_len);
+   mcrypt_generic_deinit(td);
+   mcrypt_module_close(td);
+   return 0;
+ } 
 static void print_passwords_table(void)
   {
     int sql_return=0;
@@ -301,15 +448,22 @@ static void print_passwords_table(void)
     sql_return=sqlite3_step(stmt1);
     while(sql_return==SQLITE_ROW)
       {
-        length=sqlite3_column_bytes(stmt1, 2)+1;
+        length=sqlite3_column_bytes(stmt1, 2);
         if(length>1)
           {
-            char *password=(char*)malloc(length * sizeof(char));
-            strcpy(password, (char*)sqlite3_column_text(stmt1, 2));
-            //Default password for admin=2 that isn't shifted.
-            if(strcmp(password, "password")!=0) shift_character_minus_one(password);
-            printf("  %i %s %s\n", sqlite3_column_int(stmt1, 0), sqlite3_column_text(stmt1, 1), password);
-            free(password);
+            char *buffer=NULL;
+            int buffer_len=allocate_buffer_block(&buffer, length); 
+            memcpy(buffer, (char*)sqlite3_column_blob(stmt1, 2), buffer_len);            
+            if(memcmp(buffer, "password", 8)!=0)
+              {
+                decrypt_string(buffer, buffer_len);
+                printf("  %i %s %s\n", sqlite3_column_int(stmt1, 0), sqlite3_column_text(stmt1, 1), buffer);
+              }
+            else
+              {
+                printf("  %i %s %s\n", sqlite3_column_int(stmt1, 0), sqlite3_column_text(stmt1, 1), "password");
+              }
+            free(buffer);
           }
         sql_return=sqlite3_step(stmt1);
       }
@@ -328,7 +482,7 @@ static bool initialize_admin_login_password(void)
     bool table_created=false;
     sqlite3 *cnn=NULL;
     sqlite3_stmt *stmt1=NULL;
-    char *sql1="CREATE TABLE IF NOT EXISTS Passwords (admin INTEGER, login TEXT, password TEXT);";
+    char *sql1="CREATE TABLE IF NOT EXISTS Passwords (admin INTEGER, login TEXT, password BLOB);";
     char *sql2="SELECT admin FROM Passwords WHERE admin==2;";
     char *sql3="INSERT INTO Passwords VALUES(2, 'admin', 'password');";
 
