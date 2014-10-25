@@ -1,21 +1,69 @@
 
 /*
-  Test code for a login. Trouble with starting and stopping the main loop. Needs a better solution.
+  Test code for a login. To use, create a Passwords table first with the sql_login_ui2.c
+  Login Administrator program. 
 
-  gcc -Wall login1.c -o login1 `pkg-config --cflags --libs gtk+-3.0`
+  gcc -Wall login1.c -o login1 `pkg-config --cflags --libs gtk+-3.0` -lsqlite3 -lmcrypt 
 
   C. Eric Cashon
 */
 
 
 #include<gtk/gtk.h>
+#include<sqlite3.h>
+#include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
+#include<stdbool.h>
+#include<mcrypt.h> 
 
+//Switch for exiting main event loop.
 gboolean valid_login=FALSE;
-//The user name and password to match. Case sensitive. 
-gchar *admin="admin";
-gchar *password="password";
+//For mcrypt. They need to match values in sql_login_ui2.c.
+char IV[]="AAAAAAAAAAAAAAAA";
+char key[]="0123456789abcdef";
+int key_len=16; 
 
+//UI functions.
+static void close_program();
+static void button_clicked(GtkWidget *widget, gpointer data);
+static void message_dialog(gchar *message);
+static void login_dialog(GtkWidget *widget, gpointer data);
+//Encryption functions.
+static bool check_login_password(int *admin, const char *login, const char *password);
+static int allocate_buffer_block(char **buffer, int length);
+static int encrypt_string(void *buffer, int buffer_len);
+
+int main(int argc, char **argv)
+ {
+   gtk_init(&argc, &argv);
+
+   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+   gtk_window_set_title(GTK_WINDOW(window), "Login Test");
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
+   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+   g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
+   g_signal_connect(window, "realize", G_CALLBACK(login_dialog), NULL);
+
+   GtkWidget *label1=gtk_label_new("Main Loop");
+   gtk_widget_set_hexpand(label1, TRUE);
+   gtk_widget_set_vexpand(label1, TRUE);
+
+   GtkWidget *button1=gtk_button_new_with_label("button1");
+   gtk_widget_set_hexpand(button1, TRUE);
+   g_signal_connect(button1, "clicked", G_CALLBACK(button_clicked), NULL); 
+
+   GtkWidget *grid1=gtk_grid_new();
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button1, 0, 1, 1, 1);
+   gtk_container_add(GTK_CONTAINER(window), grid1);
+
+   gtk_widget_show_all(window);
+
+   if(valid_login) gtk_main();
+
+   return 0;
+ }
 static void close_program()
  {
    printf("Quit Program\n");
@@ -80,12 +128,29 @@ static void login_dialog(GtkWidget *widget, gpointer data)
 
    if(result==GTK_RESPONSE_OK)
      {
-       const gchar *name1=gtk_entry_get_text(GTK_ENTRY(entry1));
-       const gchar *password1=gtk_entry_get_text(GTK_ENTRY(entry2));
-       if(strcmp(name1, admin)==0&&strcmp(password, password1)==0)
+       const gchar *user_name=gtk_entry_get_text(GTK_ENTRY(entry1));
+       const gchar *password=gtk_entry_get_text(GTK_ENTRY(entry2));
+       guint length=gtk_entry_get_text_length(GTK_ENTRY(entry2));
+       gchar *buffer=NULL;
+       int admin=0;
+       bool login_exists=false;
+       if(strcmp(password, "password")!=0)
          {
-           g_print("Show Main Window\n");
+           int buffer_len=allocate_buffer_block(&buffer, length);
+           strcpy(buffer, password); 
+           encrypt_string(buffer, buffer_len);
+           login_exists=check_login_password(&admin, user_name, buffer);
+           
+         }
+       else
+         {
+           login_exists=check_login_password(&admin, user_name, "password");
+         }    
+
+       if(login_exists)
+         {
            valid_login=TRUE;
+           g_print("Show Main Window\n");
          }
        else
          {
@@ -93,39 +158,100 @@ static void login_dialog(GtkWidget *widget, gpointer data)
            gchar *message="Login failed!";
            message_dialog(message);
          }
+       if(buffer!=NULL) free(buffer);
      }
     
      gtk_widget_destroy(dialog);
  }
-int main(int argc, char **argv)
+static bool check_login_password(int *admin, const char *login, const char *password)
+  {
+    bool login_exists=false;
+    int sql_return=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    char *sql1=sqlite3_mprintf("SELECT admin, login, password FROM Passwords WHERE login=='%q' AND password=='%q';", login, password);
+
+    sqlite3_open("password.db",&cnn);   
+    sqlite3_prepare_v2(cnn,sql1,-1,&stmt1,0);
+    sql_return=sqlite3_step(stmt1);
+    if(sql_return==SQLITE_ROW)
+      {
+         login_exists=true;
+         *admin=sqlite3_column_int(stmt1, 0);
+      }
+    sqlite3_finalize(stmt1);   
+    sqlite3_close(cnn); 
+
+    sqlite3_free(sql1);
+    return login_exists;
+  }
+static int allocate_buffer_block(char **buffer, int length)
  {
-   gtk_init(&argc, &argv);
-
-   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(window), "Login Test");
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
-   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-   g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
-   g_signal_connect(window, "realize", G_CALLBACK(login_dialog), NULL);
-
-   GtkWidget *label1=gtk_label_new("Main Loop");
-   gtk_widget_set_hexpand(label1, TRUE);
-   gtk_widget_set_vexpand(label1, TRUE);
-
-   GtkWidget *button1=gtk_button_new_with_label("button1");
-   gtk_widget_set_hexpand(button1, TRUE);
-   g_signal_connect(button1, "clicked", G_CALLBACK(button_clicked), NULL); 
-
-   GtkWidget *grid1=gtk_grid_new();
-   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid1), button1, 0, 1, 1, 1);
-   gtk_container_add(GTK_CONTAINER(window), grid1);
-
-   gtk_widget_show_all(window);
-
-   //Probably not the best way to go about this.
-   if(valid_login) gtk_main();
-
+  int i=0;
+  int j=0;
+   
+  //Pad string for a block of 16.
+  if(length<16) 
+    {
+      length=16;
+      *buffer=(char*)malloc((length+1) * sizeof(char));
+      if(*buffer==NULL)
+        {
+          printf("Malloc Error\n");
+          return 0;
+        }
+      memset(*buffer, '\0', length+1);
+    }
+  else
+    {
+      i=length/16;
+      j=length%16;
+      if(j>0)
+        {
+          length=i*16+16;
+          *buffer=(char*)malloc((length+1) * sizeof(char));
+          if(*buffer==NULL)
+            {
+              printf("Malloc Error\n");
+              return 0;
+            }
+          memset(*buffer, '\0', length+1);
+        }
+      else
+        {
+          length=i*16;
+          *buffer=(char*)malloc((length+1) * sizeof(char));
+          if(*buffer==NULL)
+            {
+              printf("Malloc Error\n");
+              return 0;
+            }
+          memset(*buffer, '\0', length+1);
+        }
+    }
+  
+  return length;
+ }
+int encrypt_string(void *buffer, int buffer_len)
+ {
+   int i=0;
+   MCRYPT td = mcrypt_module_open("twofish", NULL, "cfb", NULL);
+   //MCRYPT td = mcrypt_module_open("rijndael-128", NULL, "cbc", NULL);
+   int blocksize = mcrypt_enc_get_block_size(td);
+   if(buffer_len % blocksize != 0)
+     {
+       printf("Blocksize Error %i %i\n", buffer_len, blocksize);
+       return 1;
+     }
+   i=mcrypt_generic_init(td, key, key_len, IV);
+   if(i<0)
+     {
+       mcrypt_perror(i);
+       return 1;
+     }
+   mcrypt_generic(td, buffer, buffer_len);
+   mcrypt_generic_deinit(td);
+   mcrypt_module_close(td);
    return 0;
-}
+ } 
 

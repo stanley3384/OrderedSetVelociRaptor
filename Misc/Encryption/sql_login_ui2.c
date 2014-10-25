@@ -2,7 +2,7 @@
 /*
   Test code for a login UI. Uses mcrypt and two fish encryption for the passwords stored in the database.
   Initialize table first then you can add some names and passwords. This uses a blob to store the byte
-  data in the table so if you have used sql_login_ui1 program drop and re-initialize the table.
+  data in the table so if you have used the sql_login_ui1 program drop and re-initialize the table.
 
 Get the mcrypt dev library
   apt-get install libmcrypt-dev
@@ -31,21 +31,22 @@ typedef struct
     GtkWidget *entry1, *entry2, *combo1, *label3;
   } Widgets;
 
-//UI code.
+//UI functions.
 static void close_program(void);
 static void run_database_command(GtkWidget *widget, Widgets *w);
 static void message_dialog(gchar *message);
 static void update_login_dialog(gchar *user_name, gchar *password, Widgets *w);
-//Database code.
+//Encryption functions.
+static int allocate_buffer_block(char **buffer, int length);
+static int encrypt_string(void *buffer, int buffer_len);
+static int decrypt_string(void *buffer, int buffer_len);
+//Database functions.
 static void print_passwords_table(void);
 static bool initialize_admin_login_password(void);
 static bool check_login_password(int *admin, const char *login, const char *password);
 static bool insert_login_password(int admin, const char *login, const char *password);
 static bool delete_login_password(const char *login, const char *password);
 static bool update_login_password(const char *login_old, const char *password_old, const char *login_new, const char *password_new);
-static int allocate_buffer_block(char **buffer, int length);
-static int encrypt_string(void *buffer, int buffer_len);
-static int decrypt_string(void *buffer, int buffer_len);
 
 int main(int argc, char **argv)
  {
@@ -342,7 +343,7 @@ static void update_login_dialog(gchar *user_name, gchar *password, Widgets *w)
     
      gtk_widget_destroy(dialog);
  }   
-//Database code.
+//Encryption code.
 static int allocate_buffer_block(char **buffer, int length)
  {
   int i=0;
@@ -434,6 +435,7 @@ int decrypt_string(void *buffer, int buffer_len)
    mcrypt_module_close(td);
    return 0;
  } 
+//Database code.
 static void print_passwords_table(void)
   {
     int sql_return=0;
