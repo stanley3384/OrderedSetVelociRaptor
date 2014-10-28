@@ -1,6 +1,6 @@
 
 /*
-  Test code for a login UI. Uses mcrypt and two fish encryption for the passwords stored in the database.
+  Test code for a login UI. Uses mcrypt and Twofish encryption for the passwords stored in the database.
   Initialize table first then you can add some names and passwords. This uses a blob to store the byte
   data in the table so if you have used the sql_login_ui1 program drop and re-initialize the table.
 
