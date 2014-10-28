@@ -1,6 +1,6 @@
 
 
---Some miscellaneous items to experiment with. For the OpenGL programs, on Ubuntu, you can get the needed libraries to compile the examples with by getting the freeGLUT and Mesa libraries. If you have a good graphics card you might not need the Mesa libraries. There are a couple of Python test scripts. Some of them are from answers given on the GTK+ Forum. They might be helpful in figuring out a few things with Python and GTK+.
+--Some miscellaneous items to experiment with. For the OpenGL programs, on Ubuntu, you can get the needed libraries to compile the examples with by getting the freeGLUT and Mesa libraries. If you have a good graphics card you might not need the Mesa libraries. There are a couple of Python test scripts. Some of them are from answers given on the GTK+ Forum. They might be helpful in figuring out a few things with Python and GTK+. In the encryption folder there are a couple of examples encrypting values into a SQLite database using a simple character shift, Twofish and Rijndael encryption. 
 
 sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
  
