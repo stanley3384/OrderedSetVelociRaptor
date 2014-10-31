@@ -27,7 +27,7 @@ C. Eric Cashon
 #include<openssl/evp.h>
 #include<openssl/err.h>
 
-static int allocate_buffer_block(char **buffer, int length);
+static int allocate_buffer_block(char **buffer, int length, int block_size);
 static void handleErrors(void);
 static int encrypt_string(const char *string, int string_len, char *key, char *iv, char *buffer1);
 static int decrypt_string(char *buffer1, int encrypt_len, char *key, char *iv, char *buffer2);
@@ -36,7 +36,7 @@ int main()
  {
   int i=0;
   //A string to encrypt.
-  const char string[]="A string to encrypt of some uncertain size."; 
+  const char string[]="A string to encrypt of some uncertain length."; 
   char *buffer1=NULL;
   char *buffer2=NULL;
   char IV[]="01234567890123456";
@@ -54,17 +54,18 @@ int main()
   if(length1>3)
     {
       //Get a block sized buffer to put the string in and return it's length.
-      buffer_len1=allocate_buffer_block(&buffer1, length1);
+      buffer_len1=allocate_buffer_block(&buffer1, length1, 32);
       //Second buffer same length as first. Can use just one buffer.
-      allocate_buffer_block(&buffer2, length1);
+      allocate_buffer_block(&buffer2, length1, 32);
     }
 
   if(buffer_len1>0)
     { 
       printf("Start String\n");
-      printf("  %s\n", string);
-      printf("String Length %i Buffer Length %i\n", length1, buffer_len1); 
+      printf("  %s\n", string); 
       length2=encrypt_string(string, length1, IV, key, buffer1);
+      //Note the difference in string length and the encrypted length.
+      printf("String Length %i Buffer Length %i Encrypted Length %i\n", length1, buffer_len1, length2); 
       printf("Encrypted String  \n  ");
       for(i=0;i<strlen(buffer1);i++)
          {
@@ -72,6 +73,8 @@ int main()
          }
       printf("\n");
       decrypt_string(buffer1, length2, IV, key, buffer2);
+      //The encryption overwrites extra bytes at the end of the buffer. Add a null character.
+      buffer2[length1] = '\0';
       printf("Decrypted String\n");
       printf("  %s\n", buffer2);
       free(buffer1);
@@ -84,15 +87,15 @@ int main()
 
   return 0;
  } 
-static int allocate_buffer_block(char **buffer, int length)
+static int allocate_buffer_block(char **buffer, int length, int block_size)
  {
   int i=0;
   int j=0;
    
-  //Pad string for a block of 128.
-  if(length<128) 
+  //Pad strings with extra 32 bytes. 
+  if(length<block_size) 
     {
-      length=128;
+      length=2*block_size;
       *buffer=(char*)malloc((length+1) * sizeof(char));
       if(*buffer==NULL)
         {
@@ -103,11 +106,11 @@ static int allocate_buffer_block(char **buffer, int length)
     }
   else
     {
-      i=length/128;
-      j=length%128;
+      i=length/block_size;
+      j=length%block_size;
       if(j>0)
         {
-          length=i*128+128;
+          length=i*block_size+2*block_size;
           *buffer=(char*)malloc((length+1) * sizeof(char));
           if(*buffer==NULL)
             {
@@ -118,7 +121,7 @@ static int allocate_buffer_block(char **buffer, int length)
         }
       else
         {
-          length=i*128;
+          length=i*block_size+block_size;
           *buffer=(char*)malloc((length+1) * sizeof(char));
           if(*buffer==NULL)
             {
