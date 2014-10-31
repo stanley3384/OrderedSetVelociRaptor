@@ -67,7 +67,7 @@ int main()
       //Note the difference in string length and the encrypted length.
       printf("String Length %i Buffer Length %i Encrypted Length %i\n", length1, buffer_len1, length2); 
       printf("Encrypted String  \n  ");
-      for(i=0;i<strlen(buffer1);i++)
+      for(i=0;i<length2;i++)
          {
            printf("%i ", (int)buffer1[i]);
          }
