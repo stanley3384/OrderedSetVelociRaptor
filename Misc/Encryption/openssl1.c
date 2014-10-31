@@ -74,7 +74,7 @@ int main()
       printf("\n");
       decrypt_string(buffer1, length2, IV, key, buffer2);
       //The encryption overwrites extra bytes at the end of the buffer. Add a null character.
-      buffer2[length1] = '\0';
+      buffer2[length1]='\0';
       printf("Decrypted String\n");
       printf("  %s\n", buffer2);
       free(buffer1);
@@ -92,7 +92,10 @@ static int allocate_buffer_block(char **buffer, int length, int block_size)
   int i=0;
   int j=0;
    
-  //Pad strings with extra 32 bytes. 
+  /*
+     Pad strings with extra block_size. To prevent buffer overflow, encrypting with cbc, the output
+  buffer needs to be one block bigger than the input buffer.
+  */
   if(length<block_size) 
     {
       length=2*block_size;
