@@ -11,7 +11,7 @@ C. Eric Cashon
 
 #include<gtk/gtk.h>
 #include<stdlib.h>
-#include <unistd.h>
+#include<unistd.h>
 
 gint timer_id=0;
 gint busy=0;
@@ -40,8 +40,8 @@ static void *draw_radial_color_t2(cairo_surface_t *cairo_surface1);
 gboolean draw_radial_color_t1(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean animate_drawing_area(gpointer data);
 gboolean select_draw_path(GtkWidget *widget, cairo_t *cr, gpointer data);
-static void set_threading_path(GtkWidget *combo1, gpointer *data);
-static void set_sleep(GtkWidget *combo2, gpointer *data);
+static void set_threading_path(GtkWidget *combo1, gpointer data);
+static void set_sleep(GtkWidget *combo2, gpointer data);
 static void close_program();
 
 int main(int argc, char **argv)
@@ -361,7 +361,7 @@ gboolean select_draw_path(GtkWidget *widget, cairo_t *cr, gpointer data)
      }
    return TRUE;
  }
-static void set_threading_path(GtkWidget *combo1, gpointer *data)
+static void set_threading_path(GtkWidget *combo1, gpointer data)
  {
    if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo1)))==0) 
      {
@@ -378,7 +378,7 @@ static void set_threading_path(GtkWidget *combo1, gpointer *data)
        thread_code_path=TRUE;
      }
  }
-static void set_sleep(GtkWidget *combo2, gpointer *data)
+static void set_sleep(GtkWidget *combo2, gpointer data)
  {
    if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo2)))==0) 
      {
