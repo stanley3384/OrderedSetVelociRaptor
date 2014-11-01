@@ -35,20 +35,25 @@ static int decrypt_string(char *buffer1, int encrypt_len, char *key, char *iv, c
 int main()
  {
   int i=0;
-  //For hashing a key
   const char password[]="password";
+  //For hashing a key from the password.
   unsigned char salt_value[] = {'s','a','l','t'};
   int iterations=10;
   unsigned char key[32];
   int key_size=32;
   //A string to encrypt.
   const char string[]="A string to encrypt of some uncertain length."; 
+  //Buffers for encryption and decryption.
   char *buffer1=NULL;
-  char *buffer2=NULL;
-  char IV[]="01234567890123456"; 
+  char *buffer2=NULL; 
   int buffer_len1=0;
   int length1=strlen(string);
   int length2=0;
+  /*
+    Store the IV in the database and retrieve to decrypt. The IV changes the encryption output
+    for the same input and should be randomly generated. Just use a constant here.
+  */
+  char IV[]="01234567890123456";
 
   //Initialize OpenSSL.
   ERR_load_crypto_strings();
@@ -57,7 +62,7 @@ int main()
 
   //Hash a key from the password.
   PKCS5_PBKDF2_HMAC_SHA1(password, strlen(password), salt_value, sizeof(salt_value), iterations, key_size, key);
-  printf("Key Hash\n  ");
+  printf("Hash Key\n  ");
   for(i=0;i<key_size;i++) { printf("%02x", key[i]); }
   printf("\n");
 
