@@ -35,20 +35,31 @@ static int decrypt_string(char *buffer1, int encrypt_len, char *key, char *iv, c
 int main()
  {
   int i=0;
+  //For hashing a key
+  const char password[]="password";
+  unsigned char salt_value[] = {'s','a','l','t'};
+  int iterations=10;
+  unsigned char key[32];
+  int key_size=32;
   //A string to encrypt.
   const char string[]="A string to encrypt of some uncertain length."; 
   char *buffer1=NULL;
   char *buffer2=NULL;
-  char IV[]="01234567890123456";
-  char key[]="01234567890123456789012345678901"; //keysize=32 
+  char IV[]="01234567890123456"; 
   int buffer_len1=0;
   int length1=strlen(string);
   int length2=0;
 
-  //Initialise OpenSSL.
+  //Initialize OpenSSL.
   ERR_load_crypto_strings();
   OpenSSL_add_all_algorithms();
   OPENSSL_config(NULL);
+
+  //Hash a key from the password.
+  PKCS5_PBKDF2_HMAC_SHA1(password, strlen(password), salt_value, sizeof(salt_value), iterations, key_size, key);
+  printf("Key Hash\n  ");
+  for(i=0;i<key_size;i++) { printf("%02x", key[i]); }
+  printf("\n");
 
   //Check for a minimum string length.
   if(length1>3)
@@ -63,7 +74,7 @@ int main()
     { 
       printf("Start String\n");
       printf("  %s\n", string); 
-      length2=encrypt_string(string, length1, IV, key, buffer1);
+      length2=encrypt_string(string, length1, IV, (char *)key, buffer1);
       //Note the difference in string length and the encrypted length.
       printf("String Length %i Buffer Length %i Encrypted Length %i\n", length1, buffer_len1, length2); 
       printf("Encrypted String  \n  ");
@@ -72,7 +83,7 @@ int main()
            printf("%i ", (int)buffer1[i]);
          }
       printf("\n");
-      decrypt_string(buffer1, length2, IV, key, buffer2);
+      decrypt_string(buffer1, length2, IV, (char *)key, buffer2);
       //The encryption overwrites extra bytes at the end of the buffer. Add a null character.
       buffer2[length1]='\0';
       printf("Decrypted String\n");
