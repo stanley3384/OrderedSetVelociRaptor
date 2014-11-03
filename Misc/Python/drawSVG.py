@@ -26,12 +26,20 @@ for i in range(num):
     xv.append(random.randint(-5, 15))
     yv.append(random.randint(-5, 15))
 
-class DialogMessage(Gtk.MessageDialog):
+class DialogTime(Gtk.MessageDialog):
     def __init__(self, parent):
         Gtk.MessageDialog.__init__(self, parent, 0, Gtk.MessageType.INFO,
             Gtk.ButtonsType.OK, "DateTime")
         time1 = time.strftime("%a  %b %d, %Y  %-I:%M:%S %p",time.localtime(time.time()))
         self.format_secondary_text(time1)
+        self.set_default_size(150, 100)
+        self.show_all()
+
+class DialogMessage(Gtk.MessageDialog):
+    def __init__(self, parent, message = "Default Message"):
+        Gtk.MessageDialog.__init__(self, parent, 0, Gtk.MessageType.INFO,
+            Gtk.ButtonsType.OK, "Info Message")
+        self.format_secondary_text(message)
         self.set_default_size(150, 100)
         self.show_all()
 
@@ -69,7 +77,12 @@ class MainWindow(Gtk.Window):
         self.add (box)
                 
         self.show_all()
-        self.pb = GdkPixbuf.Pixbuf.new_from_file("test1.svg")
+        try:
+            self.pb = GdkPixbuf.Pixbuf.new_from_file("test1.svg")
+        except:
+            dialog = DialogMessage(self, "Couldn't find test1.svg.")
+            dialog.run()
+            dialog.destroy()
         GObject.idle_add(self.timeout)
 
     #Text to draw over SVG.
@@ -115,16 +128,20 @@ class MainWindow(Gtk.Window):
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
-            print("The OK button was clicked")
-            self.pb = GdkPixbuf.Pixbuf.new_from_file(dialog.get_filename())
+            try:
+                self.pb = GdkPixbuf.Pixbuf.new_from_file(dialog.get_filename())
+            except:
+                dialog2 = DialogMessage(self, "The file isn't a recognized graphics file.")
+                dialog2.run()
+                dialog2.destroy()
         elif response == Gtk.ResponseType.CANCEL:
             print("The Cancel button was clicked")
         dialog.destroy()
 
     def on_button2_clicked(self, widget):
-        dialog2 = DialogMessage(self)
-        dialog2.run()
-        dialog2.destroy()
+        dialog = DialogTime(self)
+        dialog.run()
+        dialog.destroy()
 
     def destroy(window, self):
         Gtk.main_quit()
