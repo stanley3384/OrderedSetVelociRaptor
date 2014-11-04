@@ -81,7 +81,8 @@ class MainWindow(Gtk.Window):
         #Add the CSS linear gradients.
         style_provider = Gtk.CssProvider()
         css = """GtkButton#css_button1{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,255,0,1)), color-stop(1.0,rgba(0,255,255,1)));}
-                 GtkButton#css_button2{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,255,1)), color-stop(1.0,rgba(255,255,0,1)));}"""
+                 GtkButton#css_button2{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,255,1)), color-stop(1.0,rgba(255,255,0,1)));}
+                 GtkMessageDialog{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,255,0,1)), color-stop(1.0,rgba(255,0,255,1)));}"""
         style_provider.load_from_data(css)
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
                 
