@@ -7,13 +7,12 @@ C. Eric Cashon
 
 '''
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 class CellRendererTextWindow(Gtk.Window):
-
     def __init__(self):
         Gtk.Window.__init__(self, title="Treeview Popup")
-
+        self.set_border_width(10)
         self.set_default_size(250, 100)
         self.x1=0
         self.y1=0
@@ -23,8 +22,10 @@ class CellRendererTextWindow(Gtk.Window):
         self.liststore.append(["Bottom", "Blue"])
 
         self.treeview = Gtk.TreeView(model=self.liststore)
+        self.treeview.set_headers_visible(True)
 
         self.menu = Gtk.Menu()
+        self.menu.set_name("css_popup1")
         self.rename_item = Gtk.MenuItem("Rename")
         self.rename_item.connect("activate", self.rename)
         self.delete_item = Gtk.MenuItem("Delete")
@@ -45,6 +46,15 @@ class CellRendererTextWindow(Gtk.Window):
         self.column_text2 = Gtk.TreeViewColumn("Text2", self.renderer_text2, text=1)
         self.treeview.append_column(self.column_text2)
         self.renderer_text2.connect("edited", self.text_edited2)
+
+        style_provider = Gtk.CssProvider()
+        css = """GtkWindow{background: blue;}
+                 GtkTreeView{background: yellow;}
+                 GtkTreeView:selected{color: black; background: green; border-width: 1px; border-color: black;}
+                 GtkMenu#css_popup1{color: black; background: green;}
+                 column-header .button{color: white; background: red;}"""
+        style_provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
         box = Gtk.Box()
         box.set_orientation(Gtk.Orientation.VERTICAL)
