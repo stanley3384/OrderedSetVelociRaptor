@@ -1,7 +1,8 @@
 #!/user/bin/python
 
 '''
-   Test code for using a pop-up menu to change values in a treeview.
+   Test code for using a pop-up menu to change values in a treeview. Works with Python2.7 and GTk 3.4
+on Ubuntu 12.04
 
 C. Eric Cashon
 
@@ -50,7 +51,8 @@ class CellRendererTextWindow(Gtk.Window):
         self.renderer_text2.connect("edited", self.text_edited2)
 
         style_provider = Gtk.CssProvider()
-        css = """GtkWindow{background: blue;}
+        #Add b for byte string error in python3.2. Works in 2.7 also.
+        css = b"""GtkWindow{background: blue;}
                  GtkTreeView{color: black}
                  GtkTreeView:selected{color: black; background: green; border-width: 1px; border-color: black;}
                  GtkMenu#css_popup1{color: black; background: green;}

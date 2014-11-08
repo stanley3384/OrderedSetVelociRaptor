@@ -1,7 +1,7 @@
 #!/user/bin/python
 
 '''
-Test code for looking at Python, GTK+ Cairo, CSS and SVG along with some animation.
+Test code for looking at Python2.7, GTK+ Cairo, CSS and SVG along with some animation.
 From various items from the internet. Just some fun with the technology. The 
 script needs the test1.svg to open.
 '''
@@ -55,6 +55,7 @@ class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Test SVG")
         self.set_default_size(500,600);
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.connect_after('destroy', self.destroy)
                 
         box = Gtk.Box(spacing=2)
