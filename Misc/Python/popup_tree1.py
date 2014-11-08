@@ -1,8 +1,8 @@
 #!/user/bin/python
 
 '''
-   Test code for using a pop-up menu to change values in a treeview. Works with Python2.7 and GTk 3.4
-on Ubuntu 12.04
+   Test code for using a pop-up menu to change values in a treeview. Works with Python2.7 and GTK 3.4
+on Ubuntu 12.04. Also works with Python3.2.
 
 C. Eric Cashon
 
