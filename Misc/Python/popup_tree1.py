@@ -25,7 +25,7 @@ class MainWindow(Gtk.Window):
                  GtkLabel#css_label2{color: white}
                  GtkLabel#css_label3{color: white}
                  GtkLabel#css_label4{color: white}
-                 GtkTreeView{color: black}
+                 GtkTreeView{color: black; -GtkTreeView-grid-line-width: 2}
                  GtkTreeView:selected{color: black; background: green; border-width: 1px; border-color: black;}
                  GtkMenu#css_popup1{color: black; background: green;}
                  column-header .button{color: white; background: purple;}"""
@@ -64,6 +64,8 @@ class TreeView(Gtk.TreeView):
         self.x1=0
         self.y1=0
         self.set_headers_visible(True)
+        #Gtk.TREE_VIEW_GRID_LINES_BOTH enumeration
+        self.set_grid_lines(3)
 
         self.liststore = Gtk.ListStore(str, str)
         self.liststore.append(["Top", "Red"])
