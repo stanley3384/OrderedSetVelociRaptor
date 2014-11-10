@@ -21,6 +21,8 @@ class MainWindow(Gtk.Window):
         style_provider = Gtk.CssProvider()
         #Add b for byte string error in python3.2. Works in 2.7 also.
         css = b"""GtkWindow{background: blue;}
+                 GtkLabel#css_label1{color: white}
+                 GtkLabel#css_label2{color: white}
                  GtkTreeView{color: black}
                  GtkTreeView:selected{color: black; background: green; border-width: 1px; border-color: black;}
                  GtkMenu#css_popup1{color: black; background: green;}
@@ -28,10 +30,19 @@ class MainWindow(Gtk.Window):
         style_provider.load_from_data(css)
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        treeview = TreeView()
+        label1 = Gtk.Label("Treeview1")
+        label1.set_name("css_label1")
+        label2 = Gtk.Label("Treeview2")
+        label2.set_name("css_label2")
+        treeview1 = TreeView()
+        treeview2 = TreeView()
+
         box = Gtk.Box()
         box.set_orientation(Gtk.Orientation.VERTICAL)
-        box.pack_start(treeview, False, False, 0)
+        box.pack_start(label1, False, False, 0)
+        box.pack_start(treeview1, False, False, 0)
+        box.pack_start(label2, False, False, 0)
+        box.pack_start(treeview2, False, False, 0)
         self.add(box)
 
 class TreeView(Gtk.TreeView):
@@ -51,11 +62,11 @@ class TreeView(Gtk.TreeView):
         self.menu = Gtk.Menu()
         self.menu.set_name("css_popup1")
         self.rename_item = Gtk.MenuItem("Edit Cell")
-        self.rename_item.connect("activate", self.rename)
+        self.rename_item.connect("activate", self.edit_cell)
         self.delete_item = Gtk.MenuItem("Delete From Cell")
-        self.delete_item.connect("activate", self.delete)
+        self.delete_item.connect("activate", self.delete_from_cell)
         self.add_row_item = Gtk.MenuItem("Append Row")
-        self.add_row_item.connect("activate", self.add_row)
+        self.add_row_item.connect("activate", self.append_row)
         self.remove_row_item = Gtk.MenuItem("Remove Row")
         self.remove_row_item.connect("activate", self.remove_row)
         self.menu.append(self.rename_item)
@@ -79,15 +90,12 @@ class TreeView(Gtk.TreeView):
         self.renderer_text2.connect("edited", self.text_edited2)
 
     def text_edited1(self, widget, path, text):
-        print("Text1 Edited")
         self.liststore[path][0] = text
 
     def text_edited2(self, widget, path, text):
-        print("Text2 Edited")
         self.liststore[path][1] = text
 
     def show_menu(self, widget, event):
-        print("Show Menu")
         if event.button == 1:
             self.x1 = int(event.x)
             self.y1 = int(event.y)
@@ -95,16 +103,16 @@ class TreeView(Gtk.TreeView):
             self.menu.popup(None, None, None, None, 0, Gtk.get_current_event_time())
         return False
 
-    def rename(self, *args):
-        print("Rename")
+    def edit_cell(self, *args):
+        print("Edit Cell")
         path_info = self.get_path_at_pos(self.x1, self.y1)
         if path_info is not None:
             path, col, cellx, celly = path_info
             self.grab_focus()
             self.set_cursor(path, col, True)
             
-    def delete(self, *args):
-        print("Delete")
+    def delete_from_cell(self, *args):
+        print("Delete From Cell")
         path_info = self.get_path_at_pos(self.x1, self.y1)
         if path_info is not None:
             path, col, cellx, celly = path_info
@@ -114,6 +122,10 @@ class TreeView(Gtk.TreeView):
                 self.text_edited1(self, path, "")
             if(col==self.column_text2):
                 self.text_edited2(self, path, "")
+
+    def append_row(self, *args):
+        print("Append Row")
+        self.liststore.append(None)
 
     def remove_row(self, *args):
         print("Remove Row")
@@ -125,10 +137,6 @@ class TreeView(Gtk.TreeView):
             treemodel = self.get_model()
             iter1=treemodel.get_iter(path)
             self.liststore.remove(iter1)
-
-    def add_row(self, *args):
-        print("Add Row")
-        self.liststore.append(None)
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit)
