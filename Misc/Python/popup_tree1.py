@@ -3,7 +3,7 @@
 '''
    Test code for using a pop-up menu to change values in a treeview. Works with Python2.7 and GTK 3.4
 on Ubuntu 12.04. Also works with Python3.2. The treeview cells can be edited, deleted and rows can be
-appended or removed. Change some colors around also.
+appended or removed. Change some colors around also and instantiate several treeviews.
 
 C. Eric Cashon
 
@@ -23,6 +23,8 @@ class MainWindow(Gtk.Window):
         css = b"""GtkWindow{background: blue;}
                  GtkLabel#css_label1{color: white}
                  GtkLabel#css_label2{color: white}
+                 GtkLabel#css_label3{color: white}
+                 GtkLabel#css_label4{color: white}
                  GtkTreeView{color: black}
                  GtkTreeView:selected{color: black; background: green; border-width: 1px; border-color: black;}
                  GtkMenu#css_popup1{color: black; background: green;}
@@ -34,19 +36,30 @@ class MainWindow(Gtk.Window):
         label1.set_name("css_label1")
         label2 = Gtk.Label("Treeview2")
         label2.set_name("css_label2")
+        label3 = Gtk.Label("Treeview3")
+        label3.set_name("css_label3")
+        label4 = Gtk.Label("Treeview4")
+        label4.set_name("css_label4")
+        #Test out a few treeviews.
         treeview1 = TreeView()
-        treeview2 = TreeView()
+        treeview2 = TreeView("orange")
+        treeview3 = TreeView("yellow")
+        treeview4 = TreeView("purple")
 
-        box = Gtk.Box()
-        box.set_orientation(Gtk.Orientation.VERTICAL)
-        box.pack_start(label1, False, False, 0)
-        box.pack_start(treeview1, False, False, 0)
-        box.pack_start(label2, False, False, 0)
-        box.pack_start(treeview2, False, False, 0)
-        self.add(box)
+        grid = Gtk.Grid()
+        grid.set_column_spacing(10)
+        grid.attach(label1, 0, 0, 1, 1)
+        grid.attach(treeview1, 0, 1, 1, 1)
+        grid.attach(label2, 0, 2, 1, 1)
+        grid.attach(treeview2, 0, 3, 1, 1)
+        grid.attach(label3, 1, 0, 1, 1)
+        grid.attach(treeview3, 1, 1, 1, 1)
+        grid.attach(label4, 1, 2, 1, 1)
+        grid.attach(treeview4, 1, 3, 1, 1)
+        self.add(grid)
 
 class TreeView(Gtk.TreeView):
-    def __init__(self):
+    def __init__(self, first_column_color = "red"):
         Gtk.TreeView.__init__(self)
         self.x1=0
         self.y1=0
@@ -77,7 +90,7 @@ class TreeView(Gtk.TreeView):
         self.connect("button-press-event", self.show_menu)
 
         self.renderer_text1 = Gtk.CellRendererText()
-        self.renderer_text1.set_property("background", "red")
+        self.renderer_text1.set_property("background", first_column_color)
         self.column_text1 = Gtk.TreeViewColumn("Title1", self.renderer_text1, text=0)
         self.renderer_text1.set_property("editable", True)    
         self.append_column(self.column_text1)
