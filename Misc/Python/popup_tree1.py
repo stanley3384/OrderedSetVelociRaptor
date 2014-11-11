@@ -41,28 +41,48 @@ class MainWindow(Gtk.Window):
         label4 = Gtk.Label("Treeview4")
         label4.set_name("css_label4")
         #Test out a few treeviews.
-        treeview1 = TreeView()
-        treeview2 = TreeView("orange")
-        treeview3 = TreeView("yellow")
-        treeview4 = TreeView("purple")
+        self.treeview1 = TreeView()
+        self.treeview2 = TreeView("orange")
+        self.treeview3 = TreeView("yellow")
+        self.treeview4 = TreeView("purple")
+
+        #Reset selected in treeviews.
+        self.connect("set-focus", self.reset_selected_treeview)
 
         grid = Gtk.Grid()
         grid.set_column_spacing(10)
         grid.attach(label1, 0, 0, 1, 1)
-        grid.attach(treeview1, 0, 1, 1, 1)
+        grid.attach(self.treeview1, 0, 1, 1, 1)
         grid.attach(label2, 0, 2, 1, 1)
-        grid.attach(treeview2, 0, 3, 1, 1)
+        grid.attach(self.treeview2, 0, 3, 1, 1)
         grid.attach(label3, 1, 0, 1, 1)
-        grid.attach(treeview3, 1, 1, 1, 1)
+        grid.attach(self.treeview3, 1, 1, 1, 1)
         grid.attach(label4, 1, 2, 1, 1)
-        grid.attach(treeview4, 1, 3, 1, 1)
+        grid.attach(self.treeview4, 1, 3, 1, 1)
         self.add(grid)
+
+    #Move the selection of the treeviews.
+    def reset_selected_treeview(self, widget, data):
+        print("Focus Changed")
+        if(self.treeview1.active==False):
+            self.treeview1.unselect_row()
+        if(self.treeview2.active==False):
+            self.treeview2.unselect_row()
+        if(self.treeview3.active==False):
+            self.treeview3.unselect_row()
+        if(self.treeview4.active==False):
+            self.treeview4.unselect_row()        
+        self.treeview1.active=False
+        self.treeview2.active=False
+        self.treeview3.active=False
+        self.treeview4.active=False
 
 class TreeView(Gtk.TreeView):
     def __init__(self, first_column_color = "red"):
         Gtk.TreeView.__init__(self)
         self.x1=0
         self.y1=0
+        self.active=False
         self.set_headers_visible(True)
         #Gtk.TREE_VIEW_GRID_LINES_BOTH enumeration
         self.set_grid_lines(3)
@@ -111,6 +131,8 @@ class TreeView(Gtk.TreeView):
         self.liststore[path][1] = text
 
     def show_menu(self, widget, event):
+        print("Show Menu")
+        self.active=True
         if event.button == 1:
             self.x1 = int(event.x)
             self.y1 = int(event.y)
@@ -152,6 +174,11 @@ class TreeView(Gtk.TreeView):
             treemodel = self.get_model()
             iter1=treemodel.get_iter(path)
             self.liststore.remove(iter1)
+
+    def unselect_row(self):
+        print("Unselect Row")
+        tree_select = self.get_selection()
+        tree_select.unselect_all()
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit)
