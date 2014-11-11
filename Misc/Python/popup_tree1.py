@@ -62,7 +62,7 @@ class MainWindow(Gtk.Window):
         self.add(grid)
 
     #Move the selection of the treeviews.
-    def reset_selected_treeview(self, widget, data):
+    def reset_selected_treeview(self, *args):
         print("Focus Changed")
         if(self.treeview1.active==False):
             self.treeview1.unselect_row()
