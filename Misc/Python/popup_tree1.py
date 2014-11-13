@@ -102,11 +102,14 @@ class TreeView(Gtk.TreeView):
         self.delete_item.connect("activate", self.delete_from_cell)
         self.add_row_item = Gtk.MenuItem("Append Row")
         self.add_row_item.connect("activate", self.append_row)
+        self.insert_row_item = Gtk.MenuItem("Insert Row")
+        self.insert_row_item.connect("activate", self.insert_row)
         self.remove_row_item = Gtk.MenuItem("Remove Row")
         self.remove_row_item.connect("activate", self.remove_row)
         self.menu.append(self.rename_item)
         self.menu.append(self.delete_item)
         self.menu.append(self.add_row_item)
+        self.menu.append(self.insert_row_item)
         self.menu.append(self.remove_row_item)
         self.menu.attach_to_widget(self, None)
         self.connect("button-press-event", self.show_menu)
@@ -174,6 +177,15 @@ class TreeView(Gtk.TreeView):
             treemodel = self.get_model()
             iter1=treemodel.get_iter(path)
             self.liststore.remove(iter1)
+
+    def insert_row(self, *args):
+        print("Remove Row")
+        path_info = self.get_path_at_pos(self.x1, self.y1)
+        if path_info is not None:
+            path, col, cellx, celly = path_info
+            treemodel = self.get_model()
+            iter1=treemodel.get_iter(path)
+            self.liststore.insert_after(iter1, None)
 
     def unselect_row(self):
         print("Unselect Row")
