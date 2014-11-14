@@ -35,7 +35,7 @@ static void update_entries(GtkWidget *widget, Entries *es)
     g_free(value3);
     g_free(value4);
   }
-static void close_program(void)
+static void close_program(GtkWidget *widget, gpointer data)
   {
     printf("Quit Program\n");
     gtk_main_quit();
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Test Entries");
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     gtk_window_set_default_size(GTK_WINDOW(window), 200, 150);
-    g_signal_connect_swapped(window, "destroy", G_CALLBACK(close_program), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
  
     button1=gtk_button_new_with_label("Change Entries");
 
