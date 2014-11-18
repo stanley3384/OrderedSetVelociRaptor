@@ -1,6 +1,7 @@
 
 /*
-  Test code for getting table and field names from a sqlite database into a treeview. 
+  Test code for getting table and field names from a sqlite database into a treeview. Also
+  load a single column of data from the database into an array. 
 
   gcc -Wall sqlite_connect1.c -o sqlite_connect1 `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
@@ -10,6 +11,65 @@
 #include<gtk/gtk.h>
 #include<sqlite3.h>
 
+static void close_program(GtkWidget *widget, gpointer data);
+static void connect_db(GtkWidget *button1, GArray *widgets);
+static void get_treeview_selected(GtkWidget *button1, GArray *widgets);
+static void get_single_field_values(gchar *table, gchar *field, GArray *widgets);
+
+
+int main(int argc, char *argv[])
+  {
+    GtkWidget *window, *entry1, *button1, *button2, *treeview1, *grid;
+
+    gtk_init(&argc, &argv);
+
+    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
+    gtk_window_set_title(GTK_WINDOW(window), "Sqlite Connect");
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 100);
+    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
+
+    entry1=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry1), "VelociRaptorData.db");
+    gtk_widget_set_hexpand(entry1, TRUE);
+
+    button1=gtk_button_new_with_label("Connect");
+
+    button2=gtk_button_new_with_label("Print Selected");
+
+    //A treeview for tables and fields.
+    treeview1=gtk_tree_view_new();
+    GtkCellRenderer *renderer1=gtk_cell_renderer_text_new();
+    g_object_set(G_OBJECT(renderer1),"foreground", "purple", NULL);
+    GtkTreeViewColumn *column1=gtk_tree_view_column_new_with_attributes("Tables and Fields", renderer1, "text", 0, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(treeview1), column1);
+
+    //Pass entry and treeview to callback.
+    GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
+    g_array_append_val(widgets, entry1);
+    g_array_append_val(widgets, treeview1);
+    g_signal_connect(button1, "clicked", G_CALLBACK(connect_db), widgets);
+    g_signal_connect(button2, "clicked", G_CALLBACK(get_treeview_selected), widgets);
+
+    grid=gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), treeview1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
+    gtk_container_add(GTK_CONTAINER(window), grid);
+   
+    gtk_widget_show_all(window);
+    gtk_main();
+    return 0;   
+  }
+static void close_program(GtkWidget *widget, gpointer data)
+  {
+    printf("Quit Program\n");
+    gtk_main_quit();
+  }
 static void connect_db(GtkWidget *button1, GArray *widgets)
   {
     g_print("Connect DB\n");
@@ -105,7 +165,8 @@ static void get_treeview_selected(GtkWidget *button1, GArray *widgets)
     if(check1&&check2)
       {
         gtk_tree_model_get(model, &parent, 0, &table, -1);
-        g_print("%s %s\n", table, field);
+        g_print("SELECT %s FROM %s;\n", field, table);
+        get_single_field_values(table, field, widgets);
       }
     else
       {
@@ -114,56 +175,41 @@ static void get_treeview_selected(GtkWidget *button1, GArray *widgets)
     if(table!=NULL) g_free(table);
     if(field!=NULL) g_free(field);
   }
-static void close_program(GtkWidget *widget, gpointer data)
+static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
   {
-    printf("Quit Program\n");
-    gtk_main_quit();
+    g_print("Build Data Array\n");
+    gint i=0;
+    gint zero_counter=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    gint sql_return=0;
+    gdouble temp=0;
+    GArray *DataArray=g_array_new(FALSE, FALSE, sizeof(double));
+    gchar *database=g_strdup_printf("%s", gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 0))));
+    char *sql1=sqlite3_mprintf("SELECT %q FROM %q;", field, table);
+    g_print("%s\n", sql1);
+
+    sqlite3_open(database,&cnn);   
+    sqlite3_prepare_v2(cnn,sql1,-1,&stmt1,0);
+    sql_return=sqlite3_step(stmt1);
+    
+    //Watch for zero's in implicit conversion.
+    while(sql_return==SQLITE_ROW)
+      {
+        temp=sqlite3_column_double(stmt1, 0);
+        if(temp<0.0000001&&temp>-0.0000001) zero_counter++;
+        g_array_append_val(DataArray, temp);
+        sql_return=sqlite3_step(stmt1);
+        i++;
+      }
+    
+    sqlite3_finalize(stmt1);   
+    sqlite3_close(cnn);
+ 
+    g_print("Array Length %i First %f Last %f ZeroWarning %i\n", i, g_array_index(DataArray, double, 0), g_array_index(DataArray, double, i-1), zero_counter);
+
+    g_array_free(DataArray, TRUE);
+    sqlite3_free(sql1);
+    if(database!=NULL) g_free(database);
   }
-int main(int argc, char *argv[])
-  {
-    GtkWidget *window, *entry1, *button1, *button2, *treeview1, *grid;
 
-    gtk_init(&argc, &argv);
-
-    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
-    gtk_window_set_title(GTK_WINDOW(window), "Sqlite Connect");
-    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 100);
-    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
-
-    entry1=gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(entry1), "VelociRaptorData.db");
-    gtk_widget_set_hexpand(entry1, TRUE);
-
-    button1=gtk_button_new_with_label("Connect");
-
-    button2=gtk_button_new_with_label("Print Selected");
-
-    //A treeview for tables and fields.
-    treeview1=gtk_tree_view_new();
-    GtkCellRenderer *renderer1=gtk_cell_renderer_text_new();
-    g_object_set(G_OBJECT(renderer1),"foreground", "purple", NULL);
-    GtkTreeViewColumn *column1=gtk_tree_view_column_new_with_attributes("Tables and Fields", renderer1, "text", 0, NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(treeview1), column1);
-
-    //Pass entry and treeview to callback.
-    GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
-    g_array_append_val(widgets, entry1);
-    g_array_append_val(widgets, treeview1);
-    g_signal_connect(button1, "clicked", G_CALLBACK(connect_db), widgets);
-    g_signal_connect(button2, "clicked", G_CALLBACK(get_treeview_selected), widgets);
-
-    grid=gtk_grid_new();
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), treeview1, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
-    gtk_container_add(GTK_CONTAINER(window), grid);
-   
-    gtk_widget_show_all(window);
-    gtk_main();
-    return 0;   
-  }
