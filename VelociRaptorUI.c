@@ -113,16 +113,20 @@ static void setup_tree_view_data(GtkTreeView*, int, double, int);
 static void setup_tree_view_percent(GtkTreeView*, GtkTreeView*);
 static void setup_tree_view_text(GtkTreeView*, GArray*);
 static void get_text_file(GtkWidget*, GtkWidget*);
+static void sqlite_connect_dialog(GtkWidget*, GtkWidget*);
 static void build_aux_table_dialog(GtkWidget*, GtkWidget*);
 static void build_combo_table_dialog(GtkWidget*, GtkWidget*);
 static void build_permutation_table_dialog(GtkWidget*, GtkWidget*);
 static void about_dialog(GtkWidget*, GtkWidget*);
 static gboolean draw_veloci_raptor(GtkWidget*, cairo_t *cr, gpointer);
 static gboolean draw_veloci_raptor_feet(GtkWidget*, cairo_t *cr, gpointer);
+static void connect_sqlite_db(GtkWidget *button1, GArray *widgets);
+static void get_treeview_selected(GtkWidget *button1, GArray *widgets);
+static void get_single_field_values(gchar *table, gchar *field, GArray *widgets);
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
+     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
       
      //For printing
      Widgets *w;
@@ -154,6 +158,7 @@ int main(int argc, char *argv[])
 
      FileMenu=gtk_menu_new(); 
      ImportItem=gtk_menu_item_new_with_label("Import Text");
+     SqliteItem=gtk_menu_item_new_with_label("Sqlite Connect");
      PrintItem=gtk_menu_item_new_with_label("Print White Board");
      QuitItem=gtk_menu_item_new_with_label("Quit");
 
@@ -190,7 +195,7 @@ int main(int argc, char *argv[])
      AboutItem=gtk_menu_item_new_with_label("About");
 
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), ImportItem);
-     
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), SqliteItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), PrintItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), QuitItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildAuxItem);
@@ -220,6 +225,7 @@ int main(int argc, char *argv[])
      g_signal_connect(QuitItem, "activate", G_CALLBACK(destroy_event), NULL);
      //PrintItem signal connected after textview
      g_signal_connect(ImportItem, "activate", G_CALLBACK(get_text_file), window);
+     g_signal_connect(SqliteItem, "activate", G_CALLBACK(sqlite_connect_dialog), window);
      g_signal_connect(AboutItem, "activate", G_CALLBACK(about_dialog), window);
      //AnovaItem signal connected after textview.
      g_signal_connect(ScatterItem, "activate", G_CALLBACK(database_to_scatter_graph_dialog), NULL);
@@ -2431,6 +2437,63 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
     g_string_free(TempBuffer, TRUE);
        
   }
+static void sqlite_connect_dialog(GtkWidget *menu, GtkWidget *window)
+  {
+    g_print("Sqlite Connect Dialog\n");
+    GtkWidget *dialog, *label1, *entry1, *button1, *treeview1, *grid, *content_area, *scrolled_win;
+    gint result=0;
+
+    dialog=gtk_dialog_new_with_buttons("Sqlite Connect", GTK_WINDOW(window), GTK_DIALOG_MODAL, "Get Data", GTK_RESPONSE_OK, NULL);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 300);
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+
+    label1=gtk_label_new("Gets a single column of data.\nEnter the path of the database.\nConnect and get data.");
+
+    entry1=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry1), "VelociRaptorData.db");
+    gtk_widget_set_hexpand(entry1, TRUE);
+
+    button1=gtk_button_new_with_label("Connect");
+
+    //A treeview for tables and fields.
+    treeview1=gtk_tree_view_new();
+    gtk_widget_set_hexpand(treeview1, TRUE);
+    gtk_widget_set_vexpand(treeview1, TRUE);
+    GtkCellRenderer *renderer1=gtk_cell_renderer_text_new();
+    g_object_set(G_OBJECT(renderer1),"foreground", "purple", NULL);
+    GtkTreeViewColumn *column1=gtk_tree_view_column_new_with_attributes("Tables and Fields", renderer1, "text", 0, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(treeview1), column1);
+
+    scrolled_win=gtk_scrolled_window_new(NULL, NULL);    
+    gtk_container_add(GTK_CONTAINER(scrolled_win), treeview1);
+
+    //Pass entry and treeview to callback.
+    GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
+    g_array_append_val(widgets, entry1);
+    g_array_append_val(widgets, treeview1);
+    g_signal_connect(button1, "clicked", G_CALLBACK(connect_sqlite_db), widgets);
+    //g_signal_connect(button2, "clicked", G_CALLBACK(get_treeview_selected), widgets);
+
+    grid=gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
+    gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), scrolled_win, 0, 3, 1, 1);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_add(GTK_CONTAINER(content_area), grid);
+
+    gtk_widget_show_all(dialog);
+    result=gtk_dialog_run(GTK_DIALOG(dialog));
+    if(result==GTK_RESPONSE_OK)
+      {
+        g_print("Get Data\n");
+        get_treeview_selected(NULL, widgets);
+      }
+
+     gtk_widget_destroy(dialog);
+  }
 static void text_button_clicked(GtkButton *button, GtkTextView *textview)
   {
     //Clear the contents of the TextView.
@@ -4466,6 +4529,136 @@ void setup_tree_view_percent(GtkTreeView *treeview2, GtkTreeView *treeview)
         g_print("Treeview Built\n");
         
       }
+static void connect_sqlite_db(GtkWidget *button1, GArray *widgets)
+  {
+    g_print("Connect DB\n");
+    gint sql_return1=0;
+    gint sql_return2=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    sqlite3_stmt *stmt2=NULL;
+    gchar *sql1="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;";
+    gchar *database=g_strdup_printf("%s", gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 0))));
+    //Save table and field names in a treestore.
+    GtkTreeIter iter1, iter2;
+    GtkTreeStore *store=gtk_tree_store_new(1, G_TYPE_STRING);
+
+    //Test if file is there.
+    if(!g_file_test(database, G_FILE_TEST_EXISTS))
+      {
+        g_print("Couldn't find file %s\n", database);
+      }
+    else
+      {
+        sqlite3_open(database,&cnn);
+        sqlite3_prepare_v2(cnn, sql1, -1, &stmt1, 0);
+        sql_return1=sqlite3_step(stmt1);
+        while(sql_return1==SQLITE_ROW)
+         {
+           //g_print("%s\n", sqlite3_column_text(stmt1, 0));
+           gtk_tree_store_append(store, &iter1, NULL); 
+           gtk_tree_store_set(store, &iter1, 0, sqlite3_column_text(stmt1, 0), -1);
+           //Get the table fields.
+           gchar *fields=sqlite3_mprintf("PRAGMA table_info('%q');", sqlite3_column_text(stmt1, 0));
+           sqlite3_prepare_v2(cnn,fields,-1,&stmt2,0);
+           sql_return2=sqlite3_step(stmt2);
+             while(sql_return2==SQLITE_ROW)
+               {
+                  //g_print("  %s\n", sqlite3_column_text(stmt2, 1));
+                  gtk_tree_store_append(store, &iter2, &iter1);
+                  gtk_tree_store_set(store, &iter2, 0, sqlite3_column_text(stmt2, 1), -1);
+                  sql_return2=sqlite3_step(stmt2);
+               }
+           sqlite3_finalize(stmt2);
+           sqlite3_free(fields);
+
+           sql_return1=sqlite3_step(stmt1);
+         }
+        sqlite3_finalize(stmt1);
+        sqlite3_close(cnn);
+       
+        //Attach the store data to the treeview.
+        gtk_tree_view_set_model(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)), GTK_TREE_MODEL(store));  
+      }
+     
+    g_object_unref(G_OBJECT(store));
+    if(database!=NULL) g_free(database);
+  }
+static void get_treeview_selected(GtkWidget *button1, GArray *widgets)
+  {
+    g_print("Get Treeview Field and Table\n");
+    gchar *table=NULL;
+    gchar *field=NULL;
+    gboolean check1=FALSE;
+    gboolean check2=FALSE;
+    GtkTreeIter parent, child;
+    GtkTreeSelection *selection=gtk_tree_view_get_selection(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)));
+    GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)));
+
+    check1=gtk_tree_selection_get_selected(selection, NULL, &child);
+    if(check1) gtk_tree_model_get(model, &child, 0, &field, -1);
+    if(check1) check2=gtk_tree_model_iter_parent(model, &parent, &child);
+    if(check1&&check2)
+      {
+        gtk_tree_model_get(model, &parent, 0, &table, -1);
+        g_print("SELECT %s FROM %s;\n", field, table);
+        get_single_field_values(table, field, widgets);
+      }
+    else
+      {
+        g_print("Connect and then select a table and a field.\n");
+      }
+    if(table!=NULL) g_free(table);
+    if(field!=NULL) g_free(field);
+  }
+static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
+  {
+    g_print("Build Data Array\n");
+    gint i=0;
+    gint zero_counter=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    gint sql_return=0;
+    gdouble temp=0;
+    GArray *DataArray=g_array_new(FALSE, FALSE, sizeof(double));
+    gchar *database=g_strdup_printf("%s", gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 0))));
+    char *sql1=sqlite3_mprintf("SELECT %q FROM %q;", field, table);
+    g_print("%s\n", sql1);
+
+    sqlite3_open(database,&cnn);   
+    sqlite3_prepare_v2(cnn,sql1,-1,&stmt1,0);
+    sql_return=sqlite3_step(stmt1);
+    
+    //Watch for zero's in implicit conversion.
+    while(sql_return==SQLITE_ROW)
+      {
+        temp=sqlite3_column_double(stmt1, 0);
+        if(temp<0.0000001&&temp>-0.0000001) zero_counter++;
+        g_array_append_val(DataArray, temp);
+        sql_return=sqlite3_step(stmt1);
+        i++;
+      }
+    
+    sqlite3_finalize(stmt1);   
+    sqlite3_close(cnn);
+ 
+    g_print("Array Length %i First %f Last %f ZeroWarning %i\n", i, g_array_index(DataArray, double, 0), g_array_index(DataArray, double, i-1), zero_counter);
+
+    if(i>0)
+      {
+        test_data_button_clicked(NULL, DataArray,0,0,0);
+      }
+    else
+      {
+        g_print("Couldn't fill array with values.\n");
+        simple_message_dialog("Couldn't fill array with values.");
+      }
+
+    g_array_free(DataArray, TRUE);
+    sqlite3_free(sql1);
+    if(database!=NULL) g_free(database);
+  }
+
 
 
 
