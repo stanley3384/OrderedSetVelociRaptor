@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
      BuildBoardItem=gtk_menu_item_new_with_label("White Board Table");
 
      FileMenu3=gtk_menu_new();
-     BasicStatsItem=gtk_menu_item_new_with_label("Basic Statistics");
+     BasicStatsItem=gtk_menu_item_new_with_label("Descriptive Statistics");
      GaussianItem=gtk_menu_item_new_with_label("Normality Test");
      VarianceItem=gtk_menu_item_new_with_label("Homogeniety of Variance");
      AnovaItem=gtk_menu_item_new_with_label("One-Way ANOVA");
@@ -2444,7 +2444,7 @@ static void sqlite_connect_dialog(GtkWidget *menu, GtkWidget *window)
     gint result=0;
 
     dialog=gtk_dialog_new_with_buttons("Sqlite Connect", GTK_WINDOW(window), GTK_DIALOG_MODAL, "Get Data", GTK_RESPONSE_OK, NULL);
-    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 300);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 350);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 
     label1=gtk_label_new("Gets a single column of data.\nEnter the path of the database.\nConnect and get data.");
@@ -2485,6 +2485,7 @@ static void sqlite_connect_dialog(GtkWidget *menu, GtkWidget *window)
     gtk_container_add(GTK_CONTAINER(content_area), grid);
 
     gtk_widget_show_all(dialog);
+    gtk_widget_grab_focus(button1);
     result=gtk_dialog_run(GTK_DIALOG(dialog));
     if(result==GTK_RESPONSE_OK)
       {
