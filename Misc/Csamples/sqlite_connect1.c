@@ -19,7 +19,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 
 int main(int argc, char *argv[])
   {
-    GtkWidget *window, *entry1, *button1, *button2, *treeview1, *grid;
+    GtkWidget *window, *entry1, *button1, *button2, *treeview1, *scrolled_win, *grid;
 
     gtk_init(&argc, &argv);
 
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Sqlite Connect");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 100);
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
     g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
 
     entry1=gtk_entry_new();
@@ -41,10 +41,15 @@ int main(int argc, char *argv[])
 
     //A treeview for tables and fields.
     treeview1=gtk_tree_view_new();
+    gtk_widget_set_hexpand(treeview1, TRUE);
+    gtk_widget_set_vexpand(treeview1, TRUE);
     GtkCellRenderer *renderer1=gtk_cell_renderer_text_new();
     g_object_set(G_OBJECT(renderer1),"foreground", "purple", NULL);
     GtkTreeViewColumn *column1=gtk_tree_view_column_new_with_attributes("Tables and Fields", renderer1, "text", 0, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(treeview1), column1);
+
+    scrolled_win=gtk_scrolled_window_new(NULL, NULL);    
+    gtk_container_add(GTK_CONTAINER(scrolled_win), treeview1);
 
     //Pass entry and treeview to callback.
     GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
@@ -57,7 +62,7 @@ int main(int argc, char *argv[])
     gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
     gtk_grid_attach(GTK_GRID(grid), entry1, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), treeview1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), scrolled_win, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
    
