@@ -2489,7 +2489,7 @@ static void sqlite_connect_dialog(GtkWidget *menu, GtkWidget *window)
     result=gtk_dialog_run(GTK_DIALOG(dialog));
     if(result==GTK_RESPONSE_OK)
       {
-        g_print("Get Data\n");
+        //g_print("Get Data\n");
         get_treeview_selected(NULL, widgets);
       }
 
@@ -4151,9 +4151,8 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
           {
            DataArray=(GArray*)data;
            iArrayCount=DataArray[0].len;
-           g_print("Array Length = %i\n", iArrayCount);
            dTemp=g_array_index(DataArray, double, 0);
-           g_print("First Value in Array = %f\n", dTemp);
+           g_print("Check Array Length %i First Value %f\n", iArrayCount, dTemp);
            iArrayNotVoid=1;
           }
 
@@ -4325,7 +4324,7 @@ void setup_tree_view_text(GtkTreeView *treeview2, GArray *DataArray)
        guint32 i=0;
        gchar *pRecords=NULL;
 
-       g_print("Set Up Treeview from Text File...\n");
+       g_print("Set Up Treeview from Text File or SQLite...\n");
 
        store=gtk_list_store_new(2, G_TYPE_INT, G_TYPE_DOUBLE);
        iArrayCount=DataArray[0].len;
@@ -4587,7 +4586,7 @@ static void connect_sqlite_db(GtkWidget *button1, GArray *widgets)
   }
 static void get_treeview_selected(GtkWidget *button1, GArray *widgets)
   {
-    g_print("Get Treeview Field and Table\n");
+    g_print("Get Treeview Tables and Fields\n");
     gchar *table=NULL;
     gchar *field=NULL;
     gboolean check1=FALSE;
@@ -4624,7 +4623,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
     GArray *DataArray=g_array_new(FALSE, FALSE, sizeof(double));
     gchar *database=g_strdup_printf("%s", gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 0))));
     char *sql1=sqlite3_mprintf("SELECT %q FROM %q;", field, table);
-    g_print("%s\n", sql1);
+    //g_print("%s\n", sql1);
 
     sqlite3_open(database,&cnn);   
     sqlite3_prepare_v2(cnn,sql1,-1,&stmt1,0);
@@ -4643,7 +4642,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
     sqlite3_finalize(stmt1);   
     sqlite3_close(cnn);
  
-    g_print("Array Length %i First %f Last %f ZeroWarning %i\n", i, g_array_index(DataArray, double, 0), g_array_index(DataArray, double, i-1), zero_counter);
+    g_print("SQLite Check Array Length %i First %f Last %f ZeroWarning %i\n", i, g_array_index(DataArray, double, 0), g_array_index(DataArray, double, i-1), zero_counter);
 
     if(i>0)
       {
