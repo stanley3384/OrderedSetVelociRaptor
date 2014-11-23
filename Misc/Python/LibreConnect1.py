@@ -15,6 +15,8 @@ C. Eric Cashon
 """
 
 import os
+import subprocess
+import time
 import uno
 from gi.repository import Gtk
 
@@ -38,6 +40,17 @@ class MainWindow(Gtk.Window):
 
     def office_connect(self, button):
         try:
+            print("Start Writer")
+            subprocess.Popen(["libreoffice", "--writer", "--invisible"])
+            pid = 0
+            while(pid==0):
+               pid = os.popen("pidof soffice.bin").read()
+               try:
+                   pid = int(pid)
+               except ValueError as e:
+                   pid = 0
+               print(pid)
+            time.sleep(4) #Added time to load.
             print("Connection to Office");
             os.system('libreoffice "--accept=socket,host=localhost,port=2002;urp;"')
             print("Update Writer")
@@ -56,6 +69,7 @@ class MainWindow(Gtk.Window):
             text_range.String = self.TextBox1.textbuffer.get_text(start1, end1, False)
         except:
             print("Couldn't Resolve Connection")
+            print("Press Button Again")
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
