@@ -1,13 +1,11 @@
 #!/user/bin/python
 
 """
-Test code for sending text to LibreOffice Writer from a GTK TextView. For it to work, an instance of 
-LibreOffice Writer needs to be started. Then the program can connect to the running instance and
-send it the text data.
+Test code for sending text to LibreOffice Writer from a GTK TextView.
 
 For LibreOffice dev files on Ubuntu
   sudo apt-get install libreoffice-dev
-  sudo sudo apt-get install python-uno
+  sudo apt-get install python-uno
  
 Uses python2.7
 
@@ -39,34 +37,48 @@ class MainWindow(Gtk.Window):
         self.add(self.grid)
 
     def office_connect(self, button):
+        i = 0
         try:
+            #Start Writer.
             print("Start Writer")
             subprocess.Popen(["libreoffice", "--writer", "--invisible"])
             pid = 0
-            while(pid==0):
+            while(pid==0 and i<5):
                pid = os.popen("pidof soffice.bin").read()
                try:
                    pid = int(pid)
                except ValueError as e:
+                   i+=1
                    pid = 0
-               print(pid)
-            time.sleep(4) #Added time to load.
-            print("Connection to Office");
-            os.system('libreoffice "--accept=socket,host=localhost,port=2002;urp;"')
-            print("Update Writer")
-            localContext = uno.getComponentContext()
-            resolver = localContext.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', localContext)
-            connection = 'uno:socket,host=localhost,port=2002;urp;StarOffice.ServiceManager'
-            manager = resolver.resolve(connection)
-            remoteContext = manager.getPropertyValue('DefaultContext')
-            desktop = manager.createInstanceWithContext('com.sun.star.frame.Desktop', remoteContext)
-            url = 'private:factory/swriter'
-            doc = desktop.loadComponentFromURL( url, '_blank', 0, () )
-            text = doc.Text
-            text_range = text.End
-            start1 = self.TextBox1.textbuffer.get_start_iter()
-            end1 = self.TextBox1.textbuffer.get_end_iter()
-            text_range.String = self.TextBox1.textbuffer.get_text(start1, end1, False)
+                   time.sleep(1)
+               print("Looking for PID " + str(pid))
+            #Sleep a while to let Writer load. Doesn't always work.
+            i = 0
+            while(i<5):
+               print("Waiting for Writer")
+               time.sleep(1)
+               i+=1
+            #Try to get a connection to libreoffice.
+            print("Connection to Office")
+            if(pid!=0):               
+                os.system('libreoffice "--accept=socket,host=localhost,port=2002;urp;"')                   
+                #Get an app instance and send data to Writer
+                print("Update Writer")
+                localContext = uno.getComponentContext()
+                resolver = localContext.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', localContext)
+                connection = 'uno:socket,host=localhost,port=2002;urp;StarOffice.ServiceManager'
+                manager = resolver.resolve(connection)
+                remoteContext = manager.getPropertyValue('DefaultContext')
+                desktop = manager.createInstanceWithContext('com.sun.star.frame.Desktop', remoteContext)
+                url = 'private:factory/swriter'
+                doc = desktop.loadComponentFromURL( url, '_blank', 0, () )
+                text = doc.Text
+                text_range = text.End
+                start1 = self.TextBox1.textbuffer.get_start_iter()
+                end1 = self.TextBox1.textbuffer.get_end_iter()
+                text_range.String = self.TextBox1.textbuffer.get_text(start1, end1, False)
+            else:
+                print("Couldn't Get Valid PID")
         except:
             print("Couldn't Resolve Connection")
             print("Press Button Again")
