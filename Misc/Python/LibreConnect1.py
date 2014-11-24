@@ -44,20 +44,20 @@ class MainWindow(Gtk.Window):
             subprocess.Popen(["libreoffice", "--writer", "--invisible"])
             pid = 0
             while(pid==0 and i<5):
-               pid = os.popen("pidof soffice.bin").read()
-               try:
-                   pid = int(pid)
-               except ValueError as e:
-                   i+=1
-                   pid = 0
-                   time.sleep(1)
-               print("Looking for PID " + str(pid))
+                pid = os.popen("pidof soffice.bin").read()
+                try:
+                    pid = int(pid)
+                except ValueError as e:
+                    i+=1
+                    pid = 0
+                    time.sleep(1)
+                print("Looking for PID " + str(pid))
             #Sleep a while to let Writer load. Doesn't always work.
             i = 0
             while(i<5):
-               print("Waiting for Writer")
-               time.sleep(1)
-               i+=1
+                print("Waiting for Writer")
+                time.sleep(1)
+                i+=1
             #Try to get a connection to libreoffice.
             print("Connection to Office")
             if(pid!=0):               
