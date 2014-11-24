@@ -1,13 +1,16 @@
 #!/user/bin/python
 
 """
-Test code for sending text to LibreOffice Writer from a GTK TextView.
+Test code for sending text to LibreOffice Writer from a GTK TextView. Change some Writer text 
+formats in the script.
 
 For LibreOffice dev files on Ubuntu
   sudo apt-get install libreoffice-dev
   sudo apt-get install python-uno
  
 Uses python2.7
+
+http://www.linuxjournal.com/content/starting-stopping-and-connecting-openoffice-python
 
 C. Eric Cashon
 """
@@ -16,6 +19,9 @@ import os
 import subprocess
 import time
 import uno
+from com.sun.star.text.ControlCharacter import PARAGRAPH_BREAK
+from com.sun.star.awt.FontWeight import BOLD
+from com.sun.star.awt.FontUnderline import SINGLE
 from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
@@ -73,10 +79,21 @@ class MainWindow(Gtk.Window):
                 url = 'private:factory/swriter'
                 doc = desktop.loadComponentFromURL( url, '_blank', 0, () )
                 text = doc.Text
-                text_range = text.End
+                cursor = text.createTextCursor()
+                #Do some formating.
+                text.insertString(cursor, "                                    ", 0)
+                cursor.setPropertyValue("CharColor", 2281222)
+                cursor.setPropertyValue("CharWeight", BOLD);
+                cursor.setPropertyValue("CharUnderline", SINGLE);
+                text.insertString(cursor, "Automation with GTK+, Python and LibreOffice", 0)
+                text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+                text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+                cursor.setPropertyValue("CharColor", 255)
+                cursor.setPropertyValue("CharWeight", 0);
+                cursor.setPropertyValue("CharUnderline", 0);
                 start1 = self.TextBox1.textbuffer.get_start_iter()
                 end1 = self.TextBox1.textbuffer.get_end_iter()
-                text_range.String = self.TextBox1.textbuffer.get_text(start1, end1, False)
+                text.insertString(cursor, self.TextBox1.textbuffer.get_text(start1, end1, False), 0)
             else:
                 print("Couldn't Get Valid PID")
         except:
