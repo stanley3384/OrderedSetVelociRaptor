@@ -2,15 +2,13 @@
 
 """
 Test code for sending text to LibreOffice Writer from a GTK TextView. Change some Writer text 
-formats in the script.
+formats in the script and save to a pdf in the working directory.
 
 For LibreOffice dev files on Ubuntu
   sudo apt-get install libreoffice-dev
   sudo apt-get install python-uno
  
 Uses python2.7
-
-http://www.linuxjournal.com/content/starting-stopping-and-connecting-openoffice-python
 
 C. Eric Cashon
 """
@@ -19,9 +17,11 @@ import os
 import subprocess
 import time
 import uno
+import unohelper
 from com.sun.star.text.ControlCharacter import PARAGRAPH_BREAK
 from com.sun.star.awt.FontWeight import BOLD
 from com.sun.star.awt.FontUnderline import SINGLE
+from com.sun.star.beans import PropertyValue
 from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
@@ -94,6 +94,13 @@ class MainWindow(Gtk.Window):
                 start1 = self.TextBox1.textbuffer.get_start_iter()
                 end1 = self.TextBox1.textbuffer.get_end_iter()
                 text.insertString(cursor, self.TextBox1.textbuffer.get_text(start1, end1, False), 0)
+                #Save the document in working directory.
+                print("Save Document")
+                url = unohelper.systemPathToFileUrl(os.path.abspath("writer1.pdf"))
+                args = (PropertyValue('FilterName', 0, "writer_pdf_Export", 0),)
+                doc.storeToURL(url, args)
+                #Close the document after saving.
+                #doc.dispose()
             else:
                 print("Couldn't Get Valid PID")
         except:
