@@ -27,6 +27,7 @@ from gi.repository import Gtk
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="GTK+ and LibreOffice")
+        self.rgb_value1=0
         self.set_default_size(400,200)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.TextBox1 = Gtk.TextView()
@@ -41,6 +42,9 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.TextBox1, 0, 2, 2, 1)
         self.grid.attach(self.button1, 0, 3, 2, 1)
         self.add(self.grid)
+
+    def intRGB(self, red, green, blue):
+        self.rgb_value1 = (int(red) & 255) << 16 | (int(green) & 255) << 8 | (int(blue) & 255) 
 
     def office_connect(self, button):
         i = 0
@@ -82,17 +86,31 @@ class MainWindow(Gtk.Window):
                 cursor = text.createTextCursor()
                 #Do some formating.
                 text.insertString(cursor, "                                    ", 0)
-                cursor.setPropertyValue("CharColor", 2281222)
+                self.intRGB(255,0,0)
+                cursor.setPropertyValue("CharColor", self.rgb_value1)
                 cursor.setPropertyValue("CharWeight", BOLD);
                 cursor.setPropertyValue("CharUnderline", SINGLE);
                 text.insertString(cursor, "Automation with GTK+, Python and LibreOffice", 0)
                 text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
                 text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
-                cursor.setPropertyValue("CharColor", 255)
+                self.intRGB(0,255,0)
+                cursor.setPropertyValue("CharColor", self.rgb_value1)
                 cursor.setPropertyValue("CharWeight", 0);
                 cursor.setPropertyValue("CharUnderline", 0);
                 start1 = self.TextBox1.textbuffer.get_start_iter()
                 end1 = self.TextBox1.textbuffer.get_end_iter()
+                text.insertString(cursor, self.TextBox1.textbuffer.get_text(start1, end1, False), 0)
+                text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+                self.intRGB(0,0,255)
+                cursor.setPropertyValue("CharColor", self.rgb_value1)
+                text.insertString(cursor, self.TextBox1.textbuffer.get_text(start1, end1, False), 0)
+                text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+                self.intRGB(255,255,0)
+                cursor.setPropertyValue("CharColor", self.rgb_value1)
+                text.insertString(cursor, self.TextBox1.textbuffer.get_text(start1, end1, False), 0)
+                text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+                self.intRGB(255,0,255)
+                cursor.setPropertyValue("CharColor", self.rgb_value1)
                 text.insertString(cursor, self.TextBox1.textbuffer.get_text(start1, end1, False), 0)
                 #Save the document in working directory.
                 print("Save Document")
@@ -106,7 +124,7 @@ class MainWindow(Gtk.Window):
         except:
             print("Couldn't Resolve Connection")
             print("Press Button Again")
-
+        
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
 win.show_all()
