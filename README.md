@@ -74,8 +74,8 @@ make
 
 ./install.sh
 
---Test it out. There is a notes file along with a references file that might be helpful at this point.
-
+--Test it out. There is a notes file along with a references file that might be helpful at this point. There are a few extra items in the Misc folder that might also be of interest.
+ 
 C. Eric Cashon
 
 --Thank you Github and the work of all that made it possible to put together.
