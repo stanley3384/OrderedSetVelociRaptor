@@ -62,13 +62,6 @@ class MainWindow(Gtk.Window):
                     pid = 0
                     time.sleep(1)
                 print("Looking for PID " + str(pid))
-            #Sleep a while to let Writer load. Doesn't always work.
-            i = 0
-            while(i<5):
-                print("Waiting for Writer")
-                time.sleep(1)
-                i+=1
-            #Try to get a connection to libreoffice.
             print("Connection to Office")
             if(pid!=0):               
                 os.system('libreoffice "--accept=socket,host=localhost,port=2002;urp;"')                   
@@ -77,7 +70,15 @@ class MainWindow(Gtk.Window):
                 localContext = uno.getComponentContext()
                 resolver = localContext.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', localContext)
                 connection = 'uno:socket,host=localhost,port=2002;urp;StarOffice.ServiceManager'
-                manager = resolver.resolve(connection)
+                j = 0
+                while(j < 4):
+                    try:
+                        manager = resolver.resolve(connection)
+                        j = 5
+                    except:
+                        print("Trying to Resolve Connection")
+                        time.sleep(1)
+                        j+=1 
                 remoteContext = manager.getPropertyValue('DefaultContext')
                 desktop = manager.createInstanceWithContext('com.sun.star.frame.Desktop', remoteContext)
                 url = 'private:factory/swriter'
