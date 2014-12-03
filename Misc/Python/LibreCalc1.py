@@ -70,7 +70,10 @@ class MainWindow(Gtk.Window):
         self.add(self.grid)
 
     def intRGB(self, red, green, blue):
-        self.rgb_value1 = (int(red) & 255) << 16 | (int(green) & 255) << 8 | (int(blue) & 255) 
+        self.rgb_value1 = 65536 * red + 256 * green + blue;
+        #Can try bit shifting also.
+        #test = (int(red) & 255) << 16 | (int(green) & 255) << 8 | (int(blue) & 255)
+        #print str(self.rgb_value1) + " " + str(test)
 
     def heatmap_rgb(self, minimum, maximum, value):
         ratio = 2 * (value-minimum) / (maximum - minimum)
