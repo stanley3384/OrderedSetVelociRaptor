@@ -1,8 +1,8 @@
 
 /*
 
-Heatmap a hex sequence and output to html for viewing. Two gradients for testing. One
-is the rgb and the other includes yellow and light blue.
+  Heatmap a hex sequence and output to html for viewing. Three gradients for testing. A rgb, 
+rgb with yellow and light blue and a yellow to purple gradient.
 
   gcc -Wall hex_rgb.c -o hex_rgb
 
@@ -15,20 +15,25 @@ C. Eric Cashon
 static int intRGB(int red, int green, int blue);
 static void get_rgb_gradient(char hex_values[512][8]);
 static void get_rygbb_gradient(char hex_values[512][8]);
+static void get_yellow_purple_gradient(char hex_values[512][8]);
 static void build_html(char hex_values[512][8]);
 
 int main()
   {
     char hex_values[512][8];
-    int gradient=0;
+    int gradient=1;
     
     if(gradient==0)
       {
         get_rgb_gradient(hex_values);
       }
-    else
+    else if(gradient==1)
       {
         get_rygbb_gradient(hex_values);
+      }
+    else
+      {
+        get_yellow_purple_gradient(hex_values);
       }
     build_html(hex_values);
     return 0;
@@ -49,8 +54,7 @@ static void get_rgb_gradient(char hex_values[512][8])
     for(red=255,green=0;red>=0&&green<=255;red--,green++)
        {        
          printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
-         sprintf(hex_values[i], "#%02x%02x%02x", red, green, blue);
-         i++;          
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);         
        }
 
     red=0;
@@ -59,8 +63,7 @@ static void get_rgb_gradient(char hex_values[512][8])
     for(green=255,blue=0;green>=0&&blue<=255;green--,blue++)
        {         
          printf("%i, hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
-         sprintf(hex_values[i], "#%02x%02x%02x", red, green, blue);
-         i++;         
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);         
        } 
  
     printf("First %s Last %s\n", hex_values[0], hex_values[511]);
@@ -77,35 +80,48 @@ static void get_rygbb_gradient(char hex_values[512][8])
     for(green=0;green<=255;green+=2)
        {        
          printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
-         sprintf(hex_values[i], "#%02x%02x%02x", red, green, blue);
-         i++;          
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);          
        }
 
     green=255;
     for(red=255;red>=0;red-=2)
        {        
          printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
-         sprintf(hex_values[i], "#%02x%02x%02x", red, green, blue);
-         i++;          
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);          
        }
 
     red=0;
     for(blue=0;blue<=255;blue+=2)
        {        
          printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
-         sprintf(hex_values[i], "#%02x%02x%02x", red, green, blue);
-         i++;          
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);          
        }
 
     blue=255;
     for(green=255;green>=0;green-=2)
        {        
          printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
-         sprintf(hex_values[i], "#%02x%02x%02x", red, green, blue);
-         i++;          
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);          
        }
  
     printf("First %s Last %s\n", hex_values[0], hex_values[511]);
+
+  }
+static void get_yellow_purple_gradient(char hex_values[512][8])
+  {
+    int i=0;
+    int record=1;
+    int red=255;
+    int green=255;
+    int blue=0;
+    
+    for(green=255,blue=0;green>=0&&blue<=255;green--,blue++)
+       {        
+         printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);
+         printf("%i hex #%02x%02x%02x int %i r %i g %i b %i\n", record++, red, green, blue, intRGB(red,green,blue), red, green, blue);
+         sprintf(hex_values[i++], "#%02x%02x%02x", red, green, blue);       
+       }
 
   }
 static void build_html(char hex_values[512][8])
