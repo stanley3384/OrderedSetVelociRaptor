@@ -17,7 +17,8 @@ static void get_rygbb_gradient(char hex_values[512][8]);
 static void get_yellow_purple_gradient(char hex_values[512][8]);
 static void get_red_yellow_gradient(char hex_values[512][8]);
 static void get_yellow_blue_gradient(char hex_values[512][8]);
-static void build_html(char hex_values[512][8]);
+static void build_hex_text(char hex_values[512][8]);
+static void build_html_table(char hex_values[512][8]);
 
 int main()
   {
@@ -44,8 +45,9 @@ int main()
       {
         get_yellow_blue_gradient(hex_values);
       }
-
-    build_html(hex_values);
+    
+    build_hex_text(hex_values);
+    build_html_table(hex_values);
     return 0;
   }
 static int intRGB(int red, int green, int blue)
@@ -168,7 +170,40 @@ static void get_yellow_blue_gradient(char hex_values[512][8])
        }
 
   }
-static void build_html(char hex_values[512][8])
+static void build_hex_text(char hex_values[512][8])
+  {
+    printf("Build Text\n");
+    int i=0;
+
+    FILE *f=fopen("heatmap3.txt", "w");
+      if(f==NULL)
+        {
+          printf("Error opening file!\n");
+        }
+
+    fprintf(f, "{");
+    for(i=0;i<512;i++)
+       {
+         if(i%8==0&&i!=0)
+            {
+              fprintf(f, "\\\n ");
+              fprintf(f, "%s, ", hex_values[i]);
+            }
+         else if(i==511)
+            {
+              fprintf(f, "%s", hex_values[i]);
+            } 
+         else
+            {
+              fprintf(f, "%s, ", hex_values[i]);
+            }
+       }
+    fprintf(f, "}");
+
+    fclose(f); 
+    printf("heatmap3.txt file created.\n");
+  }
+static void build_html_table(char hex_values[512][8])
   {
     printf("Build HTML\n");
     int i=0;
