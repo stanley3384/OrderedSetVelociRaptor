@@ -1,11 +1,15 @@
 
 /*
-Animate the window on a GtkButton.
+
+  Animate the window on a GtkButton with a radial gradient. Add a rectangle border on
+the button and also some text. Some ideas for using cairo instead of an icon.
 
   gcc -Wall icon.c -o icon `pkg-config --cflags --libs gtk+-3.0`
 
 C. Eric Cashon
+
 */
+
 #include<gtk/gtk.h>
 
 gint timer_id=0;
@@ -17,13 +21,15 @@ static gboolean draw_radial_color(gpointer data)
    guint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
    GdkWindow *button_window=gtk_button_get_event_window(GTK_BUTTON(data));
    cairo_t *cr=gdk_cairo_create(button_window);
-   cairo_pattern_t *radial1;  
-  
+   cairo_pattern_t *radial1; 
+   cairo_text_extents_t extents; 
+
    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
    cairo_paint(cr);
 
    cairo_translate(cr, width/2, height/2);
 
+   //Draw a radial gradient.
    if(radius>600) radius=10;
    radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, radius);  
    cairo_pattern_add_color_stop_rgb(radial1, 0.3, 0.0, 0.0, 1.0);
@@ -34,11 +40,19 @@ static gboolean draw_radial_color(gpointer data)
 
    radius+=20;    
   
+   //Draw purple rectangle around the button.
    cairo_translate(cr, -width/2, -height/2);
    cairo_set_line_width(cr, 4.0);
    cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
    cairo_rectangle(cr, 0, 0, width, height);
    cairo_stroke_preserve(cr); 
+
+   //Add some text.
+   cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(cr, 20);
+   cairo_text_extents(cr, "Animation Button", &extents);
+   cairo_move_to(cr, width/2 - extents.width/2, height/2 + extents.height/2); 
+   cairo_show_text(cr, "Animation Button");  
 
    cairo_destroy(cr);     
    cairo_pattern_destroy(radial1);
