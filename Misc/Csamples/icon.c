@@ -12,7 +12,8 @@ C. Eric Cashon
 
 #include<gtk/gtk.h>
 
-gint timer_id=0;
+gint timer_id1=0;
+gint timer_id2=0;
 
 static gboolean draw_radial_color(gpointer data)
  {
@@ -58,16 +59,79 @@ static gboolean draw_radial_color(gpointer data)
    cairo_pattern_destroy(radial1);
    return TRUE;
  }
+static gboolean draw_linear_color(gpointer data)
+ {
+   static gdouble shift=1.0;
+   guint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
+   guint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
+   GdkWindow *button_window=gtk_button_get_event_window(GTK_BUTTON(data));
+   cairo_t *cr=gdk_cairo_create(button_window);
+   cairo_pattern_t *linear1; 
+
+   //Draw a linear gradients.
+   if(shift>50.0) shift=1.0;
+   linear1 = cairo_pattern_create_linear(0, 0, width, 0);
+   cairo_pattern_add_color_stop_rgb(linear1, shift/100, 1.0, 0.0, 0.0);
+   cairo_pattern_add_color_stop_rgb(linear1, (shift+20)/100, 1.0, 1.0, 1.0);
+   cairo_pattern_add_color_stop_rgb(linear1, (shift+30)/100, 0.0, 1.0, 0.0);
+   cairo_pattern_add_color_stop_rgb(linear1, (shift+40)/100, 0.0, 1.0, 1.0);
+   cairo_pattern_add_color_stop_rgb(linear1, (shift+50)/100, 0.0, 0.0, 1.0);
+   cairo_rectangle(cr, 0, 0, width, height);
+   cairo_set_source(cr, linear1);
+   cairo_fill(cr); 
+
+   shift+=1.0;    
+  
+   //Draw arrow
+   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_rectangle(cr, width/3, height/2.5, width/4, height/5);
+   cairo_stroke_preserve(cr);
+   cairo_fill(cr);
+   cairo_move_to(cr, width/3+width/4, height/2.5); 
+   cairo_line_to(cr, width/3+width/4+width/10, height/2);
+   cairo_line_to(cr, width/3+width/4, height/2.5+height/5);
+   cairo_close_path(cr);
+   cairo_stroke_preserve(cr);
+   cairo_fill(cr);
+
+   //Draw purple rectangle around the button.
+   cairo_set_line_width(cr, 4.0);
+   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_rectangle(cr, 0, 0, width, height);
+   cairo_stroke_preserve(cr); 
+
+   cairo_destroy(cr);     
+   cairo_pattern_destroy(linear1);
+   return TRUE;
+ }
 static gboolean start_animation(GtkWidget *button, GdkEvent *event, gpointer data)
  {
-   g_print("Start Animation\n");
-   timer_id=g_timeout_add(50, draw_radial_color, button);
+   g_print("Start Animation %i\n", (int)GPOINTER_TO_SIZE(data));
+   gint timer=(int)GPOINTER_TO_SIZE(data);
+   if(timer==1)
+     {
+       timer_id1=g_timeout_add(50, draw_radial_color, button);
+     }
+   else
+     {
+       timer_id2=g_timeout_add(50, draw_linear_color, button);
+     }
    return TRUE;
  }
 static gboolean stop_animation(GtkWidget *button, GdkEvent *event, gpointer data)
  {
-   g_print("Stop Animation\n");
-   g_source_remove(timer_id);
+   g_print("Stop Animation %i\n", (int)GPOINTER_TO_SIZE(data));
+   gint timer=(int)GPOINTER_TO_SIZE(data);
+   
+   if(timer==1)
+     {
+       g_source_remove(timer_id1);
+     }
+   else
+     {
+       g_source_remove(timer_id2);
+     }
+ 
    GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(button));
    if(win)
      {
@@ -89,7 +153,7 @@ static void close_program(GtkWidget *widget, gpointer data)
  }
 int main(int argc, char **argv)
  {
-   GtkWidget *window, *button1, *grid;
+   GtkWidget *window, *button1, *button2, *grid;
 
    gtk_init(&argc, &argv);
 
@@ -109,7 +173,7 @@ int main(int argc, char **argv)
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Animation Button");
-   gtk_window_set_default_size(GTK_WINDOW(window), 250, 100);
+   gtk_window_set_default_size(GTK_WINDOW(window), 250, 150);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
@@ -117,12 +181,20 @@ int main(int argc, char **argv)
    button1=gtk_button_new();
    gtk_widget_set_hexpand(button1, TRUE);
    gtk_widget_set_vexpand(button1, TRUE);
-   g_signal_connect(button1, "enter-notify-event", G_CALLBACK(start_animation), NULL);
-   g_signal_connect(button1, "leave-notify-event", G_CALLBACK(stop_animation), NULL);
+   g_signal_connect(button1, "enter-notify-event", G_CALLBACK(start_animation), GSIZE_TO_POINTER(1));
+   g_signal_connect(button1, "leave-notify-event", G_CALLBACK(stop_animation), GSIZE_TO_POINTER(1));
    g_signal_connect(button1, "button-press-event", G_CALLBACK(button_clicked), NULL); 
+
+   button2=gtk_button_new();
+   gtk_widget_set_hexpand(button2, TRUE);
+   gtk_widget_set_vexpand(button2, TRUE);
+   g_signal_connect(button2, "enter-notify-event", G_CALLBACK(start_animation), GSIZE_TO_POINTER(2));
+   g_signal_connect(button2, "leave-notify-event", G_CALLBACK(stop_animation), GSIZE_TO_POINTER(2));
+   g_signal_connect(button2, "button-press-event", G_CALLBACK(button_clicked), NULL); 
 
    grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), button2, 0, 1, 1, 1);
    gtk_container_add(GTK_CONTAINER(window), grid);
 
    gtk_widget_show_all(window);
