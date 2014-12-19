@@ -1,8 +1,8 @@
 
 /*
 
-  Animate the window on a GtkButton with a radial gradient. Add a rectangle border on
-the button and also some text. Some ideas for using cairo instead of an icon.
+  Animate the windows on some buttons. One with a linear gradient and another with
+a radial gradient. Some ideas for using cairo instead of an icon.
 
   gcc -Wall icon.c -o icon `pkg-config --cflags --libs gtk+-3.0`
 
@@ -83,7 +83,7 @@ static gboolean draw_linear_color(gpointer data)
    shift+=1.0;    
   
    //Draw arrow
-   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
    cairo_rectangle(cr, width/3, height/2.5, width/4, height/5);
    cairo_stroke_preserve(cr);
    cairo_fill(cr);
@@ -141,6 +141,41 @@ static gboolean stop_animation(GtkWidget *button, GdkEvent *event, gpointer data
      }
    return TRUE;
  }
+static void realize_and_draw(GtkWidget *button, gpointer data)
+ {
+   g_print("Realize\n");
+   guint width=gtk_widget_get_allocated_width(GTK_WIDGET(button));
+   guint height=gtk_widget_get_allocated_height(GTK_WIDGET(button));
+   gtk_widget_queue_draw_area(button, 0, 0, width, height);
+ }
+static gboolean draw_arrow(GtkWidget *button, cairo_t *cr, gpointer data)
+ {
+   g_print("Draw\n");
+ 
+   guint width=gtk_widget_get_allocated_width(GTK_WIDGET(button));
+   guint height=gtk_widget_get_allocated_height(GTK_WIDGET(button));
+
+   //Draw background
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   cairo_paint(cr);
+   //Draw arrow
+   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_rectangle(cr, width/3, height/2.5, width/4, height/5);
+   cairo_stroke_preserve(cr);
+   cairo_fill(cr);
+   cairo_move_to(cr, width/3+width/4, height/2.5); 
+   cairo_line_to(cr, width/3+width/4+width/10, height/2);
+   cairo_line_to(cr, width/3+width/4, height/2.5+height/5);
+   cairo_close_path(cr);
+   cairo_stroke_preserve(cr);
+   cairo_fill(cr);
+   //Draw purple rectangle around the button.
+   cairo_set_line_width(cr, 4.0);
+   cairo_rectangle(cr, 0, 0, width, height);
+   cairo_stroke_preserve(cr); 
+
+   return TRUE;     
+ }
 static void button_clicked(GtkWidget *widget, gpointer data)
  {
    g_print("Clicked\n");
@@ -157,7 +192,7 @@ int main(int argc, char **argv)
 
    gtk_init(&argc, &argv);
 
-   gchar css_string[]="GtkButton{background: blue}\n\
+   gchar css_string[]="GtkButton#css_button1{background: blue; color: yellow;}\n\
                        GtkWindow{background: green}";
    GtkCssProvider *provider;
    GdkDisplay *display;
@@ -172,15 +207,16 @@ int main(int argc, char **argv)
    g_object_unref(provider);
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(window), "Animation Button");
-   gtk_window_set_default_size(GTK_WINDOW(window), 250, 150);
+   gtk_window_set_title(GTK_WINDOW(window), "Animation Buttons");
+   gtk_window_set_default_size(GTK_WINDOW(window), 250, 200);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
 
-   button1=gtk_button_new();
+   button1=gtk_button_new_with_label("Animation Button");
    gtk_widget_set_hexpand(button1, TRUE);
    gtk_widget_set_vexpand(button1, TRUE);
+   gtk_widget_set_name(GTK_WIDGET(button1), "css_button1"); 
    g_signal_connect(button1, "enter-notify-event", G_CALLBACK(start_animation), GSIZE_TO_POINTER(1));
    g_signal_connect(button1, "leave-notify-event", G_CALLBACK(stop_animation), GSIZE_TO_POINTER(1));
    g_signal_connect(button1, "button-press-event", G_CALLBACK(button_clicked), NULL); 
@@ -191,6 +227,8 @@ int main(int argc, char **argv)
    g_signal_connect(button2, "enter-notify-event", G_CALLBACK(start_animation), GSIZE_TO_POINTER(2));
    g_signal_connect(button2, "leave-notify-event", G_CALLBACK(stop_animation), GSIZE_TO_POINTER(2));
    g_signal_connect(button2, "button-press-event", G_CALLBACK(button_clicked), NULL); 
+   g_signal_connect(button2, "realize", G_CALLBACK(realize_and_draw), NULL); 
+   g_signal_connect(button2, "draw", G_CALLBACK(draw_arrow), NULL); 
 
    grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
