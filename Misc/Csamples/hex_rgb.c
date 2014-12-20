@@ -21,8 +21,8 @@ static void get_rygbb_gradient(char hex_values[512][8]);
 static void get_yellow_purple_gradient(char hex_values[512][8]);
 static void get_red_yellow_gradient(char hex_values[512][8]);
 static void get_yellow_blue_gradient(char hex_values[512][8]);
-static void build_hex_text(char hex_values[512][8], const gchar *filename2);
-static void build_html_table(char hex_values[512][8], const gchar *filename1);
+static void build_hex_text(char hex_values[512][8], const gchar *filename1);
+static void build_html_table(char hex_values[512][8], const gchar *filename2);
 
 int main(int argc, char **argv)
  {
@@ -256,7 +256,7 @@ static void build_hex_text(char hex_values[512][8], const gchar *filename1)
     printf("Build Text\n");
     int i=0;
 
-    FILE *f=fopen("heatmap3.txt", "w");
+    FILE *f=fopen(filename1, "w");
       if(f==NULL)
         {
           printf("Error opening file!\n");
@@ -282,7 +282,7 @@ static void build_hex_text(char hex_values[512][8], const gchar *filename1)
     fprintf(f, "}");
 
     fclose(f); 
-    printf("heatmap3.txt file created.\n");
+    printf("%s file created.\n", filename1);
   }
 static void build_html_table(char hex_values[512][8], const gchar *filename2)
   {
