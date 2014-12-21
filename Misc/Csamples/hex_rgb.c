@@ -1,7 +1,8 @@
 
 /*
 
-  Heatmap a hex sequence and output to text and html for viewing. 
+  Heatmap a hexidecimal sequence and output to text and html for viewing. The reverse heatmap check
+box doesn't reverse the order of the printf's. Only the order of the text and html file. 
 
   gcc -Wall hex_rgb.c -o hex_rgb `pkg-config --cflags --libs gtk+-3.0`
 
@@ -21,12 +22,12 @@ static void get_rygbb_gradient(char hex_values[512][8]);
 static void get_yellow_purple_gradient(char hex_values[512][8]);
 static void get_red_yellow_gradient(char hex_values[512][8]);
 static void get_yellow_blue_gradient(char hex_values[512][8]);
-static void build_hex_text(char hex_values[512][8], const gchar *filename1);
-static void build_html_table(char hex_values[512][8], const gchar *filename2);
+static void build_hex_text(char hex_values[512][8], const gchar *filename1, gboolean reverse);
+static void build_html_table(char hex_values[512][8], const gchar *filename2, gboolean reverse);
 
 int main(int argc, char **argv)
  {
-   GtkWidget *window, *combo1, *entry1, *entry2, *label1, *label2, *button1, *grid;
+   GtkWidget *window, *combo1, *check, *entry1, *entry2, *label1, *label2, *button1, *grid;
 
    gtk_init(&argc, &argv);
 
@@ -46,6 +47,8 @@ int main(int argc, char **argv)
    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "4", "yellow blue gradient");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 1);
 
+   check=gtk_check_button_new_with_label("Reverse Heatmap");
+
    label1=gtk_label_new("Text File Name");
    gtk_widget_set_hexpand(label1, TRUE);
 
@@ -62,6 +65,7 @@ int main(int argc, char **argv)
 
    GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
    g_array_append_val(widgets, combo1);
+   g_array_append_val(widgets, check);
    g_array_append_val(widgets, entry1);
    g_array_append_val(widgets, entry2);
 
@@ -72,11 +76,12 @@ int main(int argc, char **argv)
    grid=gtk_grid_new();
    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry1, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry2, 0, 4, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), button1, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label1, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry1, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label2, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry2, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 1, 1);
    gtk_container_add(GTK_CONTAINER(window), grid);
 
    gtk_widget_show_all(window);
@@ -89,8 +94,9 @@ static void button_clicked(GtkWidget *widget, GArray *widgets)
     char hex_values[512][8];
     
     const gchar *index=gtk_combo_box_get_active_id(GTK_COMBO_BOX(g_array_index(widgets, GtkWidget*, 0)));
-    const gchar *filename1=gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 1)));
-    const gchar *filename2=gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 2)));
+    gboolean reverse=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(g_array_index(widgets, GtkWidget*, 1)));
+    const gchar *filename1=gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 2)));
+    const gchar *filename2=gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 3)));
     int gradient=atoi(index);
     int length1=strlen(filename1);
     int length2=strlen(filename2);
@@ -127,8 +133,8 @@ static void button_clicked(GtkWidget *widget, GArray *widgets)
           {
             get_yellow_blue_gradient(hex_values);
           }    
-        build_hex_text(hex_values, filename1);
-        build_html_table(hex_values, filename2);
+        build_hex_text(hex_values, filename1, reverse);
+        build_html_table(hex_values, filename2, reverse);
      }
   }
 static int intRGB(int red, int green, int blue)
@@ -251,7 +257,7 @@ static void get_yellow_blue_gradient(char hex_values[512][8])
        }
 
   }
-static void build_hex_text(char hex_values[512][8], const gchar *filename1)
+static void build_hex_text(char hex_values[512][8], const gchar *filename1, gboolean reverse)
   {
     printf("Build Text\n");
     int i=0;
@@ -263,28 +269,50 @@ static void build_hex_text(char hex_values[512][8], const gchar *filename1)
         }
 
     fprintf(f, "{");
-    for(i=0;i<512;i++)
+    if(reverse)
+      {
+        for(i=0;i<512;i++)
+           {
+             if(i%8==0&&i!=0)
+               {
+                 fprintf(f, "\\\n ");
+                 fprintf(f, "%s, ", hex_values[511-i]);
+               }
+             else if(i==511)
+               {
+                 fprintf(f, "%s", hex_values[511-i]);
+               } 
+             else
+               {
+                 fprintf(f, "%s, ", hex_values[511-i]);
+               }
+           }
+       }
+    else
        {
-         if(i%8==0&&i!=0)
-            {
-              fprintf(f, "\\\n ");
-              fprintf(f, "%s, ", hex_values[i]);
-            }
-         else if(i==511)
-            {
-              fprintf(f, "%s", hex_values[i]);
-            } 
-         else
-            {
-              fprintf(f, "%s, ", hex_values[i]);
-            }
+         for(i=0;i<512;i++)
+           {
+             if(i%8==0&&i!=0)
+               {
+                 fprintf(f, "\\\n ");
+                 fprintf(f, "%s, ", hex_values[i]);
+               }
+             else if(i==511)
+               {
+                 fprintf(f, "%s", hex_values[i]);
+               } 
+             else
+               {
+                 fprintf(f, "%s, ", hex_values[i]);
+               }
+           }
        }
     fprintf(f, "}");
 
     fclose(f); 
     printf("%s file created.\n", filename1);
   }
-static void build_html_table(char hex_values[512][8], const gchar *filename2)
+static void build_html_table(char hex_values[512][8], const gchar *filename2, gboolean reverse)
   {
     printf("Build HTML\n");
     int i=0;
@@ -335,7 +363,14 @@ static void build_html_table(char hex_values[512][8], const gchar *filename2)
                     }
                   else
                     {
-                      fprintf(f, "<td bgcolor=\"%s\">%s</td>\n", hex_values[counter], hex_values[counter]);
+                      if(reverse)
+                        {
+                          fprintf(f, "<td bgcolor=\"%s\">%s</td>\n", hex_values[511-counter], hex_values[511-counter]);
+                        }
+                      else
+                        {
+                          fprintf(f, "<td bgcolor=\"%s\">%s</td>\n", hex_values[counter], hex_values[counter]);
+                        }
                       counter++;
                       //printf("Counter %i\n", counter);
                     }
