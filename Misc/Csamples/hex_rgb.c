@@ -1,7 +1,7 @@
 
 /*
 
-  Heatmap a hexidecimal sequence and output to text and html for viewing. The reverse heatmap check
+  Heatmap a hexadecimal sequence and output to text and html for viewing. The reverse heatmap check
 box doesn't reverse the order of the printf's. Only the order of the text and html file. 
 
   gcc -Wall hex_rgb.c -o hex_rgb `pkg-config --cflags --libs gtk+-3.0`
