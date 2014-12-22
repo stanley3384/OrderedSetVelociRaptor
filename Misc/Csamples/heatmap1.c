@@ -1,11 +1,12 @@
 /*
                                        Heatmaps are Cool2
-    For comparison with heatmap1.py. Testing some HTML output code for heatmapping microtiter plates
-and 2d arrays in general. The output is a heatmap2.html file that can be opened in a HTML5 web browser.
+    There is an also a heatmap1.py file in the Python folder. Testing some HTML output code
+for heatmapping microtiter plates and 2d arrays in general. The output is a heatmap1.html file
+that can be opened in a HTML5 web browser. Hexadecimal arrays can be generated with hex_rgb.c.
 
-Compile with;  gcc -g -Wall -std=c99 heatmap2.c -lsqlite3 -o heat2
+Compile with;  gcc -g -Wall -std=c99 heatmap1.c -lsqlite3 -o heatmap1
 
-Check with; valgrind -v --leak-check=yes --track-origins=yes ./heat2
+Check with; valgrind -v --leak-check=yes --track-origins=yes ./heatmap1
 
 C. Eric Cashon
 */
@@ -145,7 +146,7 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
     int j=0;
     int k=0;
 
-    //Get a color gradient from KColorEdit.
+    //Get a color gradient from hex_rgb.c
     //char *gradient_iris[] = {"#d507e5", "#d60fde", "#d711dc", "#d716d7", "#d819d5", "#d91ed1", "#d920ce", "#da25ca", "#da28c7", "#db2dc3", "#dc2fc1", "#dd34bc", "#dd37ba", "#de3cb5", "#de3eb3", "#df43ae", "#df46ac", "#e04ba8", "#e14da5", "#e252a1", "#e2559e", "#e35c98", "#e46193", "#e46491", "#e5698c", "#e77085", "#e77383", "#e8787f", "#e97f78", "#ea8275", "#ea8771", "#eb896f", "#ec8e6a", "#ec9168", "#ed9663", "#ed9861", "#ee9d5c", "#efa05a", "#efa556", "#f0a753", "#f1ac4f", "#f1af4c", "#f2b448", "#f2b646", "#f3bb41", "#f4be3f", "#f4c33a", "#f5c538", "#f6ca33", "#f6cd31", "#f7d22d", "#f7d42a", "#f8d926", "#f9dc23", "#f9e11f", "#fae31d", "#fbe818", "#fbeb16", "#fcf011", "#fcf20f", "#fdf50d", "#fdf70a", "#fefa08", "#fefc06", "#fefe04"};
 //RGB
     char *gradient_iris[] = {"#0000FF", "#000FFF", "#001EFF", "#002DFF", "#003CFF", "#004BFF", "#005AFF", "#0069FF", "#0078FF", "#0087FF", "#0096FF", "#00A5FF", "#00B4FF", "#00C3FF", "#00D2FF", "#00E1FF", "#00F0FF", "#00FFF0", "#00FFE1", "#00FFD2", "#00FFC3", "#00FFB4", "#00FFA5", "#00FF96", "#00FF87", "#00FF78", "#00FF69", "#00FF5A", "#00FF4B", "#00FF3C", "#00FF2D", "#00FF1E", "#00FF0F", "#0FFF00", "#1EFF00", "#2DFF00", "#3CFF00", "#4BFF00", "#5AFF00", "#69FF00", "#78FF00", "#87FF00", "#96FF00", "#A5FF00", "#B4FF00", "#C3FF00", "#D2FF00", "#E1FF00", "#F0FF00", "#FFF000", "#FFE100", "#FFD200", "#FFC300", "#FFB400", "#FFA500", "#FF9600", "#FF8700", "#FF7800", "#FF6900", "#FF5A00", "#FF4B00", "#FF3C00", "#FF2D00", "#FF1E00", "#FF0F00"};
@@ -179,7 +180,7 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
        }
 
     //Write HTML to file.
-    FILE *f = fopen("heatmap2.html", "w");
+    FILE *f = fopen("heatmap1.html", "w");
       if(f == NULL)
         {
           printf("Error opening file!\n");
@@ -254,12 +255,6 @@ void make_heatmap_html(double test_data[], int rows, int columns, int plate_size
     fprintf(f, "</html>\n");
 
     fclose(f); 
-    printf("heatmap2.html file created.\n");
+    printf("heatmap1.html file created.\n");
   }
-
-
-
-
-
-
 
