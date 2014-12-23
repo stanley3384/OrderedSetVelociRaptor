@@ -2,7 +2,8 @@
 /*
 
   Animate the windows on some buttons. One with a linear gradient and another with
-a radial gradient. Some ideas for using cairo instead of an icon.
+a radial gradient. There is a png button but it needs a png file. It is commented out in
+main.
 
   gcc -Wall icon.c -o icon `pkg-config --cflags --libs gtk+-3.0`
 
@@ -14,6 +15,7 @@ C. Eric Cashon
 
 gint timer_id1=0;
 gint timer_id2=0;
+cairo_surface_t *surface=NULL;
 
 static gboolean draw_radial_color(gpointer data)
  {
@@ -150,7 +152,7 @@ static void realize_and_draw(GtkWidget *button, gpointer data)
  }
 static gboolean draw_arrow(GtkWidget *button, cairo_t *cr, gpointer data)
  {
-   g_print("Draw\n");
+   g_print("Draw Arrow\n");
  
    guint width=gtk_widget_get_allocated_width(GTK_WIDGET(button));
    guint height=gtk_widget_get_allocated_height(GTK_WIDGET(button));
@@ -172,8 +174,49 @@ static gboolean draw_arrow(GtkWidget *button, cairo_t *cr, gpointer data)
    //Draw purple rectangle around the button.
    cairo_set_line_width(cr, 4.0);
    cairo_rectangle(cr, 0, 0, width, height);
-   cairo_stroke_preserve(cr); 
+   cairo_stroke(cr); 
 
+   return TRUE;     
+ }
+static gboolean draw_png(GtkWidget *button, cairo_t *cr, gpointer data)
+ {
+   g_print("Draw PNG\n");
+
+   cairo_text_extents_t extents; 
+   guint png_width=0;
+   guint png_height=0;
+   guint button_width=gtk_widget_get_allocated_width(GTK_WIDGET(button));
+   guint button_height=gtk_widget_get_allocated_height(GTK_WIDGET(button));
+
+   if(surface!=NULL)
+     {  
+       png_width=cairo_image_surface_get_width(surface);
+       png_height=cairo_image_surface_get_height(surface);   
+       cairo_scale(cr, (float)button_width/(float)png_width, (float)button_height/(float)png_height);
+       cairo_set_source_surface(cr, surface, 0, 0);
+       cairo_paint(cr);
+       cairo_scale(cr, (float)png_width/(float)button_width, (float)png_height/(float)button_height);
+     }
+   else
+     {
+       g_print("Need a PNG file.\n");
+     }     
+
+   //Add some text.
+   cairo_set_source_rgb(cr, 0, 0, 0);
+   cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(cr, 20);
+   cairo_text_extents(cr, "PNG Button", &extents);
+   cairo_move_to(cr, button_width/2 - extents.width/2, button_height/2 + extents.height/2); 
+   cairo_show_text(cr, "PNG Button");  
+   cairo_stroke(cr); 
+
+   //Draw purple rectangle around the button.
+   cairo_set_source_rgb(cr, 1.0, 0, 1.0);
+   cairo_set_line_width(cr, 4.0);
+   cairo_rectangle(cr, 0, 0, button_width, button_height);
+   cairo_stroke(cr); 
+   
    return TRUE;     
  }
 static void button_clicked(GtkWidget *widget, gpointer data)
@@ -188,7 +231,7 @@ static void close_program(GtkWidget *widget, gpointer data)
  }
 int main(int argc, char **argv)
  {
-   GtkWidget *window, *button1, *button2, *grid;
+   GtkWidget *window, *button1, *button2, *button3, *grid;
 
    gtk_init(&argc, &argv);
 
@@ -208,7 +251,7 @@ int main(int argc, char **argv)
 
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Animation Buttons");
-   gtk_window_set_default_size(GTK_WINDOW(window), 250, 200);
+   gtk_window_set_default_size(GTK_WINDOW(window), 250, 300);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
@@ -230,14 +273,26 @@ int main(int argc, char **argv)
    g_signal_connect(button2, "realize", G_CALLBACK(realize_and_draw), NULL); 
    g_signal_connect(button2, "draw", G_CALLBACK(draw_arrow), NULL); 
 
+   //surface=cairo_image_surface_create_from_png("mercator_projection.png");
+   button3=gtk_button_new_with_label("Draw .png");
+   gtk_widget_set_hexpand(button3, TRUE);
+   gtk_widget_set_vexpand(button3, TRUE); 
+   g_signal_connect(button3, "draw", G_CALLBACK(draw_png), NULL); 
+   g_signal_connect(button3, "button-press-event", G_CALLBACK(button_clicked), NULL); 
+
+
    grid=gtk_grid_new();
+   gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), button2, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), button3, 0, 2, 1, 1);
    gtk_container_add(GTK_CONTAINER(window), grid);
 
    gtk_widget_show_all(window);
 
    gtk_main();
+
+   cairo_surface_destroy(surface);
    return 0;
   }
    
