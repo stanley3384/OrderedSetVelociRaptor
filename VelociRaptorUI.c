@@ -127,6 +127,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 int main(int argc, char *argv[])
     {
      GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
+     GError *error = NULL;
       
      //For printing
      Widgets *w;
@@ -139,6 +140,17 @@ int main(int argc, char *argv[])
      gtk_window_set_title(GTK_WINDOW(window), "Ordered Set VelociRaptor");
      gtk_container_set_border_width(GTK_CONTAINER(window), 8);
      gtk_window_set_default_size(GTK_WINDOW(window), 1024, 300);
+     //Set the icon for the launcher.
+     GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino.svg", &error);
+     if(!pixbuf)
+       {
+         g_print("%s\n", error->message);
+         g_error_free(error);
+       }
+     else
+       {
+         gtk_window_set_icon(GTK_WINDOW(window), pixbuf);
+       }
 
      RaptorFeet=gtk_drawing_area_new();
      gtk_widget_set_size_request(RaptorFeet, 1024,35);
