@@ -75,6 +75,7 @@ static void linearize_text_file(const gchar *text_name)
                iLineNumber=DataArray[0].len + 1;
                g_print("Not a Number at Number%i\n", iLineNumber);
                iTextPresent=1;
+               break;
              }
            pChar++;
            counter++;

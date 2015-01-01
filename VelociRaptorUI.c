@@ -2361,16 +2361,17 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
     GFileInputStream *FileStream=NULL;
     gssize length;
     GFileInfo *FileInfo;
-    int iFileSize = -1;
+    gint iFileSize = -1;
     GtkWidget *dialog;
     gchar *pTextBuffer=NULL;
     GString *TempBuffer=g_string_new(NULL);
     GArray *DataArray;
     gchar *pChar=NULL;
     guint32 counter=0;
-    int iTextPresent=0;
-    int iLineNumber=0;
+    gint iTextPresent=0;
+    gint iLineNumber=0;
     double dTemp=0;
+    gboolean new_number=FALSE;
 
      if(iReferenceCountDialogWindow==0)
        {
@@ -2402,20 +2403,26 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
                      {
                          if(g_ascii_isdigit(*pChar)||*pChar =='.'||*pChar=='-')
                            {
-                            g_string_append_printf(TempBuffer, "%c", *pChar);
+                             g_string_append_printf(TempBuffer, "%c", *pChar);
+                             new_number=TRUE;
                            }
-                         else if(*pChar=='\n')
+                         else if(*pChar=='\n'||*pChar==' '|| *pChar==',' || *pChar=='|')
                            {
-                            dTemp=g_ascii_strtod(TempBuffer->str, NULL);
-                            g_array_append_val(DataArray, dTemp);
-                            g_string_truncate(TempBuffer, 0);
-                           }
+                             if(new_number==TRUE)
+                               {
+                                 dTemp=g_ascii_strtod(TempBuffer->str, NULL);
+                                 g_array_append_val(DataArray, dTemp);
+                                 g_string_truncate(TempBuffer, 0);
+                                 new_number=FALSE;
+                               }
+                            }
                          else
-                           {
-                            iLineNumber=DataArray[0].len + 1;
-                            g_print("Not a Number on Line %i\n", iLineNumber);
-                            iTextPresent=1;
-                           }
+                            {
+                              iLineNumber=DataArray[0].len + 1;
+                              g_print("Not a Number at Number%i\n", iLineNumber);
+                              iTextPresent=1;
+                              break;
+                            }
                        pChar++;
                        counter++;
                      }
