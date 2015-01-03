@@ -2,6 +2,8 @@
 /*
    Test code to append some text files. Make a couple of test text files to test out.
 
+   cat TestText1.txt TestText2.txt >> combined.txt
+
    gcc -Wall text_append.c -o text_append
    valgrind ./text_append
 
