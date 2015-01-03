@@ -82,6 +82,7 @@ static void append_text_files(GSList *text_file_paths, const gchar *new_file_nam
     int file_size=0;
     int i=0;
     FILE *combined=NULL;
+    gboolean null_pointer=FALSE;
     
     g_print("Selected Files %i\n", selected_files);
     for(i=0;i<selected_files;i++)
@@ -109,16 +110,24 @@ static void append_text_files(GSList *text_file_paths, const gchar *new_file_nam
                  fread(pTextBuffer, file_size, 1, fp);
                  fwrite(pTextBuffer, file_size, 1, combined);
                }
-             else g_print("Malloc Error\n");
+             else
+               {
+                 g_print("Malloc Error\n");
+                 null_pointer=TRUE;
+               }
              fclose(fp);
              if(pTextBuffer!=NULL) free(pTextBuffer);
            }
-         else g_print("File Opening Error.\n");
+         else
+           {
+             g_print("File Opening Error.\n");
+             null_pointer=TRUE;
+           }
        }
 
     if(combined!=NULL) fclose(combined); 
-    //Assuming no null pointers.
-    g_print("%s Created\n", new_file_name);
+    
+    if(null_pointer==FALSE) g_print("%s Created\n", new_file_name);
     
   }
 
