@@ -2425,9 +2425,10 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
                          else
                             {
                               iLineNumber=DataArray[0].len + 1;
-                              g_print("Not a Number at Number%i\n", iLineNumber);
-                              iTextPresent=1;
-                              break;
+                              g_print("Not a Number at Number %i. Ignore value %c.\n", iLineNumber, *pChar);
+                              //Code change. Just ignore non-numbers when reading in text data.
+                              //iTextPresent=1;
+                              //break;
                             }
                        pChar++;
                        counter++;
