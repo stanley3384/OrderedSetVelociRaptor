@@ -58,6 +58,8 @@ if [ "$answer" = "y" ]; then
             make
             echo "Move program to install directory"
             mv VelociRaptor ../../
+            echo "Move icon to install directory"
+            mv dino.svg ../../
             cd ../../
             echo "Run with ./VelociRaptor"
             ./VelociRaptor

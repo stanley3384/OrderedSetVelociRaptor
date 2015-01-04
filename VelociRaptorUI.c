@@ -113,6 +113,9 @@ static void setup_tree_view_data(GtkTreeView*, int, double, int);
 static void setup_tree_view_percent(GtkTreeView*, GtkTreeView*);
 static void setup_tree_view_text(GtkTreeView*, GArray*);
 static void get_text_file(GtkWidget*, GtkWidget*);
+static void append_text_dialog(GtkWidget*, GtkWidget*);
+static void show_file_dialog_append(GArray*);
+static void append_text_files(GSList*, const gchar*);
 static void sqlite_connect_dialog(GtkWidget*, GtkWidget*);
 static void build_aux_table_dialog(GtkWidget*, GtkWidget*);
 static void build_combo_table_dialog(GtkWidget*, GtkWidget*);
@@ -126,7 +129,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
+     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
      GError *error = NULL;
       
      //For printing
@@ -170,6 +173,7 @@ int main(int argc, char *argv[])
 
      FileMenu=gtk_menu_new(); 
      ImportItem=gtk_menu_item_new_with_label("Import Text");
+     AppendItem=gtk_menu_item_new_with_label("Append Text Files");
      SqliteItem=gtk_menu_item_new_with_label("Sqlite Connect");
      PrintItem=gtk_menu_item_new_with_label("Print White Board");
      QuitItem=gtk_menu_item_new_with_label("Quit");
@@ -207,6 +211,7 @@ int main(int argc, char *argv[])
      AboutItem=gtk_menu_item_new_with_label("About");
 
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), ImportItem);
+     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), AppendItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), SqliteItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), PrintItem);
      gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), QuitItem);
@@ -237,6 +242,7 @@ int main(int argc, char *argv[])
      g_signal_connect(QuitItem, "activate", G_CALLBACK(destroy_event), NULL);
      //PrintItem signal connected after textview
      g_signal_connect(ImportItem, "activate", G_CALLBACK(get_text_file), window);
+     g_signal_connect(AppendItem, "activate", G_CALLBACK(append_text_dialog), window);
      g_signal_connect(SqliteItem, "activate", G_CALLBACK(sqlite_connect_dialog), window);
      g_signal_connect(AboutItem, "activate", G_CALLBACK(about_dialog), window);
      //AnovaItem signal connected after textview.
@@ -2455,6 +2461,122 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
 
     g_string_free(TempBuffer, TRUE);
        
+  }
+static void append_text_dialog(GtkWidget *menu, GtkWidget *window)
+  {
+    GtkWidget *dialog, *label, *entry, *grid, *content_area;
+    gint result=0;
+
+    dialog=gtk_dialog_new_with_buttons("Append Text Files", GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, "Select Text Files", GTK_RESPONSE_OK, NULL);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 280, 100);
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+
+    label=gtk_label_new("Combined Text File Name");
+    gtk_widget_set_hexpand(label, TRUE);
+
+    entry=gtk_entry_new();
+    gtk_widget_set_hexpand(entry, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry), "combined.txt");
+
+    GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
+    g_array_append_val(widgets, window);
+    g_array_append_val(widgets, entry);
+
+    grid=gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+    gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry, 0, 1, 1, 1);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_add(GTK_CONTAINER(content_area), grid);
+
+    gtk_widget_show_all(dialog);
+    
+    result=gtk_dialog_run(GTK_DIALOG(dialog));
+    if(result==GTK_RESPONSE_OK)
+      {
+        show_file_dialog_append(widgets);
+      }
+
+    gtk_widget_destroy(dialog);
+
+  }
+static void show_file_dialog_append(GArray *widgets)
+  {
+    GtkWidget *dialog;
+    
+    dialog=gtk_file_chooser_dialog_new("Open Text File",GTK_WINDOW(g_array_index(widgets, GtkWidget*, 0)), GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), TRUE);
+    
+    gint result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if(result==GTK_RESPONSE_ACCEPT)
+      {
+        GSList *text_file_paths=gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
+        const gchar *new_file_name=gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 1)));
+        append_text_files(text_file_paths, new_file_name);
+        g_slist_free_full(text_file_paths, g_free);
+      }
+
+    gtk_widget_destroy(dialog);
+
+  }
+static void append_text_files(GSList *text_file_paths, const gchar *new_file_name)
+  {
+    gint selected_files=g_slist_length(text_file_paths);
+    int file_size=0;
+    int i=0;
+    size_t bytes=0;
+    FILE *combined=NULL;
+    gboolean null_pointer=FALSE;
+    
+    g_print("Selected Files %i\n", selected_files);
+    for(i=0;i<selected_files;i++)
+       {
+          g_print("%i %s\n", i, (char*)g_slist_nth_data(text_file_paths, i));
+       }
+     
+    combined=fopen(new_file_name, "a");
+
+    for(i=0;i<selected_files;i++)
+       {
+         char *pTextBuffer=NULL;
+         FILE *fp=NULL;
+         fp=fopen((char*)g_slist_nth_data(text_file_paths, i), "r");
+         if(fp!=NULL&&combined!=NULL)
+           {
+             fseek(fp , 0 , SEEK_END);
+             file_size=ftell(fp);
+             rewind(fp);
+             printf("Filesize %i\n", file_size);
+             pTextBuffer=(char *)malloc(sizeof(char) * file_size);
+             if(pTextBuffer!=NULL)
+               {
+                 //Just read and write to a file. No string functions.
+                 bytes=fread(pTextBuffer, file_size, 1, fp);
+                 if(bytes==0) g_print("Zero Bytes Read\n");
+                 bytes=fwrite(pTextBuffer, file_size, 1, combined);
+                 if(bytes==0) g_print("Zero Bytes Write\n");
+               }
+             else
+               {
+                 g_print("Malloc Error\n");
+                 null_pointer=TRUE;
+               }
+             fclose(fp);
+             if(pTextBuffer!=NULL) free(pTextBuffer);
+           }
+         else
+           {
+             g_print("File Opening Error.\n");
+             null_pointer=TRUE;
+           }
+       }
+
+    if(combined!=NULL) fclose(combined); 
+    
+    if(null_pointer==FALSE) g_print("%s Created\n", new_file_name);
+    
   }
 static void sqlite_connect_dialog(GtkWidget *menu, GtkWidget *window)
   {
