@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
      gtk_widget_set_tooltip_text(FontChooser, "Font Chooser");
 
      FileMenu=gtk_menu_new(); 
-     ImportItem=gtk_menu_item_new_with_label("Import Text");
+     ImportItem=gtk_menu_item_new_with_label("Import Text File");
      AppendItem=gtk_menu_item_new_with_label("Append Text Files");
      SqliteItem=gtk_menu_item_new_with_label("Sqlite Connect");
      PrintItem=gtk_menu_item_new_with_label("Print White Board");
