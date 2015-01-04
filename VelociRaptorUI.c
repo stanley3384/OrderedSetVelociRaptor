@@ -2499,6 +2499,7 @@ static void append_text_dialog(GtkWidget *menu, GtkWidget *window)
         show_file_dialog_append(widgets);
       }
 
+    g_array_free(widgets, TRUE);
     gtk_widget_destroy(dialog);
 
   }
