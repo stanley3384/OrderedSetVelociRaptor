@@ -2496,6 +2496,7 @@ static void append_text_dialog(GtkWidget *menu, GtkWidget *window)
     result=gtk_dialog_run(GTK_DIALOG(dialog));
     if(result==GTK_RESPONSE_OK)
       {
+        gtk_widget_hide(dialog);
         show_file_dialog_append(widgets);
       }
 
