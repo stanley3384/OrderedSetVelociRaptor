@@ -1,8 +1,8 @@
 
 /*
 
-   Test code for trying out GtkApplication along with putting an icon on the Ubuntu Unity Launcher.
-The code needs a png file in order to work. Change the icon_test.png to a valid png.
+   Test code for trying out a GtkApplication object with a menu along with putting an icon
+in the Ubuntu Unity Launcher.
 
    gcc -Wall gtk_app1.c -o gtk_app1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -60,7 +60,7 @@ static void app_activate(GtkApplication *app, gpointer user_data)
    gtk_window_set_default_size(GTK_WINDOW(window), 250, 100);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
-   //icon gets placed on the launcher. Need to supply a valid png in the working folder.
+   //icon gets placed on the launcher. Need to supply a picture file in the working folder.
    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino.svg", &error);
    if(!pixbuf)
      {
