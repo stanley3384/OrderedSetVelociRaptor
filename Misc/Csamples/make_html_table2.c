@@ -6,9 +6,11 @@ If you use Ben Klemens Apophenia library you can get some statistical calculatio
 by adding the statistical functions to the SQL string. This can be a big help and add funtionality to
 SQLite.
 
-Compile with;  gcc -Wall -std=c99 -g make_html_table2.c -lsqlite3 -o table3
+The table2 program outputs a table2.html file that can be viewed in a web browser.
 
-Check with; valgrind -v --leak-check=yes --track-origins=yes ./table3
+Compile with;  gcc -Wall -std=c99 -g make_html_table2.c -lsqlite3 -o table2
+
+Check with; valgrind -v --leak-check=yes --track-origins=yes ./table2
 
 C. Eric Cashon
 */
@@ -22,10 +24,10 @@ C. Eric Cashon
 
 
 int check_sql_for_select(char *sql);
-void parse_sql_field_names(char *html_file_name, char *database_name, char *sql, int precision, int font_size, char *bg_color, char *field_bg_color);
+void parse_sql_field_names(char *html_file_name, char *database_name, char *sql, int precision, int font_size, char *bg_color1, char *bg_color2, int alternate, char *field_bg_color);
 
-static void make_html_table(char *html_file_name, char *database_name, char *sql, char *field_names[], int fields, int precision, int font_size, char *bg_color, char *field_bg_color, bool fields_found);
-static void get_data_for_query(FILE *f, char *database_name, char *sql, int precision, char *bg_color);
+static void make_html_table(char *html_file_name, char *database_name, char *sql, char *field_names[], int fields, int precision, int font_size, char *bg_color1, char *bg_color2, int alternate, char *field_bg_color, bool fields_found);
+static void get_data_for_query(FILE *f, char *database_name, char *sql, int precision, char *bg_color1, char *bg_color2, int alternate);
 static int get_column_count(char *database_name, char *sql);
 
 int main()
@@ -41,11 +43,14 @@ int main()
     
     //Check if file exists? SQLite will create it automatically if it doesn't. Use the VelociRaptor db for testing.
     char database_name[]="VelociRaptorData.db";
-    char html_file_name[]="table3.html";
+    char html_file_name[]="table2.html";
     //For returned floats.
     int precision=2;
     int font_size=12;
-    char bg_color[]="white";
+    char bg_color1[]="yellow";
+    char bg_color2[]="MediumOrchid";
+    //Alternate colors in the html table.
+    int alternate=1; //0 don't alternate, 1 alternate rows, 2 alternate columns.
     char field_bg_color[]="silver";
 
     check=check_sql_for_select(sql);
@@ -53,7 +58,7 @@ int main()
     if(check==0)
       {
         printf("%s\n", sql);
-        parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color, field_bg_color);
+        parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color1, bg_color2, alternate, field_bg_color);
       }
     else
       {
@@ -120,7 +125,7 @@ int check_sql_for_select(char *sql)
     return check;
 
   }
-void parse_sql_field_names(char *html_file_name, char *database_name, char *sql, int precision, int font_size, char *bg_color, char *field_bg_color)
+void parse_sql_field_names(char *html_file_name, char *database_name, char *sql, int precision, int font_size, char *bg_color1, char *bg_color2, int alternate, char *field_bg_color)
   {
     int i=0;
     int commas=0;
@@ -237,7 +242,7 @@ void parse_sql_field_names(char *html_file_name, char *database_name, char *sql,
            }
 
         fields=commas+1;
-        make_html_table(html_file_name, database_name, sql, field_names, fields, precision, font_size, bg_color, field_bg_color, fields_found);
+        make_html_table(html_file_name, database_name, sql, field_names, fields, precision, font_size, bg_color1, bg_color2, alternate, field_bg_color, fields_found);
 
         for(i=0;i<commas+1;i++)
            {
@@ -247,7 +252,7 @@ void parse_sql_field_names(char *html_file_name, char *database_name, char *sql,
        }
               
   }
-static void make_html_table(char *html_file_name, char *database_name, char *sql, char *field_names[], int fields, int precision, int font_size, char *bg_color, char *field_bg_color, bool fields_found)
+static void make_html_table(char *html_file_name, char *database_name, char *sql, char *field_names[], int fields, int precision, int font_size, char *bg_color1, char *bg_color2, int alternate, char *field_bg_color, bool fields_found)
   {
     int i=0;
 
@@ -276,7 +281,7 @@ static void make_html_table(char *html_file_name, char *database_name, char *sql
        }
     fprintf(f, "</tr></thead><tbody>\n");  
 
-    get_data_for_query(f, database_name, sql, precision, bg_color);
+    get_data_for_query(f, database_name, sql, precision, bg_color1, bg_color2, alternate);
 
     fprintf(f, "</tbody></table>");
     fprintf(f, "</body>\n");
@@ -285,12 +290,14 @@ static void make_html_table(char *html_file_name, char *database_name, char *sql
     fclose(f); 
     printf("%s file created.\n", html_file_name);
   }
-static void get_data_for_query(FILE *f, char *database_name, char *sql, int precision, char *bg_color)
+static void get_data_for_query(FILE *f, char *database_name, char *sql, int precision, char *bg_color1, char *bg_color2, int alternate)
   {
     int i=0;
     int column_count=0;
     int column_type=0;
     int sql_return=0;
+    int color_count_row=1;
+    int color_count_column=1;
     sqlite3 *handle=NULL;
     sqlite3_stmt *stmt=NULL;
 
@@ -309,40 +316,78 @@ static void get_data_for_query(FILE *f, char *database_name, char *sql, int prec
     
         while(sqlite3_step(stmt) == SQLITE_ROW)
            {
+             if(alternate==1) color_count_row++;
              fprintf(f, "<tr>\n");
              for(i=0;i<column_count;i++)
                 {
                   column_type=sqlite3_column_type(stmt, i);
+                  if(alternate==2) color_count_column++;
+                  if(i==0&&alternate==2) color_count_column=0;
                   switch(column_type)
                     {
                       case SQLITE_INTEGER:
                         {
                           //printf("%i  ", sqlite3_column_int(stmt, i));
-                          fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%i</td>\n", bg_color, sqlite3_column_int(stmt, i));
+                          if(color_count_row%2==0||color_count_column%2==0||alternate==0)
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%i</td>\n", bg_color1, sqlite3_column_int(stmt, i));
+                            }
+                          else
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%i</td>\n", bg_color2, sqlite3_column_int(stmt, i));
+                            }
                           break;
                         }
                       case SQLITE_FLOAT:
                         {
                           //printf("%f  ", sqlite3_column_double(stmt, i));
-                          fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%.*f</td>\n", bg_color, precision, sqlite3_column_double(stmt, i));
+                          if(color_count_row%2==0||color_count_column%2==0||alternate==0)
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%.*f</td>\n", bg_color1, precision, sqlite3_column_double(stmt, i));
+                            }
+                           else
+                            {
+                               fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%.*f</td>\n", bg_color2, precision, sqlite3_column_double(stmt, i));
+                            }
                           break;
                         }
                       case SQLITE_TEXT:
                         {
                           //printf("%s  ", sqlite3_column_text(stmt, i));
-                          fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color, sqlite3_column_text(stmt, i));
+                          if(color_count_row%2==0||color_count_column%2==0||alternate==0)
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color1, sqlite3_column_text(stmt, i));
+                            }
+                          else
+                            {
+                               fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color2, sqlite3_column_text(stmt, i));
+                            }
                           break;
                         }
                       case SQLITE_BLOB:
                         {
                           //printf("Blob\n");
-                          fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color, "Blob");
+                          if(color_count_row%2==0||color_count_column%2==0||alternate==0)
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color1, "Blob");
+                            }
+                          else
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color2, "Blob");
+                            }
                           break;
                         }
                       case SQLITE_NULL:
                         {
                           //printf("Null\n");
-                          fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color, "Null");
+                           if(color_count_row%2==0||color_count_column%2==0||alternate==0)
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color1, "Null");
+                            }
+                           else
+                            {
+                              fprintf(f, "<td style=\"border:1px solid #000000\" bgcolor=\"%s\">%s</td>\n", bg_color2, "Null");
+                            }
                           break;
                         }
                     }
