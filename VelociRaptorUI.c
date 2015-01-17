@@ -3008,7 +3008,7 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
   }
 static void heatmap_html_dialog(GtkButton *button, gpointer p)
   {
-     GtkWidget *dialog, *table, *entry1, *entry2, *label1, *label2, *label3, *label4, *label5, *label6, *radio1, *radio2, *combo1, *combo2, *combo3, *content_area, *action_area;
+     GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *label3, *label4, *label5, *label6, *radio1, *radio2, *combo1, *combo2, *combo3, *content_area, *action_area;
     int result;
     
     g_print("Send Plate Data from Database to HTML\n");
@@ -3062,27 +3062,27 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo3), "3", "sun");
      gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
      
-     table=gtk_table_new(8,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 2, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 2, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 2, 2, 3);
-     gtk_table_attach(GTK_TABLE(table), entry1, 1, 2, 3, 4, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry2, 1, 2, 4, 5, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo1, 1, 2, 5, 6, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo2, 1, 2, 6, 7, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0, 1, 3, 4, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0, 1, 4, 5, GTK_SHRINK,GTK_SHRINK,0,0);     
-     gtk_table_attach(GTK_TABLE(table), label4, 0, 1, 5, 6, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 0, 1, 6, 7, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label6, 0, 1, 7, 8, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo3, 1, 2, 7, 8, GTK_SHRINK,GTK_SHRINK,0,0);     
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 2, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 2, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo1, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo2, 2, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo3, 2, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 0, 5, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label5, 0, 6, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label6, 0, 7, 2, 1);  
 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3090,10 +3090,12 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
 
      if(result==GTK_RESPONSE_OK)
        {
-        int rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int precision=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1)));
-        int font_size=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2)));
+        int rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));//const char
+        int columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));//const char
+        char *prec1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1));
+        int precision=atoi(prec1);
+        char *font1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2));
+        int font_size=atoi(font1);
         int gradient=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo3)));
         int iRadioButton=0;
 
@@ -3107,6 +3109,9 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
             iRadioButton=2;
             heatmap_to_html_sql(iRadioButton, rows, columns+1, precision, font_size, gradient);
           }
+  
+        if(prec1!=NULL) g_free(prec1);
+        if(font1!=NULL) g_free(font1);
 
        }
      gtk_widget_destroy(dialog);
@@ -3114,34 +3119,35 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
   }
 static void html_table_dialog(GtkButton *button, gpointer p)
   {
-    GtkWidget *dialog, *table, *textview, *scrolled_win, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *expand1, *expand2, *expand3, *combo1, *combo2, *combo3, *combo4, *combo5, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *textview, *scrolled_win, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *label9, *combo1, *combo2, *combo3, *combo4, *combo5, *combo6, *combo7, *content_area, *action_area;
     GtkTextBuffer *buffer1;
     int result;
     
     g_print("Send Tablular Data from Database to HTML\n");
 
      dialog=gtk_dialog_new_with_buttons("Tabular Data to HTML", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+      gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 450);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
      textview=gtk_text_view_new();
+     gtk_widget_set_vexpand(textview, TRUE);
      gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
-     scrolled_win=gtk_scrolled_window_new(NULL, NULL); 
+     scrolled_win=gtk_scrolled_window_new(NULL, NULL);
+     gtk_widget_set_vexpand(scrolled_win, TRUE); 
      gtk_container_add(GTK_CONTAINER(scrolled_win), textview);
      buffer1=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
      gtk_text_buffer_insert_at_cursor(buffer1, "SELECT * FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID AND T1.KeyID<11;", -1);
 
      label1=gtk_label_new("Output data in tabular format in\nHTML. File name table.html");
-     label2=gtk_label_new("SQL Statement                ");      
+     label2=gtk_label_new("SQL Statement");      
      label3=gtk_label_new("Precision");
      label4=gtk_label_new("Font Size");
      label5=gtk_label_new("Font Color");
      label6=gtk_label_new("Field Background Color");
      label7=gtk_label_new("Data Background Color"); 
- 
-     expand1=gtk_label_new(" "); 
-     expand2=gtk_label_new(" "); 
-     expand3=gtk_label_new(" "); 
+     label8=gtk_label_new("Alternate Color"); 
+     label9=gtk_label_new("Data Background Color2"); 
      
      combo1=gtk_combo_box_text_new();     
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo1), "0", "0");
@@ -3192,31 +3198,48 @@ static void html_table_dialog(GtkButton *button, gpointer p)
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "5", "aqua");
      gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo5), "6", "fuchsia");
      gtk_combo_box_set_active(GTK_COMBO_BOX(combo5), 0);
-     
-     table=gtk_table_new(10,6,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 5, 0, 1);
-     gtk_table_attach(GTK_TABLE(table), label2, 0, 1, 1, 2, GTK_FILL,GTK_FILL,0,0);
-     gtk_table_attach(GTK_TABLE(table), expand1, 0, 1, 2, 3, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), expand2, 0, 1, 3, 4, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), expand3, 0, 1, 4, 5, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), scrolled_win, 0, 6, 2, 5, GTK_FILL,GTK_FILL,0,0);    
-     gtk_table_attach(GTK_TABLE(table), combo1, 1, 2, 5, 6, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo2, 1, 2, 6, 7, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo3, 1, 2, 7, 8, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo4, 1, 2, 8, 9, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), combo5, 1, 2, 9, 10, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0, 1, 5, 6, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label4, 0, 1, 6, 7, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 0, 1, 7, 8, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label6, 0, 1, 8, 9, GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label7, 0, 1, 9, 10, GTK_SHRINK,GTK_SHRINK,0,0);
 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     combo6=gtk_combo_box_text_new();     
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo6), "0", "Constant");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo6), "1", "By Row");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo6), "2", "By Column");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo6), 0);
+
+     combo7=gtk_combo_box_text_new();     
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "0", "white");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "1", "green");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "2", "navy");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "3", "lime");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "4", "yellow");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "5", "aqua");
+     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo7), "6", "fuchsia");
+     gtk_combo_box_set_active(GTK_COMBO_BOX(combo7), 1);
+     
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), scrolled_win, 0, 2, 4, 2);
+     gtk_grid_attach(GTK_GRID(grid), combo1, 1, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo2, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo3, 1, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo4, 1, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo5, 3, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo6, 3, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), combo7, 3, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label5, 0, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label6, 0, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label7, 2, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label8, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label9, 2, 6, 1, 1);
+
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3229,12 +3252,16 @@ static void html_table_dialog(GtkButton *button, gpointer p)
         char html_file_name[]="table.html";
         GtkTextIter start1;
         GtkTextIter end1;
-
-        int precision=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1)));
-        int font_size=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2)));
+   
+        gchar *prec1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1));
+        int precision=atoi(prec1);
+        gchar *font1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2));
+        int font_size=atoi(font1);
         gchar *font_color=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo3));
         gchar *field_bg_color=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo4));
-        gchar *bg_color=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo5));
+        gchar *bg_color1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo5));
+        int alternate=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo6)));
+        gchar *bg_color2=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo7));
         gtk_text_buffer_get_bounds(buffer1, &start1, &end1);
         gchar *sql=gtk_text_buffer_get_text(buffer1, &start1, &end1, TRUE);
       
@@ -3243,13 +3270,21 @@ static void html_table_dialog(GtkButton *button, gpointer p)
         if(check==0)
           {
             printf("%s\n", sql);
-            parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color, field_bg_color, font_color);
+            parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color1, bg_color2, alternate, field_bg_color, font_color);
       }
         else
           {
             printf("Unable to parse SQL statement.\n");
             simple_message_dialog("Unable to parse SQL statement.");
           }
+
+        if(prec1!=NULL) g_free(prec1);
+        if(font1!=NULL) g_free(font1);
+        if(font_color!=NULL) g_free(font_color);
+        if(field_bg_color!=NULL) g_free(field_bg_color);
+        if(bg_color1!=NULL) g_free(bg_color1);
+        if(bg_color2!=NULL) g_free(bg_color2);
+        if(sql!=NULL) g_free(sql);
        
        }
      gtk_widget_destroy(dialog);
