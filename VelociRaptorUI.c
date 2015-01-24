@@ -557,9 +557,12 @@ static void change_global_font(GtkWidget *button, GtkTextView *textview)
 static void change_margin(GtkWidget *margin, GtkTextView *textview)
   {
     int left_margin=0;
-    left_margin=atoi(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(margin)));
+    gchar *combo_text=NULL;
+    combo_text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(margin));
+    left_margin=atoi(combo_text);
     //printf("Left Margin %i\n", left_margin);
     gtk_text_view_set_indent(textview, left_margin);
+    if(combo_text!=NULL) g_free(combo_text);
   }
 static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
   {
