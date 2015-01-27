@@ -13,6 +13,18 @@ class TextBox(Gtk.TextView):
         self.set_wrap_mode(2)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("Find a word word word word1 word1 word2 word2 word2")
+        #apply some tags.
+        self.start1 = self.textbuffer.get_start_iter()
+        self.start1.forward_chars(7)
+        self.start2 = self.textbuffer.get_start_iter()
+        self.start2.forward_chars(11)
+        self.tag1 = self.textbuffer.create_tag("green_tag", background="green")
+        self.tag2 = self.textbuffer.create_tag("bold_tag", weight=900)
+        self.textbuffer.apply_tag(self.tag1, self.start1, self.start2)
+        self.start1.forward_chars(10)
+        self.start2.forward_chars(10)
+        self.textbuffer.apply_tag(self.tag1, self.start1, self.start2)
+        self.textbuffer.apply_tag(self.tag2, self.start1, self.start2)
     
     def get_word(self, text1): ##text1 is word to match
         offset = 0
@@ -41,6 +53,46 @@ class TextBox(Gtk.TextView):
         else:
             print("Empty entry.")
 
+    def get_tags(self):
+        start1 = self.textbuffer.get_start_iter()
+        start2 = self.textbuffer.get_start_iter()
+        loop=True
+        switch=False
+        offset1=0
+        offset2=0
+        end1=start1.forward_to_tag_toggle(self.tag1)
+        end2=start2.forward_to_tag_toggle(self.tag2)
+        while(loop):
+            if(end1):
+                offset1=start1.get_offset()
+                if(switch):
+                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(self.tag1.get_property('name')))
+                    switch=False
+                else:
+                    switch=True
+                offset2=offset1
+                end1=start1.forward_to_tag_toggle(self.tag1)
+            else:
+                loop=False
+
+        #For bold tags
+        loop2=True
+        switch2=False
+        offset3=0
+        offset4=0
+        while(loop2):          
+            if(end2):
+                offset3=start2.get_offset()
+                if(switch2):
+                    print("Tag Found at " + str(offset4) + "-" + str(offset3) + " Tagname " + str(self.tag2.get_property('name')))
+                    switch2=False
+                else:
+                    switch2=True
+                offset4=offset3
+                end2=start2.forward_to_tag_toggle(self.tag2)
+            else:
+                loop2=False
+
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Text Iters")
@@ -50,17 +102,25 @@ class MainWindow(Gtk.Window):
         self.TextBox1.set_vexpand(True)
         self.button1 = Gtk.Button("Find Words")
         self.button1.connect("clicked", self.MatchWord)
+        self.button2 = Gtk.Button("Find Tags")
+        self.button2.connect("clicked", self.FindTags)
         self.entry1 = Gtk.Entry()
         self.entry1.set_hexpand(True)
         self.grid = Gtk.Grid()
         self.grid.attach(self.button1, 0, 0, 1, 1)
         self.grid.attach(self.entry1, 1, 0, 1, 1)
+        self.grid.attach(self.button2, 0, 1, 2, 1)
         self.grid.attach(self.TextBox1, 0, 2, 2, 1)
         self.add(self.grid)
 
     def MatchWord(self, button):
+        print("Find Words")
         text1 = self.entry1.get_text()
         self.TextBox1.get_word(text1)
+
+    def FindTags(self, button):
+        print("Find Tags")
+        self.TextBox1.get_tags()
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
