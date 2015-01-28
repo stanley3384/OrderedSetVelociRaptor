@@ -53,12 +53,24 @@ class TextBox(Gtk.TextView):
         else:
             print("Empty entry.")
 
-    def get_tag_table(self):
+    def get_tag_table(self, combo1):
         tag_table = Gtk.TextTagTable()
         tag_table = self.textbuffer.get_tag_table()
         print("Tag Table Size " + str(tag_table.get_size()))
-        tag_table.foreach(self.get_tags, None)
-    
+        tag_table.foreach(self.get_tag_filter, combo1)
+
+    def get_tag_filter(self, tag, combo1):
+        tag_id = int(combo1.get_active_id())
+        tag_name = tag.get_property('name')
+        if(tag_id==0):
+            self.get_tags(tag, None)
+        elif(tag_id==1):
+            if("green_tag" == tag_name):
+                self.get_tags(tag, None)
+        else:
+            if("bold_tag" == tag_name):
+                self.get_tags(tag, None)
+
     def get_tags(self, tag, data):    
         loop=True
         switch=False
@@ -92,10 +104,16 @@ class MainWindow(Gtk.Window):
         self.button2.connect("clicked", self.FindTags)
         self.entry1 = Gtk.Entry()
         self.entry1.set_hexpand(True)
+        self.combo1 = Gtk.ComboBoxText()
+        self.combo1.append("0", "All Tags")
+        self.combo1.append("1", "Green Tag")
+        self.combo1.append("2", "Bold Tag")
+        self.combo1.set_active_id("0")
         self.grid = Gtk.Grid()
         self.grid.attach(self.button1, 0, 0, 1, 1)
         self.grid.attach(self.entry1, 1, 0, 1, 1)
-        self.grid.attach(self.button2, 0, 1, 2, 1)
+        self.grid.attach(self.button2, 0, 1, 1, 1)
+        self.grid.attach(self.combo1, 1, 1, 1, 1)
         self.grid.attach(self.TextBox1, 0, 2, 2, 1)
         self.add(self.grid)
 
@@ -106,7 +124,7 @@ class MainWindow(Gtk.Window):
 
     def FindTags(self, button):
         print("Find Tags")
-        self.TextBox1.get_tag_table()
+        self.TextBox1.get_tag_table(self.combo1)
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
