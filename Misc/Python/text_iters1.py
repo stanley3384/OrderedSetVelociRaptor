@@ -1,7 +1,7 @@
 #!/user/bin/python
 
 #
-# Test code for text iters, text tags and finding a words in a TextBox.
+# Test code for text iters, text tags and finding words in a TextBox.
 #
 # C. Eric Cashon
 
@@ -106,8 +106,8 @@ class MainWindow(Gtk.Window):
         self.entry1.set_hexpand(True)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("0", "All Tags")
-        self.combo1.append("1", "Green Tag")
-        self.combo1.append("2", "Bold Tag")
+        self.combo1.append("1", "Green Tags")
+        self.combo1.append("2", "Bold Tags")
         self.combo1.set_active_id("0")
         self.grid = Gtk.Grid()
         self.grid.attach(self.button1, 0, 0, 1, 1)
