@@ -1,7 +1,7 @@
 #!/user/bin/python
 
 #
-# Test code for text iters and finding a word in a TextBox.
+# Test code for text iters, text tags and finding a words in a TextBox.
 #
 # C. Eric Cashon
 
@@ -53,45 +53,31 @@ class TextBox(Gtk.TextView):
         else:
             print("Empty entry.")
 
-    def get_tags(self):
-        start1 = self.textbuffer.get_start_iter()
-        start2 = self.textbuffer.get_start_iter()
+    def get_tag_table(self):
+        tag_table = Gtk.TextTagTable()
+        tag_table = self.textbuffer.get_tag_table()
+        print("Tag Table Size " + str(tag_table.get_size()))
+        tag_table.foreach(self.get_tags, None)
+    
+    def get_tags(self, tag, data):    
         loop=True
         switch=False
         offset1=0
         offset2=0
-        end1=start1.forward_to_tag_toggle(self.tag1)
-        end2=start2.forward_to_tag_toggle(self.tag2)
+        start = self.textbuffer.get_start_iter()
+        not_end=start.forward_to_tag_toggle(tag)
         while(loop):
-            if(end1):
-                offset1=start1.get_offset()
+            if(not_end):
+                offset1=start.get_offset()
                 if(switch):
-                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(self.tag1.get_property('name')))
+                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(tag.get_property('name')))
                     switch=False
                 else:
                     switch=True
                 offset2=offset1
-                end1=start1.forward_to_tag_toggle(self.tag1)
+                not_end=start.forward_to_tag_toggle(tag)
             else:
                 loop=False
-
-        #For bold tags
-        loop2=True
-        switch2=False
-        offset3=0
-        offset4=0
-        while(loop2):          
-            if(end2):
-                offset3=start2.get_offset()
-                if(switch2):
-                    print("Tag Found at " + str(offset4) + "-" + str(offset3) + " Tagname " + str(self.tag2.get_property('name')))
-                    switch2=False
-                else:
-                    switch2=True
-                offset4=offset3
-                end2=start2.forward_to_tag_toggle(self.tag2)
-            else:
-                loop2=False
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -120,7 +106,7 @@ class MainWindow(Gtk.Window):
 
     def FindTags(self, button):
         print("Find Tags")
-        self.TextBox1.get_tags()
+        self.TextBox1.get_tag_table()
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
