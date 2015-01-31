@@ -31,7 +31,7 @@ class TextBox(Gtk.TextView):
                 match1 = start1.forward_search(text1, 0, None) 
                 if(match1):
                     print(str(index) + " " + self.textbuffer.get_slice(match1[0], match1[1], include_hidden_chars=True) + " " + str(match1[0].get_offset()) +"-" + str(match1[1].get_offset()))            
-                    if("combo0" == combo.get_name()):
+                    if("combo1" == combo.get_name()):
                         if(int(combo.get_active_id()) == 1):
                             self.textbuffer.apply_tag(self.tag1, match1[0], match1[1])
                         if(int(combo.get_active_id()) == 2):
@@ -109,39 +109,39 @@ class TextBox(Gtk.TextView):
                 print("No Tags")
         
     def move_forward_to_tag(self, tag_start_list, button_combo_list):
-        iter2 = None 
-        if("combo2" == (button_combo_list[1]).get_name()):
+        iter1 = None 
+        if("combo3" == (button_combo_list[1]).get_name()):
             self.grab_focus()
             cursor = self.textbuffer.get_property("cursor-position")
             cursor_changed=False
-            for pos in tag_start_list:
-                if(pos > cursor):
-                    iter1 = self.textbuffer.get_iter_at_offset(pos)
-                    self.textbuffer.place_cursor(iter1)
+            for value in tag_start_list:
+                if(value > cursor):
+                    iter2 = self.textbuffer.get_iter_at_offset(value)
+                    self.textbuffer.place_cursor(iter2)
                     cursor_changed=True
                     break               
             if(cursor_changed == False):
-                iter2 = self.textbuffer.get_iter_at_offset(tag_start_list[0])
-                if(iter2):
-                    self.textbuffer.place_cursor(iter2)               
+                iter1 = self.textbuffer.get_iter_at_offset(tag_start_list[0])
+                if(iter1):
+                    self.textbuffer.place_cursor(iter1)               
             print("Cursor Position " + str(self.textbuffer.get_property("cursor-position")))
 
     def move_backward_to_tag(self, tag_start_list, button_combo_list): 
-        iter2 = None
-        if("combo2" == (button_combo_list[1]).get_name()):
+        iter1 = None
+        if("combo3" == (button_combo_list[1]).get_name()):
             self.grab_focus()
             cursor = self.textbuffer.get_property("cursor-position")
             cursor_changed=False
-            for pos in tag_start_list:
-                if(pos < cursor):
-                    iter1 = self.textbuffer.get_iter_at_offset(pos)
-                    self.textbuffer.place_cursor(iter1)
+            for value in tag_start_list:
+                if(value < cursor):
+                    iter2 = self.textbuffer.get_iter_at_offset(value)
+                    self.textbuffer.place_cursor(iter2)
                     cursor_changed=True
                     break               
             if(cursor_changed == False):
-                iter2 = self.textbuffer.get_iter_at_offset(tag_start_list[0])
-                if(iter2):
-                    self.textbuffer.place_cursor(iter2)               
+                iter1 = self.textbuffer.get_iter_at_offset(tag_start_list[0])
+                if(iter1):
+                    self.textbuffer.place_cursor(iter1)               
             print("Cursor Position " + str(self.textbuffer.get_property("cursor-position")))
 
     def remove_tags(self, widget):
@@ -152,7 +152,7 @@ class TextBox(Gtk.TextView):
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Text Iters")
+        Gtk.Window.__init__(self, title="Text and Tag Iters")
         self.set_default_size(400,400)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
@@ -175,31 +175,31 @@ class MainWindow(Gtk.Window):
         self.button5.connect("clicked", self.RemoveTags)          
         self.entry1 = Gtk.Entry()
         self.entry1.set_hexpand(True)
-        self.combo0 = Gtk.ComboBoxText()
-        self.combo0.append("1", "Green Tags")
-        self.combo0.append("2", "Bold Tags")
-        self.combo0.set_active_id("1")
-        self.combo0.set_name("combo0")
         self.combo1 = Gtk.ComboBoxText()
-        self.combo1.append("0", "All Tags")
         self.combo1.append("1", "Green Tags")
         self.combo1.append("2", "Bold Tags")
-        self.combo1.set_active_id("0")
+        self.combo1.set_active_id("1")
         self.combo1.set_name("combo1")
         self.combo2 = Gtk.ComboBoxText()
+        self.combo2.append("0", "All Tags")
         self.combo2.append("1", "Green Tags")
         self.combo2.append("2", "Bold Tags")
-        self.combo2.set_active_id("1")
+        self.combo2.set_active_id("0")
         self.combo2.set_name("combo2")
+        self.combo3 = Gtk.ComboBoxText()
+        self.combo3.append("1", "Green Tags")
+        self.combo3.append("2", "Bold Tags")
+        self.combo3.set_active_id("1")
+        self.combo3.set_name("combo3")
         self.grid = Gtk.Grid()
         self.grid.attach(self.button1, 0, 0, 1, 1)
         self.grid.attach(self.entry1, 1, 0, 1, 1)
-        self.grid.attach(self.combo0, 2, 0, 1, 1)
+        self.grid.attach(self.combo1, 2, 0, 1, 1)
         self.grid.attach(self.button2, 0, 1, 1, 1)
-        self.grid.attach(self.combo1, 1, 1, 1, 1)
+        self.grid.attach(self.combo2, 1, 1, 1, 1)
         self.grid.attach(self.button3, 0, 2, 1, 1)
         self.grid.attach(self.button4, 1, 2, 1, 1)
-        self.grid.attach(self.combo2, 2, 2, 1, 1)
+        self.grid.attach(self.combo3, 2, 2, 1, 1)
         self.grid.attach(self.button5, 0, 3, 1, 1)
         self.grid.attach(self.scrolledwindow, 0, 4, 3, 1)
         self.add(self.grid)
@@ -207,19 +207,19 @@ class MainWindow(Gtk.Window):
     def MatchWord(self, button1):
         print("Find Words")
         text1 = self.entry1.get_text()
-        self.TextBox1.get_word(text1, self.combo0)
+        self.TextBox1.get_word(text1, self.combo1)
 
     def FindTags(self, button2):
         print("Find Tags")
-        self.TextBox1.get_tag_table(None, self.combo1)
+        self.TextBox1.get_tag_table(None, self.combo2)
 
     def CursorBack(self, button3):
         print("Move Back")
-        self.TextBox1.get_tag_table(button3, self.combo2)
+        self.TextBox1.get_tag_table(button3, self.combo3)
 
     def CursorForward(self, button4):
         print("Move Forward")
-        self.TextBox1.get_tag_table(button4, self.combo2)
+        self.TextBox1.get_tag_table(button4, self.combo3)
 
     def RemoveTags(self, button5):
         print("Remove Tags")
