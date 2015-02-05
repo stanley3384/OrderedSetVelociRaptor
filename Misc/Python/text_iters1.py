@@ -2,10 +2,13 @@
 
 #
 # Test code for text iters, text tags and finding words in a TextBox.
+# Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
+# along with other functions. Tried markup also but there is still a problem with only printing
+# one tag type. Needs work.
 #
 # C. Eric Cashon
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -13,7 +16,7 @@ class TextBox(Gtk.TextView):
         self.set_wrap_mode(2)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
-        self.textbuffer.set_text("Find a word word word word1 word1 word2 word2 word2")
+        self.textbuffer.set_text("Find a word word word word1 word1 word2 word2 word2 word word1 word2")
         self.tag1 = self.textbuffer.create_tag("green_tag", background="green")
         self.tag2 = self.textbuffer.create_tag("bold_tag", weight=900)
     
@@ -49,23 +52,29 @@ class TextBox(Gtk.TextView):
         else:
             print("Empty entry.")
 
-    def get_tag_table(self, button, combo):
+    def get_tag_table(self, button, combo, label):
         tag_table = Gtk.TextTagTable()
         tag_table = self.textbuffer.get_tag_table()
         #package button and combo together in a list.
-        button_combo_list = [button, combo]
+        button_combo_list = [button, combo, label]
         tag_table.foreach(self.get_tag_filter, button_combo_list)
 
     def get_tag_filter(self, tag, button_combo_list):
-        tag_id = int(button_combo_list[1].get_active_id())
+        if(button_combo_list[1]):
+            tag_id = int(button_combo_list[1].get_active_id())
+        else:
+            tag_id = 0
         tag_name = tag.get_property('name')
         if(tag_id==0):
+            print("Get All Tags")
             self.get_tags(tag, button_combo_list)
         elif(tag_id==1):
             if("green_tag" == tag_name):
+                print("Get Green Tags")
                 self.get_tags(tag, button_combo_list)
         else:
             if("bold_tag" == tag_name):
+                print("Get Bold Tags")
                 self.get_tags(tag, button_combo_list)
 
     def get_tags(self, tag, button_combo_list):    
@@ -75,6 +84,7 @@ class TextBox(Gtk.TextView):
         offset2=0
         no_tags=False
         tag_start_list=[]
+        pango_tag_list=[]
         start = self.textbuffer.get_start_iter()
         if(start.begins_tag(tag)):
             switch = True       
@@ -87,8 +97,11 @@ class TextBox(Gtk.TextView):
                 if(offset1 == offset2):
                         break
                 if(switch):
-                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(tag.get_property('name')))
+                    print("Tag Found at " + str(offset2) + "-" + str(offset1-1) + " Tagname " + str(tag.get_property('name')))
                     tag_start_list.append(offset2)
+                    pango_tag_list.append(str(tag.get_property('name')))
+                    pango_tag_list.append(offset2)
+                    pango_tag_list.append(offset1-1)
                     switch=False
                 else:
                     switch=True
@@ -105,6 +118,8 @@ class TextBox(Gtk.TextView):
                 if("button4" == button_combo_list[0].get_name()):
                     tag_start_list.sort()
                     self.move_forward_to_tag(tag_start_list, button_combo_list)
+                if("button6" == button_combo_list[0].get_name()):
+                    self.load_pango_list(pango_tag_list, button_combo_list)
             else:
                 print("No Tags")
         
@@ -149,11 +164,63 @@ class TextBox(Gtk.TextView):
         end = self.textbuffer.get_end_iter()
         self.textbuffer.remove_all_tags(start, end)
 
+    def load_pango_list(self, pango_tag_list, button_combo_list): 
+        records = len(pango_tag_list)/3
+        print("List Count " + str(records)) 
+        start1 = self.textbuffer.get_start_iter()
+        end1 = self.textbuffer.get_end_iter()
+        text = self.textbuffer.get_text(start1, end1, False)
+ 
+        #Problem code. Only formats one type of tag. 
+        s = ""
+        flip = True
+        chars = len(text)
+        j = 0
+        for i in range(chars):
+            if i in pango_tag_list:
+                if(flip == True):
+                    if("bold_tag" == str(pango_tag_list[3*j])):
+                        s+="<b>"
+                    if("green_tag" == str(pango_tag_list[3*j])):
+                        s+="<span background='green'>"
+                    s+=str(text[i])
+                    flip = False
+                else:
+                    s+=str(text[i])
+                    if("bold_tag" == str(pango_tag_list[3*j])):
+                        s+="</b>"
+                    if("green_tag" == str(pango_tag_list[3*j])):
+                        s+="</span>"
+                    j+=1
+                    flip = True
+            else:
+                s+=str(text[i])
+        print(s)
+        button_combo_list[2].set_markup(s)
+       
+        """
+        #Trouble getting Pango functions for attributes. Use markup instead
+        attr = Pango.AttrList() 
+        button_combo_list[2].set_text(text) 
+        for i in range(records):
+            print(str(pango_tag_list[3*i]))
+            if("green_tag" == str(pango_tag_list[3*i])):
+                print(str(dir(Pango)))
+                attr_green = Pango.attr_background_new(0, 65535, 0);
+                attr_green.start_index = pango_tag_list[3*i+1]
+                attr_green.end_index = pango_tag_list[3*i+2]
+                #gtk2 method
+                #attr.insert(Pango.AttrBackground(0, 65535, 0, pango_tag_list[3*i+1], pango_tag_list[3*i+2]))
+            if("bold_tag" == str(pango_tag_list[3*i])):
+                #gtk2 method
+                attr.insert(Pango.AttrWeight(900, pango_tag_list[3*i+1], pango_tag_list[3*i+2]))
+        button_combo_list[2].set_attributes(attr)
+        """
 
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Text and Tag Iters")
-        self.set_default_size(400,400)
+        self.set_default_size(400,450)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
         self.TextBox1.set_vexpand(True)
@@ -172,7 +239,14 @@ class MainWindow(Gtk.Window):
         self.button4.set_name("button4")
         self.button4.connect("clicked", self.CursorForward)
         self.button5 = Gtk.Button("Remove Tags")
-        self.button5.connect("clicked", self.RemoveTags)          
+        self.button5.connect("clicked", self.RemoveTags) 
+        self.button6 = Gtk.Button("Pango Tags")
+        self.button6.set_name("button6")
+        self.button6.connect("clicked", self.PangoTags)
+        self.label1 = Gtk.Label("Pango text and tags.")
+        self.label1.set_hexpand(True)
+        self.label1.set_property("justify", 0)
+        self.label1.set_line_wrap(True)              
         self.entry1 = Gtk.Entry()
         self.entry1.set_hexpand(True)
         self.combo1 = Gtk.ComboBoxText()
@@ -202,6 +276,8 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.combo3, 2, 2, 1, 1)
         self.grid.attach(self.button5, 0, 3, 1, 1)
         self.grid.attach(self.scrolledwindow, 0, 4, 3, 1)
+        self.grid.attach(self.button6, 0, 5, 1, 1)
+        self.grid.attach(self.label1, 0, 6, 3, 1)
         self.add(self.grid)
 
     def MatchWord(self, button1):
@@ -211,19 +287,23 @@ class MainWindow(Gtk.Window):
 
     def FindTags(self, button2):
         print("Find Tags")
-        self.TextBox1.get_tag_table(None, self.combo2)
+        self.TextBox1.get_tag_table(None, self.combo2, None)
 
     def CursorBack(self, button3):
         print("Move Back")
-        self.TextBox1.get_tag_table(button3, self.combo3)
+        self.TextBox1.get_tag_table(button3, self.combo3, None)
 
     def CursorForward(self, button4):
         print("Move Forward")
-        self.TextBox1.get_tag_table(button4, self.combo3)
+        self.TextBox1.get_tag_table(button4, self.combo3, None)
 
     def RemoveTags(self, button5):
         print("Remove Tags")
         self.TextBox1.remove_tags(button5)
+
+    def PangoTags(self, button6):
+        print("Pango Tags")
+        self.TextBox1.get_tag_table(button6, None, self.label1)
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
