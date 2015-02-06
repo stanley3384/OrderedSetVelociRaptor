@@ -3,12 +3,12 @@
 #
 # Test code for text iters, text tags and finding words in a TextBox.
 # Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
-# along with other functions. Tried markup also but there is still a problem with only printing
-# one tag type. Needs work.
+# along with other functions. Try markup instead.
 #
 # C. Eric Cashon
 
 from gi.repository import Gtk, Pango
+from operator import itemgetter
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -55,9 +55,13 @@ class TextBox(Gtk.TextView):
     def get_tag_table(self, button, combo, label):
         tag_table = Gtk.TextTagTable()
         tag_table = self.textbuffer.get_tag_table()
-        #package button and combo together in a list.
-        button_combo_list = [button, combo, label]
+        pango_tag_list=[]
+        #package pointers together in a list.
+        button_combo_list = [button, combo, label, pango_tag_list]
         tag_table.foreach(self.get_tag_filter, button_combo_list)
+        #Update label. Two pango_tag_list pointers sent to load_pango_list. Shouldn't be a problem.
+        if("button6" == button.get_name()):
+            self.load_pango_list(pango_tag_list, button_combo_list)
 
     def get_tag_filter(self, tag, button_combo_list):
         if(button_combo_list[1]):
@@ -84,7 +88,6 @@ class TextBox(Gtk.TextView):
         offset2=0
         no_tags=False
         tag_start_list=[]
-        pango_tag_list=[]
         start = self.textbuffer.get_start_iter()
         if(start.begins_tag(tag)):
             switch = True       
@@ -97,11 +100,11 @@ class TextBox(Gtk.TextView):
                 if(offset1 == offset2):
                         break
                 if(switch):
-                    print("Tag Found at " + str(offset2) + "-" + str(offset1-1) + " Tagname " + str(tag.get_property('name')))
+                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(tag.get_property('name')))
                     tag_start_list.append(offset2)
-                    pango_tag_list.append(str(tag.get_property('name')))
-                    pango_tag_list.append(offset2)
-                    pango_tag_list.append(offset1-1)
+                    button_combo_list[3].append(str(tag.get_property('name')))
+                    button_combo_list[3].append(offset2)
+                    button_combo_list[3].append(offset1)
                     switch=False
                 else:
                     switch=True
@@ -118,8 +121,6 @@ class TextBox(Gtk.TextView):
                 if("button4" == button_combo_list[0].get_name()):
                     tag_start_list.sort()
                     self.move_forward_to_tag(tag_start_list, button_combo_list)
-                if("button6" == button_combo_list[0].get_name()):
-                    self.load_pango_list(pango_tag_list, button_combo_list)
             else:
                 print("No Tags")
         
@@ -171,30 +172,38 @@ class TextBox(Gtk.TextView):
         end1 = self.textbuffer.get_end_iter()
         text = self.textbuffer.get_text(start1, end1, False)
  
-        #Problem code. Only formats one type of tag. 
+        #Reshape and sort pango_tag_list
+        pango_reshape=[]
+        pango_sorted=[]
+        for i in range(records):
+            pango_reshape.append([pango_tag_list[3*i], pango_tag_list[3*i+1], pango_tag_list[3*i+2]])
+        #print(pango_reshape)
+        pango_sorted = sorted(pango_reshape, key=itemgetter(1))
+        print(pango_sorted) 
+       
+        #Add the markup. 
         s = ""
-        flip = True
-        chars = len(text)
-        j = 0
+        open_tag = False
+        chars = len(text)+1
         for i in range(chars):
-            if i in pango_tag_list:
-                if(flip == True):
-                    if("bold_tag" == str(pango_tag_list[3*j])):
-                        s+="<b>"
-                    if("green_tag" == str(pango_tag_list[3*j])):
-                        s+="<span background='green'>"
-                    s+=str(text[i])
-                    flip = False
-                else:
-                    s+=str(text[i])
-                    if("bold_tag" == str(pango_tag_list[3*j])):
-                        s+="</b>"
-                    if("green_tag" == str(pango_tag_list[3*j])):
+            for j in range(records):
+                if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    s+="<span background='green'>"
+                if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    s+="<b>"
+                    open_tag = True                
+                if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                    s+="</b>"
+                    open_tag = False         
+                if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                    if(open_tag):
+                        s+="</b></span><b>"
+                        open_tag = False
+                    else:
                         s+="</span>"
-                    j+=1
-                    flip = True
-            else:
+            if(i < chars-1):
                 s+=str(text[i])
+           
         print(s)
         button_combo_list[2].set_markup(s)
        
