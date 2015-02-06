@@ -1,11 +1,12 @@
 #!/user/bin/python
 
-#
-# Test code for text iters, text tags and finding words in a TextBox.
-# Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
-# along with other functions. Try markup instead.
-#
-# C. Eric Cashon
+"""
+ Test code for text iters, text tags and finding words in a TextBox.
+ Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
+ along with other functions. Try markup instead.
+
+ C. Eric Cashon
+"""
 
 from gi.repository import Gtk, Pango
 from operator import itemgetter
@@ -186,21 +187,23 @@ class TextBox(Gtk.TextView):
         open_tag = False
         chars = len(text)+1
         for i in range(chars):
-            for j in range(records):
-                if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
-                    s+="<span background='green'>"
-                if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
-                    s+="<b>"
-                    open_tag = True                
-                if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
-                    s+="</b>"
-                    open_tag = False         
-                if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
-                    if(open_tag):
-                        s+="</b></span><b>"
-                        open_tag = False
-                    else:
-                        s+="</span>"
+            if any(i in x for x in pango_sorted):
+                #print("Found " + str(i))
+                for j in range(records):
+                    if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        s+="<span background='green'>"
+                    if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        s+="<b>"
+                        open_tag = True                
+                    if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                        s+="</b>"
+                        open_tag = False         
+                    if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                        if(open_tag):
+                            s+="</b></span><b>"
+                            open_tag = False
+                        else:
+                            s+="</span>"
             if(i < chars-1):
                 s+=str(text[i])
            
