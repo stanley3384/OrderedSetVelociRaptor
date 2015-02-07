@@ -1,9 +1,9 @@
 #!/user/bin/python
 
 """
- Test code for text iters, text tags and finding words in a TextBox.
+ Test code for text iters, text tags and finding words and formatting words in a TextBox.
  Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
- along with other functions. Try markup instead.
+ along with other functions for attibutes. Use Pango markup instead for formatting text.
 
  C. Eric Cashon
 """
@@ -181,32 +181,40 @@ class TextBox(Gtk.TextView):
         #print(pango_reshape)
         pango_sorted = sorted(pango_reshape, key=itemgetter(1))
         print(pango_sorted) 
-       
+        
         #Add the markup. 
         s = ""
-        open_tag = False
+        open_tags = [False, False]
+        span_open = False
         chars = len(text)+1
         for i in range(chars):
             if any(i in x for x in pango_sorted):
                 #print("Found " + str(i))
                 for j in range(records):
                     if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
-                        s+="<span background='green'>"
+                        open_tags[0]=True
                     if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
-                        s+="<b>"
-                        open_tag = True                
-                    if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
-                        s+="</b>"
-                        open_tag = False         
+                        open_tags[1]=True
                     if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
-                        if(open_tag):
-                            s+="</b></span><b>"
-                            open_tag = False
-                        else:
-                            s+="</span>"
+                        open_tags[0]=False
+                    if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[1]=False 
+                if(span_open):
+                    s+="</span>"
+                    span_open = False
+                #Check for open tags and build string.
+                if(open_tags[0] or open_tags[1]):
+                    s+="<span"
+                    for k in range(len(open_tags)):  
+                        if(open_tags[k] and k == 0):
+                            s+=" background='green'"
+                        if(open_tags[k] and k == 1):
+                            s+=" weight='900'"
+                    s+=">" 
+                    span_open = True        
             if(i < chars-1):
                 s+=str(text[i])
-           
+       
         print(s)
         button_combo_list[2].set_markup(s)
        
