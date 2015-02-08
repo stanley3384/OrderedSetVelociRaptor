@@ -1,14 +1,14 @@
 #!/user/bin/python
 
 """
- Test code for text iters, text tags and finding words and formatting words in a TextBox.
+ Test code for text iters, text tags, finding words and formatting words in a textBox, label and printing.
  Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
  along with other functions for attibutes. Use Pango markup instead for formatting text.
 
  C. Eric Cashon
 """
 
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango, PangoCairo
 from operator import itemgetter
 
 class TextBox(Gtk.TextView):
@@ -61,7 +61,7 @@ class TextBox(Gtk.TextView):
         button_combo_list = [button, combo, label, pango_tag_list]
         tag_table.foreach(self.get_tag_filter, button_combo_list)
         #Update label. Two pango_tag_list pointers sent to load_pango_list. Shouldn't be a problem.
-        if("button6" == button.get_name()):
+        if("button6" == button.get_name() or "button7" == button.get_name()):
             self.load_pango_list(pango_tag_list, button_combo_list)
 
     def get_tag_filter(self, tag, button_combo_list):
@@ -183,7 +183,7 @@ class TextBox(Gtk.TextView):
         print(pango_sorted) 
         
         #Add the markup. 
-        s = ""
+        self.markup_string = ""
         open_tags = [False, False]
         span_open = False
         chars = len(text)+1
@@ -200,23 +200,29 @@ class TextBox(Gtk.TextView):
                     if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[1]=False 
                 if(span_open):
-                    s+="</span>"
+                    self.markup_string+="</span>"
                     span_open = False
                 #Check for open tags and build string.
                 if(open_tags[0] or open_tags[1]):
-                    s+="<span"
+                    self.markup_string+="<span"
                     for k in range(len(open_tags)):  
                         if(open_tags[k] and k == 0):
-                            s+=" background='green'"
+                            self.markup_string+=" background='green'"
                         if(open_tags[k] and k == 1):
-                            s+=" weight='900'"
-                    s+=">" 
+                            self.markup_string+=" weight='900'"
+                    self.markup_string+=">" 
                     span_open = True        
             if(i < chars-1):
-                s+=str(text[i])
+                self.markup_string+=str(text[i])
        
-        print(s)
-        button_combo_list[2].set_markup(s)
+        print(self.markup_string)
+
+        #Set markup to label
+        button_combo_list[2].set_markup(self.markup_string)
+        #Print markup
+        if("button7"== button_combo_list[0].get_name()):
+            self.print_dialog()
+            
        
         """
         #Trouble getting Pango functions for attributes. Use markup instead
@@ -236,6 +242,27 @@ class TextBox(Gtk.TextView):
                 attr.insert(Pango.AttrWeight(900, pango_tag_list[3*i+1], pango_tag_list[3*i+2]))
         button_combo_list[2].set_attributes(attr)
         """
+
+    #Simple print.
+    def print_dialog(self):
+        print("Print")
+        operation = Gtk.PrintOperation()
+        #Number of pages must be set. Should calculate the number of pages.
+        operation.set_n_pages(1)
+        operation.connect("begin_print", self.begin_print)
+        operation.connect("draw_page", self.draw_page)
+        result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
+
+    def begin_print(self, operation, gtk_context):
+        pango_context = self.get_pango_context()
+        description = pango_context.get_font_description()
+        self.pango_layout = gtk_context.create_pango_layout()
+        self.pango_layout.set_font_description(description)
+        self.pango_layout.set_markup(self.markup_string)
+
+    def draw_page(self, operation, gtk_context, page_number):
+        cairo_context = gtk_context.get_cairo_context()
+        PangoCairo.show_layout(cairo_context, self.pango_layout)
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -263,6 +290,10 @@ class MainWindow(Gtk.Window):
         self.button6 = Gtk.Button("Pango Tags")
         self.button6.set_name("button6")
         self.button6.connect("clicked", self.PangoTags)
+        self.button7 = Gtk.Button("Print")
+        self.button7.set_name("button7")
+        self.button7.connect("clicked", self.PrintDialog)
+        self.label1 = Gtk.Label("Pango text and tags.")
         self.label1 = Gtk.Label("Pango text and tags.")
         self.label1.set_hexpand(True)
         self.label1.set_property("justify", 0)
@@ -297,6 +328,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.button5, 0, 3, 1, 1)
         self.grid.attach(self.scrolledwindow, 0, 4, 3, 1)
         self.grid.attach(self.button6, 0, 5, 1, 1)
+        self.grid.attach(self.button7, 2, 5, 1, 1)
         self.grid.attach(self.label1, 0, 6, 3, 1)
         self.add(self.grid)
 
@@ -324,6 +356,10 @@ class MainWindow(Gtk.Window):
     def PangoTags(self, button6):
         print("Pango Tags")
         self.TextBox1.get_tag_table(button6, None, self.label1)
+
+    def PrintDialog(self, button7):
+        print("Print Dialog")
+        self.TextBox1.get_tag_table(button7, None, self.label1)
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
