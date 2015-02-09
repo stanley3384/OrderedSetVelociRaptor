@@ -1,7 +1,7 @@
 #!/user/bin/python
 
 """
- Test code for text iters, text tags, finding words and formatting words in a textBox, label and printing.
+ Test code for text iters, text tags, finding words and formatting words in a textbox, label and printing.
  Worked on the Pango part but Pango for Python doesn't have Pango.attr_background_new(0, 65535, 0);
  along with other functions for attibutes. Use Pango markup instead for formatting text.
 
@@ -61,8 +61,9 @@ class TextBox(Gtk.TextView):
         button_combo_list = [button, combo, label, pango_tag_list]
         tag_table.foreach(self.get_tag_filter, button_combo_list)
         #Update label. Two pango_tag_list pointers sent to load_pango_list. Shouldn't be a problem.
-        if("button6" == button.get_name() or "button7" == button.get_name()):
-            self.load_pango_list(pango_tag_list, button_combo_list)
+        if(button):
+            if("button6" == button.get_name() or "button7" == button.get_name()):
+                self.load_pango_list(pango_tag_list, button_combo_list)
 
     def get_tag_filter(self, tag, button_combo_list):
         if(button_combo_list[1]):
@@ -167,7 +168,7 @@ class TextBox(Gtk.TextView):
         self.textbuffer.remove_all_tags(start, end)
 
     def load_pango_list(self, pango_tag_list, button_combo_list): 
-        records = len(pango_tag_list)/3
+        records = int(len(pango_tag_list)/3)
         print("List Count " + str(records)) 
         start1 = self.textbuffer.get_start_iter()
         end1 = self.textbuffer.get_end_iter()
@@ -254,10 +255,13 @@ class TextBox(Gtk.TextView):
         result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
 
     def begin_print(self, operation, gtk_context):
+        page_width=gtk_context.get_width();
         pango_context = self.get_pango_context()
         description = pango_context.get_font_description()
         self.pango_layout = gtk_context.create_pango_layout()
         self.pango_layout.set_font_description(description)
+        self.pango_layout.set_width(page_width*Pango.SCALE);
+        self.pango_layout.set_wrap(Pango.WrapMode.WORD_CHAR)
         self.pango_layout.set_markup(self.markup_string)
 
     def draw_page(self, operation, gtk_context, page_number):
@@ -276,23 +280,23 @@ class MainWindow(Gtk.Window):
         self.scrolledwindow.set_vexpand(True)
         self.scrolledwindow.add(self.TextBox1)
         self.button1 = Gtk.Button("Find Words")
-        self.button1.connect("clicked", self.MatchWord)
+        self.button1.connect("clicked", self.match_word)
         self.button2 = Gtk.Button("Find Tags")
-        self.button2.connect("clicked", self.FindTags)
+        self.button2.connect("clicked", self.find_tags)
         self.button3 = Gtk.Button("Cursor Back")
         self.button3.set_name("button3")
-        self.button3.connect("clicked", self.CursorBack)
+        self.button3.connect("clicked", self.cursor_back)
         self.button4 = Gtk.Button("Cursor Forward")
         self.button4.set_name("button4")
-        self.button4.connect("clicked", self.CursorForward)
+        self.button4.connect("clicked", self.cursor_forward)
         self.button5 = Gtk.Button("Remove Tags")
-        self.button5.connect("clicked", self.RemoveTags) 
+        self.button5.connect("clicked", self.remove_all_tags) 
         self.button6 = Gtk.Button("Pango Tags")
         self.button6.set_name("button6")
-        self.button6.connect("clicked", self.PangoTags)
+        self.button6.connect("clicked", self.pango_tags)
         self.button7 = Gtk.Button("Print")
         self.button7.set_name("button7")
-        self.button7.connect("clicked", self.PrintDialog)
+        self.button7.connect("clicked", self.print_dialog)
         self.label1 = Gtk.Label("Pango text and tags.")
         self.label1 = Gtk.Label("Pango text and tags.")
         self.label1.set_hexpand(True)
@@ -332,32 +336,32 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.label1, 0, 6, 3, 1)
         self.add(self.grid)
 
-    def MatchWord(self, button1):
+    def match_word(self, button1):
         print("Find Words")
         text1 = self.entry1.get_text()
         self.TextBox1.get_word(text1, self.combo1)
 
-    def FindTags(self, button2):
+    def find_tags(self, button2):
         print("Find Tags")
         self.TextBox1.get_tag_table(None, self.combo2, None)
 
-    def CursorBack(self, button3):
+    def cursor_back(self, button3):
         print("Move Back")
         self.TextBox1.get_tag_table(button3, self.combo3, None)
 
-    def CursorForward(self, button4):
+    def cursor_forward(self, button4):
         print("Move Forward")
         self.TextBox1.get_tag_table(button4, self.combo3, None)
 
-    def RemoveTags(self, button5):
+    def remove_all_tags(self, button5):
         print("Remove Tags")
         self.TextBox1.remove_tags(button5)
 
-    def PangoTags(self, button6):
+    def pango_tags(self, button6):
         print("Pango Tags")
         self.TextBox1.get_tag_table(button6, None, self.label1)
 
-    def PrintDialog(self, button7):
+    def print_dialog(self, button7):
         print("Print Dialog")
         self.TextBox1.get_tag_table(button7, None, self.label1)
 
