@@ -18,8 +18,8 @@ class TextBox(Gtk.TextView):
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("Find a word word word word1 word1 word2 word2 word2 word word1 word2")
-        self.tag1 = self.textbuffer.create_tag("green_tag", background="green")
-        self.tag2 = self.textbuffer.create_tag("bold_tag", weight=900)
+        self.tag1 = self.textbuffer.create_tag("background='green'", background="green")
+        self.tag2 = self.textbuffer.create_tag("weight='900'", weight=900)
     
     def get_word(self, text1, combo): ##text1 is word to match
         offset = 0
@@ -62,7 +62,7 @@ class TextBox(Gtk.TextView):
         tag_table.foreach(self.get_tag_filter, button_combo_list)
         #Update label. Two pango_tag_list pointers sent to load_pango_list. Shouldn't be a problem.
         if(button):
-            if("button6" == button.get_name() or "button7" == button.get_name()):
+            if("button6" == button.get_name() or "button7" == button.get_name() or "button8" == button.get_name()):
                 self.load_pango_list(pango_tag_list, button_combo_list)
 
     def get_tag_filter(self, tag, button_combo_list):
@@ -75,11 +75,11 @@ class TextBox(Gtk.TextView):
             print("Get All Tags")
             self.get_tags(tag, button_combo_list)
         elif(tag_id==1):
-            if("green_tag" == tag_name):
+            if("background='green'" == tag_name):
                 print("Get Green Tags")
                 self.get_tags(tag, button_combo_list)
         else:
-            if("bold_tag" == tag_name):
+            if("weight='900'" == tag_name):
                 print("Get Bold Tags")
                 self.get_tags(tag, button_combo_list)
 
@@ -192,13 +192,13 @@ class TextBox(Gtk.TextView):
             if any(i in x for x in pango_sorted):
                 #print("Found " + str(i))
                 for j in range(records):
-                    if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("background='green'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[0]=True
-                    if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("weight='900'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[1]=True
-                    if("green_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                    if("background='green'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
                         open_tags[0]=False
-                    if("bold_tag" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("weight='900'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[1]=False 
                 if(span_open):
                     self.markup_string+="</span>"
@@ -223,6 +223,8 @@ class TextBox(Gtk.TextView):
         #Print markup
         if("button7"== button_combo_list[0].get_name()):
             self.print_dialog()
+        if("button8"== button_combo_list[0].get_name()):
+            self.cycle_names_textbox()
             
        
         """
@@ -231,14 +233,14 @@ class TextBox(Gtk.TextView):
         button_combo_list[2].set_text(text) 
         for i in range(records):
             print(str(pango_tag_list[3*i]))
-            if("green_tag" == str(pango_tag_list[3*i])):
+            if("background='green'" == str(pango_tag_list[3*i])):
                 print(str(dir(Pango)))
                 attr_green = Pango.attr_background_new(0, 65535, 0);
                 attr_green.start_index = pango_tag_list[3*i+1]
                 attr_green.end_index = pango_tag_list[3*i+2]
                 #gtk2 method
                 #attr.insert(Pango.AttrBackground(0, 65535, 0, pango_tag_list[3*i+1], pango_tag_list[3*i+2]))
-            if("bold_tag" == str(pango_tag_list[3*i])):
+            if("weight='900'" == str(pango_tag_list[3*i])):
                 #gtk2 method
                 attr.insert(Pango.AttrWeight(900, pango_tag_list[3*i+1], pango_tag_list[3*i+2]))
         button_combo_list[2].set_attributes(attr)
@@ -268,6 +270,79 @@ class TextBox(Gtk.TextView):
         cairo_context = gtk_context.get_cairo_context()
         PangoCairo.show_layout(cairo_context, self.pango_layout)
 
+    #Test parsing Pango markup. Fragile code.
+    def cycle_names_textbox(self):
+        self.textbuffer.set_text(self.markup_string, -1)
+        start_iter = self.textbuffer.get_start_iter()
+        index = 0
+        count = True
+        move_ahead_six = 0
+        tag_locations = []
+        tag_names = []
+        new_string = ""
+        span_string = ""
+
+        #Parse markup string
+        while(not start_iter.is_end()):
+            if("<" == start_iter.get_char()):
+                count = False
+                tag_locations.append(index)
+                move_ahead_six = 0
+            if(count==False):
+                move_ahead_six+=1
+                if(move_ahead_six>6):
+                    if(">" != start_iter.get_char()):
+                        span_string+=start_iter.get_char()
+            if(count==True):
+                index+=1
+                new_string+=start_iter.get_char()
+            if(">" == start_iter.get_char()):
+                count = True
+                if(span_string != ""):
+                    tag_names.append(span_string)
+                span_string = ""
+            start_iter.forward_char()
+        
+        print tag_locations
+        print tag_names
+        print new_string
+
+        #Get a list of unique tags.
+        unique_tags = []
+        for tuples in tag_names:
+           tags = tuples.split()
+           for tag in tags:
+               if tag not in unique_tags:
+                   unique_tags.append(tag)
+
+        print unique_tags
+        '''
+        #Create tags from unique_tags.
+        for tag in unique_tags:
+            if(tag == "background='green'"):
+                self.textbuffer.create_tag(tag, background='green')
+            if(tag == "weight='900'"):
+                self.textbuffer.create_tag(tag, weight=900)
+        print("Tags Created")
+        '''
+        #Update textview with parsed string.
+        self.textbuffer.set_text(new_string, -1)
+
+        #Apply tags to buffer.
+        offset1 = self.textbuffer.get_start_iter()
+        offset2 = self.textbuffer.get_start_iter()
+        for i in range(len(tag_locations)/2):
+            start = tag_locations[2*i]
+            end = tag_locations[2*i+1]
+            print(str(i) + " " + str(start) + " " + str(end))
+            offset1.set_offset(start)
+            offset2.set_offset(end)
+            names = tag_names[i].split()
+            for value in names: 
+                self.textbuffer.apply_tag_by_name(value, offset1, offset2)
+                
+        print("Tags Applied")
+
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Text and Tag Iters")
@@ -296,7 +371,10 @@ class MainWindow(Gtk.Window):
         self.button6.connect("clicked", self.pango_tags)
         self.button7 = Gtk.Button("Print")
         self.button7.set_name("button7")
-        self.button7.connect("clicked", self.print_dialog)
+        self.button7.connect("clicked", self.print_dialog)      
+        self.button8 = Gtk.Button("Cycle Names")
+        self.button8.set_name("button8")
+        self.button8.connect("clicked", self.cycle_names)
         self.label1 = Gtk.Label("Pango text and tags.")
         self.label1 = Gtk.Label("Pango text and tags.")
         self.label1.set_hexpand(True)
@@ -332,7 +410,8 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.button5, 0, 3, 1, 1)
         self.grid.attach(self.scrolledwindow, 0, 4, 3, 1)
         self.grid.attach(self.button6, 0, 5, 1, 1)
-        self.grid.attach(self.button7, 2, 5, 1, 1)
+        self.grid.attach(self.button7, 1, 5, 1, 1)
+        self.grid.attach(self.button8, 2, 5, 1, 1)
         self.grid.attach(self.label1, 0, 6, 3, 1)
         self.add(self.grid)
 
@@ -364,6 +443,11 @@ class MainWindow(Gtk.Window):
     def print_dialog(self, button7):
         print("Print Dialog")
         self.TextBox1.get_tag_table(button7, None, self.label1)
+
+    def cycle_names(self, button8):
+        print("Cycle Names")
+        self.TextBox1.get_tag_table(button8, None, self.label1)
+
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
