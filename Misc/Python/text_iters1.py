@@ -274,6 +274,8 @@ class TextBox(Gtk.TextView):
     def cycle_names_textbox(self):
         self.textbuffer.set_text(self.markup_string, -1)
         start_iter = self.textbuffer.get_start_iter()
+        span_iter = self.textbuffer.get_start_iter()
+        test_string = ""
         index = 0
         count = True
         move_ahead_six = 0
@@ -282,12 +284,16 @@ class TextBox(Gtk.TextView):
         new_string = ""
         span_string = ""
 
-        #Parse markup string
+        #Parse markup string. Just check for span tags.
         while(not start_iter.is_end()):
             if("<" == start_iter.get_char()):
-                count = False
-                tag_locations.append(index)
-                move_ahead_six = 0
+                span_iter.assign(start_iter)
+                span_iter.forward_chars(5)
+                test_string = self.textbuffer.get_text(start_iter, span_iter, False)
+                if(test_string == "<span" or test_string == "</spa"):
+                    count = False
+                    tag_locations.append(index)
+                    move_ahead_six = 0
             if(count==False):
                 move_ahead_six+=1
                 if(move_ahead_six>6):
@@ -296,7 +302,7 @@ class TextBox(Gtk.TextView):
             if(count==True):
                 index+=1
                 new_string+=start_iter.get_char()
-            if(">" == start_iter.get_char()):
+            if(">" == start_iter.get_char() and count == False):
                 count = True
                 if(span_string != ""):
                     tag_names.append(span_string)
