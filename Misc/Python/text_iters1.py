@@ -62,7 +62,7 @@ class TextBox(Gtk.TextView):
         tag_table.foreach(self.get_tag_filter, button_combo_list)
         #Update label. Two pango_tag_list pointers sent to load_pango_list. Shouldn't be a problem.
         if(button):
-            if("button6" == button.get_name() or "button7" == button.get_name() or "button8" == button.get_name()):
+            if("button6" == button.get_name() or "button7" == button.get_name() or "button8" == button.get_name() or "menuitem3" == button.get_name()):
                 self.load_pango_list(pango_tag_list, button_combo_list)
 
     def get_tag_filter(self, tag, button_combo_list):
@@ -225,6 +225,9 @@ class TextBox(Gtk.TextView):
             self.print_dialog()
         if("button8"== button_combo_list[0].get_name()):
             self.cycle_names_textbox()
+        if("menuitem3"== button_combo_list[0].get_name()):
+            print("Write Markup to PangoMarkup.txt")
+            self.write_markup_to_file()
             
        
         """
@@ -269,6 +272,19 @@ class TextBox(Gtk.TextView):
     def draw_page(self, operation, gtk_context, page_number):
         cairo_context = gtk_context.get_cairo_context()
         PangoCairo.show_layout(cairo_context, self.pango_layout)
+
+    def read_markup_from_file(self):
+        try:
+            self.markup_string = open("PangoMarkup.txt", 'r').read()
+            self.cycle_names_textbox()
+        except:
+            print("Could not find PangoMarkup.txt")
+
+    def write_markup_to_file(self):
+        try:
+            open("PangoMarkup.txt", 'w').write(self.markup_string)
+        except:
+            print("Could not save to PangoMarkup.txt")
 
     #Test parsing Pango markup. Fragile code.
     def cycle_names_textbox(self):
@@ -353,6 +369,19 @@ class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Text and Tag Iters")
         self.set_default_size(400,450)
+        self.menubar1 = Gtk.MenuBar()  
+        self.menu1 = Gtk.Menu()
+        self.menuitem1 = Gtk.MenuItem("File") 
+        self.menuitem1.set_submenu(self.menu1)
+        self.menuitem2 = Gtk.MenuItem("Read File")
+        self.menuitem2.set_name("menuitem2")
+        self.menuitem2.connect("activate", self.open_file)      
+        self.menuitem3 = Gtk.MenuItem("Write File")
+        self.menuitem3.set_name("menuitem3")
+        self.menuitem3.connect("activate", self.save_file)   
+        self.menu1.append(self.menuitem2)
+        self.menu1.append(self.menuitem3) 
+        self.menubar1.append(self.menuitem1)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
         self.TextBox1.set_vexpand(True)
@@ -405,20 +434,21 @@ class MainWindow(Gtk.Window):
         self.combo3.set_active_id("1")
         self.combo3.set_name("combo3")
         self.grid = Gtk.Grid()
-        self.grid.attach(self.button1, 0, 0, 1, 1)
-        self.grid.attach(self.entry1, 1, 0, 1, 1)
-        self.grid.attach(self.combo1, 2, 0, 1, 1)
-        self.grid.attach(self.button2, 0, 1, 1, 1)
-        self.grid.attach(self.combo2, 1, 1, 1, 1)
-        self.grid.attach(self.button3, 0, 2, 1, 1)
-        self.grid.attach(self.button4, 1, 2, 1, 1)
-        self.grid.attach(self.combo3, 2, 2, 1, 1)
-        self.grid.attach(self.button5, 0, 3, 1, 1)
-        self.grid.attach(self.scrolledwindow, 0, 4, 3, 1)
-        self.grid.attach(self.button6, 0, 5, 1, 1)
-        self.grid.attach(self.button7, 1, 5, 1, 1)
-        self.grid.attach(self.button8, 2, 5, 1, 1)
-        self.grid.attach(self.label1, 0, 6, 3, 1)
+        self.grid.attach(self.menubar1, 0, 0, 1, 1)
+        self.grid.attach(self.button1, 0, 1, 1, 1)
+        self.grid.attach(self.entry1, 1, 1, 1, 1)
+        self.grid.attach(self.combo1, 2, 1, 1, 1)
+        self.grid.attach(self.button2, 0, 2, 1, 1)
+        self.grid.attach(self.combo2, 1, 2, 1, 1)
+        self.grid.attach(self.button3, 0, 3, 1, 1)
+        self.grid.attach(self.button4, 1, 3, 1, 1)
+        self.grid.attach(self.combo3, 2, 3, 1, 1)
+        self.grid.attach(self.button5, 0, 4, 1, 1)
+        self.grid.attach(self.scrolledwindow, 0, 5, 3, 1)
+        self.grid.attach(self.button6, 0, 6, 1, 1)
+        self.grid.attach(self.button7, 1, 6, 1, 1)
+        self.grid.attach(self.button8, 2, 6, 1, 1)
+        self.grid.attach(self.label1, 0, 7, 3, 1)
         self.add(self.grid)
 
     def match_word(self, button1):
@@ -454,6 +484,13 @@ class MainWindow(Gtk.Window):
         print("Cycle Names")
         self.TextBox1.get_tag_table(button8, None, self.label1)
 
+    def open_file(self, menuitem2):
+        print("Open File")
+        self.TextBox1.read_markup_from_file()
+
+    def save_file(self, menuitem3):
+        print("Save File")
+        self.TextBox1.get_tag_table(menuitem3, None, self.label1)
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
