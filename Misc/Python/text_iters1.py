@@ -8,7 +8,7 @@
  C. Eric Cashon
 """
 
-from gi.repository import Gtk, Pango, PangoCairo
+from gi.repository import Gtk, Gdk, Pango, PangoCairo
 from operator import itemgetter
 
 class TextBox(Gtk.TextView):
@@ -407,7 +407,7 @@ class MainWindow(Gtk.Window):
         self.button7 = Gtk.Button("Print")
         self.button7.set_name("button7")
         self.button7.connect("clicked", self.print_dialog)      
-        self.button8 = Gtk.Button("Cycle Names")
+        self.button8 = Gtk.Button("Cycle Markup")
         self.button8.set_name("button8")
         self.button8.connect("clicked", self.cycle_names)
         self.label1 = Gtk.Label("Pango text and tags.")
@@ -450,6 +450,11 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.button8, 2, 6, 1, 1)
         self.grid.attach(self.label1, 0, 7, 3, 1)
         self.add(self.grid)
+        style_provider = Gtk.CssProvider()
+        css = "GtkWindow{background: cyan;}GtkButton{background: yellow;}"
+        style_provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.show_all()
 
     def match_word(self, button1):
         print("Find Words")
