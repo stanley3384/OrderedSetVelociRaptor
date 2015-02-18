@@ -13,6 +13,7 @@
 
   C. Eric Cashon
 */
+
 #include <gtk/gtk.h>
 
 typedef struct {
@@ -41,76 +42,71 @@ static gboolean watch_out_channel(GIOChannel *channel, GIOCondition cond, Child_
        return TRUE;
      }
  }
-
 static gint progress(gpointer data)
-{  
-  gtk_progress_bar_pulse(GTK_PROGRESS_BAR (data)); 
-  return TRUE;
-}
-
+ {  
+   gtk_progress_bar_pulse(GTK_PROGRESS_BAR(data)); 
+   return TRUE;
+ }
 static void wait_for_child(GPid pid, gint script_retval, gpointer data)
-{
-  Child_Info *info = (Child_Info *)data;
-  char message_to_display[256];
+ {
+   Child_Info *info = (Child_Info *)data;
 
-  g_source_remove(info->timeout_id);
-  gtk_widget_set_sensitive(info->widget, TRUE);
-  gtk_widget_set_sensitive(info->text, TRUE);
-  g_spawn_close_pid(pid);
+   g_source_remove(info->timeout_id);
+   gtk_widget_set_sensitive(info->widget, TRUE);
+   gtk_widget_set_sensitive(info->text, TRUE);
+   g_spawn_close_pid(pid);
 
-  if(script_retval == 0)
-  {
-    sprintf(message_to_display, "Script Completed");
-  }
-  else
-  {
-    sprintf(message_to_display, "Script Error Return %i", script_retval);
-  }
-  g_print("%s\n", message_to_display);
-  gtk_widget_set_visible(info->pbar, FALSE);
+   if(script_retval == 0)
+     {
+       g_print("Script Completed\n");
+     }
+   else
+     {
+       g_print("Script Error Return %i\n", script_retval);
+     }
+  
+   gtk_widget_set_visible(info->pbar, FALSE);
 
-  g_free(info);
-}
+   g_free(info);
+ }
+static void start_script(GtkWidget *widget, GArray *widgets )
+ {
+   Child_Info *info;
+   GtkWidget *text = g_array_index(widgets, GtkWidget*, 0);
+   GtkWidget *pbar = g_array_index(widgets, GtkWidget*, 1);
+   gboolean retval;
+   GPid child_pid;
+   char *cmd = "sleep.sh";
+   gchar **arg_v = NULL;
 
-static void on_click_Btn_Turn_on_trending_process( GtkWidget *widget, GArray *widgets )
-{
-  Child_Info *info;
-  GtkWidget *text = g_array_index(widgets, GtkWidget*, 0);
-  GtkWidget *pbar = g_array_index(widgets, GtkWidget*, 1);
-  gboolean retval;
-  GPid child_pid;
-  char *cmd = "sleep.sh";
-  gchar **arg_v = NULL;
+   gtk_widget_set_sensitive(widget, FALSE); 
+   g_shell_parse_argv(cmd, NULL, &arg_v, NULL);
 
-  gtk_widget_set_sensitive(widget, FALSE); 
-  g_shell_parse_argv(cmd, NULL, &arg_v, NULL);
+   int std_out;
+   GIOChannel *std_out_ch;
+   retval = g_spawn_async_with_pipes(NULL, arg_v, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &child_pid, NULL, &std_out, NULL, NULL);
 
-  int std_out;
-  GIOChannel *std_out_ch;
-  retval = g_spawn_async_with_pipes(NULL, arg_v, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &child_pid, NULL, &std_out, NULL, NULL);
+   g_strfreev(arg_v);
 
-  g_strfreev(arg_v);
+   if(!retval) 
+     {
+      g_print("Could not start the executable.\n");
+      return;
+     }
 
-  if(!retval) 
-    {
-     g_print("Could not start the executable.\n");
-     return;
-    }
+   /* Execution of child has started */
+   info = g_new(Child_Info, 1);
 
-  /* Execution of child has started */
-  info = g_new(Child_Info, 1);
+   gtk_widget_show(pbar);
+   info->timeout_id = g_timeout_add(100, progress, pbar);
+   info->widget = widget;
+   info->text = text;
+   info->pbar = pbar;
 
-  gtk_widget_show(pbar);
-  info->timeout_id = g_timeout_add(100, progress, pbar);
-  info->widget = widget;
-  info->text = text;
-  info->pbar = pbar;
-
-  std_out_ch=g_io_channel_unix_new(std_out);
-  g_io_add_watch(std_out_ch, G_IO_IN | G_IO_HUP, (GIOFunc)watch_out_channel, info);
-  g_child_watch_add(child_pid, wait_for_child, (gpointer) info);
-}
-
+   std_out_ch=g_io_channel_unix_new(std_out);
+   g_io_add_watch(std_out_ch, G_IO_IN | G_IO_HUP, (GIOFunc)watch_out_channel, info);
+   g_child_watch_add(child_pid, wait_for_child, (gpointer) info);
+ }
 int main(int argc, char **argv)
  {
    GtkWidget *window, *button1, *button2, *label1, *label2, *progress1, *progress2, *grid1;
@@ -142,8 +138,8 @@ int main(int argc, char **argv)
    GArray *widgets2=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
    g_array_append_val(widgets2, label2);
    g_array_append_val(widgets2, progress2);
-   g_signal_connect(button1, "clicked", G_CALLBACK(on_click_Btn_Turn_on_trending_process), widgets1);
-   g_signal_connect(button2, "clicked", G_CALLBACK(on_click_Btn_Turn_on_trending_process), widgets2);
+   g_signal_connect(button1, "clicked", G_CALLBACK(start_script), widgets1);
+   g_signal_connect(button2, "clicked", G_CALLBACK(start_script), widgets2);
 
    grid1=gtk_grid_new();
    gtk_container_add(GTK_CONTAINER(window), grid1);
