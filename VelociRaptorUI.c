@@ -628,7 +628,7 @@ static void dialog_reference_destroy(GtkWidget *dialog , gint response, gpointer
   }
 static void distributions_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *entry1, *entry2, *entry3, *entry4, *entry5, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *entry1, *entry2, *entry3, *entry4, *entry5, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Get Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -640,7 +640,7 @@ static void distributions_dialog(GtkButton *button, gpointer data)
      radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Rayleigh Distribution        ");
      radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Uniform Distribution        ");
      
-     label1=gtk_label_new("Generate Some Numbers For Testing.");
+     label1=gtk_label_new("Generate Some Numbers For Testing");
      label2=gtk_label_new("SD");
      label3=gtk_label_new("DF");
      label4=gtk_label_new("Scale");
@@ -667,31 +667,28 @@ static void distributions_dialog(GtkButton *button, gpointer data)
      gtk_entry_set_width_chars(GTK_ENTRY(entry5), 8);
      gtk_entry_set_text(GTK_ENTRY(entry5), "0");
 
-     table=gtk_table_new(8,3,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,3,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,1,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,1,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,1,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,1,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 1,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label4, 1,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 1,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), entry1, 2,3,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry2, 2,3,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry3, 2,3,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry4, 2,3,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
- 
-     gtk_table_attach(GTK_TABLE(table), label6, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry5, 2,3,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
- 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
-
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 1, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 1, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label5, 1, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label6, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 2, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 2, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry3, 2, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry4, 2, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry5, 2, 5, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+     
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -745,33 +742,32 @@ static void distributions_dialog(GtkButton *button, gpointer data)
   }
 static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
    {
-     GtkWidget *dialog, *table, *label1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+     GtkWidget *dialog, *grid, *label1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Basic Statistics", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Descriptive Statistics", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, "Basic Statistics from Data by Groups      ");
-     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Basic Statistics from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Basic Statistics from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Basic Statistics from Percent By Picks    ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Descriptive Statistics from Data by Groups");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Descriptive Statistics from Percent By Groups");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Descriptive Statistics from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Descriptive Statistics from Percent By Picks");
      
      label1=gtk_label_new("Build Auxiliary Table First. Data Pulled From the Database");
 
-     table=gtk_table_new(7,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
- 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -807,35 +803,34 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
    }
 static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
    {
-     GtkWidget *dialog, *table, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+     GtkWidget *dialog, *grid, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Normality Test", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, " Normality Test from Data by Groups      ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Normality Test from Data by Groups");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Normality Test from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Normality Test from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Normality Test from Percent By Picks    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Normality Test from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Normality Test from Percent By Picks");
      
      label1=gtk_label_new("Build Auxiliary Table First. Data Pulled From the Database.");
      label2=gtk_label_new("Anderson Darling test using 1.0+0.75/n+2.25/n^2\nfor the adjusted value. Easy to change the code\nfor other adjusted values. If p_value>alpha then\ncan't reject the null hypothesis of normality.");
 
-     table=gtk_table_new(8,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
- 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -874,42 +869,42 @@ static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
    }
 static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textview)
    {
-     GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+     GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, " Variance from Data by Groups      ");
+     radio1=gtk_radio_button_new_with_label(NULL, " Variance from Data by Groups");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Percent By Picks    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Variance from Percent By Picks");
      
      label1=gtk_label_new("Build Auxiliary Table First. Data Pulled From the Database.");
      label2=gtk_label_new("Levene's test using the median");
      label3=gtk_label_new("Alpha for Critical Value");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "0.05");
 
-     table=gtk_table_new(9,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
- 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 1, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 1, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 1, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 1, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 1, 5, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 1, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 2, 6, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -960,43 +955,44 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
       Calculations based on
          De Muth, J.E.(2006). "Basic Statistics and Pharmaceutical Statistical Applications", Second Edition, Chapman & Hall/CRC, p. 208-209.
     */
-    GtkWidget *dialog, *table, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *check_button1, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *check_button1, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("One-Way ANOVA", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, " One-Way ANOVA from Data by Groups      ");
+     radio1=gtk_radio_button_new_with_label(NULL, " One-Way ANOVA from Data by Groups");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "One-Way ANOVA from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  One-Way ANOVA from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " One-Way ANOVA from Percent By Picks    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "One-Way ANOVA from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " One-Way ANOVA from Percent By Picks");
      
      label1=gtk_label_new("Build Auxiliary Table First. Data Pulled From the Database");
-     label2=gtk_label_new("                  Alpha for Critical Value");
+     label2=gtk_label_new("Alpha for Critical Value");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "0.05");
      
      check_button1=gtk_check_button_new_with_label("Standard ANOVA Format");
+     gtk_widget_set_halign(check_button1, GTK_ALIGN_CENTER);
 
-     table=gtk_table_new(9,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), check_button1, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
- 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 1, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 1, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 1, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 1, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button1, 1, 6, 2, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -1049,24 +1045,24 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
     }
 static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textview)
     {
-       GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area, *dunnett_button;
+       GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area, *dunnett_button;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Comparison with Control", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups                          ");
-     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups                    ");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks                              ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks                        ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups");
+     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Picks");
 
      dunnett_button=gtk_button_new_with_mnemonic("  !  ");
      g_signal_connect(G_OBJECT(dunnett_button), "clicked", G_CALLBACK(dunnetts_parameters_dialog), NULL);
 
-     radio_bonferroni=gtk_radio_button_new_with_label(NULL, "Bonferroni Critical Values   ");
-     radio_sidak=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_bonferroni), "Dunn-Sidak Critical Values   ");
-     radio_dunnetts=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_sidak), "Dunnett's Critical Values        ");
+     radio_bonferroni=gtk_radio_button_new_with_label(NULL, "Bonferroni Critical Values");
+     radio_sidak=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_bonferroni), "Dunn-Sidak Critical Values");
+     radio_dunnetts=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_sidak), "Dunnett's Critical Values");
      radio_hotellingsT2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio_sidak), "Hotelling's T2 Critical Values\n (Balanced Sets Only)");
      
      label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.");
@@ -1074,39 +1070,40 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
      label3=gtk_label_new("Control GROUP BY Value             ");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "0.05");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 5);
      gtk_entry_set_text(GTK_ENTRY(entry2), "1");
 
      progress=gtk_progress_bar_new();
      gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
-     
-     table=gtk_table_new(14,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_FILL,GTK_FILL,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,7,8,GTK_FILL,GTK_FILL,0,0); 
-     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry2, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_bonferroni, 0,1,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_sidak, 0,1,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_dunnetts, 0,1,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), dunnett_button, 1,2,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio_hotellingsT2, 0,1,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), progress, 0,2,12,13,GTK_EXPAND,GTK_EXPAND,0,0);
 
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 1, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 1, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 1, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 1, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 1, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 2, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio_bonferroni, 1, 7, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio_sidak, 1, 8, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio_dunnetts, 1, 9, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), dunnett_button, 3, 9, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio_hotellingsT2, 1, 10, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), progress, 1, 11, 2, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -1200,7 +1197,7 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
     }
 static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
     {
-      GtkWidget *dialog2, *table, *label1, *label2, *label3, *value_entry1, *value_entry2, *content_area, *action_area;
+      GtkWidget *dialog2, *grid, *label1, *label2, *label3, *entry1, *entry2, *content_area, *action_area;
     int result;
 
     dialog2=gtk_dialog_new_with_buttons("Dunnett's Integration Parameters", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -1211,30 +1208,27 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
      label2=gtk_label_new("Max Points");
      label3=gtk_label_new("Error Tolerance for Alpha");
     
-     value_entry1=gtk_entry_new();
-     value_entry2=gtk_entry_new();
-
-     gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 7);
-     gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 7);
-
-     gtk_entry_set_text(GTK_ENTRY(value_entry1), "1000");
-     gtk_entry_set_text(GTK_ENTRY(value_entry2), "0.01");
+     entry1=gtk_entry_new();
+     entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 7);
+     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 7);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "1000");
+     gtk_entry_set_text(GTK_ENTRY(entry2), "0.01");
  
-     table=gtk_table_new(4,2,FALSE);
-    
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,2,1,2,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 2, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog2));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog2));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog2);
@@ -1245,13 +1239,13 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
          int temp1=0;
          double temp2=0;
 
-         temp1=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1))); 
-         temp2=atof(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+         temp1=atoi(gtk_entry_get_text(GTK_ENTRY(entry1))); 
+         temp2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
 
          //Set Global variables.
          if(temp1>=1000&&temp1<=100000)
            {
-             MAXPTS_C=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1))); 
+             MAXPTS_C=atoi(gtk_entry_get_text(GTK_ENTRY(entry1))); 
              printf("MAXPTS=%i\n", MAXPTS_C);
            }
          else
@@ -1262,7 +1256,7 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
 
          if(temp2>=0.000001&&temp2<=0.1)
            {
-             ABSEPS_C=atof(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+             ABSEPS_C=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
              printf("ABSEPS=%f\n", ABSEPS_C);
            }
          else
@@ -1276,7 +1270,7 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
   }
 static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     {
-      GtkWidget *dialog, *table, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *textview1, *scroll1, *space1, *space2, *space3, *space4, *progress, *content_area, *action_area;
+      GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *textview1, *scroll1, *progress, *content_area, *action_area;
     GtkTextBuffer *buffer1;
     GtkTextIter start1;
     GtkTextIter end1;
@@ -1284,58 +1278,52 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 500);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups      ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Picks");
     
      label1=gtk_label_new("Build Auxiliary Table First. Data Pulled From the Database.\nControl is the Groups or Picks Value From the Auxiliary Table.\nFor balanced sets only. The contrast matrix can only have\n1's, 0's or -1's for now.");
-     label2=gtk_label_new("        Alpha for Hotelling's T2 Critical Value");
-     label3=gtk_label_new("Contrast Matrix  ");
-
-     space1=gtk_label_new("");
-     space2=gtk_label_new("");
-     space3=gtk_label_new("");
-     space4=gtk_label_new("");
+     label2=gtk_label_new("Alpha for Hotelling's T2 Critical Value");
+     label3=gtk_label_new("Contrast Matrix");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "0.05");
 
      textview1=gtk_text_view_new();
+     gtk_widget_set_vexpand(textview1, TRUE);
      buffer1=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview1));
      gtk_text_buffer_insert_at_cursor(buffer1, "-1 -1 1 1\n1 -1 1 -1\n1 -1 -1 1", -1);
      scroll1=gtk_scrolled_window_new(NULL, NULL); 
      gtk_container_add(GTK_CONTAINER(scroll1), textview1);
 
      progress=gtk_progress_bar_new();
+     gtk_widget_set_hexpand(progress, TRUE);
      gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
      
-     table=gtk_table_new(14,4,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,4,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,4,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,4,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,4,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,4,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0); 
-     gtk_table_attach(GTK_TABLE(table), entry1, 3,4,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,4,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), space1, 0,1,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), space2, 0,1,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), space3, 0,1,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), space4, 0,1,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), scroll1, 1,2,9,13,GTK_FILL,GTK_FILL,0,0);
-     gtk_table_attach(GTK_TABLE(table), progress, 0,4,13,14,GTK_EXPAND,GTK_EXPAND,20,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 7);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 1, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 1, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 1, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 1, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 1, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), scroll1, 1, 7, 1, 3);
+     gtk_grid_attach(GTK_GRID(grid), progress, 1, 10, 2, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_hotelling_dialog), NULL);
@@ -1431,40 +1419,43 @@ static void exit_hotelling_dialog(GtkWidget *dialog , gint response, gpointer da
      }
 static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      {
-       GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *p_function, *progress, *content_area, *action_area;
+       GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *p_function, *progress, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups      ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Picks");
 
      random_radio1=gtk_radio_button_new_with_label(NULL, "Mersenne Twister 19937");
-     random_radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(random_radio1), "Tausworthe 2                        ");
-     random_radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(random_radio1), "RANLUX 389                          ");
+     random_radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(random_radio1), "Tausworthe 2");
+     random_radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(random_radio1), "RANLUX 389 ");
 
      label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.");
      label2=gtk_label_new("Control GROUP BY Value");
      label3=gtk_label_new("Number of Permutations");
      label4=gtk_label_new("Random Number Generators");
-     label5=gtk_label_new("                      Seed Value");
+     label5=gtk_label_new("Seed Value");
      label6=gtk_label_new("Probability Side");
      label7=gtk_label_new("Test Statistic");
      label8=gtk_label_new("Probability Function");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "1");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
      gtk_entry_set_text(GTK_ENTRY(entry2), "10000");
 
      entry3=gtk_entry_new();
+     gtk_widget_set_halign(entry3, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry3), 8);
      gtk_entry_set_text(GTK_ENTRY(entry3), "0");
 
@@ -1488,38 +1479,35 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      progress=gtk_progress_bar_new();
      gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
      
-     table=gtk_table_new(15,4,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,4,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,4,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,4,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,4,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,4,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0); 
-     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 2,3,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry2, 3,4,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label6, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), tail_combo, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label7, 2,3,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), test_combo, 3,4,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label8, 0,1,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), p_function, 1,2,8,9,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), label4, 0,4,9,10,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio1, 0,4,10,11,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio2, 0,4,11,12,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), random_radio3, 0,4,12,13,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 1,2,13,14,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry3, 2,3,13,14,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), progress, 0,4,14,15,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
-
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 4, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 1, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 1, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 1, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 1, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 3, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label6, 0, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), tail_combo, 1, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label7, 2, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), test_combo, 3, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label8, 0, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), p_function, 1, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 1, 8, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), random_radio1, 1, 9, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), random_radio2, 1, 10, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), random_radio3, 1, 11, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label5, 1, 12, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry3, 2, 12, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), progress, 1, 13, 2, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+     
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_comparison_loop_event), NULL);
@@ -1628,40 +1616,40 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
      }
 static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
      {
-       GtkWidget *dialog, *table, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+       GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Calculate Z-factor", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups      ");
+     radio1=gtk_radio_button_new_with_label(NULL, "Comparison from Data by Groups");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Groups");
-     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "  Comparison from Data By Picks          ");
-     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), " Comparison from Percent By Picks    ");
+     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Data By Picks");
+     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Comparison from Percent By Picks");
 
      label1=gtk_label_new(" Build Auxiliary Table First. Data Pulled From the Database.\n Control is the Groups or Picks Value From the Auxiliary Table.");
      label2=gtk_label_new("Control GROUP BY Value");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "1");
      
-     table=gtk_table_new(9,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio1, 0,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio2, 0,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio3, 0,2,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), radio4, 0,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0); 
-     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_z_factor_dialog), NULL);
@@ -1728,7 +1716,7 @@ static void exit_z_factor_dialog(GtkWidget *dialog , gint response, gpointer dat
      }
 static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
      {
-       GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *entry1, *entry2, *entry3, *check_button1, *check_button2, *check_button3, *check_button4, *check_button5, *check_button6, *content_area, *action_area;
+       GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *entry1, *entry2, *entry3, *check_button1, *check_button2, *check_button3, *check_button4, *check_button5, *check_button6, *content_area, *action_area;
     int result;
 
      dialog=gtk_dialog_new_with_buttons("Contingency Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -1742,47 +1730,48 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
      label5=gtk_label_new("Measures of Association");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 5);
      gtk_entry_set_text(GTK_ENTRY(entry1), "3");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 5);
      gtk_entry_set_text(GTK_ENTRY(entry2), "3");
 
      entry3=gtk_entry_new();
+     gtk_widget_set_halign(entry3, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry3), 5);
      gtk_entry_set_text(GTK_ENTRY(entry3), "0.05");
 
-     check_button1=gtk_check_button_new_with_label("Pearson C      ");
-     check_button2=gtk_check_button_new_with_label("Pearson C*    ");
+     check_button1=gtk_check_button_new_with_label("Pearson C");
+     check_button2=gtk_check_button_new_with_label("Pearson C*");
      check_button3=gtk_check_button_new_with_label("Tshuprow's T");
      check_button4=gtk_check_button_new_with_label("Cramer's V");
-     check_button5=gtk_check_button_new_with_label("Somer's d   ");
-     check_button6=gtk_check_button_new_with_label("Gamma        ");
+     check_button5=gtk_check_button_new_with_label("Somer's d");
+     check_button6=gtk_check_button_new_with_label("Gamma");
      
-     table=gtk_table_new(9,2,FALSE);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,2,0,1,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,1,2,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label4, 0,1,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry1, 1,2,1,2,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0); 
-     gtk_table_attach(GTK_TABLE(table), entry3, 1,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 0,1,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), check_button1, 0,1,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), check_button2, 0,1,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), check_button3, 0,1,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), check_button4, 1,2,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), check_button5, 1,2,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), check_button6, 1,2,7,8,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry3, 1, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label5, 0, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button1, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button2, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button3, 0, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button4, 1, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button5, 0, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button6, 1, 7, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      //g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(exit_z_factor_dialog), NULL);
@@ -1854,7 +1843,7 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
      }
 static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
   {
-    GtkWidget *dialog, *table, *entry1, *entry2, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
     int result;
     
     g_print("Send Data from Database to Graph\n");
@@ -1870,27 +1859,28 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
      label2=gtk_label_new("Records Upper Bound");     
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 8);
      gtk_entry_set_text(GTK_ENTRY(entry1), "1");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
      gtk_entry_set_text(GTK_ENTRY(entry2), "100");
      
-     table=gtk_table_new(5,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 2, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 2, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry1, 0, 1, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry2, 0, 1, 3, 4);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 1, 2, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), label2, 1, 2, 3, 4);     
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 3, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -1929,7 +1919,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
   }
 static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
   {
-    GtkWidget *dialog, *table, *entry1, *entry2, *label1, *label2, *label3, *label4, *radio1, *radio2, *radio3, *radio4, *radio5, *radio6, *radio7, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *label3, *label4, *radio1, *radio2, *radio3, *radio4, *radio5, *radio6, *radio7, *content_area, *action_area;
     int result;
     
     g_print("Send Data from Database to Graph\n");
@@ -1953,34 +1943,35 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
      label4=gtk_label_new("Records Upper Bound");     
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 8);
      gtk_entry_set_text(GTK_ENTRY(entry1), "1");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
      gtk_entry_set_text(GTK_ENTRY(entry2), "10");
      
-     table=gtk_table_new(12,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 2, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 2, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 2, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio3, 0, 2, 3, 4);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio4, 0, 2, 4, 5);
-     gtk_table_attach_defaults(GTK_TABLE(table), label2, 0, 2, 5, 6);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio5, 0, 2, 6, 7);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio6, 0, 2, 7, 8);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio7, 0, 2, 8, 9);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry1, 0, 1, 9, 10);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry2, 0, 1, 10, 11);
-     gtk_table_attach_defaults(GTK_TABLE(table), label3, 1, 2, 9, 10);
-     gtk_table_attach_defaults(GTK_TABLE(table), label4, 1, 2, 10, 11);     
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio5, 0, 6, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio6, 0, 7, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio7, 0, 8, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 9, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 9, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 0, 10, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 10, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -2041,7 +2032,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
   }
 static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
   {
-     GtkWidget *dialog, *table, *entry1, *entry2, *label0, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+     GtkWidget *dialog, *grid, *entry1, *entry2, *label0, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
     
     g_print("Send Data from Database to Graph\n");
@@ -2060,30 +2051,31 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
      label2=gtk_label_new("Records Upper Bound");     
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 8);
      gtk_entry_set_text(GTK_ENTRY(entry1), "1");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
      gtk_entry_set_text(GTK_ENTRY(entry2), "10");
      
-     table=gtk_table_new(9,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label0, 0, 2, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 2, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 2, 3, 4);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio3, 0, 2, 4, 5);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio4, 0, 2, 5, 6);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry1, 0, 1, 6, 7);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry2, 0, 1, 7, 8);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 1, 2, 6, 7);
-     gtk_table_attach_defaults(GTK_TABLE(table), label2, 1, 2, 7, 8);     
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label0, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 6, 1, 1);   
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -2667,7 +2659,7 @@ static void clear_format_event(GtkButton *button, gpointer data)
   }
 static void heatmap_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *label1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     gint result;
    
      g_print("Heatmap Text\n");
@@ -2677,25 +2669,25 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
      label1=gtk_label_new("Heatmap Gradient");
+     gtk_widget_set_hexpand(label1, TRUE);
 
      radio1=gtk_radio_button_new_with_label(NULL, "Heatmap(rgb)");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris)");
      radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris2)");
      radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(sun)");
      
-     table=gtk_table_new(5,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 1, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 1, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 1, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio3, 0, 1, 3, 4);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio4, 0, 1, 4, 5);
-     
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio3, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio4, 0, 4, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -2767,7 +2759,7 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
   }
 static void rise_fall_text_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *entry1, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
     gint result;
     guint32 iBufferCount;
     //char cArrayNumber[25];//if a change of space format it can segfault.
@@ -2800,25 +2792,25 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Declining Sets");
 
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
      gtk_entry_set_text(GTK_ENTRY(entry1), "5");
 
-     label1=gtk_label_new("Run Set Size >=");
-     label2=gtk_label_new("Set Runs");
+     label1=gtk_label_new("Set Runs");
+     label2=gtk_label_new("Run Set Size >=");
      
-     table=gtk_table_new(4,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label2, 0, 2, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio1, 0, 1, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), radio2, 0, 1, 2, 3);
-     gtk_table_attach(GTK_TABLE(table), label1, 0, 1, 3, 4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), entry1, 1, 2, 3, 4,GTK_SHRINK,GTK_SHRINK,0,0);
-     
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 3, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3031,10 +3023,12 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
      label6=gtk_label_new("Heatmap");  
          
      entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
      gtk_entry_set_text(GTK_ENTRY(entry1), "8");
 
      entry2=gtk_entry_new();
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 3);
      gtk_entry_set_text(GTK_ENTRY(entry2), "12");
 
@@ -3295,7 +3289,7 @@ static void html_table_dialog(GtkButton *button, gpointer p)
   }
 static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
   {
-    GtkWidget *dialog, *table, *label1, *label2, *value_entry1, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *label2, *entry1, *content_area, *action_area;
     int result;
 
     dialog=gtk_dialog_new_with_buttons("Send Text To Database", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -3305,25 +3299,21 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
      label1=gtk_label_new("Send the text data in the textview\n to the database.");
      label2=gtk_label_new("Table Name");
     
-     value_entry1=gtk_entry_new();
-
-     gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 12);
-
-     gtk_entry_set_text(GTK_ENTRY(value_entry1), "AnalysisData");
+     entry1=gtk_entry_new();
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
+     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 12);
+     gtk_entry_set_text(GTK_ENTRY(entry1), "AnalysisData");
  
-     table=gtk_table_new(4,5,FALSE);
-    
-     gtk_table_attach(GTK_TABLE(table), label1, 0,4,0,1,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,5,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-     
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 1, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3333,7 +3323,7 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
         {
           GtkTextBuffer *Sbuffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
           guint length=gtk_text_buffer_get_char_count(Sbuffer);
-          const gchar *pTableName=gtk_entry_get_text(GTK_ENTRY(value_entry1));
+          const gchar *pTableName=gtk_entry_get_text(GTK_ENTRY(entry1));
           if(length>5)
             {
               send_text_to_database(pTableName, textview);
@@ -3349,13 +3339,14 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
   }
 static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
   {
-    GtkWidget *dialog, *table, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *pick_entry1, *pick_entry2, *pick_entry3, *pick_entry4, *value_entry1, *value_entry2, *value_entry3, *value_entry4, *check_button1, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label0, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *pick_entry1, *pick_entry2, *pick_entry3, *pick_entry4, *value_entry1, *value_entry2, *value_entry3, *value_entry4, *check_button1, *content_area, *action_area;
     int result;
 
     dialog=gtk_dialog_new_with_buttons("Build Auxiliary Table", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
-
+     
+     label0=gtk_label_new("Groups Field Built Automatically From Set Size For Stats. Press OK For Default Table.\nPicks Field Values Need To Be In Sequential Order Starting From 1.");
      label1=gtk_label_new("Picks Location 1");
      label2=gtk_label_new("Picks Location 2");
      label3=gtk_label_new("Picks Location 3");
@@ -3363,8 +3354,7 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
      label5=gtk_label_new("Picks Value");
      label6=gtk_label_new("Location");
      label7=gtk_label_new("*Optional Picks");
-     label8=gtk_label_new("Groups Field Built Automatically From Set Size For Stats. Press OK For Default Table.\nPicks Field Values Need To Be In Sequential Order Starting From 1.");
-
+    
      pick_entry1=gtk_entry_new();
      pick_entry2=gtk_entry_new();
      pick_entry3=gtk_entry_new();
@@ -3374,7 +3364,14 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
      value_entry3=gtk_entry_new();
      value_entry4=gtk_entry_new();
 
-     check_button1=gtk_check_button_new_with_label("Append Picks Values to Existing Table");
+     gtk_widget_set_halign(pick_entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(pick_entry2, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(pick_entry3, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(pick_entry4, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry2, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry3, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry4, GTK_ALIGN_CENTER);
 
      gtk_entry_set_width_chars(GTK_ENTRY(pick_entry1), 25);
      gtk_entry_set_width_chars(GTK_ENTRY(pick_entry2), 25);
@@ -3397,35 +3394,34 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
      g_signal_connect(G_OBJECT(pick_entry1), "focus_out_event", G_CALLBACK(control_changed), NULL);
      g_signal_connect(G_OBJECT(pick_entry2), "focus_out_event", G_CALLBACK(control_changed), NULL); 
      g_signal_connect(G_OBJECT(pick_entry3), "focus_out_event", G_CALLBACK(control_changed), NULL); 
-     g_signal_connect(G_OBJECT(pick_entry4), "focus_out_event", G_CALLBACK(control_changed), NULL);   
+     g_signal_connect(G_OBJECT(pick_entry4), "focus_out_event", G_CALLBACK(control_changed), NULL); 
+
+     check_button1=gtk_check_button_new_with_label("Append Picks Values to Existing Table");  
  
-     table=gtk_table_new(9,3,FALSE);
-
-     gtk_table_attach(GTK_TABLE(table), label8, 0,3,0,1,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label7, 0,1,1,2,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), label6, 1,2,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label5, 2,3,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label1, 0,1,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,4,5,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,5,6,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label4, 0,1,6,7,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), pick_entry1, 1,2,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), pick_entry2, 1,2,4,5,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), pick_entry3, 1,2,5,6,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), pick_entry4, 1,2,6,7,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 2,3,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry2, 2,3,4,5,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry3, 2,3,5,6,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry4, 2,3,6,7,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), check_button1, 0,2,7,8,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label0, 0, 0, 3, 1);
+     gtk_grid_attach(GTK_GRID(grid), label7, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label6, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label5, 2, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), pick_entry1, 1, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry1, 2, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), pick_entry2, 1, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry2, 2, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), pick_entry3, 1, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry3, 2, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), pick_entry4, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry4, 2, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), check_button1, 1, 6, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3783,7 +3779,7 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
 static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
   {
      //Build a combinations SQL script, save it to a file and send it off to the database.
-     GtkWidget *dialog, *table, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
+     GtkWidget *dialog, *grid, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
     int result;
 
     dialog=gtk_dialog_new_with_buttons("Build Combinations Table", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -3797,6 +3793,10 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
      value_entry1=gtk_entry_new();
      value_entry2=gtk_entry_new();
      value_entry3=gtk_entry_new();
+     
+     gtk_widget_set_halign(value_entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry2, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry3, GTK_ALIGN_CENTER);
 
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 12);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 2);
@@ -3806,22 +3806,19 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
      gtk_entry_set_text(GTK_ENTRY(value_entry2), "7");
      gtk_entry_set_text(GTK_ENTRY(value_entry3), "5");
  
-     table=gtk_table_new(5,3,FALSE);
-    
-     gtk_table_attach(GTK_TABLE(table), label1, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,3,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry3, 1,2,3,4,GTK_SHRINK,GTK_SHRINK,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry1, 1, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry2, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry3, 1, 2, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3858,7 +3855,7 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
   }
 static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
   {
-    GtkWidget *dialog, *table, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
     int result;
 
     dialog=gtk_dialog_new_with_buttons("Build Permutations Table", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
@@ -3870,27 +3867,24 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
     
      value_entry1=gtk_entry_new();
      value_entry2=gtk_entry_new();
-
+     gtk_widget_set_halign(value_entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry2, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 12);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 2);
-
      gtk_entry_set_text(GTK_ENTRY(value_entry1), "permutations");
      gtk_entry_set_text(GTK_ENTRY(value_entry2), "5");
  
-     table=gtk_table_new(4,5,FALSE);
-    
-     gtk_table_attach(GTK_TABLE(table), label1, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,5,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_SHRINK,GTK_SHRINK,0,0);
-     
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry1, 1, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry2, 1, 1, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -3920,7 +3914,7 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
   }
 static void format_text_dialog(GtkButton *button, gpointer data)
   {
-    GtkWidget *dialog, *table, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *entry2, *entry3, *entry4, *label1, *label2, *label3, *label4, *content_area, *action_area;
     gint result;
     
      g_print("Format Text\n");
@@ -3939,6 +3933,11 @@ static void format_text_dialog(GtkButton *button, gpointer data)
      entry3=gtk_entry_new();
      entry4=gtk_entry_new();
 
+     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(entry3, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(entry4, GTK_ALIGN_CENTER);
+
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 8);
      gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
      gtk_entry_set_width_chars(GTK_ENTRY(entry3), 8);
@@ -3949,22 +3948,21 @@ static void format_text_dialog(GtkButton *button, gpointer data)
      gtk_entry_set_text(GTK_ENTRY(entry3), "400.0");
      gtk_entry_set_text(GTK_ENTRY(entry4), "600.0");
 
-     table=gtk_table_new(5,2,FALSE);
-     gtk_table_attach_defaults(GTK_TABLE(table), label1, 0, 1, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), label2, 0, 1, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), label3, 0, 1, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), label4, 0, 1, 3, 4);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry1, 1, 2, 0, 1);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry2, 1, 2, 1, 2);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry3, 1, 2, 2, 3);
-     gtk_table_attach_defaults(GTK_TABLE(table), entry4, 1, 2, 3, 4);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry3, 1, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label4, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), entry4, 1, 3, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
