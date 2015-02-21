@@ -2796,17 +2796,17 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
      gtk_entry_set_text(GTK_ENTRY(entry1), "5");
 
-     label1=gtk_label_new("Set Runs");
-     label2=gtk_label_new("Run Set Size >=");
+     label1=gtk_label_new("      Set Runs");
+     label2=gtk_label_new("      Run Set Size   >=");
      
      grid=gtk_grid_new();
      gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
      gtk_grid_attach(GTK_GRID(grid), radio1, 0, 1, 2, 1);
-     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), radio2, 0, 2, 1, 1);
      gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
      gtk_grid_attach(GTK_GRID(grid), entry1, 1, 3, 1, 1);
      gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
-     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 20);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
@@ -4049,7 +4049,7 @@ static void copy_selected_to_clipboard(GtkWidget *copy, GtkWidget *treeview)
 */
 static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview)
   {
-    GtkWidget *dialog, *table, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
     int result;
     int rows=0;
     int columns=0;
@@ -4058,32 +4058,29 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     label1=gtk_label_new("Rows");
-     label2=gtk_label_new("      Columns");
+     label1=gtk_label_new("         Rows");
+     label2=gtk_label_new("         Columns");
     
      value_entry1=gtk_entry_new();
      value_entry2=gtk_entry_new();
-
-     gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 3);
-     gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 3);
-
+     gtk_widget_set_halign(value_entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry2, GTK_ALIGN_CENTER);
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 4);
+     gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 4);
      gtk_entry_set_text(GTK_ENTRY(value_entry1), "8");
      gtk_entry_set_text(GTK_ENTRY(value_entry2), "12");
  
-     table=gtk_table_new(4,3,FALSE);
-    
-     gtk_table_attach(GTK_TABLE(table), label1, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,2,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry1, 1, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry2, 1, 1, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 40);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
@@ -4107,7 +4104,7 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
   }
 static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWidget *treeview)
   {
-    GtkWidget *dialog, *table, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
     int result;
     int rows=0;
     int columns=0;
@@ -4117,38 +4114,36 @@ static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWid
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
-     label1=gtk_label_new("Rows");
-     label2=gtk_label_new("Columns");
-     label3=gtk_label_new("Truncate Digits");
+     label1=gtk_label_new("      Rows");
+     label2=gtk_label_new("      Columns");
+     label3=gtk_label_new("      Truncate Digits");
     
      value_entry1=gtk_entry_new();
      value_entry2=gtk_entry_new();
      value_entry3=gtk_entry_new();
-
+     gtk_widget_set_halign(value_entry1, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry2, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(value_entry3, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry1), 3);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry2), 3);
      gtk_entry_set_width_chars(GTK_ENTRY(value_entry3), 3);
-
      gtk_entry_set_text(GTK_ENTRY(value_entry1), "8");
      gtk_entry_set_text(GTK_ENTRY(value_entry2), "12");
      gtk_entry_set_text(GTK_ENTRY(value_entry3), "7");
  
-     table=gtk_table_new(5,3,FALSE);
-    
-     gtk_table_attach(GTK_TABLE(table), label1, 0,1,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label2, 0,1,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), label3, 0,1,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_attach(GTK_TABLE(table), value_entry1, 1,2,1,2,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry2, 1,2,2,3,GTK_EXPAND,GTK_EXPAND,0,0);
-     gtk_table_attach(GTK_TABLE(table), value_entry3, 1,2,3,4,GTK_EXPAND,GTK_EXPAND,0,0);
-
-     gtk_table_set_row_spacings(GTK_TABLE(table), 10);
-     gtk_table_set_col_spacings(GTK_TABLE(table), 10);
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry1, 1, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry2, 1, 1, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), label3, 0, 2, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), value_entry3, 1, 2, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 30);
 
      content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
      action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-     gtk_container_add(GTK_CONTAINER(content_area), table); 
+     gtk_container_add(GTK_CONTAINER(content_area), grid); 
      gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
      gtk_widget_show_all(dialog);
