@@ -2675,6 +2675,10 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris)");
      radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris2)");
      radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(sun)");
+     gtk_widget_set_margin_left(radio1, 30);
+     gtk_widget_set_margin_left(radio2, 30);
+     gtk_widget_set_margin_left(radio3, 30);
+     gtk_widget_set_margin_left(radio4, 30);
      
      grid=gtk_grid_new();
      gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
@@ -2790,14 +2794,18 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
 
      radio1=gtk_radio_button_new_with_label(NULL, "Rising Sets");
      radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Declining Sets");
+     gtk_widget_set_margin_left(radio1, 20);
+     gtk_widget_set_margin_left(radio2, 20);
 
      entry1=gtk_entry_new();
      gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
      gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
      gtk_entry_set_text(GTK_ENTRY(entry1), "5");
 
-     label1=gtk_label_new("      Set Runs");
-     label2=gtk_label_new("      Run Set Size   >=");
+     label1=gtk_label_new("Set Runs");
+     label2=gtk_label_new("Run Set Size   >=");
+     gtk_widget_set_margin_left(label1, 20);
+     gtk_widget_set_margin_left(label2, 20);
      
      grid=gtk_grid_new();
      gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
