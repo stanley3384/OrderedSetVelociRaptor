@@ -20,7 +20,7 @@ Magic Square
 ![Screenshot4](/wave1.jpg)
 
 
---The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu.
+--The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu 14.04 with GTK+ 3.10.
 
 --Start with making a new folder or directory. Then get the needed files for building the program. 
 
