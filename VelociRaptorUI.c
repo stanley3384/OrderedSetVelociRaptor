@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
      gtk_grid_attach(GTK_GRID(grid), MenuBar, 0, 0, 1, 1);
      gtk_grid_attach(GTK_GRID(grid), RaptorFeet, 0, 1, 8, 1);
      gtk_grid_attach(GTK_GRID(grid), PlateParametersLabel, 0, 2, 2, 1);
-     gtk_grid_attach(GTK_GRID(grid), TextLabel, 2, 2, 6, 1);
+     gtk_grid_attach(GTK_GRID(grid), TextLabel, 2, 2, 4, 1);
 
      gtk_grid_attach(GTK_GRID(grid), PlateNumberLabel, 0, 3, 1, 1);
      gtk_grid_attach(GTK_GRID(grid), PlateSizeLabel, 0, 4, 1, 1);
