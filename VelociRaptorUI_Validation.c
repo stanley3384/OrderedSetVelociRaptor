@@ -23,7 +23,7 @@ void simple_message_dialog(const char *str)
     //Handle basic errors with a pop-up window.
     GtkWidget *dialog, *label, *content_area;
 
-    dialog=gtk_dialog_new_with_buttons("Information", NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+    dialog=gtk_dialog_new_with_buttons("Information", NULL, GTK_DIALOG_DESTROY_WITH_PARENT, "OK", GTK_RESPONSE_OK, NULL);
     label=gtk_label_new(str);
     content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
     gtk_box_set_spacing(GTK_BOX(content_area), 10);

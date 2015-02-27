@@ -129,7 +129,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 
 int main(int argc, char *argv[])
     {
-     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *MainTable, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
+     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *grid, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
      GError *error = NULL;
       
      //For printing
@@ -159,14 +159,19 @@ int main(int argc, char *argv[])
      gtk_widget_set_size_request(RaptorFeet, 1024,35);
      g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), NULL);
 
-     button=gtk_button_new_with_mnemonic("Get Test Data");
-     textbutton=gtk_button_new_with_mnemonic("Erase White Board");
-     ClearFormat=gtk_button_new_with_mnemonic("Clear Format");
+     button=gtk_button_new_with_label("Get Test Data");
+     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
+     gtk_widget_set_margin_left(button, 20);
+     textbutton=gtk_button_new_with_label("Erase White Board");
+     ClearFormat=gtk_button_new_with_label("Clear Format");
      UnderlineButton=gtk_toggle_button_new_with_label("Underline");
+     gtk_widget_set_halign(UnderlineButton, GTK_ALIGN_CENTER);
      gtk_widget_set_tooltip_text(UnderlineButton, "Underline Selection Font");
-     SelectionButton=gtk_button_new_with_mnemonic("Selection");
+     SelectionButton=gtk_button_new_with_label("Selection");
+     gtk_widget_set_halign(SelectionButton, GTK_ALIGN_CENTER);
      gtk_widget_set_tooltip_text(SelectionButton, "Selection Font");
-     GlobalButton=gtk_button_new_with_mnemonic("   Global   ");
+     GlobalButton=gtk_button_new_with_label("Global");
+     gtk_widget_set_halign(GlobalButton, GTK_ALIGN_CENTER);
      gtk_widget_set_tooltip_text(GlobalButton, "Global Font");
      FontChooser=gtk_font_button_new_with_font("Monospace 9");
      gtk_widget_set_tooltip_text(FontChooser, "Font Chooser");
@@ -320,13 +325,19 @@ int main(int argc, char *argv[])
      PlatePosControlLabel=gtk_label_new("Positive Controls");
      PlateNegControlLabel=gtk_label_new("Negative Controls");
 
-     ControlCheck=gtk_check_button_new_with_label("Optional Control Locations      ");
+     ControlCheck=gtk_check_button_new_with_label("Optional Control Locations");
 
      PlateNumberEntry=gtk_entry_new();
      PlateSizeEntry=gtk_entry_new();
      PlateStatsEntry=gtk_entry_new();
      PlatePosControlEntry=gtk_entry_new();
      PlateNegControlEntry=gtk_entry_new();
+
+     gtk_widget_set_halign(PlateNumberEntry, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(PlateSizeEntry, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(PlateStatsEntry, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(PlatePosControlEntry, GTK_ALIGN_CENTER);
+     gtk_widget_set_halign(PlateNegControlEntry, GTK_ALIGN_CENTER);
 
      gtk_entry_set_text(GTK_ENTRY(PlateNumberEntry), "3");
      gtk_entry_set_text(GTK_ENTRY(PlateSizeEntry), "96");
@@ -355,6 +366,7 @@ int main(int argc, char *argv[])
      gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
 
      MarginCombo=gtk_combo_box_text_new_with_entry();
+     gtk_widget_set_halign(MarginCombo, GTK_ALIGN_CENTER);
      gtk_widget_set_tooltip_text(MarginCombo, "Left Margin");
      GtkWidget *combo_entry=gtk_bin_get_child(GTK_BIN(MarginCombo));
      gtk_entry_set_width_chars(GTK_ENTRY(combo_entry), 3);
@@ -368,6 +380,40 @@ int main(int argc, char *argv[])
      gtk_combo_box_set_active(GTK_COMBO_BOX(MarginCombo), 0);
      g_signal_connect(MarginCombo, "changed", G_CALLBACK(change_margin), textview);
 
+     grid=gtk_grid_new();
+     gtk_grid_attach(GTK_GRID(grid), MenuBar, 0, 0, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), RaptorFeet, 0, 1, 8, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateParametersLabel, 0, 2, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), TextLabel, 2, 2, 6, 1);
+
+     gtk_grid_attach(GTK_GRID(grid), PlateNumberLabel, 0, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateSizeLabel, 0, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateStatsLabel, 0, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), ControlCheck, 0, 6, 2, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlatePosControlLabel, 0, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateNegControlLabel, 0, 8, 1, 1);
+
+     gtk_grid_attach(GTK_GRID(grid), PlateNumberEntry, 1, 3, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateSizeEntry, 1, 4, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateStatsEntry, 1, 5, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlatePosControlEntry, 1, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), PlateNegControlEntry, 1, 8, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), button, 0, 9, 2, 1);
+
+     gtk_grid_attach(GTK_GRID(grid), scrolled_win, 2, 3, 5, 7);
+
+     gtk_grid_attach(GTK_GRID(grid), textbutton, 2, 10, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), ClearFormat, 3, 10, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), FontChooser, 5, 10, 1, 1);
+
+     gtk_grid_attach(GTK_GRID(grid), MarginCombo, 7, 6, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), SelectionButton, 7, 7, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), UnderlineButton, 7, 8, 1, 1);
+     gtk_grid_attach(GTK_GRID(grid), GlobalButton, 7, 9, 1, 1);
+     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+     
+     /*
      MainTable=gtk_table_new(10,8,TRUE);
      gtk_table_attach(GTK_TABLE(MainTable), RaptorFeet, 0,8,0,1,GTK_FILL,GTK_FILL,0,0);
 
@@ -403,6 +449,7 @@ int main(int argc, char *argv[])
 
      gtk_table_set_row_spacings(GTK_TABLE(MainTable), 1);
      gtk_table_set_col_spacing(GTK_TABLE(MainTable), 1, 2);
+     */
 
      g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(distributions_dialog), NULL);
      g_signal_connect(G_OBJECT(textbutton), "clicked", G_CALLBACK(text_button_clicked), (gpointer) textview);
@@ -424,7 +471,7 @@ int main(int argc, char *argv[])
      g_signal_connect_after(G_OBJECT(PlatePosControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);
      g_signal_connect(G_OBJECT(PlateNegControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);  
     
-     gtk_container_add(GTK_CONTAINER(window), MainTable);
+     gtk_container_add(GTK_CONTAINER(window), grid);
      
      gtk_widget_show_all(window);
 
@@ -631,7 +678,7 @@ static void distributions_dialog(GtkButton *button, gpointer data)
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *entry1, *entry2, *entry3, *entry4, *entry5, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Get Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Get Test Data", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -745,7 +792,7 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
      GtkWidget *dialog, *grid, *label1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Descriptive Statistics", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Descriptive Statistics", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -806,7 +853,7 @@ static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
      GtkWidget *dialog, *grid, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Normality Test", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Normality Test", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -872,7 +919,7 @@ static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textvie
      GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -958,7 +1005,7 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *check_button1, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("One-Way ANOVA", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("One-Way ANOVA", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1048,7 +1095,7 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
        GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area, *dunnett_button;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Comparison with Control", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Comparison with Control", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1200,7 +1247,7 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
       GtkWidget *dialog2, *grid, *label1, *label2, *label3, *entry1, *entry2, *content_area, *action_area;
     int result;
 
-    dialog2=gtk_dialog_new_with_buttons("Dunnett's Integration Parameters", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog2=gtk_dialog_new_with_buttons("Dunnett's Integration Parameters", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog2), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog2), 20);
 
@@ -1277,7 +1324,7 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     int iRadioButton=1;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 500);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
@@ -1422,7 +1469,7 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
        GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *p_function, *progress, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1619,7 +1666,7 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
        GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Calculate Z-factor", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Calculate Z-factor", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1719,7 +1766,7 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
        GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *entry1, *entry2, *entry3, *check_button1, *check_button2, *check_button3, *check_button4, *check_button5, *check_button6, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Contingency Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Contingency Data", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1848,7 +1895,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
     
     g_print("Send Data from Database to Graph\n");
 
-     dialog=gtk_dialog_new_with_buttons("Scatter Plot", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Scatter Plot", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1924,7 +1971,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
     
     g_print("Send Data from Database to Graph\n");
 
-     dialog=gtk_dialog_new_with_buttons("Error Plot", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Error Plot", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -2037,7 +2084,7 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
     
     g_print("Send Data from Database to Graph\n");
 
-     dialog=gtk_dialog_new_with_buttons("Box Plot", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Box Plot", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -2378,7 +2425,7 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
        {
          g_print("Import Text File\n");
 
-         dialog=gtk_file_chooser_dialog_new("Open Text File",GTK_WINDOW(window), GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+         dialog=gtk_file_chooser_dialog_new("Open Text File",GTK_WINDOW(window), GTK_FILE_CHOOSER_ACTION_OPEN, "CANCEL", GTK_RESPONSE_CANCEL, "OPEN", GTK_RESPONSE_ACCEPT, NULL);
 
          gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
          gint result=gtk_dialog_run(GTK_DIALOG(dialog));
@@ -2463,7 +2510,7 @@ static void append_text_dialog(GtkWidget *menu, GtkWidget *window)
     GtkWidget *dialog, *label, *entry, *grid, *content_area;
     gint result=0;
 
-    dialog=gtk_dialog_new_with_buttons("Append Text Files", GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, "Select Text Files", GTK_RESPONSE_OK, NULL);
+    dialog=gtk_dialog_new_with_buttons("Append Text Files", GTK_WINDOW(window), GTK_DIALOG_MODAL, "CANCEL", GTK_RESPONSE_CANCEL, "Select Text Files", GTK_RESPONSE_OK, NULL);
     gtk_window_set_default_size(GTK_WINDOW(dialog), 280, 100);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 
@@ -2503,7 +2550,7 @@ static void show_file_dialog_append(GArray *widgets)
   {
     GtkWidget *dialog;
     
-    dialog=gtk_file_chooser_dialog_new("Open Text File",GTK_WINDOW(g_array_index(widgets, GtkWidget*, 0)), GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+    dialog=gtk_file_chooser_dialog_new("Open Text File",GTK_WINDOW(g_array_index(widgets, GtkWidget*, 0)), GTK_FILE_CHOOSER_ACTION_OPEN, "CANCEL", GTK_RESPONSE_CANCEL, "OPEN", GTK_RESPONSE_ACCEPT, NULL);
     gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), TRUE);
     
     gint result=gtk_dialog_run(GTK_DIALOG(dialog));
@@ -2664,7 +2711,7 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
    
      g_print("Heatmap Text\n");
 
-     dialog=gtk_dialog_new_with_buttons("Heatmap Platemap", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Heatmap Platemap", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -2788,7 +2835,7 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
 
      g_print("RiseFall Text\n");
 
-     dialog=gtk_dialog_new_with_buttons("RiseFall Platemap", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("RiseFall Platemap", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3016,7 +3063,7 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
     
     g_print("Send Plate Data from Database to HTML\n");
 
-     dialog=gtk_dialog_new_with_buttons("Heatmap Platemap HTML", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Heatmap Platemap HTML", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3130,7 +3177,7 @@ static void html_table_dialog(GtkButton *button, gpointer p)
     
     g_print("Send Tablular Data from Database to HTML\n");
 
-     dialog=gtk_dialog_new_with_buttons("Tabular Data to HTML", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Tabular Data to HTML", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
       gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 450);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
@@ -3300,7 +3347,7 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Send Text To Database", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Send Text To Database", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3350,7 +3397,7 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
     GtkWidget *dialog, *grid, *label0, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *pick_entry1, *pick_entry2, *pick_entry3, *pick_entry4, *value_entry1, *value_entry2, *value_entry3, *value_entry4, *check_button1, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Build Auxiliary Table", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Build Auxiliary Table", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
      
@@ -3790,7 +3837,7 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
      GtkWidget *dialog, *grid, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Build Combinations Table", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Build Combinations Table", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3866,7 +3913,7 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
     GtkWidget *dialog, *grid, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Build Permutations Table", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Build Permutations Table", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3927,7 +3974,7 @@ static void format_text_dialog(GtkButton *button, gpointer data)
     
      g_print("Format Text\n");
 
-     dialog=gtk_dialog_new_with_buttons("Format Platemap", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Format Platemap", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -4062,7 +4109,7 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
     int rows=0;
     int columns=0;
 
-    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -4118,7 +4165,7 @@ static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWid
     int columns=0;
     int digits=0;
 
-    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "CANCEL", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
