@@ -236,7 +236,7 @@ int main(int argc, char **argv)
    gtk_init(&argc, &argv);
 
    gchar css_string[]="GtkButton#css_button1{background: blue; color: yellow;}\n\
-                       GtkWindow{background: green}";
+                       GtkWindow{background: #00FF00}";
    GtkCssProvider *provider;
    GdkDisplay *display;
    GdkScreen *screen;
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
    g_signal_connect(button2, "realize", G_CALLBACK(realize_and_draw), NULL); 
    g_signal_connect(button2, "draw", G_CALLBACK(draw_arrow), NULL); 
 
-   //surface=cairo_image_surface_create_from_png("mercator_projection.png");
+   surface=cairo_image_surface_create_from_png("mercator_projection.png");
    button3=gtk_button_new_with_label("Draw .png");
    gtk_widget_set_hexpand(button3, TRUE);
    gtk_widget_set_vexpand(button3, TRUE); 

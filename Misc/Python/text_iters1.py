@@ -18,7 +18,7 @@ class TextBox(Gtk.TextView):
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("Find a word word word word1 word1 word2 word2 word2 word word1 word2")
-        self.tag1 = self.textbuffer.create_tag("background='green'", background="green")
+        self.tag1 = self.textbuffer.create_tag("background='#00FF00'", background="#00FF00")
         self.tag2 = self.textbuffer.create_tag("weight='900'", weight=900)
     
     def get_word(self, text1, combo): ##text1 is word to match
@@ -75,7 +75,7 @@ class TextBox(Gtk.TextView):
             print("Get All Tags")
             self.get_tags(tag, button_combo_list)
         elif(tag_id==1):
-            if("background='green'" == tag_name):
+            if("background='#00FF00'" == tag_name):
                 print("Get Green Tags")
                 self.get_tags(tag, button_combo_list)
         else:
@@ -192,11 +192,11 @@ class TextBox(Gtk.TextView):
             if any(i in x for x in pango_sorted):
                 #print("Found " + str(i))
                 for j in range(records):
-                    if("background='green'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("background='#00FF00'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[0]=True
                     if("weight='900'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[1]=True
-                    if("background='green'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                    if("background='#00FF00'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
                         open_tags[0]=False
                     if("weight='900'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[1]=False 
@@ -208,7 +208,7 @@ class TextBox(Gtk.TextView):
                     self.markup_string+="<span"
                     for k in range(len(open_tags)):  
                         if(open_tags[k] and k == 0):
-                            self.markup_string+=" background='green'"
+                            self.markup_string+=" background='#00FF00'"
                         if(open_tags[k] and k == 1):
                             self.markup_string+=" weight='900'"
                     self.markup_string+=">" 
@@ -236,7 +236,7 @@ class TextBox(Gtk.TextView):
         button_combo_list[2].set_text(text) 
         for i in range(records):
             print(str(pango_tag_list[3*i]))
-            if("background='green'" == str(pango_tag_list[3*i])):
+            if("background='#00FF00'" == str(pango_tag_list[3*i])):
                 print(str(dir(Pango)))
                 attr_green = Pango.attr_background_new(0, 65535, 0);
                 attr_green.start_index = pango_tag_list[3*i+1]
@@ -341,8 +341,8 @@ class TextBox(Gtk.TextView):
         '''
         #Create tags from unique_tags.
         for tag in unique_tags:
-            if(tag == "background='green'"):
-                self.textbuffer.create_tag(tag, background='green')
+            if(tag == "background='#00FF00'"):
+                self.textbuffer.create_tag(tag, background='#00FF00')
             if(tag == "weight='900'"):
                 self.textbuffer.create_tag(tag, weight=900)
         print("Tags Created")
