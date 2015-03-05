@@ -11,10 +11,10 @@ from gi.repository import Gtk, Pango, PangoCairo
 class TextBox(Gtk.TextView):
     def __init__(self):
         Gtk.TextView.__init__(self)
-        self.set_wrap_mode(2)
+        self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
-        self.textbuffer.set_text("Print this on a page!\nPrint line 2 on a page\nPrint line 3 on a page\nPrint line 4 on a page")
+        self.textbuffer.set_text("Print this on a page!Fill the line to the end and wrap on a char. cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\nPrint line 2 on a page\nPrint line 3 on a page\nPrint line 4 on a page")
 
     def get_line(self, line_number):
         start_line = self.textbuffer.get_iter_at_line(line_number)
@@ -40,7 +40,12 @@ class TextBox(Gtk.TextView):
         description = pango_context.get_font_description()
         self.pango_layout = gtk_context.create_pango_layout()
         self.pango_layout.set_font_description(description)
-        self.pango_layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+        self.pango_layout.set_width(self.page_width*Pango.SCALE);
+        self.pango_layout.set_height(self.page_height*Pango.SCALE);
+        text_width = self.pango_layout.get_width()
+        text_height = self.pango_layout.get_height()
+        print("PageWidth " + str(self.page_width) + " PageHeight " + str(self.page_width) + " TextWidth " + str(text_width) + " TextHeight " + str(text_height))
+        self.pango_layout.set_wrap(Pango.WrapMode.CHAR)
 
     def draw_page(self, operation, gtk_context, page_number):
         cairo_context = gtk_context.get_cairo_context()
