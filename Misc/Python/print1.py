@@ -1,7 +1,8 @@
 #!/user/bin/python
 
 """
-   Test some Python and GTK+ printing out.
+   Test some Python and GTK+ printing. Print size defaults to "letter" or 8.5 x 11 sized layout.
+   Python 2.7 with GTK 3.10.
 
    C. Eric Cashon
 """
@@ -11,6 +12,8 @@ from gi.repository import Gtk, Pango, PangoCairo
 class TextBox(Gtk.TextView):
     def __init__(self):
         Gtk.TextView.__init__(self)
+        self.page_width = 0
+        self.page_height = 0
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
@@ -34,7 +37,7 @@ class TextBox(Gtk.TextView):
         result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
 
     def begin_print(self, operation, gtk_context):
-        self.page_width=gtk_context.get_width();
+        self.page_width = gtk_context.get_width()
         self.page_height = gtk_context.get_height()
         pango_context = self.get_pango_context()
         description = pango_context.get_font_description()
