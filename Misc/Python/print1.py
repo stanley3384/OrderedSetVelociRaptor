@@ -8,6 +8,7 @@
 """
 
 from gi.repository import Gtk, Pango, PangoCairo
+import math
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -59,6 +60,20 @@ class TextBox(Gtk.TextView):
             cairo_context.set_source_rgb(1.0, 1.0, 0.0)
         cairo_context.rectangle(0, 0, self.page_width, self.page_height)
         cairo_context.stroke()
+        #Smile.
+        cairo_context.set_source_rgb(0.0, 0.5, 0.5)
+        cairo_context.arc(self.page_width/2, 100, 50, 0, 2*math.pi);
+        cairo_context.stroke()
+        cairo_context.arc(self.page_width/2+20, 80, 3, 0, 2*math.pi);
+        cairo_context.fill()
+        cairo_context.stroke()
+        cairo_context.arc(self.page_width/2-20, 80, 3, 0, 2*math.pi);
+        cairo_context.fill()
+        cairo_context.stroke()
+        cairo_context.scale(1, 0.7)
+        cairo_context.arc(self.page_width/2, 150, 30, 0, math.pi);
+        cairo_context.stroke()
+        #Text
         cairo_context.set_source_rgb(0.0, 0.0, 0.0)
         string = self.get_line(page_number)
         self.pango_layout.set_markup(string)
