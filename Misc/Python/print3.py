@@ -56,7 +56,7 @@ class TextBox(Gtk.TextView):
         self.pango_layout.set_height(self.page_height*Pango.SCALE);
         self.text_width = self.pango_layout.get_width()
         self.text_height = self.pango_layout.get_height()
-        print("PageWidth " + str(self.page_width) + " PageHeight " + str(self.page_width) + " TextWidth " + str(self.text_width) + " TextHeight " + str(self.text_height))
+        print("PageWidth " + str(self.page_width) + " PageHeight " + str(self.page_height) + " TextWidth " + str(self.text_width) + " TextHeight " + str(self.text_height))
         self.pango_layout.set_wrap(Pango.WrapMode.CHAR)
 
     def draw_page(self, operation, gtk_context, page_number):
@@ -70,60 +70,64 @@ class TextBox(Gtk.TextView):
         cairo_context.stroke()
 
         #Get some test numbers to add to the string.
-        number_string = "\n\n\n"
         max_length = 0
+        rows = 3
+        columns = 3
         data_values = [[22.4, 22.223, 22.22],[22.27, 26.2267, 22.2456],[22.22, 234.22, 22.22]]
-        for x in range(3):
-            for y in range(3):
+
+        #Get max length and print to screen.
+        for x in range(rows):
+            for y in range(columns):
                 if(max_length<len(str(data_values[x][y]))):
                     max_length=len(str(data_values[x][y]))
-        print max_length
-        for x in range(3):
-            for y in range(3):
                 sys.stdout.write(str(data_values[x][y]) + " ")
             sys.stdout.write("\n")
-        for x in range(3):
-            #Test with strings 10 chars long. Can join with spaces for testing also.
-            row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + 3) for k in data_values[x])
-            print row_tuple
-            if(x<3-1):
-                number_string = number_string + row_tuple + "\n"
-            else:
-                number_string = number_string + row_tuple
+        print("Max Length " +str(max_length))
 
         #Get rectangle for one monospace char for sizing
         self.pango_layout.set_markup("2")
         rectangle_ink, rectangle_log = self.pango_layout.get_extents()
         print(" Rectangle1 " + str(rectangle_ink.height) + " Rectangle1 " + str(rectangle_ink.width) + " Rectangle2 " + str(rectangle_log.height) + " Rectangle2 " + str(rectangle_log.width))
 
+        #Get lines of text to be printed on the page.
+        string = self.get_line(page_number)
+        self.pango_layout.set_markup(string)
+        line_count = self.pango_layout.get_line_count()
+        lines_per_page = int(self.text_height / rectangle_log.height)
+        print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
+
+        #pad each number and first number in each column.
+        drawing_line = 5 #the line to put the grid on
+        number_string = "{:\n>{m}}".format("", m=drawing_line-line_count+1) 
+        pad_first_column = 30
+        column_padding = "{:*>{m}}".format("", m=pad_first_column) 
+        print("Padding " + column_padding)
+        for x in range(rows):
+            #Test with strings 10 chars long. Can join with spaces for testing also. 
+            row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + 3) for k in data_values[x])
+            print row_tuple
+            if(x<rows-1):
+                number_string = number_string + column_padding + row_tuple + "\n"
+            else:
+                number_string = number_string + column_padding + row_tuple
+
         #Table for test numbers.
-        #horizontal lines
         cairo_context.set_source_rgb(1.0, 0.0, 1.0)
-        cairo_context.move_to(0, (rectangle_log.height*4)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*30)/Pango.SCALE, (rectangle_log.height*4)/Pango.SCALE)
-        cairo_context.stroke() 
-        cairo_context.move_to(0, (rectangle_log.height*5)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*30)/Pango.SCALE, (rectangle_log.height*5)/Pango.SCALE)
-        cairo_context.stroke()
-        cairo_context.move_to(0, (rectangle_log.height*6)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*30)/Pango.SCALE, (rectangle_log.height*6)/Pango.SCALE)
-        cairo_context.stroke() 
-        cairo_context.move_to(0, (rectangle_log.height*7)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*30)/Pango.SCALE, (rectangle_log.height*7)/Pango.SCALE)
-        cairo_context.stroke()
-        #vertical lines 
-        cairo_context.move_to(0, (rectangle_log.height*4)/Pango.SCALE)
-        cairo_context.line_to(0, (rectangle_log.height*7)/Pango.SCALE)
-        cairo_context.stroke() 
-        cairo_context.move_to((rectangle_log.width*10)/Pango.SCALE, (rectangle_log.height*4)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*10)/Pango.SCALE, (rectangle_log.height*7)/Pango.SCALE)
-        cairo_context.stroke() 
-        cairo_context.move_to((rectangle_log.width*20)/Pango.SCALE, (rectangle_log.height*4)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*20)/Pango.SCALE, (rectangle_log.height*7)/Pango.SCALE)
-        cairo_context.stroke()
-        cairo_context.move_to((rectangle_log.width*30)/Pango.SCALE, (rectangle_log.height*4)/Pango.SCALE)
-        cairo_context.line_to((rectangle_log.width*30)/Pango.SCALE, (rectangle_log.height*7)/Pango.SCALE)
-        cairo_context.stroke()  
+        table_rows = 20
+        table_columns = 6
+        top = drawing_line #line number
+        bottom = top + table_rows
+        left_margin = (10 * rectangle_log.width)/Pango.SCALE
+        chars_per_cell = 10
+        total_chars = chars_per_cell * table_columns
+        for x in range(table_rows + 1): 
+            cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
+            cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x))/Pango.SCALE)
+            cairo_context.stroke() 
+        for x in range(table_columns + 1): 
+            cairo_context.move_to(((rectangle_log.width * x * chars_per_cell)/Pango.SCALE) + left_margin, (rectangle_log.height*top)/Pango.SCALE)
+            cairo_context.line_to(((rectangle_log.width * x * chars_per_cell)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom)/Pango.SCALE)
+            cairo_context.stroke() 
 
         #Text and test numbers
         cairo_context.set_source_rgb(0.0, 0.0, 0.0)
