@@ -9,7 +9,7 @@
 """
 
 from gi.repository import Gtk, Pango, PangoCairo
-import math
+import random
 import sys
 
 class TextBox(Gtk.TextView):
@@ -70,18 +70,21 @@ class TextBox(Gtk.TextView):
         cairo_context.stroke()
 
         #Get some test numbers to add to the string.
-        max_length = 0
-        rows = 3
-        columns = 3
-        data_values = [[22.4, 22.223, 22.22],[22.27, 26.2267, 22.2456],[22.22, 234.22, 22.22]]
+        rows = 30
+        columns = 5
+        data_values =  [[0 for x in range(columns)] for x in range(rows)] 
+        for x in range(rows):
+            for y in range(columns):
+                data_values[x][y] = str(round((random.random() * 100), 3))
 
         #Get max length and print to screen.
+        max_length = 0
         for x in range(rows):
             for y in range(columns):
                 if(max_length<len(str(data_values[x][y]))):
                     max_length=len(str(data_values[x][y]))
-                sys.stdout.write(str(data_values[x][y]) + " ")
-            sys.stdout.write("\n")
+                #sys.stdout.write(str(data_values[x][y]) + " ")
+            #sys.stdout.write("\n")
         print("Max Length " +str(max_length))
 
         #Get rectangle for one monospace char for sizing
@@ -97,15 +100,15 @@ class TextBox(Gtk.TextView):
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
 
         #pad each number and first number in each column.
-        drawing_line = 5 #the line to put the grid on
-        number_string = "{:\n>{m}}".format("", m=drawing_line-line_count+1) 
-        pad_first_column = 30
+        column_width = 10 
+        shift_below_text = 2
+        number_string = "{:\n>{m}}".format("", m=shift_below_text) 
+        pad_first_column = 20
         column_padding = "{:*>{m}}".format("", m=pad_first_column) 
-        print("Padding " + column_padding)
         for x in range(rows):
             #Test with strings 10 chars long. Can join with spaces for testing also. 
-            row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + 3) for k in data_values[x])
-            print row_tuple
+            row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+            #print row_tuple
             if(x<rows-1):
                 number_string = number_string + column_padding + row_tuple + "\n"
             else:
@@ -113,12 +116,13 @@ class TextBox(Gtk.TextView):
 
         #Table for test numbers.
         cairo_context.set_source_rgb(1.0, 0.0, 1.0)
-        table_rows = 20
-        table_columns = 6
-        top = drawing_line #line number
+        table_rows = rows
+        table_columns = columns
+        shift_margin = pad_first_column
+        top = line_count + shift_below_text -1
         bottom = top + table_rows
-        left_margin = (10 * rectangle_log.width)/Pango.SCALE
-        chars_per_cell = 10
+        left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
+        chars_per_cell = column_width
         total_chars = chars_per_cell * table_columns
         for x in range(table_rows + 1): 
             cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
