@@ -411,7 +411,6 @@ class MainWindow(Gtk.Window):
         self.button8.set_name("button8")
         self.button8.connect("clicked", self.cycle_names)
         self.label1 = Gtk.Label("Pango text and tags.")
-        self.label1 = Gtk.Label("Pango text and tags.")
         self.label1.set_hexpand(True)
         self.label1.set_property("justify", 0)
         self.label1.set_line_wrap(True)              

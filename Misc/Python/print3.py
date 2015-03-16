@@ -17,6 +17,7 @@ class TextBox(Gtk.TextView):
         Gtk.TextView.__init__(self)
         font_description = Pango.FontDescription("Monospace 12") 
         self.override_font(font_description);
+        self.entries_array_text = {}
         self.page_width = 0
         self.page_height = 0
         self.char_width = 0
@@ -36,7 +37,8 @@ class TextBox(Gtk.TextView):
         string = self.textbuffer.get_text(start_line, end_line, False)
         return string
 
-    def print_dialog(self):
+    def print_dialog(self, entries_array):
+        self.entries_array_text = entries_array
         operation = Gtk.PrintOperation()
         #Figure out number of pages from number of lines.
         count_lines = self.textbuffer.get_line_count()
@@ -70,8 +72,8 @@ class TextBox(Gtk.TextView):
         cairo_context.stroke()
 
         #Get some test numbers to add to the string.
-        rows = 30
-        columns = 5
+        rows = int(self.entries_array_text[0].get_text())
+        columns = int(self.entries_array_text[1].get_text())
         data_values =  [[0 for x in range(columns)] for x in range(rows)] 
         for x in range(rows):
             for y in range(columns):
@@ -100,10 +102,10 @@ class TextBox(Gtk.TextView):
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
 
         #pad each number and first number in each column.
-        column_width = 10 
-        shift_below_text = 2
+        column_width = int(self.entries_array_text[4].get_text())
+        shift_below_text = int(self.entries_array_text[3].get_text())
         number_string = "{:\n>{m}}".format("", m=shift_below_text) 
-        pad_first_column = 20
+        pad_first_column = int(self.entries_array_text[2].get_text())
         column_padding = "{:*>{m}}".format("", m=pad_first_column) 
         for x in range(rows):
             #Test with strings 10 chars long. Can join with spaces for testing also. 
@@ -150,16 +152,69 @@ class MainWindow(Gtk.Window):
         self.scrolledwindow.set_hexpand(True)
         self.scrolledwindow.set_vexpand(True)
         self.scrolledwindow.add(self.TextBox1)
+        self.label1 = Gtk.Label("Rows")
+        self.entry1 = Gtk.Entry()
+        self.entry1.set_width_chars(3)
+        self.entry1.set_text("20")
+        self.label2 = Gtk.Label("Columns")
+        self.entry2 = Gtk.Entry()
+        self.entry2.set_width_chars(3)
+        self.entry2.set_text("5")
+        self.label3 = Gtk.Label("Shift Right")
+        self.entry3 = Gtk.Entry()
+        self.entry3.set_width_chars(3)
+        self.entry3.set_text("10")
+        self.label4 = Gtk.Label("Shift Down")
+        self.entry4 = Gtk.Entry()
+        self.entry4.set_text("2")
+        self.entry4.set_width_chars(3)
+        self.label5 = Gtk.Label("Column Width")
+        self.entry5 = Gtk.Entry()
+        self.entry5.set_text("10")
+        self.entry5.set_width_chars(3)
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.connect("clicked", self.print_dialog)
         self.grid = Gtk.Grid()
-        self.grid.attach(self.scrolledwindow, 0, 0, 1, 1)
-        self.grid.attach(self.button1, 0, 1, 1, 1)
+        self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
+        self.grid.attach(self.label1, 0, 4, 1, 1)
+        self.grid.attach(self.entry1, 1, 4, 1, 1)
+        self.grid.attach(self.label2, 0, 5, 1, 1)
+        self.grid.attach(self.entry2, 1, 5, 1, 1)
+        self.grid.attach(self.label3, 2, 4, 1, 1)
+        self.grid.attach(self.entry3, 3, 4, 1, 1)
+        self.grid.attach(self.label4, 2, 5, 1, 1)
+        self.grid.attach(self.entry4, 3, 5, 1, 1)
+        self.grid.attach(self.label5, 2, 6, 1, 1)
+        self.grid.attach(self.entry5, 3, 6, 1, 1)
+        self.grid.attach(self.button1, 1, 7, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
         print("Print Dialog")
-        self.TextBox1.print_dialog()
+        #Check entries.
+        return_value = self.validate_entries()
+        if(return_value==0):
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5)
+            self.TextBox1.print_dialog(entries_array)
+
+    def validate_entries(self):
+        if(0 >= int(self.entry1.get_text()) or int(self.entry1.get_text()) > 50):
+            print("Rows " + self.entry1.get_text() + " Range 0<rows<=50")
+            return 1
+        elif(0 >= int(self.entry2.get_text()) or int(self.entry2.get_text()) > 10):
+            print("Columns " + self.entry2.get_text() + " Range 0<columns<=10")
+            return 1
+        elif(0 > int(self.entry3.get_text()) or int(self.entry3.get_text()) > 30):
+            print("Shift Right " + self.entry3.get_text() + " Range 0<=Shift Right<=30")
+            return 1
+        elif(1 > int(self.entry4.get_text()) or int(self.entry4.get_text()) > 40):
+            print("Shift Down " + self.entry4.get_text() +" Range 1<=Shift Down<=40")
+            return 1
+        elif(5 > int(self.entry5.get_text()) or int(self.entry5.get_text()) > 20):
+            print("Column Width " + self.entry1.get_text() + " Range 5<=Column Width<=20")
+            return 1
+        else:
+            return 0
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
