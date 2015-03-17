@@ -71,9 +71,14 @@ class TextBox(Gtk.TextView):
         cairo_context.rectangle(0, 0, self.page_width, self.page_height)
         cairo_context.stroke()
 
-        #Get some test numbers to add to the string.
+        #Get variables from UI.
         rows = int(self.entries_array_text[0].get_text())
         columns = int(self.entries_array_text[1].get_text())
+        shift_margin = int(self.entries_array_text[2].get_text())
+        shift_below_text = int(self.entries_array_text[3].get_text())
+        column_width = int(self.entries_array_text[4].get_text())
+        
+        #Get some test numbers to add to the string.
         data_values =  [[0 for x in range(columns)] for x in range(rows)] 
         for x in range(rows):
             for y in range(columns):
@@ -102,11 +107,8 @@ class TextBox(Gtk.TextView):
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
 
         #pad each number and first number in each column.
-        column_width = int(self.entries_array_text[4].get_text())
-        shift_below_text = int(self.entries_array_text[3].get_text())
         number_string = "{:\n>{m}}".format("", m=shift_below_text) 
-        pad_first_column = int(self.entries_array_text[2].get_text())
-        column_padding = "{:*>{m}}".format("", m=pad_first_column) 
+        column_padding = "{:*>{m}}".format("", m=shift_margin) 
         for x in range(rows):
             #Test with strings 10 chars long. Can join with spaces for testing also. 
             row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
@@ -116,23 +118,33 @@ class TextBox(Gtk.TextView):
             else:
                 number_string = number_string + column_padding + row_tuple
 
-        #Table for test numbers.
-        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
-        table_rows = rows
-        table_columns = columns
-        shift_margin = pad_first_column
+        #Background color for each cell.
         top = line_count + shift_below_text -1
-        bottom = top + table_rows
         left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
-        chars_per_cell = column_width
-        total_chars = chars_per_cell * table_columns
-        for x in range(table_rows + 1): 
+        for x in range(rows):
+            for y in range(columns):
+                if(x%2):
+                    cairo_context.set_source_rgb(0.5, 0.7, 1.0)
+                else:
+                    cairo_context.set_source_rgb(0.7, 1.0, 1.0)
+                cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, rectangle_log.height/Pango.SCALE)
+                cairo_context.fill()
+                cairo_context.stroke()
+
+        #Table grid for test numbers.
+        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        top = line_count + shift_below_text -1
+        bottom = top + rows
+        left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
+        column_width = column_width
+        total_chars = column_width * columns
+        for x in range(rows + 1): 
             cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
             cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x))/Pango.SCALE)
             cairo_context.stroke() 
-        for x in range(table_columns + 1): 
-            cairo_context.move_to(((rectangle_log.width * x * chars_per_cell)/Pango.SCALE) + left_margin, (rectangle_log.height*top)/Pango.SCALE)
-            cairo_context.line_to(((rectangle_log.width * x * chars_per_cell)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom)/Pango.SCALE)
+        for x in range(columns + 1): 
+            cairo_context.move_to(((rectangle_log.width * x * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*top)/Pango.SCALE)
+            cairo_context.line_to(((rectangle_log.width * x * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom)/Pango.SCALE)
             cairo_context.stroke() 
 
         #Text and test numbers
@@ -144,7 +156,8 @@ class TextBox(Gtk.TextView):
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Print")
-        self.set_default_size(300,300)
+        self.set_default_size(350,350)
+        self.set_border_width(10)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
         self.TextBox1.set_vexpand(True)
@@ -152,6 +165,7 @@ class MainWindow(Gtk.Window):
         self.scrolledwindow.set_hexpand(True)
         self.scrolledwindow.set_vexpand(True)
         self.scrolledwindow.add(self.TextBox1)
+        self.label0 = Gtk.Label("Draw Test Table")
         self.label1 = Gtk.Label("Rows")
         self.entry1 = Gtk.Entry()
         self.entry1.set_width_chars(3)
@@ -175,18 +189,20 @@ class MainWindow(Gtk.Window):
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.connect("clicked", self.print_dialog)
         self.grid = Gtk.Grid()
+        self.grid.set_row_spacing(10)
         self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
-        self.grid.attach(self.label1, 0, 4, 1, 1)
-        self.grid.attach(self.entry1, 1, 4, 1, 1)
-        self.grid.attach(self.label2, 0, 5, 1, 1)
-        self.grid.attach(self.entry2, 1, 5, 1, 1)
-        self.grid.attach(self.label3, 2, 4, 1, 1)
-        self.grid.attach(self.entry3, 3, 4, 1, 1)
-        self.grid.attach(self.label4, 2, 5, 1, 1)
-        self.grid.attach(self.entry4, 3, 5, 1, 1)
-        self.grid.attach(self.label5, 2, 6, 1, 1)
-        self.grid.attach(self.entry5, 3, 6, 1, 1)
-        self.grid.attach(self.button1, 1, 7, 2, 1)
+        self.grid.attach(self.label0, 1, 4, 2, 1)
+        self.grid.attach(self.label1, 0, 5, 1, 1)
+        self.grid.attach(self.entry1, 1, 5, 1, 1)
+        self.grid.attach(self.label2, 0, 6, 1, 1)
+        self.grid.attach(self.entry2, 1, 6, 1, 1)
+        self.grid.attach(self.label3, 2, 5, 1, 1)
+        self.grid.attach(self.entry3, 3, 5, 1, 1)
+        self.grid.attach(self.label4, 2, 6, 1, 1)
+        self.grid.attach(self.entry4, 3, 6, 1, 1)
+        self.grid.attach(self.label5, 2, 7, 1, 1)
+        self.grid.attach(self.entry5, 3, 7, 1, 1)
+        self.grid.attach(self.button1, 1, 8, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
