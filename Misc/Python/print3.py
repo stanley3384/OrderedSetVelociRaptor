@@ -79,10 +79,17 @@ class TextBox(Gtk.TextView):
         column_width = int(self.entries_array_text[4].get_text())
         
         #Get some test numbers to add to the string.
-        data_values =  [[0 for x in range(columns)] for x in range(rows)] 
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+        max_value = 0
+        min_value = 100 
         for x in range(rows):
             for y in range(columns):
-                data_values[x][y] = str(round((random.random() * 100), 3))
+                random_number = round((random.random() * 100), 3)
+                data_values[x][y] = str(random_number)
+                if(random_number > max_value):
+                    max_value = random_number
+                if(random_number < min_value):
+                    min_value = random_number
 
         #Get max length and print to screen.
         max_length = 0
@@ -123,10 +130,13 @@ class TextBox(Gtk.TextView):
         left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
         for x in range(rows):
             for y in range(columns):
-                if(x%2):
-                    cairo_context.set_source_rgb(0.5, 0.7, 1.0)
-                else:
-                    cairo_context.set_source_rgb(0.7, 1.0, 1.0)
+                #Alternate colors on rows
+                #if(x%2):
+                    #cairo_context.set_source_rgb(0.5, 0.7, 1.0)
+                #else:
+                    #cairo_context.set_source_rgb(0.7, 1.0, 1.0)
+                red, green, blue = self.heatmap_value(float(data_values[x][y]), max_value, min_value)
+                cairo_context.set_source_rgb(red, green, blue) 
                 cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, rectangle_log.height/Pango.SCALE)
                 cairo_context.fill()
                 cairo_context.stroke()
@@ -152,6 +162,27 @@ class TextBox(Gtk.TextView):
         string = self.get_line(page_number)
         self.pango_layout.set_markup(string + number_string)
         PangoCairo.show_layout(cairo_context, self.pango_layout)
+
+    def heatmap_value(self, data_value, max_value, min_value):
+        percent = ((data_value - min_value)/(max_value - min_value))
+        if(percent > 0.75):
+            red = 1.0 
+            green = 0.0 + (4 * (1 - percent))
+            blue = 0.0
+        elif(percent <= 0.75 and percent > 0.50):
+            red = 1.0 - (4 * (0.75 - percent))
+            green = 1.0
+            blue = 0.0
+        elif(percent <= 0.50 and percent > 0.25):
+            red = 0.0 
+            green = 1.0
+            blue = 0.0 + (4 * (0.5 - percent))
+        else:
+            red = 0.0
+            green = 1.0 - (4 * (0.25 - percent))
+            blue = 1.0
+        
+        return red, green, blue
 
 class MainWindow(Gtk.Window):
     def __init__(self):
