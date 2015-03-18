@@ -77,6 +77,7 @@ class TextBox(Gtk.TextView):
         shift_margin = int(self.entries_array_text[2].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         column_width = int(self.entries_array_text[4].get_text())
+        combo_index = int(self.entries_array_text[5].get_active_id())
         
         #Get some test numbers to add to the string.
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
@@ -128,18 +129,20 @@ class TextBox(Gtk.TextView):
         #Background color for each cell.
         top = line_count + shift_below_text -1
         left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
-        for x in range(rows):
-            for y in range(columns):
-                #Alternate colors on rows
-                #if(x%2):
-                    #cairo_context.set_source_rgb(0.5, 0.7, 1.0)
-                #else:
-                    #cairo_context.set_source_rgb(0.7, 1.0, 1.0)
-                red, green, blue = self.heatmap_value(float(data_values[x][y]), max_value, min_value)
-                cairo_context.set_source_rgb(red, green, blue) 
-                cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, rectangle_log.height/Pango.SCALE)
-                cairo_context.fill()
-                cairo_context.stroke()
+        if(combo_index != 1):
+            for x in range(rows):
+                for y in range(columns):
+                    if(combo_index==2):
+                        if(x%2):
+                            cairo_context.set_source_rgb(0.5, 0.7, 1.0)
+                        else:
+                            cairo_context.set_source_rgb(0.7, 1.0, 1.0)
+                    else:
+                        red, green, blue = self.heatmap_value(float(data_values[x][y]), max_value, min_value)
+                        cairo_context.set_source_rgb(red, green, blue) 
+                    cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, rectangle_log.height/Pango.SCALE)
+                    cairo_context.fill()
+                    cairo_context.stroke()
 
         #Table grid for test numbers.
         cairo_context.set_source_rgb(1.0, 0.0, 1.0)
@@ -219,6 +222,11 @@ class MainWindow(Gtk.Window):
         self.entry5.set_width_chars(3)
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.connect("clicked", self.print_dialog)
+        self.combo1 = Gtk.ComboBoxText()
+        self.combo1.append("1", "White")
+        self.combo1.append("2", "Blue")
+        self.combo1.append("3", "RGB")
+        self.combo1.set_active_id("1")
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
@@ -227,6 +235,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry1, 1, 5, 1, 1)
         self.grid.attach(self.label2, 0, 6, 1, 1)
         self.grid.attach(self.entry2, 1, 6, 1, 1)
+        self.grid.attach(self.combo1, 0, 7, 2, 1)
         self.grid.attach(self.label3, 2, 5, 1, 1)
         self.grid.attach(self.entry3, 3, 5, 1, 1)
         self.grid.attach(self.label4, 2, 6, 1, 1)
@@ -241,7 +250,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.combo1)
             self.TextBox1.print_dialog(entries_array)
 
     def validate_entries(self):
