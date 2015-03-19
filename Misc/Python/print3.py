@@ -115,16 +115,31 @@ class TextBox(Gtk.TextView):
         lines_per_page = int(self.text_height / rectangle_log.height)
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
 
-        #pad each number and first number in each column.
+        #Create label values.
+        vertical_labels = []
+        horizontal_labels = []
+        for x in range(rows):
+            vertical_labels.insert(x, str(x))
+        for y in range(columns):
+            horizontal_labels.insert(y, "Column " + str(y))
+        
+        #Pad each number and first number in each column.
         pad_for_vertical_label = 0
         if(combo2_index==3):
-            pad_for_vertical_label = 5    
-        number_string = "{:\n>{m}}".format("", m=shift_below_text) 
+            pad_for_vertical_label = 5 
+        if(combo2_index==2 or combo2_index==3):  
+            number_string = "{:\n>{m}}".format("", m=shift_below_text-1)
+        else:
+            number_string = "{:\n>{m}}".format("", m=shift_below_text)
         column_padding = "{:*>{m}}".format("", m=shift_margin + pad_for_vertical_label) 
-        for x in range(rows):
-            #Test with strings 10 chars long. Can join with spaces for testing also. 
+        #Horizontal label string.
+        if(combo2_index==2 or combo2_index==3):
+            horizontal_label_string = column_padding + "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in horizontal_labels)
+            number_string = number_string + horizontal_label_string +"\n"
+        #Grid strings 
+        for x in range(rows): 
             row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
-            #print row_tuple
+            #Append row_tuple
             if(x<rows-1):
                 number_string = number_string + column_padding + row_tuple + "\n"
             else:
