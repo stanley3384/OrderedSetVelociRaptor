@@ -77,7 +77,8 @@ class TextBox(Gtk.TextView):
         shift_margin = int(self.entries_array_text[2].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         column_width = int(self.entries_array_text[4].get_text())
-        combo_index = int(self.entries_array_text[5].get_active_id())
+        combo1_index = int(self.entries_array_text[5].get_active_id())
+        combo2_index = int(self.entries_array_text[6].get_active_id())
         
         #Get some test numbers to add to the string.
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
@@ -115,8 +116,11 @@ class TextBox(Gtk.TextView):
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
 
         #pad each number and first number in each column.
+        pad_for_vertical_label = 0
+        if(combo2_index==3):
+            pad_for_vertical_label = 5    
         number_string = "{:\n>{m}}".format("", m=shift_below_text) 
-        column_padding = "{:*>{m}}".format("", m=shift_margin) 
+        column_padding = "{:*>{m}}".format("", m=shift_margin + pad_for_vertical_label) 
         for x in range(rows):
             #Test with strings 10 chars long. Can join with spaces for testing also. 
             row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
@@ -126,13 +130,58 @@ class TextBox(Gtk.TextView):
             else:
                 number_string = number_string + column_padding + row_tuple
 
+        #Draw vertical label rectangle for crosstabs.
+        top = line_count + shift_below_text - 2
+        bottom = top + rows
+        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        if(combo2_index==3):
+            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*pad_for_vertical_label, (rectangle_log.height*(rows+1))/Pango.SCALE)
+            cairo_context.fill()
+            cairo_context.stroke()
+            #Draw lines for rectangle.
+            #Vertical left.
+            cairo_context.set_source_rgb(0.0, 0.0, 0.0)
+            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
+            cairo_context.stroke() 
+            #Short top horizontal.
+            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
+            cairo_context.stroke()  
+            #Short bottom horizontal
+            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (bottom+1))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
+            cairo_context.stroke()  
+
+        #Draw horizonal label rectangle for both crosstab and tabular data.
+        top = line_count + shift_below_text - 2
+        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        if(combo2_index==2 or combo2_index==3):
+            cairo_context.rectangle(((shift_margin+pad_for_vertical_label) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, ((rectangle_log.width*columns*column_width)/Pango.SCALE), (rectangle_log.height)/Pango.SCALE)
+            cairo_context.fill()
+            cairo_context.stroke()
+            #Draw lines for rectangle.
+            #Top horizontal
+            cairo_context.set_source_rgb(0.0, 0.0, 0.0)
+            cairo_context.move_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+pad_for_vertical_label+(column_width*columns)) *rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
+            cairo_context.stroke() 
+            #Short top vertical left.
+            cairo_context.move_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
+            cairo_context.stroke() 
+           #Short top vertical right.
+            cairo_context.move_to(((shift_margin+pad_for_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+pad_for_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
+            cairo_context.stroke() 
+
         #Background color for each cell.
         top = line_count + shift_below_text -1
-        left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
-        if(combo_index != 1):
+        shift_margin = shift_margin + pad_for_vertical_label
+        if(combo1_index != 1):
             for x in range(rows):
                 for y in range(columns):
-                    if(combo_index==2):
+                    if(combo1_index==2):
                         if(x%2):
                             cairo_context.set_source_rgb(0.5, 0.7, 1.0)
                         else:
@@ -148,9 +197,8 @@ class TextBox(Gtk.TextView):
         cairo_context.set_source_rgb(1.0, 0.0, 1.0)
         top = line_count + shift_below_text -1
         bottom = top + rows
-        left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
-        column_width = column_width
         total_chars = column_width * columns
+        left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
         for x in range(rows + 1): 
             cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
             cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x))/Pango.SCALE)
@@ -190,7 +238,7 @@ class TextBox(Gtk.TextView):
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Print")
-        self.set_default_size(350,350)
+        self.set_default_size(400,400)
         self.set_border_width(10)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
@@ -214,7 +262,7 @@ class MainWindow(Gtk.Window):
         self.entry3.set_text("10")
         self.label4 = Gtk.Label("Shift Down")
         self.entry4 = Gtk.Entry()
-        self.entry4.set_text("2")
+        self.entry4.set_text("3")
         self.entry4.set_width_chars(3)
         self.label5 = Gtk.Label("Column Width")
         self.entry5 = Gtk.Entry()
@@ -227,6 +275,11 @@ class MainWindow(Gtk.Window):
         self.combo1.append("2", "Blue")
         self.combo1.append("3", "RGB")
         self.combo1.set_active_id("1")
+        self.combo2 = Gtk.ComboBoxText()
+        self.combo2.append("1", "No Labels")
+        self.combo2.append("2", "Tabular")
+        self.combo2.append("3", "Crosstab")
+        self.combo2.set_active_id("1")
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
@@ -236,13 +289,14 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.label2, 0, 6, 1, 1)
         self.grid.attach(self.entry2, 1, 6, 1, 1)
         self.grid.attach(self.combo1, 0, 7, 2, 1)
+        self.grid.attach(self.combo2, 0, 8, 2, 1)
         self.grid.attach(self.label3, 2, 5, 1, 1)
         self.grid.attach(self.entry3, 3, 5, 1, 1)
         self.grid.attach(self.label4, 2, 6, 1, 1)
         self.grid.attach(self.entry4, 3, 6, 1, 1)
         self.grid.attach(self.label5, 2, 7, 1, 1)
         self.grid.attach(self.entry5, 3, 7, 1, 1)
-        self.grid.attach(self.button1, 1, 8, 2, 1)
+        self.grid.attach(self.button1, 1, 9, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
@@ -250,7 +304,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.combo1)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.combo1, self.combo2)
             self.TextBox1.print_dialog(entries_array)
 
     def validate_entries(self):
