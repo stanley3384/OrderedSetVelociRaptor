@@ -77,17 +77,20 @@ class TextBox(Gtk.TextView):
         shift_margin = int(self.entries_array_text[2].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         column_width = int(self.entries_array_text[4].get_text())
-        combo1_index = int(self.entries_array_text[5].get_active_id())
-        combo2_index = int(self.entries_array_text[6].get_active_id())
+        shift_number_left = int(self.entries_array_text[5].get_text())
+        combo1_index = int(self.entries_array_text[6].get_active_id())
+        combo2_index = int(self.entries_array_text[7].get_active_id())
         
         #Get some test numbers to add to the string.
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         max_value = 0
         min_value = 100 
+        string_number_shift_left = ""
+        string_number_shift_left = "{:*<{m}}".format("", m=shift_number_left)
         for x in range(rows):
             for y in range(columns):
                 random_number = round((random.random() * 100), 3)
-                data_values[x][y] = str(random_number)
+                data_values[x][y] = str(random_number) + string_number_shift_left
                 if(random_number > max_value):
                     max_value = random_number
                 if(random_number < min_value):
@@ -212,7 +215,7 @@ class TextBox(Gtk.TextView):
                         else:
                             cairo_context.set_source_rgb(0.7, 1.0, 1.0)
                     else:
-                        red, green, blue = self.heatmap_value(float(data_values[x][y]), max_value, min_value)
+                        red, green, blue = self.heatmap_value(data_values[x][y], max_value, min_value)
                         cairo_context.set_source_rgb(red, green, blue) 
                     cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, rectangle_log.height/Pango.SCALE)
                     cairo_context.fill()
@@ -240,6 +243,7 @@ class TextBox(Gtk.TextView):
         PangoCairo.show_layout(cairo_context, self.pango_layout)
 
     def heatmap_value(self, data_value, max_value, min_value):
+        data_value = float(data_value.rstrip("*"))
         percent = ((data_value - min_value)/(max_value - min_value))
         if(percent > 0.75):
             red = 1.0 
@@ -293,6 +297,10 @@ class MainWindow(Gtk.Window):
         self.entry5 = Gtk.Entry()
         self.entry5.set_text("10")
         self.entry5.set_width_chars(3)
+        self.label6 = Gtk.Label("Pad Number")
+        self.entry6 = Gtk.Entry()
+        self.entry6.set_text("1")
+        self.entry6.set_width_chars(3)
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.connect("clicked", self.print_dialog)
         self.combo1 = Gtk.ComboBoxText()
@@ -321,6 +329,8 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry4, 3, 6, 1, 1)
         self.grid.attach(self.label5, 2, 7, 1, 1)
         self.grid.attach(self.entry5, 3, 7, 1, 1)
+        self.grid.attach(self.label6, 2, 8, 1, 1)
+        self.grid.attach(self.entry6, 3, 8, 1, 1)
         self.grid.attach(self.button1, 1, 9, 2, 1)
         self.add(self.grid)
 
@@ -329,7 +339,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.combo1, self.combo2)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.combo1, self.combo2)
             self.TextBox1.print_dialog(entries_array)
 
     def validate_entries(self):
@@ -346,7 +356,10 @@ class MainWindow(Gtk.Window):
             print("Shift Down " + self.entry4.get_text() +" Range 1<=Shift Down<=40")
             return 1
         elif(5 > int(self.entry5.get_text()) or int(self.entry5.get_text()) > 20):
-            print("Column Width " + self.entry1.get_text() + " Range 5<=Column Width<=20")
+            print("Column Width " + self.entry5.get_text() + " Range 5<=Column Width<=20")
+            return 1
+        elif(0 > int(self.entry6.get_text()) or int(self.entry6.get_text()) > 5):
+            print("Pad Number " + self.entry6.get_text() + " Range 0<=Column Width<=5")
             return 1
         else:
             return 0
