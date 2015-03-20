@@ -78,8 +78,9 @@ class TextBox(Gtk.TextView):
         shift_below_text = int(self.entries_array_text[3].get_text())
         column_width = int(self.entries_array_text[4].get_text())
         shift_number_left = int(self.entries_array_text[5].get_text())
-        combo1_index = int(self.entries_array_text[6].get_active_id())
-        combo2_index = int(self.entries_array_text[7].get_active_id())
+        shift_column_left = int(self.entries_array_text[6].get_text())
+        combo1_index = int(self.entries_array_text[7].get_active_id())
+        combo2_index = int(self.entries_array_text[8].get_active_id())
         
         #Get some test numbers to add to the string.
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
@@ -99,10 +100,12 @@ class TextBox(Gtk.TextView):
         #Create label values.
         vertical_labels = []
         horizontal_labels = []
+        string_column_shift_left = ""
+        string_column_shift_left = "{:*<{m}}".format("", m=shift_column_left)
         for x in range(rows):
-            vertical_labels.insert(x, "Row"+str(x))
+            vertical_labels.insert(x, "Row" + str(x))
         for y in range(columns):
-            horizontal_labels.insert(y, "Column" + str(y))
+            horizontal_labels.insert(y, "Column" + str(y) + string_column_shift_left)
 
         #Get max length and print to screen.
         max_length = 0
@@ -267,7 +270,7 @@ class TextBox(Gtk.TextView):
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Print")
-        self.set_default_size(400,400)
+        self.set_default_size(400,500)
         self.set_border_width(10)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
@@ -301,6 +304,10 @@ class MainWindow(Gtk.Window):
         self.entry6 = Gtk.Entry()
         self.entry6.set_text("1")
         self.entry6.set_width_chars(3)
+        self.label7 = Gtk.Label("Pad Column")
+        self.entry7 = Gtk.Entry()
+        self.entry7.set_text("1")
+        self.entry7.set_width_chars(3)
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.connect("clicked", self.print_dialog)
         self.combo1 = Gtk.ComboBoxText()
@@ -331,7 +338,9 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry5, 3, 7, 1, 1)
         self.grid.attach(self.label6, 2, 8, 1, 1)
         self.grid.attach(self.entry6, 3, 8, 1, 1)
-        self.grid.attach(self.button1, 1, 9, 2, 1)
+        self.grid.attach(self.label7, 2, 9, 1, 1)
+        self.grid.attach(self.entry7, 3, 9, 1, 1)
+        self.grid.attach(self.button1, 1, 10, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
@@ -339,7 +348,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.combo1, self.combo2)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.combo1, self.combo2)
             self.TextBox1.print_dialog(entries_array)
 
     def validate_entries(self):
@@ -359,7 +368,10 @@ class MainWindow(Gtk.Window):
             print("Column Width " + self.entry5.get_text() + " Range 5<=Column Width<=20")
             return 1
         elif(0 > int(self.entry6.get_text()) or int(self.entry6.get_text()) > 5):
-            print("Pad Number " + self.entry6.get_text() + " Range 0<=Column Width<=5")
+            print("Pad Number " + self.entry6.get_text() + " Range 0<=Pad Number<=5")
+            return 1
+        elif(0 > int(self.entry7.get_text()) or int(self.entry7.get_text()) > 5):
+            print("Pad Column " + self.entry7.get_text() + " Range 0<=Pad Column<=5")
             return 1
         else:
             return 0
