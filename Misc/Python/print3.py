@@ -93,15 +93,25 @@ class TextBox(Gtk.TextView):
                 if(random_number < min_value):
                     min_value = random_number
 
+        #Create label values.
+        vertical_labels = []
+        horizontal_labels = []
+        for x in range(rows):
+            vertical_labels.insert(x, "Row"+str(x))
+        for y in range(columns):
+            horizontal_labels.insert(y, "Column" + str(y))
+
         #Get max length and print to screen.
         max_length = 0
+        max_vertical_label = 0
         for x in range(rows):
+            if(max_vertical_label < len(str(vertical_labels[x]))):
+                max_vertical_label = len(str(vertical_labels[x]))
             for y in range(columns):
-                if(max_length<len(str(data_values[x][y]))):
-                    max_length=len(str(data_values[x][y]))
+                if(max_length < len(str(data_values[x][y]))):
+                    max_length = len(str(data_values[x][y]))
                 #sys.stdout.write(str(data_values[x][y]) + " ")
             #sys.stdout.write("\n")
-        print("Max Length " +str(max_length))
 
         #Get rectangle for one monospace char for sizing
         self.pango_layout.set_markup("2")
@@ -114,31 +124,29 @@ class TextBox(Gtk.TextView):
         line_count = self.pango_layout.get_line_count()
         lines_per_page = int(self.text_height / rectangle_log.height)
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
-
-        #Create label values.
-        vertical_labels = []
-        horizontal_labels = []
-        for x in range(rows):
-            vertical_labels.insert(x, str(x))
-        for y in range(columns):
-            horizontal_labels.insert(y, "Column " + str(y))
         
         #Pad each number and first number in each column.
-        pad_for_vertical_label = 0
-        if(combo2_index==3):
-            pad_for_vertical_label = 5 
         if(combo2_index==2 or combo2_index==3):  
             number_string = "{:\n>{m}}".format("", m=shift_below_text-1)
         else:
             number_string = "{:\n>{m}}".format("", m=shift_below_text)
-        column_padding = "{:*>{m}}".format("", m=shift_margin + pad_for_vertical_label) 
+        column_padding = "{:*>{m}}".format("", m=shift_margin)
+        pad_horizontal_label = ""
+        pad_vertical_label = ""
+        if(combo2_index == 3):
+            pad_horizontal_label = "{:*>{m}}".format("", m=max_vertical_label) 
         #Horizontal label string.
-        if(combo2_index==2 or combo2_index==3):
-            horizontal_label_string = column_padding + "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in horizontal_labels)
+        if(combo2_index==2 or combo2_index == 3):
+            horizontal_label_string = column_padding + pad_horizontal_label + "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in horizontal_labels)
             number_string = number_string + horizontal_label_string +"\n"
         #Grid strings 
         for x in range(rows): 
-            row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+            if(combo2_index==3):
+                label_length = max_vertical_label - len(vertical_labels[x])
+                pad_vertical_label = "{:*>{m}}".format("", m=label_length)  
+                row_tuple = vertical_labels[x]+pad_vertical_label +"".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+            else:
+                row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
             #Append row_tuple
             if(x<rows-1):
                 number_string = number_string + column_padding + row_tuple + "\n"
@@ -150,7 +158,7 @@ class TextBox(Gtk.TextView):
         bottom = top + rows
         cairo_context.set_source_rgb(1.0, 0.0, 1.0)
         if(combo2_index==3):
-            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*pad_for_vertical_label, (rectangle_log.height*(rows+1))/Pango.SCALE)
+            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*max_vertical_label, (rectangle_log.height*(rows+1))/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
@@ -161,38 +169,40 @@ class TextBox(Gtk.TextView):
             cairo_context.stroke() 
             #Short top horizontal.
             cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
             cairo_context.stroke()  
             #Short bottom horizontal
             cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (bottom+1))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
             cairo_context.stroke()  
 
         #Draw horizonal label rectangle for both crosstab and tabular data.
         top = line_count + shift_below_text - 2
         cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        if(combo2_index==1 or combo2_index==2):
+            max_vertical_label = 0
         if(combo2_index==2 or combo2_index==3):
-            cairo_context.rectangle(((shift_margin+pad_for_vertical_label) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, ((rectangle_log.width*columns*column_width)/Pango.SCALE), (rectangle_log.height)/Pango.SCALE)
+            cairo_context.rectangle(((shift_margin+max_vertical_label) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, ((rectangle_log.width*columns*column_width)/Pango.SCALE), (rectangle_log.height)/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
             #Top horizontal
             cairo_context.set_source_rgb(0.0, 0.0, 0.0)
-            cairo_context.move_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+pad_for_vertical_label+(column_width*columns)) *rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns)) *rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
             cairo_context.stroke() 
             #Short top vertical left.
-            cairo_context.move_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+pad_for_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
             cairo_context.stroke() 
            #Short top vertical right.
-            cairo_context.move_to(((shift_margin+pad_for_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+pad_for_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
             cairo_context.stroke() 
 
         #Background color for each cell.
         top = line_count + shift_below_text -1
-        shift_margin = shift_margin + pad_for_vertical_label
+        shift_margin = shift_margin + max_vertical_label
         if(combo1_index != 1):
             for x in range(rows):
                 for y in range(columns):
@@ -218,9 +228,9 @@ class TextBox(Gtk.TextView):
             cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
             cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x))/Pango.SCALE)
             cairo_context.stroke() 
-        for x in range(columns + 1): 
-            cairo_context.move_to(((rectangle_log.width * x * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*top)/Pango.SCALE)
-            cairo_context.line_to(((rectangle_log.width * x * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom)/Pango.SCALE)
+        for y in range(columns + 1): 
+            cairo_context.move_to(((rectangle_log.width * y * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*top)/Pango.SCALE)
+            cairo_context.line_to(((rectangle_log.width * y * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom)/Pango.SCALE)
             cairo_context.stroke() 
 
         #Text and test numbers
