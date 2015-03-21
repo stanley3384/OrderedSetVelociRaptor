@@ -2,8 +2,8 @@
 /*
 
   Animate the windows on some buttons. One with a linear gradient and another with
-a radial gradient. There is a png button but it needs a png file. It is commented out in
-main.
+a radial gradient. There is a png button but it needs a png file or else the program
+will exit. Make sure you have a valid png and path in main.
 
   gcc -Wall icon.c -o icon `pkg-config --cflags --libs gtk+-3.0`
 
@@ -15,6 +15,7 @@ C. Eric Cashon
 
 gint timer_id1=0;
 gint timer_id2=0;
+gint surface_ret_value=0;
 cairo_surface_t *surface=NULL;
 
 static gboolean draw_radial_color(gpointer data)
@@ -188,7 +189,7 @@ static gboolean draw_png(GtkWidget *button, cairo_t *cr, gpointer data)
    guint button_width=gtk_widget_get_allocated_width(GTK_WIDGET(button));
    guint button_height=gtk_widget_get_allocated_height(GTK_WIDGET(button));
 
-   if(surface!=NULL)
+   if(surface_ret_value==CAIRO_STATUS_SUCCESS)
      {  
        png_width=cairo_image_surface_get_width(surface);
        png_height=cairo_image_surface_get_height(surface);   
@@ -274,6 +275,13 @@ int main(int argc, char **argv)
    g_signal_connect(button2, "draw", G_CALLBACK(draw_arrow), NULL); 
 
    surface=cairo_image_surface_create_from_png("mercator_projection.png");
+   surface_ret_value = cairo_surface_status(surface);
+    if(surface_ret_value!=CAIRO_STATUS_SUCCESS)
+      {
+         const char *surface_status=cairo_status_to_string(surface_ret_value);
+         g_print("Cairo surface: %s\n", surface_status);
+         return 1;
+      }
    button3=gtk_button_new_with_label("Draw .png");
    gtk_widget_set_hexpand(button3, TRUE);
    gtk_widget_set_vexpand(button3, TRUE); 
