@@ -48,6 +48,9 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
+        tables_per_page = int((52-count_lines)/(rows + shift_below_text - 1)) 
+        if(tables_per_page == 1):
+            total_lines = tables*52
         pages = math.ceil(total_lines/52)
         operation.set_n_pages(pages)
         operation.connect("begin_print", self.begin_print)
@@ -78,13 +81,18 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        pages = math.ceil(total_lines/52)
-        print("Total Lines " + str(total_lines))
         tables_per_page = int((52-count_lines)/(rows + shift_below_text - 1)) 
-        #print("Tables per Page " + str(tables_per_page))
+        if(tables_per_page == 1):
+            total_lines = tables*52
+        pages = math.ceil(total_lines/52)
+        print("Total Lines " + str(total_lines)) 
+        print("Tables per Page " + str(tables_per_page))
         if(page_number==pages-1 and page_number > 0):
             if(tables_per_page!=1):
-                tables_on_page = int(tables)%(int(tables_per_page))
+                if(int(tables)%int(tables_per_page)==0):
+                    tables_on_page = tables_per_page
+                else:
+                    tables_on_page = int(tables)%(int(tables_per_page))
             else:
                 tables_on_page = 1
         else:
