@@ -32,6 +32,11 @@ class TextBox(Gtk.TextView):
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("This is the title for the report.")
 
+    def change_textview_font(self, combo3):
+        font = combo3.get_active_text()
+        font_description = Pango.FontDescription(font) 
+        self.override_font(font_description);
+        
     def get_line(self, line_number):
         start_line = self.textbuffer.get_iter_at_line(line_number)
         end_line = self.textbuffer.get_iter_at_line(line_number)
@@ -49,10 +54,14 @@ class TextBox(Gtk.TextView):
         tables = float(self.entries_array_text[7].get_text())
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
+        font_size_id = int(self.entries_array_text[12].get_active_id())-1       
+        #Lines per page for different font sizes.
+        font_lines = [78, 63, 52, 45, 39]
+        lines_per_page = font_lines[font_size_id]
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        tables_per_page = int((52-count_lines)/(rows + shift_below_text - 1)) 
+        tables_per_page = int((lines_per_page-count_lines)/(rows + shift_below_text - 1)) 
         if(tables_per_page == 1):
-            total_lines = tables*52
+            total_lines = tables*lines_per_page
         pages = math.ceil(tables/tables_per_page)
         operation.set_n_pages(pages)
         operation.connect("begin_print", self.begin_print)
@@ -84,9 +93,13 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        tables_per_page = int((52-count_lines)/(rows + shift_below_text - 1)) 
+        font_size_id = int(self.entries_array_text[12].get_active_id())-1       
+        #Lines per page for different font sizes.
+        font_lines = [78, 63, 52, 45, 39]
+        lines_per_page = font_lines[font_size_id]
+        tables_per_page = int((lines_per_page-count_lines)/(rows + shift_below_text - 1)) 
         if(tables_per_page == 1):
-            total_lines = tables*52
+            total_lines = tables*lines_per_page
         pages = math.ceil(tables/tables_per_page)
         print("Total Lines " + str(total_lines)) 
         print("Tables per Page " + str(tables_per_page))
@@ -396,6 +409,14 @@ class MainWindow(Gtk.Window):
         self.combo2.append("2", "Tabular")
         self.combo2.append("3", "Crosstab")
         self.combo2.set_active_id("1")
+        self.combo3 = Gtk.ComboBoxText()
+        self.combo3.append("1", "Monospace 8")
+        self.combo3.append("2", "Monospace 10")
+        self.combo3.append("3", "Monospace 12")
+        self.combo3.append("4", "Monospace 14")
+        self.combo3.append("5", "Monospace 16")
+        self.combo3.set_active_id("3")
+        self.combo3.connect("changed", self.change_font)
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
@@ -421,15 +442,19 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.label9, 0, 10, 1, 1)
         self.grid.attach(self.entry9, 1, 10, 3, 1)
         self.grid.attach(self.check1, 2, 11, 1, 1)
-        self.grid.attach(self.button1, 1, 12, 2, 1)
+        self.grid.attach(self.combo3, 0, 12, 1, 1)
+        self.grid.attach(self.button1, 1, 13, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.check1, self.combo1, self.combo2)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.check1, self.combo1, self.combo2, self.combo3)
             self.TextBox1.print_dialog(entries_array)
+
+    def change_font(self, combo3):
+        self.TextBox1.change_textview_font(self.combo3)
 
     def validate_entries(self):
         if(0 >= int(self.entry1.get_text()) or int(self.entry1.get_text()) > 50):
