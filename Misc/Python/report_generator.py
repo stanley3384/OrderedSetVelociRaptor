@@ -2,7 +2,9 @@
 
 """
    Test some Python and GTK+ printing. Print size defaults to "letter" or 8.5 x 11 sized layout.
-   Look at some layout values for positioning fonts and graphics.
+   Look at some layout values for positioning fonts and graphics. Work towards making a report
+   generator.
+
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
    C. Eric Cashon
@@ -51,13 +53,14 @@ class TextBox(Gtk.TextView):
         tables_per_page = int((52-count_lines)/(rows + shift_below_text - 1)) 
         if(tables_per_page == 1):
             total_lines = tables*52
-        pages = math.ceil(total_lines/52)
+        pages = math.ceil(tables/tables_per_page)
         operation.set_n_pages(pages)
         operation.connect("begin_print", self.begin_print)
         operation.connect("draw_page", self.draw_page)
         result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
 
     def begin_print(self, operation, gtk_context):
+        self.plate_counter = 1
         self.page_width = gtk_context.get_width()
         self.page_height = gtk_context.get_height()
         pango_context = self.get_pango_context()
@@ -84,7 +87,7 @@ class TextBox(Gtk.TextView):
         tables_per_page = int((52-count_lines)/(rows + shift_below_text - 1)) 
         if(tables_per_page == 1):
             total_lines = tables*52
-        pages = math.ceil(total_lines/52)
+        pages = math.ceil(tables/tables_per_page)
         print("Total Lines " + str(total_lines)) 
         print("Tables per Page " + str(tables_per_page))
         if(page_number==pages-1 and page_number > 0):
@@ -114,7 +117,10 @@ class TextBox(Gtk.TextView):
             table_string = table_string + self.draw_tables(operation, gtk_context, page_number, cairo_context, table)
         #Set text and tables
         cairo_context.set_source_rgb(0.0, 0.0, 0.0)
-        string = self.get_line(0)
+        if(page_number == 0):
+            string = self.get_line(0)
+        else:
+            string = ""
         self.pango_layout.set_markup(string + table_string)
         PangoCairo.show_layout(cairo_context, self.pango_layout)
 
@@ -128,8 +134,10 @@ class TextBox(Gtk.TextView):
         shift_number_left = int(self.entries_array_text[5].get_text())
         shift_column_left = int(self.entries_array_text[6].get_text())
         tables = int(self.entries_array_text[7].get_text())
-        combo1_index = int(self.entries_array_text[8].get_active_id())
-        combo2_index = int(self.entries_array_text[9].get_active_id())
+        table_name = self.entries_array_text[8].get_text()
+        check1_active = self.entries_array_text[9].get_active()
+        combo1_index = int(self.entries_array_text[10].get_active_id())
+        combo2_index = int(self.entries_array_text[11].get_active_id())
 
         #Shift tables for multiple tables.
         shift_below_text2 = shift_below_text + (table * (rows + shift_below_text -1))
@@ -177,17 +185,29 @@ class TextBox(Gtk.TextView):
         #print(" Rectangle1 " + str(rectangle_ink.height) + " Rectangle1 " + str(rectangle_ink.width) + " Rectangle2 " + str(rectangle_log.height) + " Rectangle2 " + str(rectangle_log.width))
 
         #Get lines of text to be printed on the page.
-        string = self.get_line(page_number)
+        string = "Test Line Count String."
         self.pango_layout.set_markup(string)
         line_count = self.pango_layout.get_line_count()
         lines_per_page = int(self.text_height / rectangle_log.height)
         print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
         
-        #Pad each number and first number in each column.
-        if(combo2_index==2 or combo2_index==3):  
-            number_string = "{:\n>{m}}".format("", m=shift_below_text-1)
+        #Shift table down and adjust for title.
+        if(check1_active):
+            if(combo2_index==2 or combo2_index==3):  
+                number_string = "{:\n>{m}}".format("", m=shift_below_text-2)
+                number_string = number_string + table_name + str(self.plate_counter) + "\n"
+                self.plate_counter+=1
+            else:
+                number_string = "{:\n>{m}}".format("", m=shift_below_text-1)
+                number_string = number_string + table_name + str(self.plate_counter) + "\n"
+                self.plate_counter+=1
         else:
-            number_string = "{:\n>{m}}".format("", m=shift_below_text)
+            if(combo2_index==2 or combo2_index==3):  
+                number_string = "{:\n>{m}}".format("", m=shift_below_text-1)
+            else:
+                number_string = "{:\n>{m}}".format("", m=shift_below_text)
+
+        #Pad each number and first number in each column.
         column_padding = "{:*>{m}}".format("", m=shift_margin)
         pad_horizontal_label = ""
         pad_vertical_label = ""
@@ -317,7 +337,7 @@ class TextBox(Gtk.TextView):
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Print")
+        Gtk.Window.__init__(self, title="Report Generator")
         self.set_default_size(400,500)
         self.set_border_width(10)
         self.TextBox1 = TextBox()
@@ -360,6 +380,10 @@ class MainWindow(Gtk.Window):
         self.entry8 = Gtk.Entry()
         self.entry8.set_text("5")
         self.entry8.set_width_chars(3)
+        self.label9 = Gtk.Label("Table Label")
+        self.entry9 = Gtk.Entry()
+        self.entry9.set_text("Plate ")
+        self.check1 = Gtk.CheckButton("Add Table Label")
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.connect("clicked", self.print_dialog)
         self.combo1 = Gtk.ComboBoxText()
@@ -394,14 +418,17 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry7, 3, 9, 1, 1)
         self.grid.attach(self.label8, 0, 9, 1, 1)
         self.grid.attach(self.entry8, 1, 9, 1, 1)
-        self.grid.attach(self.button1, 1, 10, 2, 1)
+        self.grid.attach(self.label9, 0, 10, 1, 1)
+        self.grid.attach(self.entry9, 1, 10, 3, 1)
+        self.grid.attach(self.check1, 2, 11, 1, 1)
+        self.grid.attach(self.button1, 1, 12, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.combo1, self.combo2)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.check1, self.combo1, self.combo2)
             self.TextBox1.print_dialog(entries_array)
 
     def validate_entries(self):
@@ -426,8 +453,8 @@ class MainWindow(Gtk.Window):
         elif(0 > int(self.entry7.get_text()) or int(self.entry7.get_text()) > 5):
             print("Pad Column " + self.entry7.get_text() + " Range 0<=Pad Column<=5")
             return 1
-        elif(1 > int(self.entry8.get_text()) or int(self.entry8.get_text()) > 10):
-            print("Tables " + self.entry8.get_text() + " Range 1<=Tables<=10")
+        elif(1 > int(self.entry8.get_text()) or int(self.entry8.get_text()) > 20):
+            print("Tables " + self.entry8.get_text() + " Range 1<=Tables<=20")
             return 1
         else:
             return 0
