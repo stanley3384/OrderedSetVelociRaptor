@@ -574,47 +574,16 @@ static void change_margin(GtkWidget *margin, GtkTextView *textview)
     if(combo_text!=NULL) g_free(combo_text);
   }
 static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
-  {
-      /*typedef enum {
-  GTK_STATE_FLAG_NORMAL       = 0,
-  GTK_STATE_FLAG_ACTIVE       = 1 << 0,
-  GTK_STATE_FLAG_PRELIGHT     = 1 << 1,
-  GTK_STATE_FLAG_SELECTED     = 1 << 2,
-  GTK_STATE_FLAG_INSENSITIVE  = 1 << 3,
-  GTK_STATE_FLAG_INCONSISTENT = 1 << 4,
-  GTK_STATE_FLAG_FOCUSED      = 1 << 5,
-  GTK_STATE_FLAG_BACKDROP     = 1 << 6
-} GtkStateFlags;*/
-
-    //int choice=1;
-    //printf("Response %i\n", response);
-    if(response==64)
-      {
-        pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
-        //printf("Active Dialog Window Title %s\n", pWindowTitle);
-      }
-       
+  {    
+    printf("Response %i\n", response);    
+    pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
+    printf("Active Percent Window Title %s\n", pWindowTitle);  
   }
 static void activate_treeview_percent_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
   {
-       /*typedef enum {
-  GTK_STATE_FLAG_NORMAL       = 0,
-  GTK_STATE_FLAG_ACTIVE       = 1 << 0,
-  GTK_STATE_FLAG_PRELIGHT     = 1 << 1,
-  GTK_STATE_FLAG_SELECTED     = 1 << 2,
-  GTK_STATE_FLAG_INSENSITIVE  = 1 << 3,
-  GTK_STATE_FLAG_INCONSISTENT = 1 << 4,
-  GTK_STATE_FLAG_FOCUSED      = 1 << 5,
-  GTK_STATE_FLAG_BACKDROP     = 1 << 6
-} GtkStateFlags;*/
-    //int choice=1;
-   
-    //printf("Response %i\n", response);
-    if(response==64)
-      {
-        pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
-        printf("Active Dialog Window Title %s\n", pWindowTitle);
-      }
+    printf("Response %i\n", response);    
+    pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
+    printf("Active Percent Window Title %s\n", pWindowTitle);
   }
 static void dialog_reference_destroy(GtkWidget *dialog , gint response, gpointer data)
   {
