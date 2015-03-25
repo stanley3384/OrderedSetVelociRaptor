@@ -160,7 +160,7 @@ class TextBox(Gtk.TextView):
         max_value = 0
         min_value = 100 
         string_number_shift_left = ""
-        string_number_shift_left = "{:*<{m}}".format("", m=shift_number_left)
+        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         for x in range(rows):
             for y in range(columns):
                 random_number = round((random.random() * 100), 3)
@@ -174,7 +174,7 @@ class TextBox(Gtk.TextView):
         vertical_labels = []
         horizontal_labels = []
         string_column_shift_left = ""
-        string_column_shift_left = "{:*<{m}}".format("", m=shift_column_left)
+        string_column_shift_left = "{: <{m}}".format("", m=shift_column_left)
         for x in range(rows):
             vertical_labels.insert(x, "Row" + str(x))
         for y in range(columns):
@@ -221,23 +221,23 @@ class TextBox(Gtk.TextView):
                 number_string = "{:\n>{m}}".format("", m=shift_below_text)
 
         #Pad each number and first number in each column.
-        column_padding = "{:*>{m}}".format("", m=shift_margin)
+        column_padding = "{: >{m}}".format("", m=shift_margin)
         pad_horizontal_label = ""
         pad_vertical_label = ""
         if(combo2_index == 3):
-            pad_horizontal_label = "{:*>{m}}".format("", m=max_vertical_label) 
+            pad_horizontal_label = "{: >{m}}".format("", m=max_vertical_label) 
         #Horizontal label string.
         if(combo2_index==2 or combo2_index == 3):
-            horizontal_label_string = column_padding + pad_horizontal_label + "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in horizontal_labels)
+            horizontal_label_string = column_padding + pad_horizontal_label + "".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in horizontal_labels)
             number_string = number_string + horizontal_label_string +"\n"
         #Grid strings 
         for x in range(rows): 
             if(combo2_index==3):
                 label_length = max_vertical_label - len(vertical_labels[x])
-                pad_vertical_label = "{:*>{m}}".format("", m=label_length)  
-                row_tuple = vertical_labels[x]+pad_vertical_label +"".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+                pad_vertical_label = "{: >{m}}".format("", m=label_length)  
+                row_tuple = vertical_labels[x]+pad_vertical_label +"".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
             else:
-                row_tuple = "".join( "{k:*>{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+                row_tuple = "".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
             #Append row_tuple
             if(x<rows-1):
                 number_string = number_string + column_padding + row_tuple + "\n"
@@ -247,14 +247,14 @@ class TextBox(Gtk.TextView):
         #Draw vertical label rectangle for crosstabs.
         top = line_count + shift_below_text2 - 2
         bottom = top + rows
-        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        cairo_context.set_source_rgb(0.8, 0.8, 0.8)
         if(combo2_index==3):
             cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*max_vertical_label, (rectangle_log.height*(rows+1))/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
             #Vertical left.
-            cairo_context.set_source_rgb(0.0, 0.0, 0.0)
+            #cairo_context.set_source_rgb(0.0, 0.0, 0.0)
             cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
             cairo_context.stroke() 
@@ -269,7 +269,7 @@ class TextBox(Gtk.TextView):
 
         #Draw horizonal label rectangle for both crosstab and tabular data.
         top = line_count + shift_below_text2 - 2
-        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        cairo_context.set_source_rgb(0.8, 0.8, 0.8)
         if(combo2_index==1 or combo2_index==2):
             max_vertical_label = 0
         if(combo2_index==2 or combo2_index==3):
@@ -278,7 +278,7 @@ class TextBox(Gtk.TextView):
             cairo_context.stroke()
             #Draw lines for rectangle.
             #Top horizontal
-            cairo_context.set_source_rgb(0.0, 0.0, 0.0)
+            #cairo_context.set_source_rgb(0.0, 0.0, 0.0)
             cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns)) *rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
             cairo_context.stroke() 
@@ -310,7 +310,7 @@ class TextBox(Gtk.TextView):
                     cairo_context.stroke()
 
         #Table grid for test numbers.
-        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        cairo_context.set_source_rgb(0.8, 0.8, 0.8)
         top = line_count + shift_below_text2 -1
         bottom = top + rows
         total_chars = column_width * columns
@@ -361,6 +361,7 @@ class MainWindow(Gtk.Window):
         self.scrolledwindow.set_vexpand(True)
         self.scrolledwindow.add(self.TextBox1)
         self.label0 = Gtk.Label("Draw Test Table")
+        self.label0.set_halign(Gtk.Align.START)
         self.label1 = Gtk.Label("Rows")
         self.entry1 = Gtk.Entry()
         self.entry1.set_width_chars(3)
@@ -398,6 +399,8 @@ class MainWindow(Gtk.Window):
         self.entry9.set_text("Plate ")
         self.check1 = Gtk.CheckButton("Add Table Label")
         self.button1 = Gtk.Button("Print Dialog")
+        self.button1.set_hexpand(True)
+        self.button1.set_halign(Gtk.Align.START)
         self.button1.connect("clicked", self.print_dialog)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
