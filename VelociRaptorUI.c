@@ -67,8 +67,7 @@ static void change_selection_font(GtkWidget*, GtkTextView*);
 static void change_global_font(GtkWidget*, GtkTextView*);
 static void change_margin(GtkWidget*, GtkTextView*);
 static void distributions_dialog(GtkButton*, gpointer);
-static void activate_treeview_data_event(GtkWidget*, GtkStateFlags, gpointer);
-static void activate_treeview_percent_event(GtkWidget*, GtkStateFlags, gpointer);
+static gboolean dialog_state_change(GtkWidget*, GdkEvent*, gpointer);
 static void dialog_reference_destroy(GtkWidget*, gint, gpointer);
 static void basic_statistics_dialog(GtkWidget*, GtkTextView*);
 static void gaussian_dialog(GtkWidget*, GtkTextView*);
@@ -573,23 +572,16 @@ static void change_margin(GtkWidget *margin, GtkTextView *textview)
     gtk_text_view_set_indent(textview, left_margin);
     if(combo_text!=NULL) g_free(combo_text);
   }
-static void activate_treeview_data_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
-  {    
-    printf("Response %i\n", response);    
-    pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
-    printf("Active Percent Window Title %s\n", pWindowTitle);  
-  }
-static void activate_treeview_percent_event(GtkWidget *dialog, GtkStateFlags response, gpointer data)
-  {
-    printf("Response %i\n", response);    
-    pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog));
-    printf("Active Percent Window Title %s\n", pWindowTitle);
+static gboolean dialog_state_change(GtkWidget *dialog, GdkEvent *event, gpointer data)
+  {        
+    pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog)); 
+    //printf("Active Window Title %s\n", pWindowTitle);      
+    return FALSE;  
   }
 static void dialog_reference_destroy(GtkWidget *dialog , gint response, gpointer data)
   {
     const gchar *title;
-    //GTK_RESPONSE_DELETE_EVENT = -4,
-
+    
     if(response==GTK_RESPONSE_DELETE_EVENT)
        {
         title=gtk_window_get_title(GTK_WINDOW(dialog));
@@ -4318,7 +4310,6 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
           }
 
        dialog=gtk_dialog_new();
-
        gtk_window_set_title(GTK_WINDOW(dialog), "Plate Data");
 
        content_area=gtk_dialog_get_content_area (GTK_DIALOG(dialog));
@@ -4380,7 +4371,7 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
 
         //reference count the dialog and then destroy.
         g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(dialog_reference_destroy), NULL);
-        g_signal_connect(GTK_WIDGET(dialog), "state_flags_changed", G_CALLBACK(activate_treeview_data_event),NULL);
+        g_signal_connect(GTK_WINDOW(dialog), "window_state_event", G_CALLBACK(dialog_state_change),NULL);
 
         gtk_widget_set_events(treeview, GDK_BUTTON_PRESS_MASK);
         gtk_widget_realize(treeview);
@@ -4464,7 +4455,7 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
        gtk_container_add(GTK_CONTAINER(content_area2), scrolled_win2);
 
        g_signal_connect(G_OBJECT(dialog2), "response", G_CALLBACK(dialog_reference_destroy), NULL);
-       g_signal_connect(GTK_WIDGET(dialog2), "state_flags_changed", G_CALLBACK(activate_treeview_percent_event),NULL);
+       g_signal_connect(GTK_WINDOW(dialog2), "window_state_event", G_CALLBACK(dialog_state_change),NULL);
        
        gtk_widget_show_all(dialog2);
 
