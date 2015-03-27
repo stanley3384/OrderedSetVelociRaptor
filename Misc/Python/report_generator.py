@@ -247,7 +247,7 @@ class TextBox(Gtk.TextView):
         bottom = top + rows
         cairo_context.set_source_rgb(table_rectangles_rgb[0], table_rectangles_rgb[1], table_rectangles_rgb[2])
         if(combo2_index==3):
-            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*max_vertical_label, (rectangle_log.height*(rows+1))/Pango.SCALE)
+            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(max_vertical_label+.50), (rectangle_log.height*(rows+1))/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
@@ -255,7 +255,8 @@ class TextBox(Gtk.TextView):
             #cairo_context.set_source_rgb(0.0, 0.0, 0.0)
             cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
-            cairo_context.stroke() 
+            cairo_context.stroke()
+            #Vertical right is drawn with grid.
             #Short top horizontal.
             cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
