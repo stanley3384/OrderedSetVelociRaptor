@@ -119,23 +119,21 @@ class TextBox(Gtk.TextView):
                 tables_on_page = tables_per_page
         #print("Tables Lines " + str(tables_on_page) + " " + str(total_lines))
         cairo_context = gtk_context.get_cairo_context()
-        #Color some different rectangles on different pages.
-        if(page_number%2):
-            cairo_context.set_source_rgb(1.0, 0.0, 1.0)
-        else:
-            cairo_context.set_source_rgb(1.0, 1.0, 0.0)
-        cairo_context.rectangle(0, 0, self.page_width, self.page_height)
-        cairo_context.stroke()
         table_string = ""
         for table in range(tables_on_page):
             table_string = table_string + self.draw_tables(operation, gtk_context, page_number, cairo_context, table)
-        #Set text and tables
+        #Set text and tables.
         cairo_context.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
         if(page_number == 0):
             string = self.get_line(0)
         else:
             string = ""
         self.pango_layout.set_markup(string + table_string)
+        #Draw page border.
+        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
+        cairo_context.rectangle(0, 0, self.page_width, self.page_height)
+        cairo_context.stroke()
+        cairo_context.set_source_rgb(0.0, 0.0, 0.0)
         PangoCairo.show_layout(cairo_context, self.pango_layout)
 
     def draw_tables(self, operation, gtk_context, page_number, cairo_context, table):
@@ -285,7 +283,7 @@ class TextBox(Gtk.TextView):
             cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
             cairo_context.stroke() 
-           #Short top vertical right.
+            #Short top vertical right.
             cairo_context.move_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
             cairo_context.stroke() 
@@ -295,16 +293,24 @@ class TextBox(Gtk.TextView):
         shift_margin = shift_margin + max_vertical_label
         if(combo1_index != 1):
             for x in range(rows):
-                for y in range(columns):
+                for y in range(columns+1):
                     if(combo1_index==2):
                         if(x%2):
                             cairo_context.set_source_rgb(0.5, 0.7, 1.0)
                         else:
                             cairo_context.set_source_rgb(0.7, 1.0, 1.0)
                     else:
-                        red, green, blue = self.heatmap_value(data_values[x][y], max_value, min_value)
-                        cairo_context.set_source_rgb(red, green, blue) 
-                    cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, rectangle_log.width/Pango.SCALE*column_width, rectangle_log.height/Pango.SCALE)
+                    #Correct for rectangles that don't fill. Should be a better way to do this.
+                    #Extend width by 2. Hazardous code.
+                        if(y != columns):
+                            red, green, blue = self.heatmap_value(data_values[x][y], max_value, min_value)
+                            cairo_context.set_source_rgb(red, green, blue) 
+                    if(y != columns):
+                        cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(column_width+2), rectangle_log.height/Pango.SCALE)
+                    else:
+                        #White out after end of table.
+                        cairo_context.set_source_rgb(1.0, 1.0, 1.0) 
+                        cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x - 1))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, (rectangle_log.height*2)/Pango.SCALE)
                     cairo_context.fill()
                     cairo_context.stroke()
 
