@@ -93,7 +93,8 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        font_size_id = int(self.entries_array_text[12].get_active_id())-1       
+        font_size_id = int(self.entries_array_text[12].get_active_id())-1 
+        font_rgb=[0.0, 0.0, 0.0]      
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
@@ -129,7 +130,7 @@ class TextBox(Gtk.TextView):
         for table in range(tables_on_page):
             table_string = table_string + self.draw_tables(operation, gtk_context, page_number, cairo_context, table)
         #Set text and tables
-        cairo_context.set_source_rgb(0.0, 0.0, 0.0)
+        cairo_context.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
         if(page_number == 0):
             string = self.get_line(0)
         else:
@@ -151,24 +152,14 @@ class TextBox(Gtk.TextView):
         check1_active = self.entries_array_text[9].get_active()
         combo1_index = int(self.entries_array_text[10].get_active_id())
         combo2_index = int(self.entries_array_text[11].get_active_id())
+        table_rectangles_rgb=[0.8, 0.8, 0.8]
+        table_grid_rgb=[0.8, 0.8, 0.8]
 
         #Shift tables for multiple tables.
         shift_below_text2 = shift_below_text + (table * (rows + shift_below_text -1))
         
-        #Get some test numbers to add to the string.
-        data_values =  [[0 for x in range(columns)] for x in range(rows)]
-        max_value = 0
-        min_value = 100 
-        string_number_shift_left = ""
-        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
-        for x in range(rows):
-            for y in range(columns):
-                random_number = round((random.random() * 100), 3)
-                data_values[x][y] = str(random_number) + string_number_shift_left
-                if(random_number > max_value):
-                    max_value = random_number
-                if(random_number < min_value):
-                    min_value = random_number
+        #Get some test data.
+        min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left)
 
         #Create label values.
         vertical_labels = []
@@ -183,6 +174,7 @@ class TextBox(Gtk.TextView):
         #Get max length and print to screen.
         max_length = 0
         max_vertical_label = 0
+        max_horizontal_label = 0
         for x in range(rows):
             if(max_vertical_label < len(str(vertical_labels[x]))):
                 max_vertical_label = len(str(vertical_labels[x]))
@@ -191,9 +183,17 @@ class TextBox(Gtk.TextView):
                     max_length = len(str(data_values[x][y]))
                 #sys.stdout.write(str(data_values[x][y]) + " ")
             #sys.stdout.write("\n")
+        for y in range(columns):
+            if(max_horizontal_label < len(str(horizontal_labels[y]))):
+                max_horizontal_label = len(str(horizontal_labels[y]))
+
+        #Check if font lengths will fit in boxes.
+        if(column_width<max_length or column_width<max_horizontal_label):
+            print("Increase column width. column_width=" + str(column_width) + " number_width=" + str(max_length) + " column_label_width=" + str(max_horizontal_label))
+            return "\nIncrease Column or Column Label Width for Drawing Tables!"
 
         #Get rectangle for one monospace char for sizing
-        self.pango_layout.set_markup("2")
+        self.pango_layout.set_markup("5")
         rectangle_ink, rectangle_log = self.pango_layout.get_extents()
         #print(" Rectangle1 " + str(rectangle_ink.height) + " Rectangle1 " + str(rectangle_ink.width) + " Rectangle2 " + str(rectangle_log.height) + " Rectangle2 " + str(rectangle_log.width))
 
@@ -247,7 +247,7 @@ class TextBox(Gtk.TextView):
         #Draw vertical label rectangle for crosstabs.
         top = line_count + shift_below_text2 - 2
         bottom = top + rows
-        cairo_context.set_source_rgb(0.8, 0.8, 0.8)
+        cairo_context.set_source_rgb(table_rectangles_rgb[0], table_rectangles_rgb[1], table_rectangles_rgb[2])
         if(combo2_index==3):
             cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*max_vertical_label, (rectangle_log.height*(rows+1))/Pango.SCALE)
             cairo_context.fill()
@@ -269,7 +269,6 @@ class TextBox(Gtk.TextView):
 
         #Draw horizonal label rectangle for both crosstab and tabular data.
         top = line_count + shift_below_text2 - 2
-        cairo_context.set_source_rgb(0.8, 0.8, 0.8)
         if(combo2_index==1 or combo2_index==2):
             max_vertical_label = 0
         if(combo2_index==2 or combo2_index==3):
@@ -305,12 +304,12 @@ class TextBox(Gtk.TextView):
                     else:
                         red, green, blue = self.heatmap_value(data_values[x][y], max_value, min_value)
                         cairo_context.set_source_rgb(red, green, blue) 
-                    cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, rectangle_log.height/Pango.SCALE)
+                    cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, rectangle_log.width/Pango.SCALE*column_width, rectangle_log.height/Pango.SCALE)
                     cairo_context.fill()
                     cairo_context.stroke()
 
         #Table grid for test numbers.
-        cairo_context.set_source_rgb(0.8, 0.8, 0.8)
+        cairo_context.set_source_rgb(table_grid_rgb[0], table_grid_rgb[1], table_grid_rgb[2])
         top = line_count + shift_below_text2 -1
         bottom = top + rows
         total_chars = column_width * columns
@@ -344,9 +343,24 @@ class TextBox(Gtk.TextView):
         else:
             red = 0.0
             green = 1.0 - (4 * (0.25 - percent))
-            blue = 1.0
-        
+            blue = 1.0        
         return red, green, blue
+
+    def get_test_data(self, rows, columns, shift_number_left):
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+        max_value = 0
+        min_value = 100 
+        string_number_shift_left = ""
+        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
+        for x in range(rows):
+            for y in range(columns):
+                random_number = round((random.random() * 100), 3)
+                data_values[x][y] = str(random_number) + string_number_shift_left
+                if(random_number > max_value):
+                    max_value = random_number
+                if(random_number < min_value):
+                    min_value = random_number
+        return min_value, max_value, data_values
 
 class MainWindow(Gtk.Window):
     def __init__(self):
