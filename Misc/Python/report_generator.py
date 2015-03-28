@@ -375,17 +375,19 @@ class TextBox(Gtk.TextView):
         return min_value, max_value, data_values
 
     def get_test_data_db(self, rows, columns, shift_number_left):
-        max_value = 0
-        min_value = 100 
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         test_data1 = [[0 for x in range(columns)] for x in range(rows)]
+        max_value = 0
+        min_value = 100 
+        string_number_shift_left = ""
+        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         for x in range(rows):
             for y in range(columns):
                 if(y == 0):
                     test_data1[x][y] = x
                 else:
                     random_number = round((random.random() * 100), 3)
-                    test_data1[x][y] = random_number
+                    test_data1[x][y] = str(random_number) + string_number_shift_left
                     if(random_number > max_value):
                         max_value = random_number
                     if(random_number < min_value):
@@ -398,7 +400,7 @@ class TextBox(Gtk.TextView):
         cur.execute("DROP TABLE IF EXISTS PlateData")
         table_string = "CREATE TABLE PlateData( KeyID INTEGER PRIMARY KEY"
         for i in range(columns-1):
-            table_string = table_string + ", WellData" + str(i) + " REAL"
+            table_string = table_string + ", WellData" + str(i) + " TEXT"
         table_string = table_string + ");"
         print(table_string)
         cur.execute(table_string)
