@@ -384,7 +384,7 @@ class TextBox(Gtk.TextView):
         for x in range(rows):
             for y in range(columns):
                 if(y == 0):
-                    test_data1[x][y] = x
+                    test_data1[x][y] = str(x) + string_number_shift_left
                 else:
                     random_number = round((random.random() * 100), 3)
                     test_data1[x][y] = str(random_number) + string_number_shift_left
@@ -398,7 +398,7 @@ class TextBox(Gtk.TextView):
         data = cur.fetchone()
         print("Python version: " + str(sys.version) + " SQLite version: " + str(data[0]))
         cur.execute("DROP TABLE IF EXISTS PlateData")
-        table_string = "CREATE TABLE PlateData( KeyID INTEGER PRIMARY KEY"
+        table_string = "CREATE TABLE PlateData( KeyID TEXT"
         for i in range(columns-1):
             table_string = table_string + ", WellData" + str(i) + " TEXT"
         table_string = table_string + ");"
@@ -419,7 +419,7 @@ class TextBox(Gtk.TextView):
         cur.execute(select_string)
         data_values = cur.fetchall()
         con.close()
-        print("Record Count " + str(len(data_values)) + " First Record " + str(data_values[0][0]) + " Min " + str(min_value) + " Max " + str(max_value))
+        print("Record Count " + str(len(data_values)) + " Min " + str(min_value) + " Max " + str(max_value))
         return min_value, max_value, data_values
 
 class MainWindow(Gtk.Window):
