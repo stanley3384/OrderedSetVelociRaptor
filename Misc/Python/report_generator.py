@@ -14,6 +14,7 @@ from gi.repository import Gtk, Pango, PangoCairo
 import random
 import math
 import sys
+import sqlite3 as lite
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -150,6 +151,7 @@ class TextBox(Gtk.TextView):
         check1_active = self.entries_array_text[9].get_active()
         combo1_index = int(self.entries_array_text[10].get_active_id())
         combo2_index = int(self.entries_array_text[11].get_active_id())
+        combo4_index = int(self.entries_array_text[13].get_active_id())
         table_rectangles_rgb=[0.8, 0.8, 0.8]
         table_grid_rgb=[0.8, 0.8, 0.8]
 
@@ -157,7 +159,10 @@ class TextBox(Gtk.TextView):
         shift_below_text2 = shift_below_text + (table * (rows + shift_below_text -1))
         
         #Get some test data.
-        min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left)
+        if(combo4_index == 1):
+            min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left)
+        else:
+            min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left)
 
         #Create label values.
         vertical_labels = []
@@ -333,7 +338,7 @@ class TextBox(Gtk.TextView):
         return number_string
 
     def heatmap_value(self, data_value, max_value, min_value):
-        data_value = float(data_value.rstrip("*"))
+        data_value = float(data_value)
         percent = ((data_value - min_value)/(max_value - min_value))
         if(percent > 0.75):
             red = 1.0 
@@ -367,6 +372,52 @@ class TextBox(Gtk.TextView):
                     max_value = random_number
                 if(random_number < min_value):
                     min_value = random_number
+        return min_value, max_value, data_values
+
+    def get_test_data_db(self, rows, columns, shift_number_left):
+        max_value = 0
+        min_value = 100 
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+        test_data1 = [[0 for x in range(columns)] for x in range(rows)]
+        for x in range(rows):
+            for y in range(columns):
+                if(y == 0):
+                    test_data1[x][y] = x
+                else:
+                    random_number = round((random.random() * 100), 3)
+                    test_data1[x][y] = random_number
+                    if(random_number > max_value):
+                        max_value = random_number
+                    if(random_number < min_value):
+                       min_value = random_number
+        con = lite.connect(":memory:")
+        cur = con.cursor()
+        cur.execute("SELECT SQLITE_VERSION()")
+        data = cur.fetchone()
+        print("Python version: " + str(sys.version) + " SQLite version: " + str(data[0]))
+        cur.execute("DROP TABLE IF EXISTS PlateData")
+        table_string = "CREATE TABLE PlateData( KeyID INTEGER PRIMARY KEY"
+        for i in range(columns-1):
+            table_string = table_string + ", WellData" + str(i) + " REAL"
+        table_string = table_string + ");"
+        print(table_string)
+        cur.execute(table_string)
+        insert_string = "INSERT INTO PlateData VALUES(?"
+        for i in range(columns-1):
+            insert_string = insert_string + ",?"
+        insert_string = insert_string + ");"
+        print(insert_string)
+        cur.executemany(insert_string, test_data1)
+        con.commit()
+        select_string = "SELECT KeyID"
+        for i in range(columns-1):
+            select_string =  select_string + ", WellData" + str(i)
+        select_string = select_string + " FROM PlateData;"
+        print(select_string)
+        cur.execute(select_string)
+        data_values = cur.fetchall()
+        con.close()
+        print("Record Count " + str(len(data_values)) + " First Record " + str(data_values[0][0]) + " Min " + str(min_value) + " Max " + str(max_value))
         return min_value, max_value, data_values
 
 class MainWindow(Gtk.Window):
@@ -441,6 +492,10 @@ class MainWindow(Gtk.Window):
         self.combo3.append("5", "Monospace 16")
         self.combo3.set_active_id("3")
         self.combo3.connect("changed", self.change_font)
+        self.combo4 = Gtk.ComboBoxText()
+        self.combo4.append("1", "Random")
+        self.combo4.append("2", "RandomDB")
+        self.combo4.set_active_id("1")
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
@@ -467,6 +522,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry9, 1, 10, 3, 1)
         self.grid.attach(self.check1, 2, 11, 1, 1)
         self.grid.attach(self.combo3, 0, 12, 1, 1)
+        self.grid.attach(self.combo4, 2, 12, 1, 1)
         self.grid.attach(self.button1, 1, 13, 2, 1)
         self.add(self.grid)
 
@@ -474,7 +530,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.check1, self.combo1, self.combo2, self.combo3)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.check1, self.combo1, self.combo2, self.combo3, self.combo4)
             self.TextBox1.print_dialog(entries_array)
 
     def change_font(self, combo3):
