@@ -167,7 +167,7 @@ class TextBox(Gtk.TextView):
         elif(combo4_index == 3):
             min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, shift_number_left)
         else:
-            min_value, max_value, data_values = self.get_db_data_for_table(rows, columns, tables, shift_number_left)
+            min_value, max_value, data_values, column_labels = self.get_db_data_for_table(rows, columns, tables, shift_number_left)
             columns = 2
 
         #Create label values.
@@ -177,8 +177,12 @@ class TextBox(Gtk.TextView):
         string_column_shift_left = "{: <{m}}".format("", m=shift_column_left)
         for x in range(rows):
             vertical_labels.insert(x, "Row" + str(x))
-        for y in range(columns):
-            horizontal_labels.insert(y, "Column" + str(y) + string_column_shift_left)
+        if(combo4_index==4):
+            for col in column_labels:
+                horizontal_labels.append(col + string_column_shift_left)
+        else:
+            for y in range(columns):
+                horizontal_labels.insert(y, "Column" + str(y) + string_column_shift_left)
 
         #Get max length and print to screen.
         max_length = 0
@@ -467,16 +471,17 @@ class TextBox(Gtk.TextView):
 
     def get_db_data_for_table(self, rows, columns, tables, shift_number_left):
         #Set columns = 2 for testing with static sql string. Need columns from sql string.
+        #Heatmapping won't work for table.
         columns = 2
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         records_error = False
-        max_value = sys.float_info.min
-        min_value = sys.float_info.max
+        max_value = 0
+        min_value = 0
         string_number_shift_left = ""
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         top = (self.plate_counter_sql-1) * rows + rows
         bottom = (self.plate_counter_sql-1) * rows
-        select_string = "SELECT KeyID, percent FROM data WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        select_string = "SELECT KeyID AS ID, percent FROM data WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
         con = lite.connect("VelociRaptorData.db")
@@ -486,6 +491,8 @@ class TextBox(Gtk.TextView):
         print("Total Records " + str(records[0]))
         if(int(records[0]) >= (rows*tables)):
             cur.execute(select_string)
+            column_names = [cn[0] for cn in cur.description]
+            print(column_names)
             data_array = cur.fetchall()
         else:
             print("Not enough rows in the table. Records " + str(records[0]) + " Records requested " + str(rows*tables))
@@ -497,7 +504,7 @@ class TextBox(Gtk.TextView):
                     data_values[x][y] = str(round(data_array[x][y],3)) + string_number_shift_left
             print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
         self.plate_counter_sql+=1
-        return min_value, max_value, data_values
+        return min_value, max_value, data_values, column_names
 
 class MainWindow(Gtk.Window):
     def __init__(self):
