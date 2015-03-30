@@ -71,6 +71,7 @@ class TextBox(Gtk.TextView):
 
     def begin_print(self, operation, gtk_context):
         self.plate_counter = 1
+        self.plate_counter_sql =1
         self.page_width = gtk_context.get_width()
         self.page_height = gtk_context.get_height()
         pango_context = self.get_pango_context()
@@ -161,8 +162,10 @@ class TextBox(Gtk.TextView):
         #Get some test data.
         if(combo4_index == 1):
             min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left)
-        else:
+        elif(combo4_index == 2):
             min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left)
+        else:
+            min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, shift_number_left)
 
         #Create label values.
         vertical_labels = []
@@ -360,8 +363,8 @@ class TextBox(Gtk.TextView):
 
     def get_test_data(self, rows, columns, shift_number_left):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
-        max_value = 0
-        min_value = 100 
+        max_value = sys.float_info.min
+        min_value = sys.float_info.max
         string_number_shift_left = ""
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         for x in range(rows):
@@ -377,8 +380,8 @@ class TextBox(Gtk.TextView):
     def get_test_data_db(self, rows, columns, shift_number_left):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         test_data1 = [[0 for x in range(columns)] for x in range(rows)]
-        max_value = 0
-        min_value = 100 
+        max_value = sys.float_info.min
+        min_value = sys.float_info.max
         string_number_shift_left = ""
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         for x in range(rows):
@@ -420,6 +423,43 @@ class TextBox(Gtk.TextView):
         data_values = cur.fetchall()
         con.close()
         print("Record Count " + str(len(data_values)) + " Min " + str(min_value) + " Max " + str(max_value))
+        return min_value, max_value, data_values
+
+    def get_db_data_for_crosstab(self, rows, columns, tables, shift_number_left):
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+        records_error = False
+        max_value = sys.float_info.min
+        min_value = sys.float_info.max
+        string_number_shift_left = ""
+        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
+        top = (self.plate_counter_sql-1) * (rows * columns) + (rows * columns)
+        bottom = (self.plate_counter_sql-1) * (rows * columns)
+        select_string = "SELECT percent FROM data WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        select_rows = "SELECT count(percent) FROM data;"
+        print(select_string)
+        con = lite.connect("VelociRaptorData.db")
+        cur = con.cursor()
+        cur.execute(select_rows)
+        records = cur.fetchone()
+        print("Total Records " + str(records[0]))
+        if(int(records[0]) >= (rows*columns*tables)):
+            cur.execute(select_string)
+            data_array = cur.fetchall()
+        else:
+            print("Not enough rows in the table. Records " + str(records[0]) + " Records requested " + str(rows*columns*tables))
+            records_error = True
+        con.close()
+        if(records_error == False):
+            for x in range(rows):
+                for y in range(columns):
+                    temp_value = float(data_array[x*columns+y][0])
+                    data_values[x][y] = str(round(data_array[x*columns+y][0],3)) + string_number_shift_left
+                    if(temp_value > max_value):
+                        max_value = temp_value
+                    if(temp_value < min_value):
+                        min_value = temp_value
+            print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
+        self.plate_counter_sql+=1
         return min_value, max_value, data_values
 
 class MainWindow(Gtk.Window):
@@ -497,6 +537,7 @@ class MainWindow(Gtk.Window):
         self.combo4 = Gtk.ComboBoxText()
         self.combo4.append("1", "Random")
         self.combo4.append("2", "RandomDB")
+        self.combo4.append("3", "VelociRaptorDB")
         self.combo4.set_active_id("1")
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
