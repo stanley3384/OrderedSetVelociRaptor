@@ -490,6 +490,8 @@ class TextBox(Gtk.TextView):
         records = cur.fetchone()
         print("Total Records " + str(records[0]))
         if(int(records[0]) >= (rows*tables)):
+            cur.execute("PRAGMA table_info(data)")
+            table_types = cur.fetchall()
             cur.execute(select_string)
             column_names = [cn[0] for cn in cur.description]
             print(column_names)
@@ -501,7 +503,11 @@ class TextBox(Gtk.TextView):
         if(records_error == False):
             for x in range(rows):
                 for y in range(columns):
-                    data_values[x][y] = str(round(data_array[x][y],3)) + string_number_shift_left
+                    column_type = table_types[y][2]
+                    if(column_type == "Real"):
+                        data_values[x][y] = str(round(data_array[x][y],3)) + string_number_shift_left
+                    else:
+                        data_values[x][y] = str(data_array[x][y]) + string_number_shift_left
             print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
         self.plate_counter_sql+=1
         return min_value, max_value, data_values, column_names
