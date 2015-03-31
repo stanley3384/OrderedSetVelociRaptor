@@ -55,7 +55,7 @@ class TextBox(Gtk.TextView):
         tables = float(self.entries_array_text[7].get_text())
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
-        font_size_id = int(self.entries_array_text[12].get_active_id())-1       
+        font_size_id = int(self.entries_array_text[13].get_active_id())-1       
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
@@ -95,7 +95,7 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        font_size_id = int(self.entries_array_text[12].get_active_id())-1 
+        font_size_id = int(self.entries_array_text[13].get_active_id())-1 
         font_rgb=[0.0, 0.0, 0.0]      
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
@@ -149,10 +149,11 @@ class TextBox(Gtk.TextView):
         shift_column_left = int(self.entries_array_text[6].get_text())
         tables = int(self.entries_array_text[7].get_text())
         table_name = self.entries_array_text[8].get_text()
-        check1_active = self.entries_array_text[9].get_active()
-        combo1_index = int(self.entries_array_text[10].get_active_id())
-        combo2_index = int(self.entries_array_text[11].get_active_id())
-        combo4_index = int(self.entries_array_text[13].get_active_id())
+        sql_string = self.entries_array_text[9].get_text()
+        check1_active = self.entries_array_text[10].get_active()
+        combo1_index = int(self.entries_array_text[11].get_active_id())
+        combo2_index = int(self.entries_array_text[12].get_active_id())
+        combo4_index = int(self.entries_array_text[14].get_active_id())
         table_rectangles_rgb=[0.8, 0.8, 0.8]
         table_grid_rgb=[0.8, 0.8, 0.8]
 
@@ -165,10 +166,10 @@ class TextBox(Gtk.TextView):
         elif(combo4_index == 2):
             min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left)
         elif(combo4_index == 3):
-            min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, shift_number_left)
+            min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, sql_string, shift_number_left)
         else:
-            min_value, max_value, data_values, column_labels = self.get_db_data_for_table(rows, columns, tables, shift_number_left)
-            columns = 2
+            min_value, max_value, data_values, column_labels, column_number = self.get_db_data_for_table(rows, columns, tables, sql_string, shift_number_left)
+            columns = column_number
 
         #Create label values.
         vertical_labels = []
@@ -432,7 +433,7 @@ class TextBox(Gtk.TextView):
         print("Record Count " + str(len(data_values)) + " Min " + str(min_value) + " Max " + str(max_value))
         return min_value, max_value, data_values
 
-    def get_db_data_for_crosstab(self, rows, columns, tables, shift_number_left):
+    def get_db_data_for_crosstab(self, rows, columns, tables, sql_string, shift_number_left):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         records_error = False
         max_value = sys.float_info.min
@@ -441,7 +442,7 @@ class TextBox(Gtk.TextView):
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         top = (self.plate_counter_sql-1) * (rows * columns) + (rows * columns)
         bottom = (self.plate_counter_sql-1) * (rows * columns)
-        select_string = "SELECT percent FROM data WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
         con = lite.connect("VelociRaptorData.db")
@@ -469,11 +470,7 @@ class TextBox(Gtk.TextView):
         self.plate_counter_sql+=1
         return min_value, max_value, data_values
 
-    def get_db_data_for_table(self, rows, columns, tables, shift_number_left):
-        #Set columns = 2 for testing with static sql string. Need columns from sql string.
-        #Heatmapping won't work for table.
-        columns = 2
-        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+    def get_db_data_for_table(self, rows, columns, tables, sql_string, shift_number_left):
         records_error = False
         max_value = 0
         min_value = 0
@@ -481,7 +478,8 @@ class TextBox(Gtk.TextView):
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         top = (self.plate_counter_sql-1) * rows + rows
         bottom = (self.plate_counter_sql-1) * rows
-        select_string = "SELECT KeyID AS ID, percent FROM data WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        #rows from the data table.
         select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
         con = lite.connect("VelociRaptorData.db")
@@ -490,27 +488,28 @@ class TextBox(Gtk.TextView):
         records = cur.fetchone()
         print("Total Records " + str(records[0]))
         if(int(records[0]) >= (rows*tables)):
-            cur.execute("PRAGMA table_info(data)")
-            table_types = cur.fetchall()
             cur.execute(select_string)
             column_names = [cn[0] for cn in cur.description]
-            print(column_names)
+            column_number = len(column_names)
+            columns = column_number
+            print("Columns " + str(columns))
             data_array = cur.fetchall()
         else:
             print("Not enough rows in the table. Records " + str(records[0]) + " Records requested " + str(rows*tables))
             records_error = True
         con.close()
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
         if(records_error == False):
             for x in range(rows):
                 for y in range(columns):
-                    column_type = table_types[y][2]
-                    if(column_type == "Real"):
+                    column_type = isinstance(data_array[x][y], float)
+                    if(column_type):
                         data_values[x][y] = str(round(data_array[x][y],3)) + string_number_shift_left
                     else:
                         data_values[x][y] = str(data_array[x][y]) + string_number_shift_left
             print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
         self.plate_counter_sql+=1
-        return min_value, max_value, data_values, column_names
+        return min_value, max_value, data_values, column_names, column_number 
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -561,6 +560,9 @@ class MainWindow(Gtk.Window):
         self.label9 = Gtk.Label("Table Label")
         self.entry9 = Gtk.Entry()
         self.entry9.set_text("Plate ")
+        self.entry10 = Gtk.Entry()
+        self.entry10.set_text("SELECT Percent FROM Data")
+        self.entry10.set_sensitive(False)
         self.check1 = Gtk.CheckButton("Add Table Label")
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.set_hexpand(True)
@@ -590,6 +592,7 @@ class MainWindow(Gtk.Window):
         self.combo4.append("3", "CrosstabFromDB")
         self.combo4.append("4", "TableFromDB")
         self.combo4.set_active_id("1")
+        self.combo4.connect("changed", self.change_sql_entry)
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
@@ -617,18 +620,27 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.check1, 2, 11, 1, 1)
         self.grid.attach(self.combo3, 0, 12, 1, 1)
         self.grid.attach(self.combo4, 2, 12, 1, 1)
-        self.grid.attach(self.button1, 1, 13, 2, 1)
+        self.grid.attach(self.entry10, 0, 13, 4, 1)
+        self.grid.attach(self.button1, 1, 14, 2, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.check1, self.combo1, self.combo2, self.combo3, self.combo4)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.check1, self.combo1, self.combo2, self.combo3, self.combo4)
             self.TextBox1.print_dialog(entries_array)
 
     def change_font(self, combo3):
         self.TextBox1.change_textview_font(self.combo3)
+
+    def change_sql_entry(self, combo4):
+        active_id = int(combo4.get_active_id())
+        if(active_id==1 or active_id==2):
+            self.entry10.set_sensitive(False)
+        else:
+            self.entry10.set_sensitive(True)
+        
 
     def validate_entries(self):
         if(0 >= int(self.entry1.get_text()) or int(self.entry1.get_text()) > 50):
