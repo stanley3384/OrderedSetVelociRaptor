@@ -521,6 +521,15 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="Report Generator")
         self.set_default_size(400,500)
         self.set_border_width(10)
+        self.menubar1 = Gtk.MenuBar()  
+        self.menu1 = Gtk.Menu()
+        self.menuitem1 = Gtk.MenuItem("About") 
+        self.menuitem1.set_submenu(self.menu1)
+        self.menuitem2 = Gtk.MenuItem("Report Generator")
+        self.menuitem2.set_name("menuitem2")
+        self.menuitem2.connect("activate", self.about_dialog)         
+        self.menu1.append(self.menuitem2) 
+        self.menubar1.append(self.menuitem1)
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
         self.TextBox1.set_vexpand(True)
@@ -627,6 +636,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.combo4, 2, 12, 1, 1)
         self.grid.attach(self.entry10, 0, 13, 4, 1)
         self.grid.attach(self.button1, 1, 14, 2, 1)
+        self.grid.attach(self.menubar1, 1, 15, 1, 1)
         self.add(self.grid)
 
     def print_dialog(self, button1):
@@ -674,6 +684,15 @@ class MainWindow(Gtk.Window):
             return 1
         else:
             return 0
+
+    def about_dialog(self, menu):
+        about = Gtk.AboutDialog()
+        about.set_program_name("Report Generator")
+        about.set_version("Test Version 1.0")
+        about.set_copyright("(c) C. Eric Cashon")
+        about.set_comments("A report generator for the Ordered Set VelociRaptor program.")
+        about.run()
+        about.destroy()
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
