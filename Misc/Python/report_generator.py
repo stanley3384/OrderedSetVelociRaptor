@@ -350,23 +350,28 @@ class TextBox(Gtk.TextView):
 
     def heatmap_value(self, data_value, max_value, min_value):
         data_value = float(data_value)
-        percent = ((data_value - min_value)/(max_value - min_value))
-        if(percent > 0.75):
-            red = 1.0 
-            green = 0.0 + (4 * (1 - percent))
-            blue = 0.0
-        elif(percent <= 0.75 and percent > 0.50):
-            red = 1.0 - (4 * (0.75 - percent))
-            green = 1.0
-            blue = 0.0
-        elif(percent <= 0.50 and percent > 0.25):
-            red = 0.0 
-            green = 1.0
-            blue = 0.0 + (4 * (0.5 - percent))
+        if(max_value==0 and min_value==0):
+            red = 0.5
+            green = 0.7
+            blue = 1.0
         else:
-            red = 0.0
-            green = 1.0 - (4 * (0.25 - percent))
-            blue = 1.0        
+            percent = ((data_value - min_value)/(max_value - min_value))
+            if(percent > 0.75):
+                red = 1.0 
+                green = 0.0 + (4 * (1 - percent))
+                blue = 0.0
+            elif(percent <= 0.75 and percent > 0.50):
+                red = 1.0 - (4 * (0.75 - percent))
+                green = 1.0
+                blue = 0.0
+            elif(percent <= 0.50 and percent > 0.25):
+                red = 0.0 
+                green = 1.0
+                blue = 0.0 + (4 * (0.5 - percent))
+            else:
+                red = 0.0
+                green = 1.0 - (4 * (0.25 - percent))
+                blue = 1.0        
         return red, green, blue
 
     def get_test_data(self, rows, columns, shift_number_left):
