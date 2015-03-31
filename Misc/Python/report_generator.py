@@ -465,8 +465,13 @@ class TextBox(Gtk.TextView):
         if(records_error == False):
             for x in range(rows):
                 for y in range(columns):
-                    temp_value = float(data_array[x*columns+y][0])
-                    data_values[x][y] = str(round(data_array[x*columns+y][0],3)) + string_number_shift_left
+                    column_type = isinstance(data_array[x*columns+y][0], float)
+                    if(column_type):
+                        temp_value = float(data_array[x*columns+y][0])
+                        data_values[x][y] = str(round(data_array[x*columns+y][0],3)) + string_number_shift_left
+                    else:
+                        temp_value = data_array[x*columns+y][0]
+                        data_values[x][y] = str(data_array[x*columns+y][0]) + string_number_shift_left
                     if(temp_value > max_value):
                         max_value = temp_value
                     if(temp_value < min_value):
