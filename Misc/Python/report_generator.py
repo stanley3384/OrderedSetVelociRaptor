@@ -55,7 +55,7 @@ class TextBox(Gtk.TextView):
         tables = float(self.entries_array_text[7].get_text())
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
-        font_size_id = int(self.entries_array_text[13].get_active_id())-1       
+        font_size_id = int(self.entries_array_text[14].get_active_id())-1       
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
@@ -95,7 +95,7 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        font_size_id = int(self.entries_array_text[13].get_active_id())-1 
+        font_size_id = int(self.entries_array_text[14].get_active_id())-1 
         font_rgb=[0.0, 0.0, 0.0]      
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
@@ -150,10 +150,11 @@ class TextBox(Gtk.TextView):
         tables = int(self.entries_array_text[7].get_text())
         table_name = self.entries_array_text[8].get_text()
         sql_string = self.entries_array_text[9].get_text()
-        check1_active = self.entries_array_text[10].get_active()
-        combo1_index = int(self.entries_array_text[11].get_active_id())
-        combo2_index = int(self.entries_array_text[12].get_active_id())
-        combo4_index = int(self.entries_array_text[14].get_active_id())
+        round_float = int(self.entries_array_text[10].get_text())
+        check1_active = self.entries_array_text[11].get_active()
+        combo1_index = int(self.entries_array_text[12].get_active_id())
+        combo2_index = int(self.entries_array_text[13].get_active_id())
+        combo4_index = int(self.entries_array_text[15].get_active_id())
         table_rectangles_rgb=[0.8, 0.8, 0.8]
         table_grid_rgb=[0.8, 0.8, 0.8]
 
@@ -162,13 +163,13 @@ class TextBox(Gtk.TextView):
         
         #Get some test data.
         if(combo4_index == 1):
-            min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left)
+            min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left, round_float)
         elif(combo4_index == 2):
-            min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left)
+            min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left, round_float)
         elif(combo4_index == 3):
-            min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, sql_string, shift_number_left)
+            min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, sql_string, shift_number_left, round_float)
         else:
-            min_value, max_value, data_values, column_labels, column_number = self.get_db_data_for_table(rows, columns, tables, sql_string, shift_number_left)
+            min_value, max_value, data_values, column_labels, column_number = self.get_db_data_for_table(rows, columns, tables, sql_string, shift_number_left, round_float)
             columns = column_number
 
         #Create label values.
@@ -374,7 +375,7 @@ class TextBox(Gtk.TextView):
                 blue = 1.0        
         return red, green, blue
 
-    def get_test_data(self, rows, columns, shift_number_left):
+    def get_test_data(self, rows, columns, shift_number_left, round_float):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         max_value = sys.float_info.min
         min_value = sys.float_info.max
@@ -382,7 +383,7 @@ class TextBox(Gtk.TextView):
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         for x in range(rows):
             for y in range(columns):
-                random_number = round((random.random() * 100), 3)
+                random_number = round((random.random() * 100), round_float)
                 data_values[x][y] = str(random_number) + string_number_shift_left
                 if(random_number > max_value):
                     max_value = random_number
@@ -390,7 +391,7 @@ class TextBox(Gtk.TextView):
                     min_value = random_number
         return min_value, max_value, data_values
 
-    def get_test_data_db(self, rows, columns, shift_number_left):
+    def get_test_data_db(self, rows, columns, shift_number_left, round_float):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         test_data1 = [[0 for x in range(columns)] for x in range(rows)]
         max_value = sys.float_info.min
@@ -402,7 +403,7 @@ class TextBox(Gtk.TextView):
                 if(y == 0):
                     test_data1[x][y] = str(x) + string_number_shift_left
                 else:
-                    random_number = round((random.random() * 100), 3)
+                    random_number = round((random.random() * 100), round_float)
                     test_data1[x][y] = str(random_number) + string_number_shift_left
                     if(random_number > max_value):
                         max_value = random_number
@@ -438,7 +439,7 @@ class TextBox(Gtk.TextView):
         print("Record Count " + str(len(data_values)) + " Min " + str(min_value) + " Max " + str(max_value))
         return min_value, max_value, data_values
 
-    def get_db_data_for_crosstab(self, rows, columns, tables, sql_string, shift_number_left):
+    def get_db_data_for_crosstab(self, rows, columns, tables, sql_string, shift_number_left, round_float):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         records_error = False
         max_value = sys.float_info.min
@@ -468,7 +469,7 @@ class TextBox(Gtk.TextView):
                     column_type = isinstance(data_array[x*columns+y][0], float)
                     if(column_type):
                         temp_value = float(data_array[x*columns+y][0])
-                        data_values[x][y] = str(round(data_array[x*columns+y][0],3)) + string_number_shift_left
+                        data_values[x][y] = str(round(data_array[x*columns+y][0],round_float)) + string_number_shift_left
                     else:
                         temp_value = data_array[x*columns+y][0]
                         data_values[x][y] = str(data_array[x*columns+y][0]) + string_number_shift_left
@@ -480,7 +481,7 @@ class TextBox(Gtk.TextView):
         self.plate_counter_sql+=1
         return min_value, max_value, data_values
 
-    def get_db_data_for_table(self, rows, columns, tables, sql_string, shift_number_left):
+    def get_db_data_for_table(self, rows, columns, tables, sql_string, shift_number_left, round_float):
         records_error = False
         max_value = 0
         min_value = 0
@@ -514,7 +515,7 @@ class TextBox(Gtk.TextView):
                 for y in range(columns):
                     column_type = isinstance(data_array[x][y], float)
                     if(column_type):
-                        data_values[x][y] = str(round(data_array[x][y],3)) + string_number_shift_left
+                        data_values[x][y] = str(round(data_array[x][y],round_float)) + string_number_shift_left
                     else:
                         data_values[x][y] = str(data_array[x][y]) + string_number_shift_left
             print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
@@ -524,8 +525,8 @@ class TextBox(Gtk.TextView):
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Report Generator")
-        self.set_default_size(400,500)
-        self.set_border_width(10)
+        self.set_default_size(700,500)
+        self.set_border_width(20)
         self.menubar1 = Gtk.MenuBar()  
         self.menu1 = Gtk.Menu()
         self.menuitem1 = Gtk.MenuItem("About") 
@@ -582,10 +583,14 @@ class MainWindow(Gtk.Window):
         self.entry10 = Gtk.Entry()
         self.entry10.set_text("SELECT Percent FROM Data")
         self.entry10.set_sensitive(False)
+        self.label11 = Gtk.Label("Round Floats")
+        self.entry11 = Gtk.Entry()
+        self.entry11.set_text("3")
+        self.entry11.set_width_chars(3)
         self.check1 = Gtk.CheckButton("Add Table Label")
         self.button1 = Gtk.Button("Print Dialog")
         self.button1.set_hexpand(True)
-        self.button1.set_halign(Gtk.Align.START)
+        #self.button1.set_halign(Gtk.Align.START)
         self.button1.connect("clicked", self.print_dialog)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
@@ -614,7 +619,8 @@ class MainWindow(Gtk.Window):
         self.combo4.connect("changed", self.change_sql_entry)
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
-        self.grid.attach(self.scrolledwindow, 0, 0, 4, 4)
+        self.grid.set_column_spacing(5)
+        self.grid.attach(self.scrolledwindow, 0, 0, 6, 4)
         self.grid.attach(self.label0, 1, 4, 2, 1)
         self.grid.attach(self.label1, 0, 5, 1, 1)
         self.grid.attach(self.entry1, 1, 5, 1, 1)
@@ -636,11 +642,13 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry8, 1, 9, 1, 1)
         self.grid.attach(self.label9, 0, 10, 1, 1)
         self.grid.attach(self.entry9, 1, 10, 3, 1)
+        self.grid.attach(self.label11, 4, 5, 1, 1)
+        self.grid.attach(self.entry11, 5, 5, 1, 1)        
         self.grid.attach(self.check1, 2, 11, 1, 1)
         self.grid.attach(self.combo3, 0, 12, 1, 1)
         self.grid.attach(self.combo4, 2, 12, 1, 1)
-        self.grid.attach(self.entry10, 0, 13, 4, 1)
-        self.grid.attach(self.button1, 1, 14, 2, 1)
+        self.grid.attach(self.entry10, 0, 13, 6, 1)
+        self.grid.attach(self.button1, 2, 14, 2, 1)
         self.grid.attach(self.menubar1, 1, 15, 1, 1)
         self.add(self.grid)
 
@@ -648,7 +656,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.check1, self.combo1, self.combo2, self.combo3, self.combo4)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4)
             self.TextBox1.print_dialog(entries_array)
 
     def change_font(self, combo3):
@@ -686,6 +694,9 @@ class MainWindow(Gtk.Window):
             return 1
         elif(1 > int(self.entry8.get_text()) or int(self.entry8.get_text()) > 20):
             print("Tables " + self.entry8.get_text() + " Range 1<=Tables<=20")
+            return 1
+        elif(1 > int(self.entry11.get_text()) or int(self.entry11.get_text()) > 7):
+            print("Round Float " + self.entry11.get_text() + " Range 1<=Tables<=7")
             return 1
         else:
             return 0
