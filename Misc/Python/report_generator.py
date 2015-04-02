@@ -677,32 +677,41 @@ class MainWindow(Gtk.Window):
         
 
     def validate_entries(self):
-        if(0 >= int(self.entry1.get_text()) or int(self.entry1.get_text()) > 50):
-            print("Rows " + self.entry1.get_text() + " Range 0<rows<=50")
+        if(0 >= int(self.entry1.get_text()) or int(self.entry1.get_text()) > 50):           
+            message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=50"
+            self.message_dialog(message)
             return 1
         elif(0 >= int(self.entry2.get_text()) or int(self.entry2.get_text()) > 10):
-            print("Columns " + self.entry2.get_text() + " Range 0<columns<=10")
+            message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=10"
+            self.message_dialog(message)
             return 1
         elif(0 > int(self.entry3.get_text()) or int(self.entry3.get_text()) > 30):
-            print("Shift Right " + self.entry3.get_text() + " Range 0<=Shift Right<=30")
+            message = "Shift Right " + self.entry3.get_text() + ", Range 0<=Shift Right<=30"
+            self.message_dialog(message)
             return 1
-        elif(1 > int(self.entry4.get_text()) or int(self.entry4.get_text()) > 40):
-            print("Shift Down " + self.entry4.get_text() +" Range 1<=Shift Down<=40")
+        elif(1 > int(self.entry4.get_text()) or int(self.entry4.get_text()) > 10):
+            message = "Shift Down " + self.entry4.get_text() +", Range 1<=Shift Down<=10"
+            self.message_dialog(message)
             return 1
         elif(5 > int(self.entry5.get_text()) or int(self.entry5.get_text()) > 20):
-            print("Column Width " + self.entry5.get_text() + " Range 5<=Column Width<=20")
+            message = "Column Width " + self.entry5.get_text() + ", Range 5<=Column Width<=20"
+            self.message_dialog(message)
             return 1
         elif(0 > int(self.entry6.get_text()) or int(self.entry6.get_text()) > 5):
-            print("Pad Number " + self.entry6.get_text() + " Range 0<=Pad Number<=5")
+            message = "Pad Number " + self.entry6.get_text() + ", Range 0<=Pad Number<=5"
+            self.message_dialog(message)
             return 1
         elif(0 > int(self.entry7.get_text()) or int(self.entry7.get_text()) > 5):
-            print("Pad Column " + self.entry7.get_text() + " Range 0<=Pad Column<=5")
+            message = "Pad Column " + self.entry7.get_text() + ", Range 0<=Pad Column<=5"
+            self.message_dialog(message)
             return 1
         elif(1 > int(self.entry8.get_text()) or int(self.entry8.get_text()) > 20):
-            print("Tables " + self.entry8.get_text() + " Range 1<=Tables<=20")
+            message = "Tables " + self.entry8.get_text() + ", Range 1<=Tables<=20"
+            self.message_dialog(message)
             return 1
         elif(1 > int(self.entry11.get_text()) or int(self.entry11.get_text()) > 7):
-            print("Round Float " + self.entry11.get_text() + " Range 1<=Tables<=7")
+            message = "Round Floats " + self.entry11.get_text() + ", Range 1<=Tables<=7"
+            self.message_dialog(message)
             return 1
         else:
             return 0
@@ -715,6 +724,11 @@ class MainWindow(Gtk.Window):
         about.set_comments("A report generator for the Ordered Set VelociRaptor program.")
         about.run()
         about.destroy()
+
+    def message_dialog(self, message):
+        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, message)
+        dialog.run()
+        dialog.destroy()
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
