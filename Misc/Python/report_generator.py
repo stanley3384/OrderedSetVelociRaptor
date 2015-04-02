@@ -3,7 +3,7 @@
 """
    Test some Python and GTK+ printing. Print size defaults to "letter" or 8.5 x 11 sized layout.
    Look at some layout values for positioning fonts and graphics. Work towards making a report
-   generator.
+   generator for grids, tables and crosstabs. Change things around as needed.
 
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
@@ -178,13 +178,13 @@ class TextBox(Gtk.TextView):
         string_column_shift_left = ""
         string_column_shift_left = "{: <{m}}".format("", m=shift_column_left)
         for x in range(rows):
-            vertical_labels.insert(x, "Row" + str(x))
+            vertical_labels.insert(x, " " + str(x+1) + " ")
         if(combo4_index==4):
             for col in column_labels:
                 horizontal_labels.append(col + string_column_shift_left)
         else:
             for y in range(columns):
-                horizontal_labels.insert(y, "Column" + str(y) + string_column_shift_left)
+                horizontal_labels.insert(y, "Column" + str(y+1) + string_column_shift_left)
 
         #Get max length and print to screen.
         max_length = 0
@@ -448,7 +448,9 @@ class TextBox(Gtk.TextView):
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         top = (self.plate_counter_sql-1) * (rows * columns) + (rows * columns)
         bottom = (self.plate_counter_sql-1) * (rows * columns)
-        select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        #Use LIMIT OFFSET instead of WHERE clause. Then you can use WHERE in the UI.
+        #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
         select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
         con = lite.connect("VelociRaptorData.db")
@@ -489,7 +491,9 @@ class TextBox(Gtk.TextView):
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
         top = (self.plate_counter_sql-1) * rows + rows
         bottom = (self.plate_counter_sql-1) * rows
-        select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        #Use LIMIT OFFSET instead of WHERE clause. Then you can use WHERE in the UI.
+        #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
+        select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
         #rows from the data table.
         select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
