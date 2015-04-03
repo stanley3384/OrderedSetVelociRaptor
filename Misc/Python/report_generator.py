@@ -697,11 +697,16 @@ class MainWindow(Gtk.Window):
             database_rows = self.check_sql_string(self.entry10.get_text())
             numbers = int(self.entry1.get_text())*int(self.entry2.get_text())*int(self.entry8.get_text())
             print("Numbers " + str(numbers))
-            if(database_rows < numbers):
+            if(database_rows < numbers and database_rows > 0):
                 message = "There are not enough rows in the database table\nto print the requested rows, columns and tables.\nDatabase rows " + str(database_rows) + " Requested " + str(numbers)
                 self.message_dialog(message)
                 return 1
-            return 0
+            elif(database_rows == 0):
+                message = "The SQL statement isn't valid."
+                self.message_dialog(message)
+                return 1
+            else:
+                return 0
         else:
             return 0
 
@@ -720,8 +725,9 @@ class MainWindow(Gtk.Window):
         dialog.destroy()
 
     def check_sql_string(self, sql_string):
-        records = 0
         #Build a row count SELECT statement.
+        valid_string = True
+        ret_val = 0
         sql1 = "SELECT count(*) "
         match1 = re.search("(?i)(FROM).*", sql_string)
         if(match1):
@@ -730,7 +736,7 @@ class MainWindow(Gtk.Window):
         #Count the number of columns in the SELECT statement and change UI columns.
         match2 = re.search("(?i)(?<=\SELECT)(.*?)(?=\FROM)", sql_string)
         if(match2):
-            words = match2.group(0).split()
+            words = match2.group(0).split(",")
             print("Columns in SELECT " + str(len(words)))
             if(int(self.combo4.get_active_id())==4):
                 self.entry2.set_text(str(len(words)))
@@ -738,11 +744,21 @@ class MainWindow(Gtk.Window):
         if(match1):
             con = lite.connect("VelociRaptorData.db")
             cur = con.cursor()
-            cur.execute(select_rows)
-            records = cur.fetchone()
+            #Check if sql_string is valid.
+            try:
+                cur.execute(sql_string)
+            except lite.OperationalError: 
+                valid_string = False
+            #If valid check how many row there are.
+            if(valid_string):
+                cur.execute(select_rows)           
+                records = cur.fetchone()
+                ret_val = records[0]
+            else:
+                ret_val = 0
             con.close()
-        print("Database records " + str(records[0]))
-        return records[0]
+        print("Database records " + str(ret_val))
+        return ret_val
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
