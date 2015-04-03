@@ -14,6 +14,7 @@ from gi.repository import Gtk, Pango, PangoCairo
 import random
 import math
 import sys
+import re
 import sqlite3 as lite
 
 class TextBox(Gtk.TextView):
@@ -441,7 +442,6 @@ class TextBox(Gtk.TextView):
 
     def get_db_data_for_crosstab(self, rows, columns, tables, sql_string, shift_number_left, round_float):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
-        records_error = False
         max_value = sys.float_info.min
         min_value = sys.float_info.max
         string_number_shift_left = ""
@@ -451,40 +451,30 @@ class TextBox(Gtk.TextView):
         #Use LIMIT OFFSET instead of WHERE clause. Then you can use WHERE in the UI.
         #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
-        select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
         con = lite.connect("VelociRaptorData.db")
         cur = con.cursor()
-        cur.execute(select_rows)
-        records = cur.fetchone()
-        print("Total Records " + str(records[0]))
-        if(int(records[0]) >= (rows*columns*tables)):
-            cur.execute(select_string)
-            data_array = cur.fetchall()
-        else:
-            print("Not enough rows in the table. Records " + str(records[0]) + " Records requested " + str(rows*columns*tables))
-            records_error = True
+        cur.execute(select_string)
+        data_array = cur.fetchall()
         con.close()
-        if(records_error == False):
-            for x in range(rows):
-                for y in range(columns):
-                    column_type = isinstance(data_array[x*columns+y][0], float)
-                    if(column_type):
-                        temp_value = float(data_array[x*columns+y][0])
-                        data_values[x][y] = str(round(data_array[x*columns+y][0],round_float)) + string_number_shift_left
-                    else:
-                        temp_value = data_array[x*columns+y][0]
-                        data_values[x][y] = str(data_array[x*columns+y][0]) + string_number_shift_left
-                    if(temp_value > max_value):
-                        max_value = temp_value
-                    if(temp_value < min_value):
-                        min_value = temp_value
-            print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
+        for x in range(rows):
+            for y in range(columns):
+                column_type = isinstance(data_array[x*columns+y][0], float)
+                if(column_type):
+                    temp_value = float(data_array[x*columns+y][0])
+                    data_values[x][y] = str(round(data_array[x*columns+y][0],round_float)) + string_number_shift_left
+                else:
+                    temp_value = data_array[x*columns+y][0]
+                    data_values[x][y] = str(data_array[x*columns+y][0]) + string_number_shift_left
+                if(temp_value > max_value):
+                    max_value = temp_value
+                if(temp_value < min_value):
+                    min_value = temp_value
+        print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
         self.plate_counter_sql+=1
         return min_value, max_value, data_values
 
     def get_db_data_for_table(self, rows, columns, tables, sql_string, shift_number_left, round_float):
-        records_error = False
         max_value = 0
         min_value = 0
         string_number_shift_left = ""
@@ -494,35 +484,25 @@ class TextBox(Gtk.TextView):
         #Use LIMIT OFFSET instead of WHERE clause. Then you can use WHERE in the UI.
         #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
-        #rows from the data table.
-        select_rows = "SELECT count(percent) FROM data;"
         print(select_string)
         con = lite.connect("VelociRaptorData.db")
         cur = con.cursor()
-        cur.execute(select_rows)
-        records = cur.fetchone()
-        print("Total Records " + str(records[0]))
-        if(int(records[0]) >= (rows*tables)):
-            cur.execute(select_string)
-            column_names = [cn[0] for cn in cur.description]
-            column_number = len(column_names)
-            columns = column_number
-            print("Columns " + str(columns))
-            data_array = cur.fetchall()
-        else:
-            print("Not enough rows in the table. Records " + str(records[0]) + " Records requested " + str(rows*tables))
-            records_error = True
+        cur.execute(select_string)
+        column_names = [cn[0] for cn in cur.description]
+        column_number = len(column_names)
+        columns = column_number
+        print("Columns " + str(columns))
+        data_array = cur.fetchall()
         con.close()
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
-        if(records_error == False):
-            for x in range(rows):
-                for y in range(columns):
-                    column_type = isinstance(data_array[x][y], float)
-                    if(column_type):
-                        data_values[x][y] = str(round(data_array[x][y],round_float)) + string_number_shift_left
-                    else:
-                        data_values[x][y] = str(data_array[x][y]) + string_number_shift_left
-            print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
+        for x in range(rows):
+            for y in range(columns):
+                column_type = isinstance(data_array[x][y], float)
+                if(column_type):
+                    data_values[x][y] = str(round(data_array[x][y],round_float)) + string_number_shift_left
+                else:
+                    data_values[x][y] = str(data_array[x][y]) + string_number_shift_left
+        print("Record Count " + str(len(data_array)) + " Min " + str(min_value) + " Max " + str(max_value))
         self.plate_counter_sql+=1
         return min_value, max_value, data_values, column_names, column_number 
 
@@ -713,6 +693,15 @@ class MainWindow(Gtk.Window):
             message = "Round Floats " + self.entry11.get_text() + ", Range 1<=Tables<=7"
             self.message_dialog(message)
             return 1
+        elif(self.entry10.get_sensitive()):
+            database_rows = self.check_sql_string(self.entry10.get_text())
+            numbers = int(self.entry1.get_text())*int(self.entry2.get_text())*int(self.entry8.get_text())
+            print("Numbers " + str(numbers))
+            if(database_rows < numbers):
+                message = "There are not enough rows in the database table\nto print the requested rows, columns and tables.\nDatabase rows " + str(database_rows) + " Requested " + str(numbers)
+                self.message_dialog(message)
+                return 1
+            return 0
         else:
             return 0
 
@@ -729,6 +718,31 @@ class MainWindow(Gtk.Window):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, message)
         dialog.run()
         dialog.destroy()
+
+    def check_sql_string(self, sql_string):
+        records = 0
+        #Build a row count SELECT statement.
+        sql1 = "SELECT count(*) "
+        match1 = re.search("(?i)(FROM).*", sql_string)
+        if(match1):
+            print(sql1 + match1.group(0))
+            select_rows = sql1 + match1.group(0)
+        #Count the number of columns in the SELECT statement and change UI columns.
+        match2 = re.search("(?i)(?<=\SELECT)(.*?)(?=\FROM)", sql_string)
+        if(match2):
+            words = match2.group(0).split()
+            print("Columns in SELECT " + str(len(words)))
+            if(int(self.combo4.get_active_id())==4):
+                self.entry2.set_text(str(len(words)))
+        #Check database for necessary rows.
+        if(match1):
+            con = lite.connect("VelociRaptorData.db")
+            cur = con.cursor()
+            cur.execute(select_rows)
+            records = cur.fetchone()
+            con.close()
+        print("Database records " + str(records[0]))
+        return records[0]
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
