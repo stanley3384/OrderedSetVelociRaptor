@@ -32,19 +32,17 @@ class TextBox(Gtk.TextView):
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
-        self.textbuffer.set_text("This is the title for the report.")
+        self.textbuffer.set_text("       This is the title for the report.\n This is a paragraph.")
 
     def change_textview_font(self, combo3):
         font = combo3.get_active_text()
         font_description = Pango.FontDescription(font) 
         self.override_font(font_description);
         
-    def get_line(self, line_number):
-        start_line = self.textbuffer.get_iter_at_line(line_number)
-        end_line = self.textbuffer.get_iter_at_line(line_number)
-        self.forward_display_line_end(end_line)
-        #print(self.textbuffer.get_text(start_line, end_line, False))
-        string = self.textbuffer.get_text(start_line, end_line, False)
+    def get_title(self):
+        start = self.textbuffer.get_start_iter()
+        end = self.textbuffer.get_end_iter()
+        string = self.textbuffer.get_text(start, end, False)
         return string
 
     def print_dialog(self, entries_array):
@@ -124,11 +122,11 @@ class TextBox(Gtk.TextView):
         cairo_context = gtk_context.get_cairo_context()
         table_string = ""
         for table in range(tables_on_page):
-            table_string = table_string + self.draw_tables(operation, gtk_context, page_number, cairo_context, table)
+            table_string = table_string + self.draw_tables(operation, gtk_context, page_number, cairo_context, table, count_lines)
         #Set text and tables.
         cairo_context.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
         if(page_number == 0):
-            string = self.get_line(0)
+            string = self.get_title()
         else:
             string = ""
         self.pango_layout.set_markup(string + table_string)
@@ -139,7 +137,7 @@ class TextBox(Gtk.TextView):
         cairo_context.set_source_rgb(0.0, 0.0, 0.0)
         PangoCairo.show_layout(cairo_context, self.pango_layout)
 
-    def draw_tables(self, operation, gtk_context, page_number, cairo_context, table):
+    def draw_tables(self, operation, gtk_context, page_number, cairo_context, table, count_lines):
         #Get variables from UI.
         rows = int(self.entries_array_text[0].get_text())
         columns = int(self.entries_array_text[1].get_text())
@@ -160,7 +158,10 @@ class TextBox(Gtk.TextView):
         table_grid_rgb=[0.8, 0.8, 0.8]
 
         #Shift tables for multiple tables.
-        shift_below_text2 = shift_below_text + (table * (rows + shift_below_text -1))
+        if(page_number == 0):
+            shift_below_text2 = (count_lines -1) + shift_below_text + (table * (rows + shift_below_text -1))
+        else:
+            shift_below_text2 = shift_below_text + (table * (rows + shift_below_text -1))
         
         #Get some test data.
         if(combo4_index == 1):
