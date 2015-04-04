@@ -54,15 +54,18 @@ class TextBox(Gtk.TextView):
         tables = float(self.entries_array_text[7].get_text())
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
-        font_size_id = int(self.entries_array_text[14].get_active_id())-1       
+        font_size_id = int(self.entries_array_text[14].get_active_id())-1 
+        combo2_index = int(self.entries_array_text[13].get_active_id())
+        if(combo2_index==2 or combo2_index==3):
+            label_line = tables 
+            print("Label Line "+str(label_line))     
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
-        total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
-        tables_per_page = int((lines_per_page-count_lines)/(rows + shift_below_text - 1)) 
-        if(tables_per_page == 1):
-            total_lines = tables*lines_per_page
-        pages = math.ceil(tables/tables_per_page)
+        total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
+        print("Total Lines " + str(total_lines) + " Lines per Page " + str(lines_per_page))
+        pages = int(math.ceil((total_lines)/lines_per_page))
+        print("Pages " + str(pages))
         operation.set_n_pages(pages)
         operation.connect("begin_print", self.begin_print)
         operation.connect("draw_page", self.draw_page)
@@ -93,32 +96,33 @@ class TextBox(Gtk.TextView):
         tables = float(self.entries_array_text[7].get_text())
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
-        total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)
+        combo2_index = int(self.entries_array_text[13].get_active_id())
+        if(combo2_index==2 or combo2_index==3):
+            label_line = tables   
+        total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
         font_size_id = int(self.entries_array_text[14].get_active_id())-1 
         font_rgb=[0.0, 0.0, 0.0]      
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
-        tables_per_page = int((lines_per_page-count_lines)/(rows + shift_below_text - 1)) 
-        if(tables_per_page == 1):
-            total_lines = tables*lines_per_page
-        pages = math.ceil(tables/tables_per_page)
-        print("Total Lines " + str(total_lines)) 
-        print("Tables per Page " + str(tables_per_page))
-        if(page_number==pages-1 and page_number > 0):
-            if(tables_per_page!=1):
-                if(int(tables)%int(tables_per_page)==0):
-                    tables_on_page = tables_per_page
-                else:
-                    tables_on_page = int(tables)%(int(tables_per_page))
-            else:
-                tables_on_page = 1
+        #Account for first page with title and text.
+        tables_first_page = int((lines_per_page-count_lines)/(rows + shift_below_text - 1))
+        tables_next_page = int(lines_per_page/(rows + shift_below_text - 1)) 
+        if(page_number==0):
+            tables_left_to_print = tables
         else:
-            if(tables < tables_per_page):
-               tables_on_page = int(tables)
-            else:
-                tables_on_page = tables_per_page
-        #print("Tables Lines " + str(tables_on_page) + " " + str(total_lines))
+            index = page_number - 1        
+            tables_left_to_print = int(tables - (index*tables_next_page) - tables_first_page)
+        print("Pages Left to Print " + str(tables_left_to_print))
+        pages = int(math.ceil((total_lines)/lines_per_page))
+        #print("Total Lines " + str(total_lines)) 
+        if(page_number==0):
+            tables_on_page = tables_first_page
+        elif(page_number==pages-1):
+            tables_on_page = tables_left_to_print
+        else:
+            tables_on_page = tables_next_page
+        print("Tables on Page " + str(tables_on_page))
         cairo_context = gtk_context.get_cairo_context()
         table_string = ""
         for table in range(tables_on_page):
@@ -219,7 +223,7 @@ class TextBox(Gtk.TextView):
         self.pango_layout.set_markup(string)
         line_count = self.pango_layout.get_line_count()
         lines_per_page = int(self.text_height / rectangle_log.height)
-        print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
+        #print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
         
         #Shift table down and adjust for title.
         if(check1_active):
