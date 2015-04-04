@@ -58,7 +58,9 @@ class TextBox(Gtk.TextView):
         combo2_index = int(self.entries_array_text[13].get_active_id())
         if(combo2_index==2 or combo2_index==3):
             label_line = tables 
-            print("Label Line "+str(label_line))     
+            print("Label Line "+str(label_line))
+        else:
+            label_line=0     
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
@@ -98,7 +100,9 @@ class TextBox(Gtk.TextView):
         shift_below_text = int(self.entries_array_text[3].get_text())
         combo2_index = int(self.entries_array_text[13].get_active_id())
         if(combo2_index==2 or combo2_index==3):
-            label_line = tables   
+            label_line = tables
+        else:
+            label_line = 0   
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
         font_size_id = int(self.entries_array_text[14].get_active_id())-1 
         font_rgb=[0.0, 0.0, 0.0]      
