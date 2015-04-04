@@ -539,6 +539,7 @@ class MainWindow(Gtk.Window):
         self.entry2 = Gtk.Entry()
         self.entry2.set_width_chars(3)
         self.entry2.set_text("5")
+        self.entry2.connect("button_press_event", self.change_label_color)
         self.label3 = Gtk.Label("Shift Right")
         self.entry3 = Gtk.Entry()
         self.entry3.set_width_chars(3)
@@ -648,6 +649,10 @@ class MainWindow(Gtk.Window):
     def change_font(self, combo3):
         self.TextBox1.change_textview_font(self.combo3)
 
+    def change_label_color(self, label2, event):
+        self.label2.set_text("Columns")
+        return False
+
     def change_sql_entry(self, combo4):
         active_id = int(combo4.get_active_id())
         if(active_id==1 or active_id==2):
@@ -739,7 +744,9 @@ class MainWindow(Gtk.Window):
             words = match2.group(0).split(",")
             print("Columns in SELECT " + str(len(words)))
             if(int(self.combo4.get_active_id())==4):
-                self.entry2.set_text(str(len(words)))
+                if(int(self.entry2.get_text()) != len(words)):
+                    self.entry2.set_text(str(len(words)))
+                    self.label2.set_markup("<span foreground='red'>Columns Changed</span>")
         #Check database for necessary rows.
         if(match1):
             con = lite.connect("VelociRaptorData.db")
