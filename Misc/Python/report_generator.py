@@ -370,6 +370,7 @@ class TextBox(Gtk.TextView):
         cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
         cairo_context.stroke() 
         #Draw grid.
+        cairo_context.set_line_width(2)
         cairo_context.set_source_rgb(table_grid_rgb[0], table_grid_rgb[1], table_grid_rgb[2])
         for x in range(rows + 1): 
             cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
