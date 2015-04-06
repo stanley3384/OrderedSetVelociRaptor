@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 '''
    Test code for using a pop-up menu to change values in a treeview. Works with Python2.7 and GTK 3.4

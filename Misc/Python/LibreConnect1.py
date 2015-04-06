@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 """
 Test code for sending text to LibreOffice Writer from a GTK TextView. Change some Writer text 

@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 """
    Test some Python and GTK+ printing. Print size defaults to "letter" or 8.5 x 11 sized layout.

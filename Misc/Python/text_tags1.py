@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 #
 # Test code for capturing a signal from a TextTag. Use a timer to block the motion signal.

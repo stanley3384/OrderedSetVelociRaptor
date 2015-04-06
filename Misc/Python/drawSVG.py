@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 '''
    Test code for looking at Python2.7, GTK+ Cairo, CSS and SVG along with some animation.

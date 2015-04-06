@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 """
  Test code for text iters, text tags, finding words and formatting words in a textbox, label and printing.

@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 #
 # Test code for text iters and finding a word in a TextBox.

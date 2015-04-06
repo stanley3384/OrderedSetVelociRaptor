@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 """
 Test code for automating LibreOffice Calc from GTK+. Build a couple of 96-well plates and

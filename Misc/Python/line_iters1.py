@@ -1,4 +1,4 @@
-#!/user/bin/python
+#!/usr/bin/python
 
 """
  Test code for getting a line of text from a textview.
