@@ -344,7 +344,8 @@ class TextBox(Gtk.TextView):
                             cairo_context.set_source_rgb(0.7, 1.0, 1.0)
                     else:
                     #Correct for rectangles that don't fill. Should be a better way to do this.
-                    #Extend width by 2. Hazardous code.
+                    #Extend width by 2. This leaves a fragment on the bottom right that needs 
+                    #to be corrected after the grid is drawn.
                         if(y != columns):
                             red, green, blue = self.heatmap_value(data_values[x][y], max_value, min_value)
                             cairo_context.set_source_rgb(red, green, blue) 
@@ -358,11 +359,18 @@ class TextBox(Gtk.TextView):
                     cairo_context.stroke()
 
         #Table grid for test numbers.
-        cairo_context.set_source_rgb(table_grid_rgb[0], table_grid_rgb[1], table_grid_rgb[2])
         top = line_count + shift_below_text2 -1
         bottom = top + rows
         total_chars = column_width * columns
         left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
+        #First draw over fragment left by overlapping color backgrounds.
+        cairo_context.set_source_rgb(1.0, 1.0, 1.0)
+        cairo_context.set_line_width(3)
+        cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
+        cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
+        cairo_context.stroke() 
+        #Draw grid.
+        cairo_context.set_source_rgb(table_grid_rgb[0], table_grid_rgb[1], table_grid_rgb[2])
         for x in range(rows + 1): 
             cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
             cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x))/Pango.SCALE)
