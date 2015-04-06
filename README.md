@@ -5,7 +5,9 @@
 Heatmap
 ![ScreenShot](/HeatmapReadme.jpg)
 
---The data sets can also be output to HTML from the application in a heatmapped microtiter plate format or in tablular format. If there is a need to customize a layout with HTML there is a Python script along with a couple C programs that make it easy to customize a layout with HTML. With a little HTML and CSS you can get a print layout exactly how you want it.
+--A useful utility program for formatting data for printing is report_generator.py which can generate a basic report layout for grids, tables and crosstabs from the sqlite database. Another useful resource for viewing data. 
+
+--The data sets can also be output to HTML from the application in a heatmapped microtiter plate format or in tablular format. If there is a need to customize a layout with HTML there is a Python script along with a couple C programs that make it easy to customize a layout with HTML. With a little HTML and CSS you can get a print layout exactly how you want it. 
 
 Heatmap and Table HTML's
 ![Screenshot2](/Heatmap2.jpg)
