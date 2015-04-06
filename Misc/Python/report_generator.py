@@ -11,6 +11,8 @@
 """
 
 from gi.repository import Gtk, Pango, PangoCairo
+from gi.repository import GdkPixbuf
+from gi.repository import GLib
 import random
 import math
 import sys
@@ -64,6 +66,7 @@ class TextBox(Gtk.TextView):
         #Lines per page for different font sizes.
         font_lines = [78, 63, 52, 45, 39]
         lines_per_page = font_lines[font_size_id]
+        #Add 2 for borderline cases. Trial and error. Might print an empty page.
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
         print("Total Lines " + str(total_lines) + " Lines per Page " + str(lines_per_page))
         pages = int(math.ceil((total_lines)/lines_per_page))
@@ -99,10 +102,12 @@ class TextBox(Gtk.TextView):
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
         combo2_index = int(self.entries_array_text[13].get_active_id())
+        combo5_index = int(self.entries_array_text[16].get_active_id())
         if(combo2_index==2 or combo2_index==3):
             label_line = tables
         else:
-            label_line = 0   
+            label_line = 0 
+        #Add 2 for borderline cases. Trial and error. Might print an empty page. 
         total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
         font_size_id = int(self.entries_array_text[14].get_active_id())-1 
         font_rgb=[0.0, 0.0, 0.0]      
@@ -139,9 +144,19 @@ class TextBox(Gtk.TextView):
             string = ""
         self.pango_layout.set_markup(string + table_string)
         #Draw page border.
-        cairo_context.set_source_rgb(1.0, 0.0, 1.0)
-        cairo_context.rectangle(0, 0, self.page_width, self.page_height)
-        cairo_context.stroke()
+        if(combo5_index!=1):
+            if(combo5_index==2):
+                cairo_context.set_source_rgb(0.0, 0.0, 0.0)
+            elif(combo5_index==3):
+                cairo_context.set_source_rgb(1.0, 0.0, 0.0)
+            elif(combo5_index==4):
+                cairo_context.set_source_rgb(0.0, 1.0, 0.0)
+            elif(combo5_index==5):
+                cairo_context.set_source_rgb(0.0, 0.0, 1.0)
+            else:
+                cairo_context.set_source_rgb(1.0, 1.0, 1.0)
+            cairo_context.rectangle(0, 0, self.page_width, self.page_height)
+            cairo_context.stroke()
         cairo_context.set_source_rgb(0.0, 0.0, 0.0)
         PangoCairo.show_layout(cairo_context, self.pango_layout)
 
@@ -623,6 +638,13 @@ class MainWindow(Gtk.Window):
         self.combo4.append("4", "TableFromDB")
         self.combo4.set_active_id("1")
         self.combo4.connect("changed", self.change_sql_entry)
+        self.combo5 = Gtk.ComboBoxText()
+        self.combo5.append("1", "No Frame")
+        self.combo5.append("2", "Black Frame")
+        self.combo5.append("3", "Red Frame")
+        self.combo5.append("4", "Green Frame")
+        self.combo5.append("5", "Blue Frame")
+        self.combo5.set_active_id("2")
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.set_column_spacing(5)
@@ -641,7 +663,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry4, 3, 6, 1, 1)
         self.grid.attach(self.label5, 2, 7, 1, 1)
         self.grid.attach(self.entry5, 3, 7, 1, 1)
-        self.grid.attach(self.combo1, 2, 8, 1, 1)
+        self.grid.attach(self.combo1, 1, 8, 1, 1)
         self.grid.attach(self.label9, 0, 9, 1, 1)
         self.grid.attach(self.entry9, 1, 9, 2, 1)
         self.grid.attach(self.label12, 0, 10, 1, 1)
@@ -651,7 +673,8 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry6, 5, 6, 1, 1)
         self.grid.attach(self.label7, 4, 7, 1, 1)
         self.grid.attach(self.entry7, 5, 7, 1, 1)       
-        self.grid.attach(self.combo2, 4, 8, 1, 1)
+        self.grid.attach(self.combo2, 2, 8, 1, 1)
+        self.grid.attach(self.combo5, 3, 8, 1, 1)
         self.grid.attach(self.check1, 3, 9, 2, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
@@ -663,7 +686,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5)
             self.TextBox1.print_dialog(entries_array)
 
     def change_font(self, combo3):
@@ -739,8 +762,12 @@ class MainWindow(Gtk.Window):
         about = Gtk.AboutDialog()
         about.set_program_name("Report Generator")
         about.set_version("Test Version 1.0")
-        about.set_copyright("(c) C. Eric Cashon")
+        about.set_copyright("(C) 2015 C. Eric Cashon")
         about.set_comments("A report generator for the Ordered Set VelociRaptor program.")
+        try:
+            about.set_logo(GdkPixbuf.Pixbuf.new_from_file("dino.svg"))
+        except GLib.GError:
+            print("Couldn't find dino.svg.")
         about.run()
         about.destroy()
 
