@@ -13,6 +13,7 @@
 from gi.repository import Gtk, Pango, PangoCairo
 from gi.repository import GdkPixbuf
 from gi.repository import GLib
+import cairo
 import random
 import math
 import sys
@@ -308,8 +309,9 @@ class TextBox(Gtk.TextView):
             cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
             cairo_context.stroke()  
 
-        #Draw horizonal label rectangle for both crosstab and tabular data.
+        #Draw horizontal label rectangle for both crosstab and tabular data.
         top = line_count + shift_below_text2 - 2
+        cairo_context.set_line_cap(cairo.LINE_CAP_SQUARE)
         if(combo2_index==1 or combo2_index==2):
             max_vertical_label = 0
         if(combo2_index==2 or combo2_index==3):
@@ -317,6 +319,7 @@ class TextBox(Gtk.TextView):
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
+            cairo_context.set_line_width(2)
             #Top horizontal
             #cairo_context.set_source_rgb(0.0, 0.0, 0.0)
             cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
@@ -330,7 +333,7 @@ class TextBox(Gtk.TextView):
             cairo_context.move_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
             cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
             cairo_context.stroke() 
-
+        
         #Background color for each cell.
         top = line_count + shift_below_text2 -1
         shift_margin = shift_margin + max_vertical_label
@@ -353,11 +356,12 @@ class TextBox(Gtk.TextView):
                         cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(column_width+2), rectangle_log.height/Pango.SCALE)
                     else:
                         #White out after end of table.
-                        cairo_context.set_source_rgb(1.0, 1.0, 1.0) 
-                        cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x - 1))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, (rectangle_log.height*2)/Pango.SCALE)
+                        if(x!=0):
+                            cairo_context.set_source_rgb(1.0, 1.0, 1.0) 
+                            cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x - 1))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, (rectangle_log.height*2)/Pango.SCALE)
                     cairo_context.fill()
                     cairo_context.stroke()
-
+        
         #Table grid for test numbers.
         top = line_count + shift_below_text2 -1
         bottom = top + rows
@@ -365,11 +369,15 @@ class TextBox(Gtk.TextView):
         left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
         #First draw over fragment left by overlapping color backgrounds.
         cairo_context.set_source_rgb(1.0, 1.0, 1.0)
-        cairo_context.set_line_width(3)
+        cairo_context.set_line_width(2)
         cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
         cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
         cairo_context.stroke() 
+        cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top))/Pango.SCALE)
+        cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top))/Pango.SCALE)
+        cairo_context.stroke() 
         #Draw grid.
+        cairo_context.set_line_cap(cairo.LINE_CAP_SQUARE)
         cairo_context.set_line_width(2)
         cairo_context.set_source_rgb(table_grid_rgb[0], table_grid_rgb[1], table_grid_rgb[2])
         for x in range(rows + 1): 
