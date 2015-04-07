@@ -32,6 +32,9 @@ class TextBox(Gtk.TextView):
         self.char_height = 0
         self.text_width = 0
         self.text_height = 0
+        self.line_count = 0
+        self.lines_per_page = 0
+        self.total_lines = 0
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
@@ -81,14 +84,24 @@ class TextBox(Gtk.TextView):
             label_line = tables 
             print("Label Line "+str(label_line))
         else:
-            label_line=0     
-        #Lines per page for different font sizes.
-        font_lines = [78, 63, 52, 45, 39]
-        lines_per_page = font_lines[font_size_id]
-        #Add 2 for borderline cases. Trial and error. Might print an empty page.
-        total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
-        print("Total Lines " + str(total_lines) + " Lines per Page " + str(lines_per_page))
-        pages = int(math.ceil((total_lines)/lines_per_page))
+            label_line=0  
+
+        #Get rectangle for one monospace char for sizing
+        self.pango_layout.set_markup("5")
+        rectangle_ink, rectangle_log = self.pango_layout.get_extents()
+        #print(" Rectangle1 " + str(rectangle_ink.height) + " Rectangle1 " + str(rectangle_ink.width) + " Rectangle2 " + str(rectangle_log.height) + " Rectangle2 " + str(rectangle_log.width))
+
+        #Get lines of text to be printed on the page.
+        string = "Test Line Count String."
+        self.pango_layout.set_markup(string)
+        self.line_count = self.pango_layout.get_line_count()
+        self.lines_per_page = int(self.text_height/rectangle_log.height)
+   
+        #Add 2 for borderline cases. Trial and error. Might print an empty page and might put
+        #too many tables on the last page. 
+        self.total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
+        print("Total Lines " + str(self.total_lines) + " Lines per Page " + str(self.lines_per_page))
+        pages = int(math.ceil((self.total_lines)/self.lines_per_page))
         print("Pages " + str(pages))
         operation.set_n_pages(pages)
        
@@ -109,24 +122,19 @@ class TextBox(Gtk.TextView):
             label_line = tables
         else:
             label_line = 0 
-        #Add 2 for borderline cases. Trial and error. Might print an empty page. 
-        total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
-        font_size_id = int(self.entries_array_text[14].get_active_id())-1 
+        #Font Color 
         font_rgb=[0.0, 0.0, 0.0]      
-        #Lines per page for different font sizes.
-        font_lines = [78, 63, 52, 45, 39]
-        lines_per_page = font_lines[font_size_id]
         #Account for first page with title and text.
-        tables_first_page = int((lines_per_page-count_lines)/(rows + shift_below_text - 1))
-        tables_next_page = int(lines_per_page/(rows + shift_below_text - 1)) 
+        tables_first_page = int((self.lines_per_page-count_lines)/(rows + shift_below_text - 1))
+        tables_next_page = int(self.lines_per_page/(rows + shift_below_text - 1)) 
         if(page_number==0):
             tables_left_to_print = tables
         else:
             index = page_number - 1        
             tables_left_to_print = int(tables - (index*tables_next_page) - tables_first_page)
-        print("Pages Left to Print " + str(tables_left_to_print))
-        pages = int(math.ceil((total_lines)/lines_per_page))
-        #print("Total Lines " + str(total_lines)) 
+        print("Tables Left to Print " + str(tables_left_to_print))
+        pages = int(math.ceil((self.total_lines)/self.lines_per_page))
+        #print("Total Lines " + str(self.total_lines)) 
         if(page_number==0):
             tables_on_page = tables_first_page
         elif(page_number==pages-1):
@@ -233,19 +241,12 @@ class TextBox(Gtk.TextView):
         if(column_width<max_length or column_width<max_horizontal_label):
             print("Increase column width. column_width=" + str(column_width) + " number_width=" + str(max_length) + " column_label_width=" + str(max_horizontal_label))
             return "\nIncrease Column or Column Label Width for Drawing Tables!"
-
-        #Get rectangle for one monospace char for sizing
+        
+        #Get rectangle for one monospace char for sizing.
         self.pango_layout.set_markup("5")
         rectangle_ink, rectangle_log = self.pango_layout.get_extents()
         #print(" Rectangle1 " + str(rectangle_ink.height) + " Rectangle1 " + str(rectangle_ink.width) + " Rectangle2 " + str(rectangle_log.height) + " Rectangle2 " + str(rectangle_log.width))
-
-        #Get lines of text to be printed on the page.
-        string = "Test Line Count String."
-        self.pango_layout.set_markup(string)
-        line_count = self.pango_layout.get_line_count()
-        lines_per_page = int(self.text_height / rectangle_log.height)
-        #print("Line Count " + str(line_count) + " Lines Per Page " + str(lines_per_page))
-        
+       
         #Shift table down and adjust for title.
         if(check1_active):
             if(combo2_index==2 or combo2_index==3):  
@@ -287,7 +288,7 @@ class TextBox(Gtk.TextView):
                 number_string = number_string + column_padding + row_tuple
 
         #Draw vertical label rectangle for crosstabs.
-        top = line_count + shift_below_text2 - 2
+        top = self.line_count + shift_below_text2 - 2
         bottom = top + rows
         cairo_context.set_source_rgb(table_rectangles_rgb[0], table_rectangles_rgb[1], table_rectangles_rgb[2])
         if(combo2_index==3):
@@ -311,7 +312,7 @@ class TextBox(Gtk.TextView):
             cairo_context.stroke()  
 
         #Draw horizontal label rectangle for both crosstab and tabular data.
-        top = line_count + shift_below_text2 - 2
+        top = self.line_count + shift_below_text2 - 2
         cairo_context.set_line_cap(cairo.LINE_CAP_SQUARE)
         if(combo2_index==1 or combo2_index==2):
             max_vertical_label = 0
@@ -336,7 +337,7 @@ class TextBox(Gtk.TextView):
             cairo_context.stroke() 
         
         #Background color for each cell.
-        top = line_count + shift_below_text2 -1
+        top = self.line_count + shift_below_text2 -1
         shift_margin = shift_margin + max_vertical_label
         if(combo1_index != 1):
             for x in range(rows):
@@ -364,7 +365,7 @@ class TextBox(Gtk.TextView):
                     cairo_context.stroke()
         
         #Table grid for test numbers.
-        top = line_count + shift_below_text2 -1
+        top = self.line_count + shift_below_text2 -1
         bottom = top + rows
         total_chars = column_width * columns
         left_margin = (shift_margin * rectangle_log.width)/Pango.SCALE
