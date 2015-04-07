@@ -51,6 +51,24 @@ class TextBox(Gtk.TextView):
     def print_dialog(self, entries_array):
         self.entries_array_text = entries_array
         operation = Gtk.PrintOperation()
+        operation.connect("begin_print", self.begin_print)
+        operation.connect("draw_page", self.draw_page)
+        result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
+
+    def begin_print(self, operation, gtk_context):
+        self.plate_counter = 1
+        self.plate_counter_sql =1
+        self.page_width = gtk_context.get_width()
+        self.page_height = gtk_context.get_height()
+        pango_context = self.get_pango_context()
+        description = pango_context.get_font_description()
+        self.pango_layout = gtk_context.create_pango_layout()
+        self.pango_layout.set_font_description(description)
+        self.pango_layout.set_width(self.page_width*Pango.SCALE);
+        self.pango_layout.set_height(self.page_height*Pango.SCALE);
+        self.text_width = self.pango_layout.get_width()
+        self.text_height = self.pango_layout.get_height()
+   
         #Figure out number of pages.
         count_lines = self.textbuffer.get_line_count()
         #Float tables value to force floating point calculation.
@@ -73,24 +91,7 @@ class TextBox(Gtk.TextView):
         pages = int(math.ceil((total_lines)/lines_per_page))
         print("Pages " + str(pages))
         operation.set_n_pages(pages)
-        operation.connect("begin_print", self.begin_print)
-        operation.connect("draw_page", self.draw_page)
-        result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
-
-    def begin_print(self, operation, gtk_context):
-        self.plate_counter = 1
-        self.plate_counter_sql =1
-        self.page_width = gtk_context.get_width()
-        self.page_height = gtk_context.get_height()
-        pango_context = self.get_pango_context()
-        description = pango_context.get_font_description()
-        self.pango_layout = gtk_context.create_pango_layout()
-        self.pango_layout.set_font_description(description)
-        self.pango_layout.set_width(self.page_width*Pango.SCALE);
-        self.pango_layout.set_height(self.page_height*Pango.SCALE);
-        self.text_width = self.pango_layout.get_width()
-        self.text_height = self.pango_layout.get_height()
-        #print("PageWidth " + str(self.page_width) + " PageHeight " + str(self.page_height) + " TextWidth " + str(self.text_width) + " TextHeight " + str(self.text_height))
+       
         #Turn off wrapping
         self.pango_layout.set_width(-1)
         #self.pango_layout.set_wrap(Pango.WrapMode.CHAR)
