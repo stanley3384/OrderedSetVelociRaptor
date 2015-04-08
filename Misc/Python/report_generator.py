@@ -78,14 +78,10 @@ class TextBox(Gtk.TextView):
         tables = float(self.entries_array_text[7].get_text())
         rows = int(self.entries_array_text[0].get_text())
         shift_below_text = int(self.entries_array_text[3].get_text())
-        font_size_id = int(self.entries_array_text[14].get_active_id())-1 
         combo2_index = int(self.entries_array_text[13].get_active_id())
-        if(combo2_index==2 or combo2_index==3):
-            label_line = tables 
-            print("Label Line "+str(label_line))
-        else:
-            label_line=0  
-
+        combo6_index = int(self.entries_array_text[17].get_active_id()) * 2
+        label_lines = tables 
+        
         #Get rectangle for one monospace char for sizing
         self.pango_layout.set_markup("5")
         rectangle_ink, rectangle_log = self.pango_layout.get_extents()
@@ -97,9 +93,8 @@ class TextBox(Gtk.TextView):
         self.line_count = self.pango_layout.get_line_count()
         self.lines_per_page = int(self.text_height/rectangle_log.height)
    
-        #Add 2 for borderline cases. Trial and error. Might print an empty page and might put
-        #too many tables on the last page. 
-        self.total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows)+label_line+2
+        #Use combo6_index to nudge total_lines if the last page doesn't fit the drawing. 
+        self.total_lines = count_lines + ((shift_below_text-1)*tables) + (tables * rows) + label_lines + combo6_index
         print("Total Lines " + str(self.total_lines) + " Lines per Page " + str(self.lines_per_page))
         pages = int(math.ceil((self.total_lines)/self.lines_per_page))
         print("Pages " + str(pages))
@@ -664,6 +659,13 @@ class MainWindow(Gtk.Window):
         self.combo5.append("4", "Green Frame")
         self.combo5.append("5", "Blue Frame")
         self.combo5.set_active_id("2")
+        self.combo6 = Gtk.ComboBoxText()
+        self.combo6.append("1", "Nudge 1")
+        self.combo6.append("2", "Nudge 2")
+        self.combo6.append("3", "Nudge 3")
+        self.combo6.append("4", "Nudge 4")
+        self.combo6.append("5", "Nudge 5")
+        self.combo6.set_active_id("2")
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.set_column_spacing(5)
@@ -694,6 +696,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry7, 5, 7, 1, 1)       
         self.grid.attach(self.combo2, 2, 8, 1, 1)
         self.grid.attach(self.combo5, 3, 8, 1, 1)
+        self.grid.attach(self.combo6, 4, 8, 1, 1)
         self.grid.attach(self.check1, 3, 9, 2, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
@@ -705,7 +708,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6)
             self.TextBox1.print_dialog(entries_array)
 
     def change_font(self, combo3):
