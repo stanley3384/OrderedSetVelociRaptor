@@ -113,10 +113,6 @@ class TextBox(Gtk.TextView):
         shift_below_text = int(self.entries_array_text[3].get_text())
         combo2_index = int(self.entries_array_text[13].get_active_id())
         combo5_index = int(self.entries_array_text[16].get_active_id())
-        if(combo2_index==2 or combo2_index==3):
-            label_line = tables
-        else:
-            label_line = 0 
         #Font Color 
         font_rgb=[0.0, 0.0, 0.0]      
         #Account for first page with title and text.
