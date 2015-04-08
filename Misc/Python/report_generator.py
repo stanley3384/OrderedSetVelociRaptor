@@ -10,7 +10,7 @@
    C. Eric Cashon
 """
 
-from gi.repository import Gtk, Pango, PangoCairo
+from gi.repository import Gtk, Gdk, Pango, PangoCairo
 from gi.repository import GdkPixbuf
 from gi.repository import GLib
 import cairo
@@ -655,9 +655,9 @@ class MainWindow(Gtk.Window):
         self.entry11.set_width_chars(3)
         self.label12 = Gtk.Label("Data Source")
         self.check1 = Gtk.CheckButton("Add Table Label")
-        self.button1 = Gtk.Button("Print Dialog")
-        self.button1.set_hexpand(True)
-        #self.button1.set_halign(Gtk.Align.START)
+        self.button1 = Gtk.Button("  Print Dialog  ")
+        self.button1.set_hexpand(False)
+        self.button1.set_halign(Gtk.Align.CENTER)
         self.button1.connect("clicked", self.print_dialog)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
@@ -734,9 +734,13 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.check1, 3, 9, 2, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
-        self.grid.attach(self.button1, 2, 12, 2, 1)
+        self.grid.attach(self.button1, 0, 12, 6, 1)
         self.grid.attach(self.menubar1, 1, 13, 1, 1)
         self.add(self.grid)
+        style_provider = Gtk.CssProvider()
+        css = "GtkWindow{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}"
+        style_provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def print_dialog(self, button1):
         #Check entries.
