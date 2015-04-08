@@ -347,7 +347,12 @@ class TextBox(Gtk.TextView):
                     #Extend width by 2. This leaves a fragment on the bottom right that needs 
                     #to be corrected after the grid is drawn.
                         if(y != columns):
-                            red, green, blue = self.heatmap_value(data_values[x][y], max_value, min_value)
+                            if(combo1_index==3):
+                                red, green, blue = self.heatmap_value_rgb(data_values[x][y], max_value, min_value)
+                            elif(combo1_index==4):
+                                red, green, blue = self.heatmap_value_bry(data_values[x][y], max_value, min_value)
+                            else:
+                                red, green, blue = self.heatmap_value_iris(data_values[x][y], max_value, min_value)
                             cairo_context.set_source_rgb(red, green, blue) 
                     if(y != columns):
                         cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(column_width+2), rectangle_log.height/Pango.SCALE)
@@ -387,8 +392,8 @@ class TextBox(Gtk.TextView):
             cairo_context.stroke() 
 
         return number_string
-
-    def heatmap_value(self, data_value, max_value, min_value):
+    
+    def heatmap_value_rgb(self, data_value, max_value, min_value):
         data_value = float(data_value)
         if(max_value==0 and min_value==0):
             red = 0.5
@@ -412,6 +417,37 @@ class TextBox(Gtk.TextView):
                 red = 0.0
                 green = 1.0 - (4 * (0.25 - percent))
                 blue = 1.0        
+        return red, green, blue
+    
+    def heatmap_value_bry(self, data_value, max_value, min_value):
+        data_value = float(data_value)
+        if(max_value==0 and min_value==0):
+            red = 0.5
+            green = 0.7
+            blue = 1.0
+        else:
+            percent = ((data_value - min_value)/(max_value - min_value))
+            if(percent > 0.50):
+                red = 1.0 
+                green = 1.0 - (2 * (1 - percent))
+                blue = 0.0
+            else:
+                red = 1.0 - (2 * (0.50 - percent))
+                green = 0.0
+                blue = 0.0 + (2 * (0.50 - percent))       
+        return red, green, blue
+    
+    def heatmap_value_iris(self, data_value, max_value, min_value):
+        data_value = float(data_value)
+        if(max_value==0 and min_value==0):
+            red = 0.5
+            green = 0.7
+            blue = 1.0
+        else:
+            percent = ((data_value - min_value)/(max_value - min_value))
+            red = 1.0 
+            green = 1.0 - (1 - percent)
+            blue = 0.0 + (1 - percent)            
         return red, green, blue
 
     def get_test_data(self, rows, columns, shift_number_left, round_float):
@@ -631,6 +667,8 @@ class MainWindow(Gtk.Window):
         self.combo1.append("1", "White")
         self.combo1.append("2", "Blue")
         self.combo1.append("3", "RGB")
+        self.combo1.append("4", "BRY")
+        self.combo1.append("5", "Iris")
         self.combo1.set_active_id("1")
         self.combo2 = Gtk.ComboBoxText()
         self.combo2.append("1", "No Labels")
