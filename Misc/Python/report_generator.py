@@ -19,6 +19,7 @@ import math
 import sys
 import re
 import sqlite3 as lite
+from operator import itemgetter
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -35,10 +36,14 @@ class TextBox(Gtk.TextView):
         self.line_count = 0
         self.lines_per_page = 0
         self.total_lines = 0
+        self.pango_markup_string = ""
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("       This is the title for the report.\n This is a paragraph.")
+        self.bold_tag = self.textbuffer.create_tag("bold", weight=900)
+        self.underline_tag = self.textbuffer.create_tag("underline", underline=Pango.Underline.SINGLE)
+        self.invisible_tag = self.textbuffer.create_tag("invisible", invisible=True)
 
     def change_textview_font(self, combo3):
         font = combo3.get_active_text()
@@ -48,7 +53,7 @@ class TextBox(Gtk.TextView):
     def get_title(self):
         start = self.textbuffer.get_start_iter()
         end = self.textbuffer.get_end_iter()
-        string = self.textbuffer.get_text(start, end, False)
+        string = self.textbuffer.get_text(start, end, True)
         return string
 
     def print_dialog(self, entries_array):
@@ -140,10 +145,10 @@ class TextBox(Gtk.TextView):
         #Set text and tables.
         cairo_context.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
         if(page_number == 0):
-            string = self.get_title()
+            self.get_pango_markup()
         else:
-            string = ""
-        self.pango_layout.set_markup(string + table_string)
+            self.markup_string = ""
+        self.pango_layout.set_markup(self.markup_string + table_string)
         #Draw page border.
         if(combo5_index!=1):
             if(combo5_index==2):
@@ -576,10 +581,119 @@ class TextBox(Gtk.TextView):
         self.plate_counter_sql+=1
         return min_value, max_value, data_values, column_names, column_number 
 
+    def set_bold_tag(self, button):
+        if(self.textbuffer.get_has_selection()):
+            start, end = self.textbuffer.get_selection_bounds()
+            self.textbuffer.apply_tag(self.bold_tag, start, end)
+        else:
+            print("There is no selected text.")
+
+    def set_underline_tag(self, button):
+        if(self.textbuffer.get_has_selection()):
+            start, end = self.textbuffer.get_selection_bounds()
+            self.textbuffer.apply_tag(self.underline_tag, start, end)
+        else:
+            print("There is no selected text.")
+
+    def clear_tags(self, button):
+        start = self.textbuffer.get_start_iter()
+        end = self.textbuffer.get_end_iter()
+        self.textbuffer.remove_all_tags(start, end)
+        
+    
+    def get_pango_markup(self):
+        tag_table = self.textbuffer.get_tag_table()
+        pango_tag_list=[]
+        #package pointers together in a list.
+        tag_table.foreach(self.get_tags, pango_tag_list)
+        self.load_pango_list(pango_tag_list)
+
+    def get_tags(self, tag, pango_tag_list):    
+        loop=True
+        switch=False
+        offset1=0
+        offset2=0
+        no_tags=False
+        tag_start_list=[]
+        start = self.textbuffer.get_start_iter()
+        if(start.begins_tag(tag)):
+            switch = True       
+        not_end=start.forward_to_tag_toggle(tag) 
+        if(not_end == False):
+            no_tags=True      
+        while(loop):
+            if(not_end):
+                offset1=start.get_offset()
+                if(offset1 == offset2):
+                        break
+                if(switch):
+                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(tag.get_property('name')))
+                    tag_start_list.append(offset2)
+                    pango_tag_list.append(str(tag.get_property('name')))
+                    pango_tag_list.append(offset2)
+                    pango_tag_list.append(offset1)
+                    switch=False
+                else:
+                    switch=True
+                offset2=offset1
+                not_end=start.forward_to_tag_toggle(tag)
+            else:
+                loop=False
+
+    def load_pango_list(self, pango_tag_list): 
+        records = int(len(pango_tag_list)/3)
+        print("List Count " + str(records)) 
+        start1 = self.textbuffer.get_start_iter()
+        end1 = self.textbuffer.get_end_iter()
+        text = self.textbuffer.get_text(start1, end1, False)
+ 
+        #Reshape and sort pango_tag_list
+        pango_reshape=[]
+        pango_sorted=[]
+        for i in range(records):
+            pango_reshape.append([pango_tag_list[3*i], pango_tag_list[3*i+1], pango_tag_list[3*i+2]])
+        #print(pango_reshape)
+        pango_sorted = sorted(pango_reshape, key=itemgetter(1))
+        print(pango_sorted) 
+        
+        #Add the markup. 
+        self.markup_string = ""
+        open_tags = [False, False]
+        span_open = False
+        chars = len(text)+1
+        for i in range(chars):
+            if any(i in x for x in pango_sorted):
+                #print("Found " + str(i))
+                for j in range(records):
+                    if("underline" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[0]=True
+                    if("bold" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[1]=True
+                    if("underline" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                        open_tags[0]=False
+                    if("bold" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[1]=False 
+                if(span_open):
+                    self.markup_string+="</span>"
+                    span_open = False
+                #Check for open tags and build string.
+                if(open_tags[0] or open_tags[1]):
+                    self.markup_string+="<span"
+                    for k in range(len(open_tags)):  
+                        if(open_tags[k] and k == 0):
+                            self.markup_string+=" underline='single'"
+                        if(open_tags[k] and k == 1):
+                            self.markup_string+=" weight='900'"
+                    self.markup_string+=">" 
+                    span_open = True        
+            if(i < chars-1):
+                self.markup_string+=str(text[i])
+        print(self.markup_string)
+    
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Report Generator")
-        self.set_default_size(700,500)
+        self.set_default_size(750,550)
         self.set_border_width(20)
         self.menubar1 = Gtk.MenuBar()  
         self.menu1 = Gtk.Menu()
@@ -659,6 +773,15 @@ class MainWindow(Gtk.Window):
         self.button1.set_hexpand(False)
         self.button1.set_halign(Gtk.Align.CENTER)
         self.button1.connect("clicked", self.print_dialog)
+        self.button2 = Gtk.Button("Bold")
+        self.button2.set_hexpand(False)
+        self.button2.connect("clicked", self.bold_font)
+        self.button3 = Gtk.Button("Underline")
+        self.button3.set_hexpand(False)
+        self.button3.connect("clicked", self.underline_font)
+        self.button4 = Gtk.Button("Clear")
+        self.button4.set_hexpand(False)
+        self.button4.connect("clicked", self.clear_tags)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
         self.combo1.append("2", "Blue")
@@ -703,7 +826,10 @@ class MainWindow(Gtk.Window):
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.set_column_spacing(5)
-        self.grid.attach(self.scrolledwindow, 0, 0, 6, 4)
+        self.grid.attach(self.scrolledwindow, 0, 0, 5, 4)
+        self.grid.attach(self.button2, 5, 0, 1, 1)
+        self.grid.attach(self.button3, 5, 1, 1, 1)
+        self.grid.attach(self.button4, 5, 2, 1, 1)
         self.grid.attach(self.label0, 0, 4, 6, 1)
         self.grid.attach(self.label1, 0, 5, 1, 1)
         self.grid.attach(self.entry1, 1, 5, 1, 1)
@@ -748,6 +874,15 @@ class MainWindow(Gtk.Window):
         if(return_value==0):
             entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6)
             self.TextBox1.print_dialog(entries_array)
+
+    def bold_font(self, button2):
+        self.TextBox1.set_bold_tag(button2)
+
+    def underline_font(self, button3):
+        self.TextBox1.set_underline_tag(button3)
+
+    def clear_tags(self, button4):
+        self.TextBox1.clear_tags(button4)
 
     def change_font(self, combo3):
         self.TextBox1.change_textview_font(self.combo3)
