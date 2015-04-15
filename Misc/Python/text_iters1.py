@@ -54,7 +54,7 @@ class TextBox(Gtk.TextView):
             print("Empty entry.")
 
     def get_tag_table(self, button, combo, label):
-        tag_table = Gtk.TextTagTable()
+        #tag_table = Gtk.TextTagTable()
         tag_table = self.textbuffer.get_tag_table()
         pango_tag_list=[]
         #package pointers together in a list.

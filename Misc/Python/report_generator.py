@@ -41,9 +41,13 @@ class TextBox(Gtk.TextView):
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("       This is the title for the report.\n This is a paragraph.")
+        self.font_tag_8 = self.textbuffer.create_tag("font8", font=8)
+        self.font_tag_10 = self.textbuffer.create_tag("font10", font=10)
+        self.font_tag_12 = self.textbuffer.create_tag("font12", font=12)
+        self.font_tag_14 = self.textbuffer.create_tag("font14", font=14)
+        self.font_tag_16 = self.textbuffer.create_tag("font16", font=16)
         self.bold_tag = self.textbuffer.create_tag("bold", weight=900)
         self.underline_tag = self.textbuffer.create_tag("underline", underline=Pango.Underline.SINGLE)
-        self.invisible_tag = self.textbuffer.create_tag("invisible", invisible=True)
 
     def change_textview_font(self, combo3):
         font = combo3.get_active_text()
@@ -93,6 +97,7 @@ class TextBox(Gtk.TextView):
         #print(" Rectangle1 " + str(rectangle_ink.height) + " Rectangle1 " + str(rectangle_ink.width) + " Rectangle2 " + str(rectangle_log.height) + " Rectangle2 " + str(rectangle_log.width))
 
         #Get lines of text to be printed on the page.
+        #self.get_pango_markup()
         string = "Test Line Count String."
         self.pango_layout.set_markup(string)
         self.line_count = self.pango_layout.get_line_count()
@@ -238,6 +243,22 @@ class TextBox(Gtk.TextView):
             print("Increase column width. column_width=" + str(column_width) + " number_width=" + str(max_length) + " column_label_width=" + str(max_horizontal_label))
             return "\nIncrease Column or Column Label Width for Drawing Tables!"
         
+        #Get size difference in text due to font tags on page 1.
+        if(page_number == 0):
+            buffer_string = self.get_title()
+            self.pango_layout.set_markup(buffer_string)
+            buffer_ink, buffer_log = self.pango_layout.get_extents()
+            self.get_pango_markup()
+            self.pango_layout.set_markup(self.markup_string)
+            markup_ink, markup_log = self.pango_layout.get_extents()
+            #print("Markup Difference " + str(markup_log.height - buffer_log.height))
+            if(markup_log.height - buffer_log.height > 0):
+                markup_difference = markup_log.height - buffer_log.height
+            else:
+                markup_difference = 0 
+        else:
+            markup_difference = 0
+
         #Get rectangle for one monospace char for sizing.
         self.pango_layout.set_markup("5")
         rectangle_ink, rectangle_log = self.pango_layout.get_extents()
@@ -288,23 +309,23 @@ class TextBox(Gtk.TextView):
         bottom = top + rows
         cairo_context.set_source_rgb(table_rectangles_rgb[0], table_rectangles_rgb[1], table_rectangles_rgb[2])
         if(combo2_index==3):
-            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(max_vertical_label+.50), (rectangle_log.height*(rows+1))/Pango.SCALE)
+            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top) + markup_difference)/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(max_vertical_label+.50), (rectangle_log.height*(rows+1))/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
             #Vertical left.
             #cairo_context.set_source_rgb(0.0, 0.0, 0.0)
-            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1) + markup_difference)/Pango.SCALE)
             cairo_context.stroke()
             #Vertical right is drawn with grid.
             #Short top horizontal.
-            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top) + markup_difference)/Pango.SCALE)
             cairo_context.stroke()  
             #Short bottom horizontal
-            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (bottom+1))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (bottom+1) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(bottom+1) + markup_difference)/Pango.SCALE)
             cairo_context.stroke()  
 
         #Draw horizontal label rectangle for both crosstab and tabular data.
@@ -313,23 +334,23 @@ class TextBox(Gtk.TextView):
         if(combo2_index==1 or combo2_index==2):
             max_vertical_label = 0
         if(combo2_index==2 or combo2_index==3):
-            cairo_context.rectangle(((shift_margin+max_vertical_label) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top))/Pango.SCALE, ((rectangle_log.width*columns*column_width)/Pango.SCALE), (rectangle_log.height)/Pango.SCALE)
+            cairo_context.rectangle(((shift_margin+max_vertical_label) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top) + markup_difference)/Pango.SCALE, ((rectangle_log.width*columns*column_width)/Pango.SCALE), (rectangle_log.height)/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
             cairo_context.set_line_width(2)
             #Top horizontal
             #cairo_context.set_source_rgb(0.0, 0.0, 0.0)
-            cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns)) *rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns)) *rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top) + markup_difference)/Pango.SCALE)
             cairo_context.stroke() 
             #Short top vertical left.
-            cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label)*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1) + markup_difference)/Pango.SCALE)
             cairo_context.stroke() 
             #Short top vertical right.
-            cairo_context.move_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height* (top))/Pango.SCALE)
-            cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1))/Pango.SCALE)
+            cairo_context.move_to(((shift_margin+max_vertical_label + (column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/Pango.SCALE, (rectangle_log.height*(top+1) + markup_difference)/Pango.SCALE)
             cairo_context.stroke() 
         
         #Background color for each cell.
@@ -356,12 +377,12 @@ class TextBox(Gtk.TextView):
                                 red, green, blue = self.heatmap_value_iris(data_values[x][y], max_value, min_value)
                             cairo_context.set_source_rgb(red, green, blue) 
                     if(y != columns):
-                        cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(column_width+2), rectangle_log.height/Pango.SCALE)
+                        cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x) + markup_difference)/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(column_width+2), (rectangle_log.height)/Pango.SCALE)
                     else:
                         #White out after end of table.
                         if(x!=0):
                             cairo_context.set_source_rgb(1.0, 1.0, 1.0) 
-                            cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x - 1))/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, (rectangle_log.height*2)/Pango.SCALE)
+                            cairo_context.rectangle(((shift_margin +(column_width*y)) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top + x - 1) + markup_difference)/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*column_width, (rectangle_log.height*2)/Pango.SCALE)
                     cairo_context.fill()
                     cairo_context.stroke()
         
@@ -373,23 +394,23 @@ class TextBox(Gtk.TextView):
         #First draw over fragment left by overlapping color backgrounds.
         cairo_context.set_source_rgb(1.0, 1.0, 1.0)
         cairo_context.set_line_width(2)
-        cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
-        cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows))/Pango.SCALE)
+        cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows) + markup_difference)/Pango.SCALE)
+        cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + rows) + markup_difference)/Pango.SCALE)
         cairo_context.stroke() 
-        cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top))/Pango.SCALE)
-        cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top))/Pango.SCALE)
+        cairo_context.move_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top) + markup_difference)/Pango.SCALE)
+        cairo_context.line_to(((rectangle_log.width * (total_chars+3))/Pango.SCALE) + left_margin, (rectangle_log.height  *(top) + markup_difference)/Pango.SCALE)
         cairo_context.stroke() 
         #Draw grid.
         cairo_context.set_line_cap(cairo.LINE_CAP_SQUARE)
         cairo_context.set_line_width(2)
         cairo_context.set_source_rgb(table_grid_rgb[0], table_grid_rgb[1], table_grid_rgb[2])
         for x in range(rows + 1): 
-            cairo_context.move_to(left_margin, (rectangle_log.height * (top + x))/Pango.SCALE)
-            cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x))/Pango.SCALE)
+            cairo_context.move_to(left_margin, (rectangle_log.height * (top + x) + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((rectangle_log.width * total_chars)/Pango.SCALE) + left_margin, (rectangle_log.height  *(top + x) + markup_difference)/Pango.SCALE)
             cairo_context.stroke() 
         for y in range(columns + 1): 
-            cairo_context.move_to(((rectangle_log.width * y * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*top)/Pango.SCALE)
-            cairo_context.line_to(((rectangle_log.width * y * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom)/Pango.SCALE)
+            cairo_context.move_to(((rectangle_log.width * y * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*top + markup_difference)/Pango.SCALE)
+            cairo_context.line_to(((rectangle_log.width * y * column_width)/Pango.SCALE) + left_margin, (rectangle_log.height*bottom + markup_difference)/Pango.SCALE)
             cairo_context.stroke() 
 
         return number_string
@@ -595,6 +616,30 @@ class TextBox(Gtk.TextView):
         else:
             print("There is no selected text.")
 
+    def set_font_tags(self, combo7):
+        combo7_id = int(combo7.get_active_id())
+        if(self.textbuffer.get_has_selection()):
+            start, end = self.textbuffer.get_selection_bounds()
+            #Remove previous font tags.
+            self.textbuffer.remove_tag(self.font_tag_8, start, end)
+            self.textbuffer.remove_tag(self.font_tag_10, start, end)
+            self.textbuffer.remove_tag(self.font_tag_12, start, end)
+            self.textbuffer.remove_tag(self.font_tag_14, start, end)
+            self.textbuffer.remove_tag(self.font_tag_16, start, end)
+            if(combo7_id == 1):
+                self.textbuffer.apply_tag(self.font_tag_8, start, end)
+            elif(combo7_id == 2):
+                self.textbuffer.apply_tag(self.font_tag_10, start, end)
+            elif(combo7_id == 3):
+                self.textbuffer.apply_tag(self.font_tag_12, start, end)
+            elif(combo7_id == 4):
+                self.textbuffer.apply_tag(self.font_tag_14, start, end)
+            else:
+                self.textbuffer.apply_tag(self.font_tag_16, start, end)
+              
+        else:
+            print("There is no selected text.")
+        
     def clear_tags(self, button):
         start = self.textbuffer.get_start_iter()
         end = self.textbuffer.get_end_iter()
@@ -627,7 +672,7 @@ class TextBox(Gtk.TextView):
                 if(offset1 == offset2):
                         break
                 if(switch):
-                    print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(tag.get_property('name')))
+                    #print("Tag Found at " + str(offset2) + "-" + str(offset1) + " Tagname " + str(tag.get_property('name')))
                     tag_start_list.append(offset2)
                     pango_tag_list.append(str(tag.get_property('name')))
                     pango_tag_list.append(offset2)
@@ -642,7 +687,7 @@ class TextBox(Gtk.TextView):
 
     def load_pango_list(self, pango_tag_list): 
         records = int(len(pango_tag_list)/3)
-        print("List Count " + str(records)) 
+        #print("List Count " + str(records)) 
         start1 = self.textbuffer.get_start_iter()
         end1 = self.textbuffer.get_end_iter()
         text = self.textbuffer.get_text(start1, end1, False)
@@ -654,11 +699,11 @@ class TextBox(Gtk.TextView):
             pango_reshape.append([pango_tag_list[3*i], pango_tag_list[3*i+1], pango_tag_list[3*i+2]])
         #print(pango_reshape)
         pango_sorted = sorted(pango_reshape, key=itemgetter(1))
-        print(pango_sorted) 
+        #print(pango_sorted) 
         
         #Add the markup. 
         self.markup_string = ""
-        open_tags = [False, False]
+        open_tags = [False, False, False, False, False, False, False]
         span_open = False
         chars = len(text)+1
         for i in range(chars):
@@ -669,26 +714,56 @@ class TextBox(Gtk.TextView):
                         open_tags[0]=True
                     if("bold" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[1]=True
+                    if("font8" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[2]=True
+                    if("font10" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[3]=True
+                    if("font12" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[4]=True
+                    if("font14" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[5]=True
+                    if("font16" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                        open_tags[6]=True
                     if("underline" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
                         open_tags[0]=False
                     if("bold" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
-                        open_tags[1]=False 
+                        open_tags[1]=False
+                    if("font8" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[2]=False 
+                    if("font10" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[3]=False 
+                    if("font12" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[4]=False 
+                    if("font14" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[5]=False 
+                    if("font16" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                        open_tags[6]=False 
                 if(span_open):
                     self.markup_string+="</span>"
                     span_open = False
                 #Check for open tags and build string.
-                if(open_tags[0] or open_tags[1]):
+                if(open_tags[0] or open_tags[1] or open_tags[2] or open_tags[3] or open_tags[4] or open_tags[5] or open_tags[6]):
                     self.markup_string+="<span"
                     for k in range(len(open_tags)):  
                         if(open_tags[k] and k == 0):
                             self.markup_string+=" underline='single'"
                         if(open_tags[k] and k == 1):
                             self.markup_string+=" weight='900'"
+                        if(open_tags[k] and k == 2):
+                            self.markup_string+=" font='8'"
+                        if(open_tags[k] and k == 3):
+                            self.markup_string+=" font='10'"
+                        if(open_tags[k] and k == 4):
+                            self.markup_string+=" font='12'"
+                        if(open_tags[k] and k == 5):
+                            self.markup_string+=" font='14'"
+                        if(open_tags[k] and k == 6):
+                            self.markup_string+=" font='16'"
                     self.markup_string+=">" 
                     span_open = True        
             if(i < chars-1):
                 self.markup_string+=str(text[i])
-        print(self.markup_string)
+        #print(self.markup_string)
     
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -823,13 +898,22 @@ class MainWindow(Gtk.Window):
         self.combo6.append("4", "Nudge 4")
         self.combo6.append("5", "Nudge 5")
         self.combo6.set_active_id("2")
+        self.combo7 = Gtk.ComboBoxText()
+        self.combo7.append("1", "Font 8")
+        self.combo7.append("2", "Font 10")
+        self.combo7.append("3", "Font 12")
+        self.combo7.append("4", "Font 14")
+        self.combo7.append("5", "Font 16")
+        self.combo7.set_active_id("3")
+        self.combo7.connect("changed", self.change_font_size)
         self.grid = Gtk.Grid()
         self.grid.set_row_spacing(10)
         self.grid.set_column_spacing(5)
         self.grid.attach(self.scrolledwindow, 0, 0, 5, 4)
         self.grid.attach(self.button2, 5, 0, 1, 1)
         self.grid.attach(self.button3, 5, 1, 1, 1)
-        self.grid.attach(self.button4, 5, 2, 1, 1)
+        self.grid.attach(self.combo7, 5, 2, 1, 1)
+        self.grid.attach(self.button4, 5, 3, 1, 1)
         self.grid.attach(self.label0, 0, 4, 6, 1)
         self.grid.attach(self.label1, 0, 5, 1, 1)
         self.grid.attach(self.entry1, 1, 5, 1, 1)
@@ -886,6 +970,9 @@ class MainWindow(Gtk.Window):
 
     def change_font(self, combo3):
         self.TextBox1.change_textview_font(self.combo3)
+
+    def change_font_size(self, combo7):
+        self.TextBox1.set_font_tags(combo7)
 
     def change_label_color(self, label2, event):
         self.label2.set_text("Columns")
