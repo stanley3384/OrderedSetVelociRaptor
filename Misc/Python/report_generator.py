@@ -222,7 +222,7 @@ class TextBox(Gtk.TextView):
             for y in range(columns):
                 horizontal_labels.insert(y, "Column" + str(y+1) + string_column_shift_left)
 
-        #Get max length and print to screen.
+        #Get max length of grid and label values.
         max_length = 0
         max_vertical_label = 0
         max_horizontal_label = 0
@@ -232,16 +232,18 @@ class TextBox(Gtk.TextView):
             for y in range(columns):
                 if(max_length < len(str(data_values[x][y]))):
                     max_length = len(str(data_values[x][y]))
-                #sys.stdout.write(str(data_values[x][y]) + " ")
-            #sys.stdout.write("\n")
         for y in range(columns):
             if(max_horizontal_label < len(str(horizontal_labels[y]))):
                 max_horizontal_label = len(str(horizontal_labels[y]))
 
-        #Check if font lengths will fit in boxes.
-        if(column_width<max_length or column_width<max_horizontal_label):
-            print("Increase column width. column_width=" + str(column_width) + " number_width=" + str(max_length) + " column_label_width=" + str(max_horizontal_label))
-            return "\nIncrease Column or Column Label Width for Drawing Tables!"
+        #Check if string lengths will fit in boxes. If they don't, truncate them.
+        #The vertical label width is set by the max_vertical_label value.
+        if(column_width<max_horizontal_label):
+            horizontal_labels[:] = (elem[:column_width] for elem in horizontal_labels)
+        if(column_width<max_length):
+            for x in range(rows):
+                for y in range(columns):
+                    data_values[x][y] = data_values[x][y][:column_width]
         
         #Get size difference in text due to font tags on page 1.
         if(page_number == 0):
@@ -991,8 +993,8 @@ class MainWindow(Gtk.Window):
             message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=50"
             self.message_dialog(message)
             return 1
-        elif(0 >= int(self.entry2.get_text()) or int(self.entry2.get_text()) > 10):
-            message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=10"
+        elif(0 >= int(self.entry2.get_text()) or int(self.entry2.get_text()) > 20):
+            message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=20"
             self.message_dialog(message)
             return 1
         elif(0 > int(self.entry3.get_text()) or int(self.entry3.get_text()) > 30):
