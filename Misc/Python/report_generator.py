@@ -1086,42 +1086,57 @@ class MainWindow(Gtk.Window):
             self.entry10.set_sensitive(False)
         else:
             self.entry10.set_sensitive(True)
-        
-
+    
+    def validate_entry(self, entry):
+        try:
+            e1 = int(entry.get_text())
+        except ValueError:
+            e1 = -1
+        return e1
+    
     def validate_entries(self):
-        if(0 >= int(self.entry1.get_text()) or int(self.entry1.get_text()) > 50):           
+        e1 = self.validate_entry(self.entry1)
+        e2 = self.validate_entry(self.entry2)
+        e3 = self.validate_entry(self.entry3)
+        e4 = self.validate_entry(self.entry4)
+        e5 = self.validate_entry(self.entry5)
+        e6 = self.validate_entry(self.entry6)
+        e7 = self.validate_entry(self.entry7)
+        e8 = self.validate_entry(self.entry8)
+        e11 = self.validate_entry(self.entry11)
+        if(0 >= e1 or e1 > 50):           
             message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=50"
             self.message_dialog(message)
             return 1
-        elif(0 >= int(self.entry2.get_text()) or int(self.entry2.get_text()) > 20):
+        elif(0 >= e2 or e2 > 20):
             message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=20"
             self.message_dialog(message)
             return 1
-        elif(0 > int(self.entry3.get_text()) or int(self.entry3.get_text()) > 30):
+        elif(0 > e3 or e3 > 30):
             message = "Shift Right " + self.entry3.get_text() + ", Range 0<=Shift Right<=30"
             self.message_dialog(message)
             return 1
-        elif(1 > int(self.entry4.get_text()) or int(self.entry4.get_text()) > 10):
+        elif(1 > e4 or e4 > 10):
             message = "Shift Down " + self.entry4.get_text() +", Range 1<=Shift Down<=10"
             self.message_dialog(message)
             return 1
-        elif(5 > int(self.entry5.get_text()) or int(self.entry5.get_text()) > 20):
+        elif(5 > e5 or e5 > 20):
             message = "Column Width " + self.entry5.get_text() + ", Range 5<=Column Width<=20"
             self.message_dialog(message)
             return 1
-        elif(0 > int(self.entry6.get_text()) or int(self.entry6.get_text()) > 5):
+        elif(0 > e6 or e6 > 5):
             message = "Pad Number " + self.entry6.get_text() + ", Range 0<=Pad Number<=5"
             self.message_dialog(message)
             return 1
-        elif(0 > int(self.entry7.get_text()) or int(self.entry7.get_text()) > 5):
+        elif(0 > e7 or e7 > 5):
             message = "Pad Column " + self.entry7.get_text() + ", Range 0<=Pad Column<=5"
             self.message_dialog(message)
             return 1
-        elif(1 > int(self.entry8.get_text()) or int(self.entry8.get_text()) > 20):
+        elif(1 > e8 or e8 > 20):
             message = "Tables " + self.entry8.get_text() + ", Range 1<=Tables<=20"
             self.message_dialog(message)
             return 1
-        elif(1 > int(self.entry11.get_text()) or int(self.entry11.get_text()) > 7):
+        elif(1 > e11 or e11 > 7):
             message = "Round Floats " + self.entry11.get_text() + ", Range 1<=Tables<=7"
             self.message_dialog(message)
             return 1
