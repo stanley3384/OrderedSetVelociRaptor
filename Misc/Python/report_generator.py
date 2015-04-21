@@ -21,6 +21,9 @@ import re
 import sqlite3 as lite
 from operator import itemgetter
 
+g_row_labels = []
+g_column_labels = []
+
 class TextBox(Gtk.TextView):
     def __init__(self):
         Gtk.TextView.__init__(self)
@@ -208,19 +211,28 @@ class TextBox(Gtk.TextView):
             min_value, max_value, data_values, column_labels, column_number = self.get_db_data_for_table(rows, columns, tables, sql_string, shift_number_left, round_float)
             columns = column_number
 
-        #Create label values.
+        #Create label values. Check if labels have already been created.
         vertical_labels = []
         horizontal_labels = []
         string_column_shift_left = ""
         string_column_shift_left = "{: <{m}}".format("", m=shift_column_left)
-        for x in range(rows):
-            vertical_labels.insert(x, " " + str(x+1) + " ")
+        if(not g_row_labels):
+            for x in range(rows):
+                vertical_labels.insert(x, " " + str(x+1) + " ")
+        else:
+            for x in range(rows):
+                vertical_labels.insert(x, g_row_labels[x]) 
+        #If the table columns are coming from the database field names.
         if(combo4_index==4):
             for col in column_labels:
                 horizontal_labels.append(col + string_column_shift_left)
         else:
-            for y in range(columns):
-                horizontal_labels.insert(y, "Column" + str(y+1) + string_column_shift_left)
+            if(not g_column_labels):
+                for y in range(columns):
+                    horizontal_labels.insert(y, "Column" + str(y+1) + string_column_shift_left)
+            else:
+                for y in range(columns):
+                    horizontal_labels.insert(y, g_column_labels[y] + string_column_shift_left)
 
         #Get max length of grid and label values.
         max_length = 0
@@ -766,12 +778,93 @@ class TextBox(Gtk.TextView):
             if(i < chars-1):
                 self.markup_string+=str(text[i])
         #print(self.markup_string)
+
+class LabelsDialog(Gtk.Dialog):
+    def __init__(self, parent, rows, columns):
+        Gtk.Dialog.__init__(self, "Set Labels", parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        content_area = self.get_content_area()
+        self.set_border_width(10)
+        self.active_row = 0
+        self.active_column = 0
+ 
+        row_label = Gtk.Label("Set Row Labels")
+        self.row_combo = Gtk.ComboBoxText.new_with_entry()
+        for row in range(rows):
+            self.row_combo.append(str(row), "row" + str(row+1))
+        self.row_changed = self.row_combo.connect("changed", self.row_combo_changed)
+        self.row_combo.set_entry_text_column(0)
+        self.row_combo.set_active(0)
+
+        column_label = Gtk.Label("Set Column Labels")
+        self.column_combo = Gtk.ComboBoxText.new_with_entry()
+        for column in range(columns):
+            self.column_combo.append(str(column), "column" + str(column+1))
+        self.column_changed = self.column_combo.connect("changed", self.column_combo_changed)
+        self.column_combo.set_entry_text_column(0)
+        self.column_combo.set_active(0)
+
+        focus_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        focus_button.grab_focus()
+        focus_button.connect("clicked", self.load_labels) 
+
+        grid = Gtk.Grid()
+        grid.attach(row_label, 0, 0, 1, 1)
+        grid.attach(self.row_combo, 0, 1, 1, 1)
+        grid.attach(column_label, 0, 2, 1, 1)
+        grid.attach(self.column_combo, 0, 3, 1, 1)
+        content_area.add(grid)
+        self.show_all()
+
+    def row_combo_changed(self, combo):
+        text = combo.get_active_text()
+        text_id = combo.get_active()
+        if(text_id!=-1):
+            self.active_row = text_id
+        if(text != None):
+            print(text + " " + str(self.active_row))
+            combo.handler_block(self.row_changed)
+            combo.insert_text(self.active_row, text)
+            combo.remove(self.active_row+1)
+            combo.handler_unblock(self.row_changed)
+
+    def column_combo_changed(self, combo):
+        text = combo.get_active_text()
+        text_id = combo.get_active()
+        if(text_id!=-1):
+            self.active_column = text_id
+        if(text != None):
+            print(text + " " + str(self.active_column))
+            combo.handler_block(self.column_changed)
+            combo.insert_text(self.active_column, text)
+            combo.remove(self.active_column+1)
+            combo.handler_unblock(self.column_changed)
+
+    def load_labels(self, button):
+        print("Load Labels")
+        if(g_row_labels):
+            del g_row_labels[:]
+        model1 = self.row_combo.get_model()
+        iter1 = model1.get_iter_first()
+        while(iter1):
+	    g_row_labels.append(model1[iter1][0])
+	    iter1 = model1.iter_next(iter1)
+        print(g_row_labels)
+        if(g_column_labels):
+            del g_column_labels[:]
+        model2 = self.column_combo.get_model()
+        iter2 = model2.get_iter_first()
+        while(iter2):
+	    g_column_labels.append(model2[iter2][0])
+	    iter2 = model2.iter_next(iter2)
+        print(g_column_labels)
     
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Report Generator")
         self.set_default_size(750,550)
         self.set_border_width(20)
+        self.row_value = 0
+        self.column_value = 0
         self.menubar1 = Gtk.MenuBar()  
         self.menu1 = Gtk.Menu()
         self.menuitem1 = Gtk.MenuItem("About") 
@@ -797,11 +890,15 @@ class MainWindow(Gtk.Window):
         self.entry1.set_halign(Gtk.Align.START)
         self.entry1.set_width_chars(3)
         self.entry1.set_text("10")
+        self.entry1.connect("focus-in-event", self.save_current_row_value)
+        self.entry1.connect("focus-out-event", self.clear_row_labels)
         self.label2 = Gtk.Label("Columns")
         self.entry2 = Gtk.Entry()
         self.entry2.set_halign(Gtk.Align.START)
         self.entry2.set_width_chars(3)
         self.entry2.set_text("5")
+        self.entry2.connect("focus-in-event", self.save_current_column_value)
+        self.entry2.connect("focus-out-event", self.clear_column_labels)
         self.entry2.connect("button_press_event", self.change_label_color)
         self.label3 = Gtk.Label("Shift Right")
         self.entry3 = Gtk.Entry()
@@ -859,6 +956,8 @@ class MainWindow(Gtk.Window):
         self.button4 = Gtk.Button("Clear")
         self.button4.set_hexpand(False)
         self.button4.connect("clicked", self.clear_tags)
+        self.button5 = Gtk.Button("Set Labels")
+        self.button5.connect("clicked", self.labels_dialog)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
         self.combo1.append("2", "Blue")
@@ -941,8 +1040,9 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.label7, 4, 7, 1, 1)
         self.grid.attach(self.entry7, 5, 7, 1, 1)       
         self.grid.attach(self.combo2, 2, 8, 1, 1)
-        self.grid.attach(self.combo5, 3, 8, 1, 1)
-        self.grid.attach(self.combo6, 4, 8, 1, 1)
+        self.grid.attach(self.button5, 3, 8, 1, 1)
+        self.grid.attach(self.combo5, 4, 8, 1, 1)
+        self.grid.attach(self.combo6, 5, 8, 1, 1)
         self.grid.attach(self.check1, 3, 9, 2, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
@@ -1097,6 +1197,41 @@ class MainWindow(Gtk.Window):
             con.close()
         print("Database records " + str(ret_val))
         return ret_val
+
+    def labels_dialog(self, button):
+        rows = int(self.entry1.get_text())
+        columns = int(self.entry2.get_text())
+        #set some boundries.
+        if(rows > 0 and rows < 20 and columns > 0 and columns < 20):
+            dialog = LabelsDialog(self, rows, columns)
+            response = dialog.run()        
+            dialog.destroy()
+        else:
+            print("0<rows<20 and 0<columns<20")
+
+    def save_current_row_value(self, event, widget):
+        print("Save Row Value")
+        self.row_value = int(self.entry1.get_text())
+
+    def clear_row_labels(self, event, widget):
+        r_value = int(self.entry1.get_text())
+        if(g_row_labels and r_value!=self.row_value):
+            print("Clear Row Labels")
+            del g_row_labels[:]
+            print(g_row_labels)
+        return False
+
+    def save_current_column_value(self, event, widget):
+        print("Save Column Value")
+        self.column_value = int(self.entry2.get_text())
+
+    def clear_column_labels(self, event, widget):
+        c_value = int(self.entry2.get_text())
+        if(g_column_labels and c_value!=self.column_value):
+            print("Clear Column Labels")
+            del g_column_labels[:]
+            print(g_column_labels)
+        return False
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
