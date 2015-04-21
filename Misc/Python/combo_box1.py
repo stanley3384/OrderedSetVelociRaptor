@@ -23,8 +23,10 @@ class MainWindow(Gtk.Window):
         button2.connect("clicked", self.print_labels)
         self.entry1 = Gtk.Entry()
         self.entry1.set_text("8")
+        self.entry1.connect("focus-out-event", self.clear_row_labels)
         self.entry2 = Gtk.Entry()
         self.entry2.set_text("12")
+        self.entry2.connect("focus-out-event", self.clear_column_labels)
 
         grid = Gtk.Grid()
         grid.attach(button1, 0, 0, 1, 1)
@@ -44,6 +46,20 @@ class MainWindow(Gtk.Window):
             dialog.destroy()
         else:
             print("0<rows<20 and 0<columns<20")
+
+    def clear_row_labels(self, event, widget):
+        print("Clear Row Labels")
+        if(row_labels):
+            del row_labels[:]
+            print(row_labels)
+        return False
+
+    def clear_column_labels(self, event, widget):
+        print("Clear Column Labels")
+        if(column_labels):
+            del column_labels[:]
+            print(column_labels)
+        return False
 
     def print_labels(self, widget):
         print("Labels")
@@ -112,14 +128,16 @@ class LabelsDialog(Gtk.Dialog):
 
     def load_labels(self, button):
         print("Load Labels")
-        del row_labels[:]
+        if(row_labels):
+            del row_labels[:]
         model1 = self.row_combo.get_model()
         iter1 = model1.get_iter_first()
         while(iter1):
 	    row_labels.append(model1[iter1][0])
 	    iter1 = model1.iter_next(iter1)
         print(row_labels)
-        del column_labels[:]
+        if(column_labels):
+            del column_labels[:]
         model2 = self.column_combo.get_model()
         iter2 = model2.get_iter_first()
         while(iter2):
