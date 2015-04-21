@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 '''
-    Test code for building some combo box text widgets.
+    Test code for building some combo box text widgets for providing labels for report_generator.py.
     Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
     C. Eric Cashon
@@ -17,15 +17,19 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="ComboBox Entries")
         self.set_border_width(25)
         self.set_default_size(225,100)
+        self.row_value = 0
+        self.column_value = 0
         button1 = Gtk.Button("Set Labels")
         button1.connect("clicked", self.labels_dialog)
         button2 = Gtk.Button("Print Labels")
         button2.connect("clicked", self.print_labels)
         self.entry1 = Gtk.Entry()
         self.entry1.set_text("8")
+        self.entry1.connect("focus-in-event", self.save_current_row_value)
         self.entry1.connect("focus-out-event", self.clear_row_labels)
         self.entry2 = Gtk.Entry()
         self.entry2.set_text("12")
+        self.entry2.connect("focus-in-event", self.save_current_column_value)
         self.entry2.connect("focus-out-event", self.clear_column_labels)
 
         grid = Gtk.Grid()
@@ -47,16 +51,26 @@ class MainWindow(Gtk.Window):
         else:
             print("0<rows<20 and 0<columns<20")
 
+    def save_current_row_value(self, event, widget):
+        print("Save Row Value")
+        self.row_value = int(self.entry1.get_text())
+
     def clear_row_labels(self, event, widget):
-        print("Clear Row Labels")
-        if(row_labels):
+        r_value = int(self.entry1.get_text())
+        if(row_labels and r_value!=self.row_value):
+            print("Clear Row Labels")
             del row_labels[:]
             print(row_labels)
         return False
 
+    def save_current_column_value(self, event, widget):
+        print("Save Column Value")
+        self.column_value = int(self.entry2.get_text())
+
     def clear_column_labels(self, event, widget):
-        print("Clear Column Labels")
-        if(column_labels):
+        c_value = int(self.entry2.get_text())
+        if(column_labels and c_value!=self.column_value):
+            print("Clear Column Labels")
             del column_labels[:]
             print(column_labels)
         return False
