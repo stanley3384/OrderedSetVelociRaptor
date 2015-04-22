@@ -892,7 +892,7 @@ class LabelsDialog(Gtk.Dialog):
             self.row_combo.handler_block(self.row_changed)
             self.row_combo.remove_all()
             for row in range(self.rows1):
-                self.row_combo.append(str(row), str(row+1))
+                self.row_combo.append(str(row), " " + str(row+1) + " ")
             self.row_combo.handler_unblock(self.row_changed)
             self.row_combo.set_active(0)
             self.column_combo.handler_block(self.column_changed)
@@ -923,7 +923,7 @@ class LabelsDialog(Gtk.Dialog):
         for i in range(1, 3):
           string = [letters] * i
           for y in product(*string):
-            result.append(''.join(y))
+            result.append(" " + ''.join(y) + " ")
             counter+=1
             if(counter == count):
                 return result
@@ -1174,8 +1174,8 @@ class MainWindow(Gtk.Window):
         e7 = self.validate_entry(self.entry7)
         e8 = self.validate_entry(self.entry8)
         e11 = self.validate_entry(self.entry11)
-        if(0 >= e1 or e1 > 50):           
-            message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=50"
+        if(0 >= e1 or e1 > 100):           
+            message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=100"
             self.message_dialog(message)
             return 1
         elif(0 >= e2 or e2 > 20):
@@ -1284,38 +1284,57 @@ class MainWindow(Gtk.Window):
         return ret_val
 
     def labels_dialog(self, button):
-        rows = int(self.entry1.get_text())
-        columns = int(self.entry2.get_text())
+        rows = self.validate_entry(self.entry1)
+        columns = self.validate_entry(self.entry2)
         #set some boundries.
         if(rows > 0 and rows < 100 and columns > 0 and columns < 20):
             dialog = LabelsDialog(self, rows, columns)
             response = dialog.run()        
             dialog.destroy()
         else:
-            print("0<rows<100 and 0<columns<20")
+            message = "0<rows<100 and 0<columns<20"
+            self.message_dialog(message)
 
+    #Just print warnings to screen. A message box will bind up the return values of the focus
+    #in and out events.
     def save_current_row_value(self, event, widget):
         print("Save Row Value")
-        self.row_value = int(self.entry1.get_text())
+        r_value = self.validate_entry(self.entry1)
+        if(r_value>0):
+            self.row_value = r_value
+        else:
+            print("Rows " + self.entry1.get_text() + ", Range 0<rows<=100")
+        return False
 
     def clear_row_labels(self, event, widget):
-        r_value = int(self.entry1.get_text())
-        if(g_row_labels and r_value!=self.row_value):
-            print("Clear Row Labels")
-            del g_row_labels[:]
-            print(g_row_labels)
+        r_value = self.validate_entry(self.entry1)
+        if(r_value>0):
+            if(g_row_labels and r_value!=self.row_value):
+                print("Clear Row Labels")
+                del g_row_labels[:]
+                print(g_row_labels)
+        else:
+            print("Rows " + self.entry1.get_text() + ", Range 0<rows<=100")
         return False
 
     def save_current_column_value(self, event, widget):
         print("Save Column Value")
-        self.column_value = int(self.entry2.get_text())
+        r_value = self.validate_entry(self.entry2)
+        if(r_value>0):
+            self.column_value = r_value
+        else:
+            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=20")
+        return False
 
     def clear_column_labels(self, event, widget):
-        c_value = int(self.entry2.get_text())
-        if(g_column_labels and c_value!=self.column_value):
-            print("Clear Column Labels")
-            del g_column_labels[:]
-            print(g_column_labels)
+        r_value = self.validate_entry(self.entry2)
+        if(r_value>0):
+            if(g_column_labels and r_value!=self.column_value):
+                print("Clear Column Labels")
+                del g_column_labels[:]
+                print(g_column_labels)
+        else:
+            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=20")
         return False
 
 win = MainWindow()
