@@ -20,6 +20,7 @@ import sys
 import re
 import sqlite3 as lite
 from operator import itemgetter
+from itertools import product
 
 g_row_labels = []
 g_column_labels = []
@@ -786,6 +787,8 @@ class LabelsDialog(Gtk.Dialog):
         self.set_border_width(10)
         self.active_row = 0
         self.active_column = 0
+        self.rows1 = rows
+        self.columns1 = columns
  
         row_label = Gtk.Label("Set Row Labels")
         self.row_combo = Gtk.ComboBoxText.new_with_entry()
@@ -803,15 +806,26 @@ class LabelsDialog(Gtk.Dialog):
         self.column_combo.set_entry_text_column(0)
         self.column_combo.set_active(0)
 
+        standard_label = Gtk.Label("Standard Formats")
+        self.standard_combo = Gtk.ComboBoxText()
+        self.standard_combo.append("1", "RowsColumns")
+        self.standard_combo.append("2", "Numbers")
+        self.standard_combo.append("3", "Microtiter")
+        self.standard_combo.set_active_id("1")
+        self.standard_combo.connect("changed", self.change_standard_labels)
+
         focus_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         focus_button.grab_focus()
         focus_button.connect("clicked", self.load_labels) 
 
         grid = Gtk.Grid()
+        grid.set_row_spacing(5)
         grid.attach(row_label, 0, 0, 1, 1)
         grid.attach(self.row_combo, 0, 1, 1, 1)
         grid.attach(column_label, 0, 2, 1, 1)
         grid.attach(self.column_combo, 0, 3, 1, 1)
+        grid.attach(standard_label, 0, 4, 1, 1)
+        grid.attach(self.standard_combo, 0, 5, 1, 1)
         content_area.add(grid)
         self.show_all()
 
@@ -821,7 +835,7 @@ class LabelsDialog(Gtk.Dialog):
         if(text_id!=-1):
             self.active_row = text_id
         if(text != None):
-            print(text + " " + str(self.active_row))
+            #print(text + " " + str(self.active_row))
             combo.handler_block(self.row_changed)
             combo.insert_text(self.active_row, text)
             combo.remove(self.active_row+1)
@@ -833,7 +847,7 @@ class LabelsDialog(Gtk.Dialog):
         if(text_id!=-1):
             self.active_column = text_id
         if(text != None):
-            print(text + " " + str(self.active_column))
+            #print(text + " " + str(self.active_column))
             combo.handler_block(self.column_changed)
             combo.insert_text(self.active_column, text)
             combo.remove(self.active_column+1)
@@ -857,7 +871,63 @@ class LabelsDialog(Gtk.Dialog):
 	    g_column_labels.append(model2[iter2][0])
 	    iter2 = model2.iter_next(iter2)
         print(g_column_labels)
-    
+
+    def change_standard_labels(self, combo):
+        print("Change Standard Labels")
+        combo_id = int(combo.get_active_id())
+        if(combo_id==1):
+            self.row_combo.handler_block(self.row_changed)
+            self.row_combo.remove_all()
+            for row in range(self.rows1):
+                self.row_combo.append(str(row), "row" + str(row+1))
+            self.row_combo.handler_unblock(self.row_changed)
+            self.row_combo.set_active(0)
+            self.column_combo.handler_block(self.column_changed)
+            self.column_combo.remove_all()
+            for column in range(self.columns1):
+                self.column_combo.append(str(column), "column" + str(column+1))
+            self.column_combo.handler_unblock(self.column_changed)
+            self.column_combo.set_active(0)
+        if(combo_id==2):
+            self.row_combo.handler_block(self.row_changed)
+            self.row_combo.remove_all()
+            for row in range(self.rows1):
+                self.row_combo.append(str(row), str(row+1))
+            self.row_combo.handler_unblock(self.row_changed)
+            self.row_combo.set_active(0)
+            self.column_combo.handler_block(self.column_changed)
+            self.column_combo.remove_all()
+            for column in range(self.columns1):
+                self.column_combo.append(str(column), str(column+1))
+            self.column_combo.handler_unblock(self.column_changed)
+            self.column_combo.set_active(0)
+        if(combo_id==3):
+            micro_labels = self.get_letters(self.rows1)
+            self.row_combo.handler_block(self.row_changed)
+            self.row_combo.remove_all()
+            for row in range(self.rows1):
+                self.row_combo.append(str(row), micro_labels[row])
+            self.row_combo.handler_unblock(self.row_changed)
+            self.row_combo.set_active(0)
+            self.column_combo.handler_block(self.column_changed)
+            self.column_combo.remove_all()
+            for column in range(self.columns1):
+                self.column_combo.append(str(column), str(column+1))
+            self.column_combo.handler_unblock(self.column_changed)
+            self.column_combo.set_active(0)
+        
+    def get_letters(self, count):
+        letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        counter = 0
+        result = []
+        for i in range(1, 3):
+          string = [letters] * i
+          for y in product(*string):
+            result.append(''.join(y))
+            counter+=1
+            if(counter == count):
+                return result
+
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Report Generator")
@@ -1217,12 +1287,12 @@ class MainWindow(Gtk.Window):
         rows = int(self.entry1.get_text())
         columns = int(self.entry2.get_text())
         #set some boundries.
-        if(rows > 0 and rows < 20 and columns > 0 and columns < 20):
+        if(rows > 0 and rows < 100 and columns > 0 and columns < 20):
             dialog = LabelsDialog(self, rows, columns)
             response = dialog.run()        
             dialog.destroy()
         else:
-            print("0<rows<20 and 0<columns<20")
+            print("0<rows<100 and 0<columns<20")
 
     def save_current_row_value(self, event, widget):
         print("Save Row Value")
