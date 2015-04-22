@@ -2,8 +2,14 @@
 
 """
    Test some Python and GTK+ printing. Print size defaults to "letter" or 8.5 x 11 sized layout.
-   Look at some layout values for positioning fonts and graphics. Work towards making a report
-   generator for grids, tables and crosstabs. Change things around as needed.
+   Look at some layout values for positioning fonts and graphics with Pango and Cairo. 
+
+   The report generator can produce grids, tables and crosstabs. You can experiment with some
+   random numbers with the print layout to see how it works. You can also get tabular data
+   from the database or crosstab the data from a database. There are several heatmap options
+   and some simple settings for row and column labels including the standard microtiter assay
+   plate format. If it doesn't produce the output you are looking for, it is a single python
+   script so you can change things around as needed. 
 
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
