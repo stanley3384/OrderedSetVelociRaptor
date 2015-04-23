@@ -137,6 +137,8 @@ class TextBox(Gtk.TextView):
         font_rgb=[0.0, 0.0, 0.0]      
         #Account for first page with title and text.
         tables_first_page = int((self.lines_per_page-count_lines)/(rows + shift_below_text - 1))
+        if(tables < tables_first_page):
+            tables_first_page = int(tables)
         tables_next_page = int(self.lines_per_page/(rows + shift_below_text - 1)) 
         if(page_number==0):
             tables_left_to_print = tables
@@ -198,6 +200,7 @@ class TextBox(Gtk.TextView):
         combo1_index = int(self.entries_array_text[12].get_active_id())
         combo2_index = int(self.entries_array_text[13].get_active_id())
         combo4_index = int(self.entries_array_text[15].get_active_id())
+        show_numbers = self.entries_array_text[18].get_active()
         table_rectangles_rgb=[0.8, 0.8, 0.8]
         table_grid_rgb=[0.8, 0.8, 0.8]
 
@@ -311,14 +314,19 @@ class TextBox(Gtk.TextView):
         if(combo2_index==2 or combo2_index == 3):
             horizontal_label_string = column_padding + pad_horizontal_label + "".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in horizontal_labels)
             number_string = number_string + horizontal_label_string +"\n"
-        #Grid strings 
+        #Grid strings
+        row_tuple = "" 
         for x in range(rows): 
             if(combo2_index==3):
                 label_length = max_vertical_label - len(vertical_labels[x])
-                pad_vertical_label = "{: >{m}}".format("", m=label_length)  
-                row_tuple = vertical_labels[x]+pad_vertical_label +"".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+                pad_vertical_label = "{: >{m}}".format("", m=label_length)
+                if(show_numbers):  
+                    row_tuple = vertical_labels[x]+pad_vertical_label +"".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+                else:
+                    row_tuple = vertical_labels[x]+pad_vertical_label
             else:
-                row_tuple = "".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
+                if(show_numbers):
+                    row_tuple = "".join( "{k: >{m}}".format(k=k,m=max_length + (column_width-max_length)) for k in data_values[x])
             #Append row_tuple
             if(x<rows-1):
                 number_string = number_string + column_padding + row_tuple + "\n"
@@ -1019,6 +1027,8 @@ class MainWindow(Gtk.Window):
         self.entry11.set_width_chars(3)
         self.label12 = Gtk.Label("Data Source")
         self.check1 = Gtk.CheckButton("Add Table Label")
+        self.check2 = Gtk.CheckButton("Grid Numbers")
+        self.check2.set_active(True)
         self.button1 = Gtk.Button("  Print Dialog  ")
         self.button1.set_hexpand(False)
         self.button1.set_halign(Gtk.Align.CENTER)
@@ -1120,6 +1130,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.combo5, 4, 8, 1, 1)
         self.grid.attach(self.combo6, 5, 8, 1, 1)
         self.grid.attach(self.check1, 3, 9, 2, 1)
+        self.grid.attach(self.check2, 5, 10, 1, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
         self.grid.attach(self.button1, 0, 12, 6, 1)
@@ -1134,7 +1145,7 @@ class MainWindow(Gtk.Window):
         #Check entries.
         return_value = self.validate_entries()
         if(return_value==0):
-            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6)
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6, self.check2)
             self.TextBox1.print_dialog(entries_array)
 
     def bold_font(self, button2):
@@ -1184,8 +1195,8 @@ class MainWindow(Gtk.Window):
             message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=100"
             self.message_dialog(message)
             return 1
-        elif(0 >= e2 or e2 > 20):
-            message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=20"
+        elif(0 >= e2 or e2 > 50):
+            message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=50"
             self.message_dialog(message)
             return 1
         elif(0 > e3 or e3 > 30):
@@ -1196,8 +1207,8 @@ class MainWindow(Gtk.Window):
             message = "Shift Down " + self.entry4.get_text() +", Range 1<=Shift Down<=10"
             self.message_dialog(message)
             return 1
-        elif(5 > e5 or e5 > 20):
-            message = "Column Width " + self.entry5.get_text() + ", Range 5<=Column Width<=20"
+        elif(2 > e5 or e5 > 20):
+            message = "Column Width " + self.entry5.get_text() + ", Range 2<=Column Width<=20"
             self.message_dialog(message)
             return 1
         elif(0 > e6 or e6 > 5):
@@ -1293,7 +1304,7 @@ class MainWindow(Gtk.Window):
         rows = self.validate_entry(self.entry1)
         columns = self.validate_entry(self.entry2)
         #set some boundries.
-        if(rows > 0 and rows < 100 and columns > 0 and columns < 20):
+        if(rows > 0 and rows < 100 and columns > 0 and columns < 50):
             dialog = LabelsDialog(self, rows, columns)
             response = dialog.run()        
             dialog.destroy()
@@ -1329,7 +1340,7 @@ class MainWindow(Gtk.Window):
         if(r_value>0):
             self.column_value = r_value
         else:
-            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=20")
+            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
         return False
 
     def clear_column_labels(self, event, widget):
@@ -1340,7 +1351,7 @@ class MainWindow(Gtk.Window):
                 del g_column_labels[:]
                 print(g_column_labels)
         else:
-            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=20")
+            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
         return False
 
 win = MainWindow()
