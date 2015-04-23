@@ -1042,7 +1042,7 @@ class MainWindow(Gtk.Window):
         self.button4 = Gtk.Button("Clear")
         self.button4.set_hexpand(False)
         self.button4.connect("clicked", self.clear_tags)
-        self.button5 = Gtk.Button("Set Labels")
+        self.button5 = Gtk.Button("    Set Labels    ")
         self.button5.connect("clicked", self.labels_dialog)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
@@ -1279,7 +1279,7 @@ class MainWindow(Gtk.Window):
             if(int(self.combo4.get_active_id())==4):
                 if(int(self.entry2.get_text()) != len(words)):
                     self.entry2.set_text(str(len(words)))
-                    self.label2.set_markup("<span foreground='red'>Columns Changed</span>")
+                    self.label2.set_markup("<span foreground='blue'>Columns Changed</span>")
         #Check database for necessary rows.
         if(match1):
             con = lite.connect("VelociRaptorData.db")
@@ -1301,6 +1301,7 @@ class MainWindow(Gtk.Window):
         return ret_val
 
     def labels_dialog(self, button):
+        self.button5.set_label("    Set Labels    ")
         rows = self.validate_entry(self.entry1)
         columns = self.validate_entry(self.entry2)
         #set some boundries.
@@ -1329,6 +1330,8 @@ class MainWindow(Gtk.Window):
             if(g_row_labels and r_value!=self.row_value):
                 print("Clear Row Labels")
                 del g_row_labels[:]
+                label = self.button5.get_child()
+                label.set_markup("<span foreground='blue'>Labels Changed</span>")
                 print(g_row_labels)
         else:
             print("Rows " + self.entry1.get_text() + ", Range 0<rows<=100")
@@ -1349,6 +1352,8 @@ class MainWindow(Gtk.Window):
             if(g_column_labels and r_value!=self.column_value):
                 print("Clear Column Labels")
                 del g_column_labels[:]
+                label = self.button5.get_child()
+                label.set_markup("<span foreground='blue'>Labels Changed</span>")
                 print(g_column_labels)
         else:
             print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
