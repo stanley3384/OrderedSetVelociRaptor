@@ -70,9 +70,36 @@ class TextBox(Gtk.TextView):
         string = self.textbuffer.get_text(start, end, True)
         return string
 
+    def drawing_area_preview(self, da, cr, entries_array):
+        self.plate_counter = 1
+        self.plate_counter_sql =1
+        self.entries_array_text = entries_array
+        count_lines = self.textbuffer.get_line_count()
+        tables = int(self.entries_array_text[7].get_text())
+        font_string = self.entries_array_text[14].get_active_text()
+        font_desc = Pango.FontDescription(font_string)
+        pango_context = da.get_pango_context() 
+        self.pango_layout = Pango.Layout(pango_context)       
+        width, height = da.get_size_request()
+        self.pango_layout.set_width(Pango.SCALE * width)
+        self.pango_layout.set_height(Pango.SCALE * height)
+        self.pango_layout.set_font_description(font_desc)
+        cr.set_source_rgb(1.0, 1.0, 1.0)
+        cr.paint()
+        table_string = ""
+        for table in range(tables):
+            table_string = table_string + self.draw_tables(None, None, 0, cr, table, count_lines+1)
+        #Set text and tables.
+        font_rgb=[0.0, 0.0, 0.0] 
+        cr.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
+        self.get_pango_markup()
+        self.pango_layout.set_markup(self.markup_string + table_string)
+        PangoCairo.show_layout(cr, self.pango_layout)
+
     def print_dialog(self, entries_array):
         self.entries_array_text = entries_array
         operation = Gtk.PrintOperation()
+        operation.set_default_page_setup()
         operation.connect("begin_print", self.begin_print)
         operation.connect("draw_page", self.draw_page)
         result = operation.run(Gtk.PrintOperationAction.PRINT_DIALOG, None)
@@ -507,6 +534,7 @@ class TextBox(Gtk.TextView):
         min_value = sys.float_info.max
         string_number_shift_left = ""
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
+        random.seed(1)
         for x in range(rows):
             for y in range(columns):
                 random_number = round((random.random() * 100), round_float)
@@ -946,7 +974,7 @@ class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Report Generator")
         self.set_default_size(750,550)
-        self.set_border_width(20)
+        self.set_border_width(5)
         self.row_value = 0
         self.column_value = 0
         self.menubar1 = Gtk.MenuBar()  
@@ -1135,9 +1163,33 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.entry10, 0, 11, 6, 1)
         self.grid.attach(self.button1, 0, 12, 6, 1)
         self.grid.attach(self.menubar1, 1, 13, 1, 1)
-        self.add(self.grid)
+        self.drawing_area = Gtk.DrawingArea()
+        self.drawing_area.set_size_request(10000,10000)
+        self.drawing_area.connect_after("draw", self.draw_report)
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
+        scrolled_window.set_hexpand(True)
+        scrolled_window.set_vexpand(True)
+        layout = Gtk.Layout()
+        layout.set_size(10000, 10000)
+        layout.set_vexpand(True)
+        layout.set_hexpand(True)
+        hadjustment = layout.get_hadjustment()
+        scrolled_window.set_hadjustment(hadjustment)
+        vadjustment = layout.get_vadjustment()
+        scrolled_window.set_vadjustment(vadjustment)
+        scrolled_window.add(layout)
+        layout.put(self.drawing_area, 0, 0)
+        self.notebook = Gtk.Notebook()
+        notebook_label1 = Gtk.Label("Setup")
+        notebook_label2 = Gtk.Label("Drawing")
+        #self.notebook.set_scrollable(True)
+        self.notebook.append_page(self.grid, notebook_label1)
+        self.notebook.append_page(scrolled_window, notebook_label2)
+        #self.notebook.add(self.grid)
+        self.add(self.notebook)
         style_provider = Gtk.CssProvider()
-        css = "GtkWindow{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}"
+        css = "GtkWindow, GtkNotebook{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}"
         style_provider.load_from_data(css)
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
@@ -1358,6 +1410,14 @@ class MainWindow(Gtk.Window):
         else:
             print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
         return False
+
+    def draw_report(self, da, cr):
+        print("Draw")
+        return_value = self.validate_entries()
+        if(return_value==0):
+            entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6, self.check2)
+        self.TextBox1.drawing_area_preview(da, cr, entries_array)
+        return True
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
