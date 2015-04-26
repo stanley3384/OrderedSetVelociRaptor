@@ -47,6 +47,7 @@ class TextBox(Gtk.TextView):
         self.lines_per_page = 0
         self.total_lines = 0
         self.pango_markup_string = ""
+        self.table_string = ""
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
@@ -86,16 +87,17 @@ class TextBox(Gtk.TextView):
         self.pango_layout.set_font_description(font_desc)
         cr.set_source_rgb(1.0, 1.0, 1.0)
         cr.paint()
-        table_string = ""
+        self.table_string = ""
         for table in range(tables):
-            table_string = table_string + self.draw_tables(None, None, 0, cr, table, count_lines+1)
+            self.table_string = self.table_string + self.draw_tables(None, None, 0, cr, table, count_lines+1)
         #Set text and tables.
         font_rgb=[0.0, 0.0, 0.0] 
         cr.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
         self.get_pango_markup()
-        self.pango_layout.set_markup(self.markup_string + table_string)
+        self.pango_layout.set_markup(self.markup_string + self.table_string)
         PangoCairo.show_layout(cr, self.pango_layout)
-
+        pango_layout = PangoCairo.create_layout(cr)
+           
     def print_dialog(self, entries_array):
         self.entries_array_text = entries_array
         operation = Gtk.PrintOperation()
@@ -1166,26 +1168,27 @@ class MainWindow(Gtk.Window):
         self.drawing_area = Gtk.DrawingArea()
         self.drawing_area.set_size_request(10000,10000)
         self.drawing_area.connect_after("draw", self.draw_report)
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
-        scrolled_window.set_hexpand(True)
-        scrolled_window.set_vexpand(True)
+        self.scrolled_window = Gtk.ScrolledWindow()
+        self.scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
+        self.scrolled_window.set_hexpand(True)
+        self.scrolled_window.set_vexpand(True)
         layout = Gtk.Layout()
         layout.set_size(10000, 10000)
         layout.set_vexpand(True)
         layout.set_hexpand(True)
-        hadjustment = layout.get_hadjustment()
-        scrolled_window.set_hadjustment(hadjustment)
-        vadjustment = layout.get_vadjustment()
-        scrolled_window.set_vadjustment(vadjustment)
-        scrolled_window.add(layout)
+        self.hadjustment = layout.get_hadjustment()
+        self.scrolled_window.set_hadjustment(self.hadjustment)
+        self.vadjustment = layout.get_vadjustment()
+        self.scrolled_window.set_vadjustment(self.vadjustment)
+        self.scrolled_window.add(layout)
         layout.put(self.drawing_area, 0, 0)
         self.notebook = Gtk.Notebook()
+        self.notebook.connect("switch-page", self.start_draw_report)
         notebook_label1 = Gtk.Label("Setup")
         notebook_label2 = Gtk.Label("Drawing")
         #self.notebook.set_scrollable(True)
         self.notebook.append_page(self.grid, notebook_label1)
-        self.notebook.append_page(scrolled_window, notebook_label2)
+        self.notebook.append_page(self.scrolled_window, notebook_label2)
         #self.notebook.add(self.grid)
         self.add(self.notebook)
         style_provider = Gtk.CssProvider()
@@ -1418,6 +1421,11 @@ class MainWindow(Gtk.Window):
             entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6, self.check2)
         self.TextBox1.drawing_area_preview(da, cr, entries_array)
         return True
+
+    def start_draw_report(self, arg1, arg2, widget):
+        print("Tab Draw")
+        self.hadjustment.set_value(0)
+        self.vadjustment.set_value(0)
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
