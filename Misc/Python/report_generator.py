@@ -979,6 +979,7 @@ class MainWindow(Gtk.Window):
         self.set_border_width(5)
         self.row_value = 0
         self.column_value = 0
+        self.blocking = False
         self.menubar1 = Gtk.MenuBar()  
         self.menu1 = Gtk.Menu()
         self.menuitem1 = Gtk.MenuItem("About") 
@@ -1167,7 +1168,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.menubar1, 1, 13, 1, 1)
         self.drawing_area = Gtk.DrawingArea()
         self.drawing_area.set_size_request(10000,10000)
-        self.drawing_area.connect_after("draw", self.draw_report)
+        self.da_block = self.drawing_area.connect("draw", self.draw_report)
         self.scrolled_window = Gtk.ScrolledWindow()
         self.scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
         self.scrolled_window.set_hexpand(True)
@@ -1417,13 +1418,23 @@ class MainWindow(Gtk.Window):
     def draw_report(self, da, cr):
         print("Draw")
         return_value = self.validate_entries()
+        #Block draw on validation error.
+        if(return_value!=0 and self.blocking==False):
+            self.drawing_area.handler_block(self.da_block)
+            self.blocking = True
+        if(return_value==0 and self.blocking==True):
+            self.drawing_area.handler_unblock(self.da_block)
+            self.blocking = False
         if(return_value==0):
             entries_array = (self.entry1, self.entry2, self.entry3, self.entry4, self.entry5, self.entry6, self.entry7, self.entry8, self.entry9, self.entry10, self.entry11, self.check1, self.combo1, self.combo2, self.combo3, self.combo4, self.combo5, self.combo6, self.check2)
-        self.TextBox1.drawing_area_preview(da, cr, entries_array)
+            self.TextBox1.drawing_area_preview(da, cr, entries_array)
         return True
 
     def start_draw_report(self, arg1, arg2, widget):
         print("Tab Draw")
+        if(self.blocking):
+            self.drawing_area.handler_unblock(self.da_block)
+            self.blocking = False
         self.hadjustment.set_value(0)
         self.vadjustment.set_value(0)
 
