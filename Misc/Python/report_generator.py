@@ -5,10 +5,10 @@
    Look at some layout values for positioning fonts and graphics with Pango and Cairo. 
 
    The report generator can produce grids, tables and crosstabs. You can experiment with some
-   random numbers with the print layout to see how it works. You can also get tabular data
-   from the database or crosstab the data from a database. There are several heatmap options
-   and some simple settings for row and column labels including the standard microtiter assay
-   plate format. If it doesn't produce the output you are looking for, it is a single python
+   random numbers with a print layout and a drawing area to see how it works. You can also get
+   tabular data from the database or crosstab the data from a database. There are several heatmap
+   options and some simple settings for row and column labels including the standard microtiter
+   assay plate format. If it doesn't produce the output you are looking for, it is a single python
    script so you can change things around as needed. 
 
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
@@ -241,9 +241,9 @@ class TextBox(Gtk.TextView):
         
         #Get some test data.
         if(combo4_index == 1):
-            min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left, round_float)
+            min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left, round_float, table)
         elif(combo4_index == 2):
-            min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left, round_float)
+            min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left, round_float, table)
         elif(combo4_index == 3):
             min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, sql_string, shift_number_left, round_float)
         else:
@@ -530,13 +530,13 @@ class TextBox(Gtk.TextView):
             blue = 0.0 + (1 - percent)            
         return red, green, blue
 
-    def get_test_data(self, rows, columns, shift_number_left, round_float):
+    def get_test_data(self, rows, columns, shift_number_left, round_float, table):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         max_value = sys.float_info.min
         min_value = sys.float_info.max
         string_number_shift_left = ""
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
-        random.seed(1)
+        random.seed(table)
         for x in range(rows):
             for y in range(columns):
                 random_number = round((random.random() * 100), round_float)
@@ -547,13 +547,14 @@ class TextBox(Gtk.TextView):
                     min_value = random_number
         return min_value, max_value, data_values
 
-    def get_test_data_db(self, rows, columns, shift_number_left, round_float):
+    def get_test_data_db(self, rows, columns, shift_number_left, round_float, table):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         test_data1 = [[0 for x in range(columns)] for x in range(rows)]
         max_value = sys.float_info.min
         min_value = sys.float_info.max
         string_number_shift_left = ""
         string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
+        random.seed(table)
         for x in range(rows):
             for y in range(columns):
                 if(y == 0):
@@ -1283,6 +1284,10 @@ class MainWindow(Gtk.Window):
             message = "Round Floats " + self.entry11.get_text() + ", Range 1<=Tables<=7"
             self.message_dialog(message)
             return 1
+        elif(e1*e2*e8 > 5000):
+            message = "Max Rectangles " + str(e1*e2*e8) + ", Range rows*columns*tables<=5000"
+            self.message_dialog(message)
+            return 1
         elif(self.entry10.get_sensitive()):
             database_rows = self.check_sql_string(self.entry10.get_text())
             numbers = int(self.entry1.get_text())*int(self.entry2.get_text())*int(self.entry8.get_text())
@@ -1416,7 +1421,7 @@ class MainWindow(Gtk.Window):
         return False
 
     def draw_report(self, da, cr):
-        print("Draw")
+        #print("Draw")
         return_value = self.validate_entries()
         #Block draw on validation error.
         if(return_value!=0 and self.blocking==False):
@@ -1431,7 +1436,7 @@ class MainWindow(Gtk.Window):
         return True
 
     def start_draw_report(self, arg1, arg2, widget):
-        print("Tab Draw")
+        #print("Tab Draw")
         if(self.blocking):
             self.drawing_area.handler_unblock(self.da_block)
             self.blocking = False
