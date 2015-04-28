@@ -988,9 +988,9 @@ class MainWindow(Gtk.Window):
         self.menu1item1 = Gtk.MenuItem("File") 
         self.menu1item1.set_submenu(self.menu1)
         self.menu1item2 = Gtk.MenuItem("Open Report")
-        self.menu1item2.connect("activate", self.open_pickle_file)      
+        self.menu1item2.connect("activate", self.open_report)      
         self.menu1item3 = Gtk.MenuItem("Save Report")
-        self.menu1item3.connect("activate", self.save_pickle_file)            
+        self.menu1item3.connect("activate", self.save_report)            
         self.menu1.append(self.menu1item2) 
         self.menu1.append(self.menu1item3) 
         self.menubar1.append(self.menu1item1)
@@ -1454,10 +1454,76 @@ class MainWindow(Gtk.Window):
         self.hadjustment.set_value(0)
         self.vadjustment.set_value(0)
 
-    def open_pickle_file(self, widget):
+    def open_report(self, widget):
+        dialog = Gtk.FileChooserDialog("Open Report", self, Gtk.FileChooserAction.OPEN, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        dialog.set_default_size(500, 500)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            file_name = dialog.get_filename()
+            self.open_pickle_file(file_name)
+        dialog.destroy()
+
+    def open_pickle_file(self, file_name):
         print("Open File report1")
-        entry_values = pickle.load(open("report1", "rb" ))
+        try:
+            with open(file_name, "rb") as f:
+                entry_values = pickle.load(f)
+        except:
+            print("Couldn't open report file.")
+            return            
         print(entry_values)
+        self.entry1.set_text(entry_values.get("e1"))
+        self.entry2.set_text(entry_values.get("e2"))
+        self.entry3.set_text(entry_values.get("e3"))
+        self.entry4.set_text(entry_values.get("e4"))
+        self.entry5.set_text(entry_values.get("e5"))
+        self.entry6.set_text(entry_values.get("e6"))
+        self.entry7.set_text(entry_values.get("e7"))
+        self.entry8.set_text(entry_values.get("e8"))
+        self.entry9.set_text(entry_values.get("e9"))
+        self.entry10.set_text(entry_values.get("e10"))
+        self.entry11.set_text(entry_values.get("e11"))                
+        self.combo1.set_active_id(entry_values.get("c1"))
+        self.combo2.set_active_id(entry_values.get("c2"))
+        self.combo3.set_active_id(entry_values.get("c3"))
+        self.combo4.set_active_id(entry_values.get("c4"))
+        self.combo5.set_active_id(entry_values.get("c5"))
+        self.combo6.set_active_id(entry_values.get("c6"))
+        self.combo7.set_active_id(entry_values.get("c7"))
+        self.check1.set_active(bool(entry_values.get("ch1")))
+        self.check2.set_active(bool(entry_values.get("ch2")))
+        #To save and load markup you need GTK3.16
+        text_buffer = self.TextBox1.get_buffer()
+        text_buffer.set_text(entry_values.get("text"))
+        global g_row_labels
+        g_row_labels = entry_values.get("g_row_labels")
+        global g_column_labels
+        g_column_labels = entry_values.get("g_column_labels")
+        
+    def save_report(self, widget):
+        dialog = Gtk.Dialog("Save Report", self, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        dialog.set_default_size(200, 50)
+        content_area = dialog.get_content_area()
+        self.set_border_width(10) 
+        label1 = Gtk.Label("File Name")
+        label1.set_hexpand(True)
+        entry1 = Gtk.Entry()
+        entry1.set_text("report1")
+        entry1.set_hexpand(True)
+        grid = Gtk.Grid()
+        grid.set_row_spacing(10)
+        grid.attach(label1, 0, 0, 1, 1)
+        grid.attach(entry1, 0, 1, 1, 1)
+        content_area.add(grid)
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            file_name = entry1.get_text()
+            if(file_name!=""):
+                self.save_pickle_file(file_name)
+            else:
+                print("Need a name for the report file.")
+        dialog.destroy()
 
     def save_pickle_file(self, widget):
         print("Save File report1")
@@ -1483,10 +1549,18 @@ class MainWindow(Gtk.Window):
             c7 = self.combo7.get_active_id()
             ch1 = int(self.check1.get_active())
             ch2 = int(self.check2.get_active())
-            markup = self.TextBox1.markup_string
-            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_lables": g_row_labels, "g_column_labels": g_column_labels}
-            pickle.dump(entry_values, open("report1", "wb" ))
-
+            #To save and load markup you need GTK3.16
+            #markup = self.TextBox1.markup_string
+            text_buffer = self.TextBox1.get_buffer()
+            start1 = text_buffer.get_start_iter()
+            end1 = text_buffer.get_end_iter()
+            text = text_buffer.get_text(start1, end1, False)
+            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "text": text, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels}
+            try:
+                with open("report1", "wb") as f:
+                    pickle.dump(entry_values, f)
+            except:   
+                print("Couldn't pickle file.")
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
