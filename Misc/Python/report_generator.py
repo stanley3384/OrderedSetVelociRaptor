@@ -24,6 +24,7 @@ import random
 import math
 import sys
 import re
+import pickle
 import sqlite3 as lite
 from operator import itemgetter
 from itertools import product
@@ -46,6 +47,7 @@ class TextBox(Gtk.TextView):
         self.line_count = 0
         self.lines_per_page = 0
         self.total_lines = 0
+        self.markup_string = "       This is the title for the report.\n This is a paragraph."
         self.pango_markup_string = ""
         self.table_string = ""
         self.set_wrap_mode(0)
@@ -981,15 +983,24 @@ class MainWindow(Gtk.Window):
         self.row_value = 0
         self.column_value = 0
         self.blocking = False
-        self.menubar1 = Gtk.MenuBar()  
+        self.menubar1 = Gtk.MenuBar() 
         self.menu1 = Gtk.Menu()
-        self.menuitem1 = Gtk.MenuItem("About") 
-        self.menuitem1.set_submenu(self.menu1)
-        self.menuitem2 = Gtk.MenuItem("Report Generator")
-        self.menuitem2.set_name("menuitem2")
-        self.menuitem2.connect("activate", self.about_dialog)         
-        self.menu1.append(self.menuitem2) 
-        self.menubar1.append(self.menuitem1)
+        self.menu1item1 = Gtk.MenuItem("File") 
+        self.menu1item1.set_submenu(self.menu1)
+        self.menu1item2 = Gtk.MenuItem("Open Report")
+        self.menu1item2.connect("activate", self.open_pickle_file)      
+        self.menu1item3 = Gtk.MenuItem("Save Report")
+        self.menu1item3.connect("activate", self.save_pickle_file)            
+        self.menu1.append(self.menu1item2) 
+        self.menu1.append(self.menu1item3) 
+        self.menubar1.append(self.menu1item1)
+        self.menu2 = Gtk.Menu()
+        self.menu2item1 = Gtk.MenuItem("About") 
+        self.menu2item1.set_submenu(self.menu2)
+        self.menu2item2 = Gtk.MenuItem("Report Generator")
+        self.menu2item2.connect("activate", self.about_dialog)
+        self.menu2.append(self.menu2item2)
+        self.menubar1.append(self.menu2item1) 
         self.TextBox1 = TextBox()
         self.TextBox1.set_hexpand(True)
         self.TextBox1.set_vexpand(True)
@@ -1442,6 +1453,40 @@ class MainWindow(Gtk.Window):
             self.blocking = False
         self.hadjustment.set_value(0)
         self.vadjustment.set_value(0)
+
+    def open_pickle_file(self, widget):
+        print("Open File report1")
+        entry_values = pickle.load(open("report1", "rb" ))
+        print(entry_values)
+
+    def save_pickle_file(self, widget):
+        print("Save File report1")
+        ret_value = self.validate_entries()
+        if(ret_value==0):
+            e1 = self.entry1.get_text()
+            e2 = self.entry2.get_text()
+            e3 = self.entry3.get_text()
+            e4 = self.entry4.get_text()
+            e5 = self.entry5.get_text()
+            e6 = self.entry6.get_text()
+            e7 = self.entry7.get_text()
+            e8 = self.entry8.get_text()
+            e9 = self.entry9.get_text()
+            e10 = self.entry10.get_text()
+            e11 = self.entry11.get_text()
+            c1 = self.combo1.get_active_id()
+            c2 = self.combo2.get_active_id()
+            c3 = self.combo3.get_active_id()
+            c4 = self.combo4.get_active_id()
+            c5 = self.combo5.get_active_id()
+            c6 = self.combo6.get_active_id()
+            c7 = self.combo7.get_active_id()
+            ch1 = int(self.check1.get_active())
+            ch2 = int(self.check2.get_active())
+            markup = self.TextBox1.markup_string
+            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_lables": g_row_labels, "g_column_labels": g_column_labels}
+            pickle.dump(entry_values, open("report1", "wb" ))
+
 
 win = MainWindow()
 win.connect("delete-event", Gtk.main_quit) 
