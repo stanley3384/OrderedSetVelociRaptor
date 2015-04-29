@@ -48,19 +48,19 @@ class TextBox(Gtk.TextView):
         self.lines_per_page = 0
         self.total_lines = 0
         self.markup_string = "       This is the title for the report.\n This is a paragraph."
-        self.pango_markup_string = ""
+        #self.pango_markup_string = ""
         self.table_string = ""
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
         self.textbuffer.set_text("       This is the title for the report.\n This is a paragraph.")
-        self.font_tag_8 = self.textbuffer.create_tag("font8", font=8)
-        self.font_tag_10 = self.textbuffer.create_tag("font10", font=10)
-        self.font_tag_12 = self.textbuffer.create_tag("font12", font=12)
-        self.font_tag_14 = self.textbuffer.create_tag("font14", font=14)
-        self.font_tag_16 = self.textbuffer.create_tag("font16", font=16)
-        self.bold_tag = self.textbuffer.create_tag("bold", weight=900)
-        self.underline_tag = self.textbuffer.create_tag("underline", underline=Pango.Underline.SINGLE)
+        self.font_tag_8 = self.textbuffer.create_tag("font='8'", font=8)
+        self.font_tag_10 = self.textbuffer.create_tag("font='10'", font=10)
+        self.font_tag_12 = self.textbuffer.create_tag("font='12'", font=12)
+        self.font_tag_14 = self.textbuffer.create_tag("font='14'", font=14)
+        self.font_tag_16 = self.textbuffer.create_tag("font='16'", font=16)
+        self.bold_tag = self.textbuffer.create_tag("weight='900'", weight=900)
+        self.underline_tag = self.textbuffer.create_tag("underline='single'", underline=Pango.Underline.SINGLE)
 
     def change_textview_font(self, combo3):
         font = combo3.get_active_text()
@@ -668,16 +668,12 @@ class TextBox(Gtk.TextView):
         if(self.textbuffer.get_has_selection()):
             start, end = self.textbuffer.get_selection_bounds()
             self.textbuffer.apply_tag(self.bold_tag, start, end)
-        else:
-            print("There is no selected text.")
 
     def set_underline_tag(self, button):
         if(self.textbuffer.get_has_selection()):
             start, end = self.textbuffer.get_selection_bounds()
             self.textbuffer.apply_tag(self.underline_tag, start, end)
-        else:
-            print("There is no selected text.")
-
+     
     def set_font_tags(self, combo7):
         combo7_id = int(combo7.get_active_id())
         if(self.textbuffer.get_has_selection()):
@@ -698,9 +694,6 @@ class TextBox(Gtk.TextView):
                 self.textbuffer.apply_tag(self.font_tag_14, start, end)
             else:
                 self.textbuffer.apply_tag(self.font_tag_16, start, end)
-              
-        else:
-            print("There is no selected text.")
         
     def clear_tags(self, button):
         start = self.textbuffer.get_start_iter()
@@ -772,33 +765,33 @@ class TextBox(Gtk.TextView):
             if any(i in x for x in pango_sorted):
                 #print("Found " + str(i))
                 for j in range(records):
-                    if("underline" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("underline='single'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[0]=True
-                    if("bold" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("weight='900'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[1]=True
-                    if("font8" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("font='8'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[2]=True
-                    if("font10" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("font='10'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[3]=True
-                    if("font12" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("font='12'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[4]=True
-                    if("font14" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("font='14'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[5]=True
-                    if("font16" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
+                    if("font='16'" == str(pango_sorted[j][0]) and pango_sorted[j][1] == i):
                         open_tags[6]=True
-                    if("underline" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
+                    if("underline='single'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i):
                         open_tags[0]=False
-                    if("bold" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("weight='900'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[1]=False
-                    if("font8" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("font='8'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[2]=False 
-                    if("font10" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("font='10'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[3]=False 
-                    if("font12" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("font='12'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[4]=False 
-                    if("font14" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("font='14'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[5]=False 
-                    if("font16" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
+                    if("font='16'" == str(pango_sorted[j][0]) and pango_sorted[j][2] == i): 
                         open_tags[6]=False 
                 if(span_open):
                     self.markup_string+="</span>"
@@ -826,6 +819,73 @@ class TextBox(Gtk.TextView):
             if(i < chars-1):
                 self.markup_string+=str(text[i])
         #print(self.markup_string)
+
+    def parse_saved_markup_string(self, markup):
+        self.markup_string = markup
+        self.textbuffer.set_text(self.markup_string, -1)
+        start_iter = self.textbuffer.get_start_iter()
+        span_iter = self.textbuffer.get_start_iter()
+        test_string = ""
+        index = 0
+        count = True
+        move_ahead_six = 0
+        tag_locations = []
+        tag_names = []
+        new_string = ""
+        span_string = ""
+
+        #Parse markup string. Just check for span tags.
+        while(not start_iter.is_end()):
+            if("<" == start_iter.get_char()):
+                span_iter.assign(start_iter)
+                span_iter.forward_chars(5)
+                test_string = self.textbuffer.get_text(start_iter, span_iter, False)
+                if(test_string == "<span" or test_string == "</spa"):
+                    count = False
+                    tag_locations.append(index)
+                    move_ahead_six = 0
+            if(count==False):
+                move_ahead_six+=1
+                if(move_ahead_six>6):
+                    if(">" != start_iter.get_char()):
+                        span_string+=start_iter.get_char()
+            if(count==True):
+                index+=1
+                new_string+=start_iter.get_char()
+            if(">" == start_iter.get_char() and count == False):
+                count = True
+                if(span_string != ""):
+                    tag_names.append(span_string)
+                span_string = ""
+            start_iter.forward_char()
+        
+        #print tag_locations
+        #print tag_names
+        #print new_string
+
+        #Get a list of unique tags.
+        unique_tags = []
+        for tuples in tag_names:
+           tags = tuples.split()
+           for tag in tags:
+               if tag not in unique_tags:
+                   unique_tags.append(tag)
+
+        #Update textview with parsed string.
+        self.textbuffer.set_text(new_string, -1)
+
+        #Apply tags to buffer.
+        offset1 = self.textbuffer.get_start_iter()
+        offset2 = self.textbuffer.get_start_iter()
+        for i in range(len(tag_locations)/2):
+            start = tag_locations[2*i]
+            end = tag_locations[2*i+1]
+            #print(str(i) + " " + str(start) + " " + str(end))
+            offset1.set_offset(start)
+            offset2.set_offset(end)
+            names = tag_names[i].split()
+            for value in names: 
+                self.textbuffer.apply_tag_by_name(value, offset1, offset2)
 
 class LabelsDialog(Gtk.Dialog):
     def __init__(self, parent, rows, columns):
@@ -1492,9 +1552,8 @@ class MainWindow(Gtk.Window):
         self.combo7.set_active_id(entry_values.get("c7"))
         self.check1.set_active(bool(entry_values.get("ch1")))
         self.check2.set_active(bool(entry_values.get("ch2")))
-        #To save and load markup you need GTK3.16
-        text_buffer = self.TextBox1.get_buffer()
-        text_buffer.set_text(entry_values.get("text"))
+        markup = entry_values.get("markup")
+        self.TextBox1.parse_saved_markup_string(markup)
         global g_row_labels
         g_row_labels = entry_values.get("g_row_labels")
         global g_column_labels
@@ -1549,13 +1608,8 @@ class MainWindow(Gtk.Window):
             c7 = self.combo7.get_active_id()
             ch1 = int(self.check1.get_active())
             ch2 = int(self.check2.get_active())
-            #To save and load markup you need GTK3.16
-            #markup = self.TextBox1.markup_string
-            text_buffer = self.TextBox1.get_buffer()
-            start1 = text_buffer.get_start_iter()
-            end1 = text_buffer.get_end_iter()
-            text = text_buffer.get_text(start1, end1, False)
-            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "text": text, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels}
+            markup = self.TextBox1.markup_string
+            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels}
             try:
                 with open("report1", "wb") as f:
                     pickle.dump(entry_values, f)
