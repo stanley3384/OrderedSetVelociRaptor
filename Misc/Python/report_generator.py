@@ -1039,7 +1039,7 @@ class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Report Generator")
         self.set_default_size(750,550)
-        self.set_border_width(5)
+        self.set_border_width(15)
         self.row_value = 0
         self.column_value = 0
         self.blocking = False
@@ -1050,9 +1050,12 @@ class MainWindow(Gtk.Window):
         self.menu1item2 = Gtk.MenuItem("Open Report")
         self.menu1item2.connect("activate", self.open_report)      
         self.menu1item3 = Gtk.MenuItem("Save Report")
-        self.menu1item3.connect("activate", self.save_report)            
+        self.menu1item3.connect("activate", self.save_report) 
+        self.menu1item4 = Gtk.MenuItem("Print Report")
+        self.menu1item4.connect("activate", self.print_dialog)             
         self.menu1.append(self.menu1item2) 
         self.menu1.append(self.menu1item3) 
+        self.menu1.append(self.menu1item4) 
         self.menubar1.append(self.menu1item1)
         self.menu2 = Gtk.Menu()
         self.menu2item1 = Gtk.MenuItem("About") 
@@ -1132,10 +1135,6 @@ class MainWindow(Gtk.Window):
         self.check1 = Gtk.CheckButton("Add Table Label")
         self.check2 = Gtk.CheckButton("Grid Numbers")
         self.check2.set_active(True)
-        self.button1 = Gtk.Button("  Print Dialog  ")
-        self.button1.set_hexpand(False)
-        self.button1.set_halign(Gtk.Align.CENTER)
-        self.button1.connect("clicked", self.print_dialog)
         self.button2 = Gtk.Button("Bold")
         self.button2.set_hexpand(False)
         self.button2.connect("clicked", self.bold_font)
@@ -1236,8 +1235,7 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.check2, 5, 10, 1, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
-        self.grid.attach(self.button1, 0, 12, 6, 1)
-        self.grid.attach(self.menubar1, 1, 13, 1, 1)
+        self.grid.attach(self.menubar1, 1, 12, 1, 1)
         self.drawing_area = Gtk.DrawingArea()
         self.drawing_area.set_size_request(10000,10000)
         self.da_block = self.drawing_area.connect("draw", self.draw_report)
