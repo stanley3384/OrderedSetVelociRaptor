@@ -1528,6 +1528,8 @@ class MainWindow(Gtk.Window):
                 entry_values = pickle.load(f)
         except:
             print("Couldn't open report file.")
+            message = "Couldn't open report file."
+            self.message_dialog(message)
             return            
         print(entry_values)
         self.entry1.set_text(entry_values.get("e1"))
@@ -1558,30 +1560,17 @@ class MainWindow(Gtk.Window):
         g_column_labels = entry_values.get("g_column_labels")
         
     def save_report(self, widget):
-        dialog = Gtk.Dialog("Save Report", self, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        dialog.set_default_size(200, 50)
-        content_area = dialog.get_content_area()
-        self.set_border_width(10) 
-        label1 = Gtk.Label("File Name")
-        label1.set_hexpand(True)
-        entry1 = Gtk.Entry()
-        entry1.set_text("report1")
-        entry1.set_hexpand(True)
-        grid = Gtk.Grid()
-        grid.set_row_spacing(10)
-        grid.attach(label1, 0, 0, 1, 1)
-        grid.attach(entry1, 0, 1, 1, 1)
-        content_area.add(grid)
-        dialog.show_all()
+        dialog = Gtk.FileChooserDialog("Save Report", self, Gtk.FileChooserAction.SAVE, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+        dialog.set_default_size(500, 500)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            file_name = entry1.get_text()
+            file_name = dialog.get_filename()
             if(file_name!=""):
                 self.save_pickle_file(file_name)
             else:
                 print("Need a name for the report file.")
         dialog.destroy()
-
+        
     def save_pickle_file(self, widget):
         print("Save File report1")
         ret_value = self.validate_entries()
