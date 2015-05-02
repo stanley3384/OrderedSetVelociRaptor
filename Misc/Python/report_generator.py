@@ -5,11 +5,11 @@
    Look at some layout values for positioning fonts and graphics with Pango and Cairo. 
 
    The report generator can produce grids, tables and crosstabs. You can experiment with some
-   random numbers with a print layout and a drawing area to see how it works. You can also get
-   tabular data from the database or crosstab the data from a database. There are several heatmap
-   options and some simple settings for row and column labels including the standard microtiter
-   assay plate format. If it doesn't produce the output you are looking for, it is a single python
-   script so you can change things around as needed. 
+   random numbers and sequences with a print layout and a drawing area to see how it works.
+   You can also get tabular data from the database or crosstab the data from a database. 
+   There are several heatmap options and some simple settings for row and column labels including
+   the standard microtiter assay plate formats. If it doesn't produce the output you are looking
+   for, it is a single python script so you can change things around as needed. 
 
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
@@ -245,8 +245,10 @@ class TextBox(Gtk.TextView):
         if(combo4_index == 1):
             min_value, max_value, data_values = self.get_test_data(rows, columns, shift_number_left, round_float, table)
         elif(combo4_index == 2):
-            min_value, max_value, data_values = self.get_test_data_db(rows, columns, shift_number_left, round_float, table)
+            min_value, max_value, data_values = self.get_test_data2(rows, columns, shift_number_left, round_float, table)
         elif(combo4_index == 3):
+            min_value, max_value, data_values = self.get_test_data3(rows, columns, shift_number_left, round_float, table)
+        elif(combo4_index == 4):
             min_value, max_value, data_values = self.get_db_data_for_crosstab(rows, columns, tables, sql_string, shift_number_left, round_float)
         else:
             min_value, max_value, data_values, column_labels, column_number = self.get_db_data_for_table(rows, columns, tables, sql_string, shift_number_left, round_float)
@@ -264,7 +266,7 @@ class TextBox(Gtk.TextView):
             for x in range(rows):
                 vertical_labels.insert(x, g_row_labels[x]) 
         #If the table columns are coming from the database field names.
-        if(combo4_index==4):
+        if(combo4_index==5):
             for col in column_labels:
                 horizontal_labels.append(col + string_column_shift_left)
         else:
@@ -549,6 +551,41 @@ class TextBox(Gtk.TextView):
                     min_value = random_number
         return min_value, max_value, data_values
 
+    def get_test_data2(self, rows, columns, shift_number_left, round_float, table):
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+        max_value = sys.float_info.min
+        min_value = sys.float_info.max
+        string_number_shift_left = ""
+        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
+        sequence_number = 0
+        for x in range(rows):
+            for y in range(columns):
+                sequence_number+=1
+                data_values[x][y] = str(sequence_number) + string_number_shift_left
+                if(sequence_number > max_value):
+                    max_value = sequence_number
+                if(sequence_number < min_value):
+                    min_value = sequence_number
+        return min_value, max_value, data_values
+
+    def get_test_data3(self, rows, columns, shift_number_left, round_float, table):
+        data_values =  [[0 for x in range(columns)] for x in range(rows)]
+        max_value = sys.float_info.min
+        min_value = sys.float_info.max
+        string_number_shift_left = ""
+        string_number_shift_left = "{: <{m}}".format("", m=shift_number_left)
+        sequence_number = 0
+        for x in range(rows):
+            for y in range(columns):
+                sequence_number = (rows*y+1)+x
+                data_values[x][y] = str(sequence_number) + string_number_shift_left
+                if(sequence_number > max_value):
+                    max_value = sequence_number
+                if(sequence_number < min_value):
+                    min_value = sequence_number
+        return min_value, max_value, data_values
+    '''
+    #Test loading and getting data from sqlite.
     def get_test_data_db(self, rows, columns, shift_number_left, round_float, table):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         test_data1 = [[0 for x in range(columns)] for x in range(rows)]
@@ -597,7 +634,7 @@ class TextBox(Gtk.TextView):
         con.close()
         print("Record Count " + str(len(data_values)) + " Min " + str(min_value) + " Max " + str(max_value))
         return min_value, max_value, data_values
-
+    '''
     def get_db_data_for_crosstab(self, rows, columns, tables, sql_string, shift_number_left, round_float):
         data_values =  [[0 for x in range(columns)] for x in range(rows)]
         max_value = sys.float_info.min
@@ -1168,9 +1205,10 @@ class MainWindow(Gtk.Window):
         self.combo3.connect("changed", self.change_font)
         self.combo4 = Gtk.ComboBoxText()
         self.combo4.append("1", "Random")
-        self.combo4.append("2", "RandomDB")
-        self.combo4.append("3", "CrosstabFromDB")
-        self.combo4.append("4", "TableFromDB")
+        self.combo4.append("2", "RCsequence")
+        self.combo4.append("3", "CRsequence")
+        self.combo4.append("4", "CrosstabFromDB")
+        self.combo4.append("5", "TableFromDB")
         self.combo4.set_active_id("1")
         self.combo4.connect("changed", self.change_sql_entry)
         self.combo5 = Gtk.ComboBoxText()
@@ -1295,7 +1333,7 @@ class MainWindow(Gtk.Window):
 
     def change_sql_entry(self, combo4):
         active_id = int(combo4.get_active_id())
-        if(active_id==1 or active_id==2):
+        if(active_id==1 or active_id==2 or active_id==3):
             self.entry10.set_sensitive(False)
         else:
             self.entry10.set_sensitive(True)
@@ -1406,7 +1444,7 @@ class MainWindow(Gtk.Window):
         if(match2):
             words = match2.group(0).split(",")
             print("Columns in SELECT " + str(len(words)))
-            if(int(self.combo4.get_active_id())==4):
+            if(int(self.combo4.get_active_id())==5):
                 if(int(self.entry2.get_text()) != len(words)):
                     self.entry2.set_text(str(len(words)))
                     self.label2.set_markup("<span foreground='blue'>Columns Changed</span>")
