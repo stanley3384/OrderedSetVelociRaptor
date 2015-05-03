@@ -646,7 +646,7 @@ class TextBox(Gtk.TextView):
         #Use LIMIT OFFSET instead of WHERE clause. Then you can use WHERE in the UI.
         #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
-        print(select_string)
+        #print(select_string)
         con = lite.connect("VelociRaptorData.db")
         cur = con.cursor()
         cur.execute(select_string)
@@ -679,7 +679,7 @@ class TextBox(Gtk.TextView):
         #Use LIMIT OFFSET instead of WHERE clause. Then you can use WHERE in the UI.
         #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
-        print(select_string)
+        #print(select_string)
         con = lite.connect("VelociRaptorData.db")
         cur = con.cursor()
         cur.execute(select_string)
@@ -1006,7 +1006,7 @@ class LabelsDialog(Gtk.Dialog):
         while(iter1):
 	    g_row_labels.append(model1[iter1][0])
 	    iter1 = model1.iter_next(iter1)
-        print(g_row_labels)
+        #print(g_row_labels)
         if(g_column_labels):
             del g_column_labels[:]
         model2 = self.column_combo.get_model()
@@ -1014,7 +1014,7 @@ class LabelsDialog(Gtk.Dialog):
         while(iter2):
 	    g_column_labels.append(model2[iter2][0])
 	    iter2 = model2.iter_next(iter2)
-        print(g_column_labels)
+        #print(g_column_labels)
 
     def change_standard_labels(self, combo):
         print("Change Standard Labels")
@@ -1074,7 +1074,7 @@ class LabelsDialog(Gtk.Dialog):
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Report Generator")
+        Gtk.Window.__init__(self, title="OSV Report Generator")
         self.set_default_size(750,550)
         self.set_border_width(15)
         self.row_value = 0
@@ -1522,7 +1522,7 @@ class MainWindow(Gtk.Window):
                 del g_column_labels[:]
                 label = self.button5.get_child()
                 label.set_markup("<span foreground='blue'>Labels Changed</span>")
-                print(g_column_labels)
+                #print(g_column_labels)
         else:
             print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
         return False
