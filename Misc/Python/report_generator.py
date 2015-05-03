@@ -1609,7 +1609,7 @@ class MainWindow(Gtk.Window):
                 print("Need a name for the report file.")
         dialog.destroy()
         
-    def save_pickle_file(self, widget):
+    def save_pickle_file(self, file_name):
         print("Save File report1")
         ret_value = self.validate_entries()
         if(ret_value==0):
@@ -1636,8 +1636,10 @@ class MainWindow(Gtk.Window):
             markup = self.TextBox1.markup_string
             entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels}
             try:
-                with open("report1", "wb") as f:
+                with open(file_name, "wb") as f:
                     pickle.dump(entry_values, f)
+                    message = "Report saved to " + file_name
+                    self.message_dialog(message)
             except:   
                 print("Couldn't pickle file.")
 
