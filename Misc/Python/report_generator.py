@@ -1633,6 +1633,8 @@ class MainWindow(Gtk.Window):
             c7 = self.combo7.get_active_id()
             ch1 = int(self.check1.get_active())
             ch2 = int(self.check2.get_active())
+            #Get markup needed in case where the drawing is never drawn but the report saved. 
+            self.TextBox1.get_pango_markup()
             markup = self.TextBox1.markup_string
             entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels}
             try:
