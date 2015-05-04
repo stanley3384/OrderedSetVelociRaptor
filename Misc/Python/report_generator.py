@@ -29,8 +29,12 @@ import sqlite3 as lite
 from operator import itemgetter
 from itertools import product
 
+#Labels for the drawings.
 g_row_labels = []
 g_column_labels = []
+g_table_labels = []
+#The database being used.
+database_name = "VelociRaptorData.db"
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -254,7 +258,7 @@ class TextBox(Gtk.TextView):
             min_value, max_value, data_values, column_labels, column_number = self.get_db_data_for_table(rows, columns, tables, sql_string, shift_number_left, round_float)
             columns = column_number
 
-        #Create label values. Check if labels have already been created.
+        #Create row and column label values. Check if labels have already been created.
         vertical_labels = []
         horizontal_labels = []
         string_column_shift_left = ""
@@ -325,11 +329,17 @@ class TextBox(Gtk.TextView):
         if(check1_active):
             if(combo2_index==2 or combo2_index==3):  
                 number_string = "{:\n>{m}}".format("", m=shift_below_text-2)
-                number_string = number_string + table_name + str(self.plate_counter) + "\n"
+                if(not g_table_labels):
+                    number_string = number_string + table_name + str(self.plate_counter) + "\n"
+                else:
+                    number_string = number_string + table_name + g_table_labels[self.plate_counter-1] + "\n"
                 self.plate_counter+=1
             else:
                 number_string = "{:\n>{m}}".format("", m=shift_below_text-1)
-                number_string = number_string + table_name + str(self.plate_counter) + "\n"
+                if(not g_table_labels):
+                    number_string = number_string + table_name + str(self.plate_counter) + "\n"
+                else:
+                    number_string = number_string + table_name + g_table_labels[self.plate_counter-1] + "\n"
                 self.plate_counter+=1
         else:
             if(combo2_index==2 or combo2_index==3):  
@@ -647,7 +657,7 @@ class TextBox(Gtk.TextView):
         #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
         #print(select_string)
-        con = lite.connect("VelociRaptorData.db")
+        con = lite.connect(database_name)
         cur = con.cursor()
         cur.execute(select_string)
         data_array = cur.fetchall()
@@ -680,7 +690,7 @@ class TextBox(Gtk.TextView):
         #select_string = sql_string + " WHERE KeyID <= " + str(top) + " AND KeyID > " + str(bottom) + ";"
         select_string = sql_string + " LIMIT " + str(top-bottom) + " OFFSET " + str(bottom) + ";"
         #print(select_string)
-        con = lite.connect("VelociRaptorData.db")
+        con = lite.connect(database_name)
         cur = con.cursor()
         cur.execute(select_string)
         column_names = [cn[0] for cn in cur.description]
@@ -1072,6 +1082,57 @@ class LabelsDialog(Gtk.Dialog):
             if(counter == count):
                 return result
 
+class TableLabelsDialog(Gtk.Dialog):
+    def __init__(self, parent, tables):
+        Gtk.Dialog.__init__(self, "Set Table Labels", parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        content_area = self.get_content_area()
+        self.set_border_width(10)
+        self.active_row = 0
+        self.active_column = 0
+        self.tables1 = tables
+ 
+        table_label = Gtk.Label("Set Table Labels")
+        self.table_combo = Gtk.ComboBoxText.new_with_entry()
+        for table in range(tables):
+            self.table_combo.append(str(table+1), str(table+1))
+        self.row_changed = self.table_combo.connect("changed", self.table_combo_changed)
+        self.table_combo.set_entry_text_column(0)
+        self.table_combo.set_active(0)
+
+        focus_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        focus_button.grab_focus()
+        focus_button.connect("clicked", self.load_labels) 
+
+        grid = Gtk.Grid()
+        grid.set_row_spacing(5)
+        grid.attach(table_label, 0, 0, 1, 1)
+        grid.attach(self.table_combo, 0, 1, 1, 1)
+        content_area.add(grid)
+        self.show_all()
+
+    def table_combo_changed(self, combo):
+        text = combo.get_active_text()
+        text_id = combo.get_active()
+        if(text_id!=-1):
+            self.active_row = text_id
+        if(text != None):
+            #print(text + " " + str(self.active_row))
+            combo.handler_block(self.row_changed)
+            combo.insert_text(self.active_row, text)
+            combo.remove(self.active_row+1)
+            combo.handler_unblock(self.row_changed)
+
+    def load_labels(self, button):
+        print("Load Table Labels")
+        if(g_table_labels):
+            del g_table_labels[:]
+        model1 = self.table_combo.get_model()
+        iter1 = model1.get_iter_first()
+        while(iter1):
+	    g_table_labels.append(model1[iter1][0])
+	    iter1 = model1.iter_next(iter1)
+        #print(g_table_labels)
+        
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="OSV Report Generator")
@@ -1079,6 +1140,7 @@ class MainWindow(Gtk.Window):
         self.set_border_width(15)
         self.row_value = 0
         self.column_value = 0
+        self.table_value = 0
         self.blocking = False
         self.menubar1 = Gtk.MenuBar() 
         self.menu1 = Gtk.Menu()
@@ -1157,6 +1219,8 @@ class MainWindow(Gtk.Window):
         self.entry8.set_text("5")
         self.entry8.set_halign(Gtk.Align.START)
         self.entry8.set_width_chars(3)
+        self.entry8.connect("focus-in-event", self.save_current_table_value)
+        self.entry8.connect("focus-out-event", self.clear_table_labels)
         self.label9 = Gtk.Label("Table Label")
         self.entry9 = Gtk.Entry()
         self.entry9.set_text("Plate ")
@@ -1170,6 +1234,7 @@ class MainWindow(Gtk.Window):
         self.entry11.set_width_chars(3)
         self.label12 = Gtk.Label("Data Source")
         self.check1 = Gtk.CheckButton("Add Table Label")
+        self.check1.connect("clicked", self.activate_table_labels_button)
         self.check2 = Gtk.CheckButton("Grid Numbers")
         self.check2.set_active(True)
         self.button2 = Gtk.Button("Bold")
@@ -1181,8 +1246,11 @@ class MainWindow(Gtk.Window):
         self.button4 = Gtk.Button("Clear")
         self.button4.set_hexpand(False)
         self.button4.connect("clicked", self.clear_tags)
-        self.button5 = Gtk.Button("    Set Labels    ")
+        self.button5 = Gtk.Button("Set Labels")
         self.button5.connect("clicked", self.labels_dialog)
+        self.button6 = Gtk.Button("Set Table Labels")
+        self.button6.set_sensitive(False)
+        self.button6.connect("clicked", self.table_labels_dialog)
         self.combo1 = Gtk.ComboBoxText()
         self.combo1.append("1", "White")
         self.combo1.append("2", "Blue")
@@ -1269,7 +1337,8 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.button5, 3, 8, 1, 1)
         self.grid.attach(self.combo5, 4, 8, 1, 1)
         self.grid.attach(self.combo6, 5, 8, 1, 1)
-        self.grid.attach(self.check1, 3, 9, 2, 1)
+        self.grid.attach(self.check1, 3, 9, 1, 1)
+        self.grid.attach(self.button6, 4, 9, 1, 1)
         self.grid.attach(self.check2, 5, 10, 1, 1)
         self.grid.attach(self.combo4, 1, 10, 2, 1)
         self.grid.attach(self.entry10, 0, 11, 6, 1)
@@ -1356,11 +1425,11 @@ class MainWindow(Gtk.Window):
         e8 = self.validate_entry(self.entry8)
         e11 = self.validate_entry(self.entry11)
         if(0 >= e1 or e1 > 100):           
-            message = "Rows " + self.entry1.get_text() + ", Range 0<rows<=100"
+            message = "Rows " + self.entry1.get_text() + ", Range 0<Rows<=100"
             self.message_dialog(message)
             return 1
         elif(0 >= e2 or e2 > 50):
-            message = "Columns " + self.entry2.get_text() + ", Range 0<columns<=50"
+            message = "Columns " + self.entry2.get_text() + ", Range 0<Columns<=50"
             self.message_dialog(message)
             return 1
         elif(0 > e3 or e3 > 30):
@@ -1450,7 +1519,7 @@ class MainWindow(Gtk.Window):
                     self.label2.set_markup("<span foreground='blue'>Columns Changed</span>")
         #Check database for necessary rows.
         if(match1):
-            con = lite.connect("VelociRaptorData.db")
+            con = lite.connect(database_name)
             cur = con.cursor()
             #Check if sql_string is valid.
             try:
@@ -1469,7 +1538,7 @@ class MainWindow(Gtk.Window):
         return ret_val
 
     def labels_dialog(self, button):
-        self.button5.set_label("    Set Labels    ")
+        self.button5.set_label("Set Labels")
         rows = self.validate_entry(self.entry1)
         columns = self.validate_entry(self.entry2)
         #set some boundries.
@@ -1478,8 +1547,26 @@ class MainWindow(Gtk.Window):
             response = dialog.run()        
             dialog.destroy()
         else:
-            message = "0<rows<100 and 0<columns<20"
+            message = "0<Rows<100 and 0<Columns<20"
             self.message_dialog(message)
+
+    def table_labels_dialog(self, button):
+        self.button6.set_label("Set Table Labels")
+        tables = self.validate_entry(self.entry8)
+        #set some boundries.
+        if(tables > 0 and tables < 21 ):
+            dialog = TableLabelsDialog(self, tables)
+            response = dialog.run()        
+            dialog.destroy()
+        else:
+            message = "Tables " + self.entry8.get_text() + ", Range 1<=Tables<=20"
+            self.message_dialog(message)
+
+    def activate_table_labels_button(self, check):
+        if(self.check1.get_active()):
+            self.button6.set_sensitive(True)
+        else:
+            self.button6.set_sensitive(False)
 
     #Just print warnings to screen. A message box will bind up the return values of the focus
     #in and out events.
@@ -1489,7 +1576,7 @@ class MainWindow(Gtk.Window):
         if(r_value>0):
             self.row_value = r_value
         else:
-            print("Rows " + self.entry1.get_text() + ", Range 0<rows<=100")
+            print("Rows " + self.entry1.get_text() + ", Range 0<Rows<=100")
         return False
 
     def clear_row_labels(self, event, widget):
@@ -1502,7 +1589,7 @@ class MainWindow(Gtk.Window):
                 label.set_markup("<span foreground='blue'>Labels Changed</span>")
                 print(g_row_labels)
         else:
-            print("Rows " + self.entry1.get_text() + ", Range 0<rows<=100")
+            print("Rows " + self.entry1.get_text() + ", Range 0<Rows<=100")
         return False
 
     def save_current_column_value(self, event, widget):
@@ -1511,7 +1598,7 @@ class MainWindow(Gtk.Window):
         if(r_value>0):
             self.column_value = r_value
         else:
-            print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
+            print("Columns " + self.entry2.get_text() + ", Range 0<Columns<=50")
         return False
 
     def clear_column_labels(self, event, widget):
@@ -1525,6 +1612,28 @@ class MainWindow(Gtk.Window):
                 #print(g_column_labels)
         else:
             print("Columns " + self.entry2.get_text() + ", Range 0<columns<=50")
+        return False
+
+    def save_current_table_value(self, event, widget):
+        print("Save Table Value")
+        r_value = self.validate_entry(self.entry8)
+        if(r_value>0):
+            self.table_value = r_value
+        else:
+            print("Tables " + self.entry8.get_text() + ", Range 1<=tables<=20")
+        return False
+
+    def clear_table_labels(self, event, widget):
+        r_value = self.validate_entry(self.entry8)
+        if(r_value>0):
+            if(g_table_labels and r_value!=self.table_value):
+                print("Clear Table Labels")
+                del g_table_labels[:]
+                label = self.button6.get_child()
+                label.set_markup("<span foreground='blue'>Table Labels Changed</span>")
+                #print(g_table_labels)
+        else:
+            print("Tables " + self.entry8.get_text() + ", Range 1<=tables<=20")
         return False
 
     def draw_report(self, da, cr):
@@ -1596,6 +1705,8 @@ class MainWindow(Gtk.Window):
         g_row_labels = entry_values.get("g_row_labels")
         global g_column_labels
         g_column_labels = entry_values.get("g_column_labels")
+        global g_table_labels
+        g_table_labels = entry_values.get("g_table_labels")
         
     def save_report(self, widget):
         dialog = Gtk.FileChooserDialog("Save Report", self, Gtk.FileChooserAction.SAVE, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
@@ -1636,7 +1747,7 @@ class MainWindow(Gtk.Window):
             #Get markup needed in case where the drawing is never drawn but the report saved. 
             self.TextBox1.get_pango_markup()
             markup = self.TextBox1.markup_string
-            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels}
+            entry_values = { "e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e6": e6, "e7": e7, "e8": e8, "e9": e9, "e10": e10, "e11": e11, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5, "c6": c6, "c7": c7, "ch1": ch1, "ch2": ch2, "markup": markup, "g_row_labels": g_row_labels, "g_column_labels": g_column_labels, "g_table_labels": g_table_labels}
             try:
                 with open(file_name, "wb") as f:
                     pickle.dump(entry_values, f)
