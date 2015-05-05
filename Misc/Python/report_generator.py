@@ -11,6 +11,9 @@
    the standard microtiter assay plate formats. If it doesn't produce the output you are looking
    for, it is a single python script so you can change things around as needed. 
 
+   For the program image the code will look for dino2.png. Have the png in the same folder as the 
+   report generator for showing the image in the about dialog and the toolbar.
+
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
    C. Eric Cashon
@@ -51,13 +54,13 @@ class TextBox(Gtk.TextView):
         self.line_count = 0
         self.lines_per_page = 0
         self.total_lines = 0
-        self.markup_string = "       This is the title for the report.\n This is a paragraph."
+        self.markup_string = "       This is the title for the report.\n This is a short description."
         #self.pango_markup_string = ""
         self.table_string = ""
         self.set_wrap_mode(0)
         self.set_cursor_visible(True)
         self.textbuffer = self.get_buffer() 
-        self.textbuffer.set_text("       This is the title for the report.\n This is a paragraph.")
+        self.textbuffer.set_text("       This is the title for the report.\n This is a short description.")
         self.font_tag_8 = self.textbuffer.create_tag("font='8'", font=8)
         self.font_tag_10 = self.textbuffer.create_tag("font='10'", font=10)
         self.font_tag_12 = self.textbuffer.create_tag("font='12'", font=12)
@@ -1138,6 +1141,10 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="OSV Report Generator")
         self.set_default_size(750,550)
         self.set_border_width(15)
+        try:
+            self.set_icon(GdkPixbuf.Pixbuf.new_from_file("dino2.png"))
+        except GLib.GError:
+            print("Couldn't find dino2.png.")
         self.row_value = 0
         self.column_value = 0
         self.table_value = 0
@@ -1488,9 +1495,9 @@ class MainWindow(Gtk.Window):
         about.set_copyright("(C) 2015 C. Eric Cashon")
         about.set_comments("A report generator for the Ordered Set VelociRaptor program.")
         try:
-            about.set_logo(GdkPixbuf.Pixbuf.new_from_file("dino.svg"))
+            about.set_logo(GdkPixbuf.Pixbuf.new_from_file("dino2.png"))
         except GLib.GError:
-            print("Couldn't find dino.svg.")
+            print("Couldn't find dino2.png.")
         about.run()
         about.destroy()
 
