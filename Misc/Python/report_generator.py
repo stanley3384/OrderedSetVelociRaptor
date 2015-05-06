@@ -1094,7 +1094,11 @@ class TableLabelsDialog(Gtk.Dialog):
         self.active_column = 0
         self.tables1 = tables
  
-        table_label = Gtk.Label("Set Table Labels")
+        table_label = Gtk.Label("Get Labels From SQL")
+        self.sql_entry = Gtk.Entry()
+        self.sql_entry.set_text("SELECT percent FROM data")
+        self.button1 = Gtk.Button("Get SQL Labels")
+        self.button1.connect("clicked", self.get_sql_table_labels)
         self.table_combo = Gtk.ComboBoxText.new_with_entry()
         for table in range(tables):
             self.table_combo.append(str(table+1), str(table+1))
@@ -1108,8 +1112,10 @@ class TableLabelsDialog(Gtk.Dialog):
 
         grid = Gtk.Grid()
         grid.set_row_spacing(5)
-        grid.attach(table_label, 0, 0, 1, 1)
-        grid.attach(self.table_combo, 0, 1, 1, 1)
+        grid.attach(table_label, 1, 0, 2, 1)
+        grid.attach(self.sql_entry, 0, 1, 4, 1)
+        grid.attach(self.button1, 1, 2, 2, 1)
+        grid.attach(self.table_combo, 0, 3, 4, 1)
         content_area.add(grid)
         self.show_all()
 
@@ -1135,6 +1141,33 @@ class TableLabelsDialog(Gtk.Dialog):
 	    g_table_labels.append(model1[iter1][0])
 	    iter1 = model1.iter_next(iter1)
         #print(g_table_labels)
+
+    def get_sql_table_labels(self, button):
+        sql_string = self.sql_entry.get_text() + " LIMIT " + str(self.tables1) + ";"
+        #print(sql_string)
+        try:
+            con = lite.connect(database_name)
+            cur = con.cursor()
+            cur.execute(sql_string)
+            label_array = cur.fetchall()
+            con.close()
+        except lite.OperationalError: 
+            print("SQL Error")
+            dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, "Check for valid SQL string.")
+            dialog.run()
+            dialog.destroy()
+            return
+        #print(label_array)
+        if(self.tables1 == len(label_array)):
+            self.table_combo.handler_block(self.row_changed)
+            self.table_combo.remove_all()
+            for table in range(self.tables1):
+                #print(label_array[table][0])
+                self.table_combo.append(str(table+1), str(label_array[table][0]))
+            self.table_combo.handler_unblock(self.row_changed)
+            self.table_combo.set_active_id("1")
+        else:
+            print("Label Error")
         
 class MainWindow(Gtk.Window):
     def __init__(self):
