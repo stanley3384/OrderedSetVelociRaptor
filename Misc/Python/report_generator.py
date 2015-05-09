@@ -157,6 +157,7 @@ class TextBox(Gtk.TextView):
         pages = int(math.ceil((self.total_lines)/self.lines_per_page))
         print("Pages " + str(pages))
         operation.set_n_pages(pages)
+        operation.set_show_progress(True)
        
         #Turn off wrapping
         self.pango_layout.set_width(-1)
@@ -1017,16 +1018,16 @@ class LabelsDialog(Gtk.Dialog):
         model1 = self.row_combo.get_model()
         iter1 = model1.get_iter_first()
         while(iter1):
-	    g_row_labels.append(model1[iter1][0])
-	    iter1 = model1.iter_next(iter1)
+            g_row_labels.append(model1[iter1][0])
+            iter1 = model1.iter_next(iter1)
         #print(g_row_labels)
         if(g_column_labels):
             del g_column_labels[:]
         model2 = self.column_combo.get_model()
         iter2 = model2.get_iter_first()
         while(iter2):
-	    g_column_labels.append(model2[iter2][0])
-	    iter2 = model2.iter_next(iter2)
+            g_column_labels.append(model2[iter2][0])
+            iter2 = model2.iter_next(iter2)
         #print(g_column_labels)
 
     def change_standard_labels(self, combo):
@@ -1138,8 +1139,8 @@ class TableLabelsDialog(Gtk.Dialog):
         model1 = self.table_combo.get_model()
         iter1 = model1.get_iter_first()
         while(iter1):
-	    g_table_labels.append(model1[iter1][0])
-	    iter1 = model1.iter_next(iter1)
+            g_table_labels.append(model1[iter1][0])
+            iter1 = model1.iter_next(iter1)
         #print(g_table_labels)
 
     def get_sql_table_labels(self, button):
