@@ -82,7 +82,8 @@ class TextBox(Gtk.TextView):
 
     def drawing_area_preview(self, da, cr, entries_array):
         self.plate_counter = 1
-        self.plate_counter_sql =1
+        self.plate_counter_sql = 1
+        self.line_count = 0
         self.entries_array_text = entries_array
         count_lines = self.textbuffer.get_line_count()
         tables = int(self.entries_array_text[7].get_text())
