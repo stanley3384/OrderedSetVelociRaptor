@@ -38,6 +38,10 @@ g_column_labels = []
 g_table_labels = []
 #The database being used.
 database_name = "VelociRaptorData.db"
+#Additional Color settings that can be changed.
+table_rectangles_rgb=[0.8, 0.8, 0.8]
+table_grid_rgb=[0.8, 0.8, 0.8]
+font_rgb=[0.0, 0.0, 0.0]  
 
 class TextBox(Gtk.TextView):
     def __init__(self):
@@ -100,8 +104,7 @@ class TextBox(Gtk.TextView):
         self.table_string = ""
         for table in range(tables):
             self.table_string = self.table_string + self.draw_tables(None, None, 0, cr, table, count_lines+1)
-        #Set text and tables.
-        font_rgb=[0.0, 0.0, 0.0] 
+        #Set text and tables. 
         cr.set_source_rgb(font_rgb[0], font_rgb[1], font_rgb[2])
         self.get_pango_markup()
         self.pango_layout.set_markup(self.markup_string + self.table_string)
@@ -173,8 +176,7 @@ class TextBox(Gtk.TextView):
         shift_below_text = int(self.entries_array_text[3].get_text())
         combo2_index = int(self.entries_array_text[13].get_active_id())
         combo5_index = int(self.entries_array_text[16].get_active_id())
-        #Font Color 
-        font_rgb=[0.0, 0.0, 0.0]      
+            
         #Account for first page with title and text.
         tables_first_page = int((self.lines_per_page-count_lines)/(rows + shift_below_text - 1))
         if(tables < tables_first_page):
@@ -241,9 +243,7 @@ class TextBox(Gtk.TextView):
         combo2_index = int(self.entries_array_text[13].get_active_id())
         combo4_index = int(self.entries_array_text[15].get_active_id())
         show_numbers = self.entries_array_text[18].get_active()
-        table_rectangles_rgb=[0.8, 0.8, 0.8]
-        table_grid_rgb=[0.8, 0.8, 0.8]
-
+    
         #Shift tables for multiple tables.
         if(page_number == 0):
             shift_below_text2 = (count_lines -1) + shift_below_text + (table * (rows + shift_below_text -1))
@@ -386,7 +386,7 @@ class TextBox(Gtk.TextView):
         bottom = top + rows
         cairo_context.set_source_rgb(table_rectangles_rgb[0], table_rectangles_rgb[1], table_rectangles_rgb[2])
         if(combo2_index==3):
-            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top) + markup_difference)/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(max_vertical_label+.50), (rectangle_log.height*(rows+1))/Pango.SCALE)
+            cairo_context.rectangle(((shift_margin) * rectangle_log.width)/Pango.SCALE, (rectangle_log.height * (top) + markup_difference)/Pango.SCALE, (rectangle_log.width/Pango.SCALE)*(max_vertical_label+.10), (rectangle_log.height*(rows+1))/Pango.SCALE)
             cairo_context.fill()
             cairo_context.stroke()
             #Draw lines for rectangle.
