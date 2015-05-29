@@ -2,7 +2,7 @@
 /*
 
     Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
-over so far. Work in progress.
+over so far along with a few functions. Work in progress.
  
     gcc -Wall OSVreport_generator.c -o OSVreport_generator `pkg-config --cflags --libs gtk+-3.0`
 
@@ -11,7 +11,64 @@ over so far. Work in progress.
 */
 
 #include<gtk/gtk.h>
+#include<stdlib.h>
 
+static void change_textview_font(GtkWidget *widget, gpointer data)
+  {
+    gchar *text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
+    PangoFontDescription *font=pango_font_description_from_string(text); 
+    gtk_widget_override_font(GTK_WIDGET(data), font);
+    pango_font_description_free(font);
+    if(text!=NULL)g_free(text);
+  }
+static void set_bold_tag(GtkWidget *widget, gpointer data)
+  {
+    GtkTextIter start, end;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data));
+    if(gtk_text_buffer_get_has_selection(buffer))
+      {
+        gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
+        gtk_text_buffer_apply_tag_by_name(buffer, "weight='900'", &start, &end);
+      }
+  }
+static void set_underline_tag(GtkWidget *widget, gpointer data)
+  {
+    GtkTextIter start, end;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data));
+    if(gtk_text_buffer_get_has_selection(buffer))
+      {
+        gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
+        gtk_text_buffer_apply_tag_by_name(buffer, "underline='single'", &start, &end);
+      }
+  }
+static void set_font_tags(GtkWidget *widget, gpointer data)
+  {
+    GtkTextIter start, end;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data));
+    gint combo7_id=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget)));
+    if(gtk_text_buffer_get_has_selection(buffer))
+      {
+        gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
+        gtk_text_buffer_remove_tag_by_name(buffer, "font='8'", &start, &end);
+        gtk_text_buffer_remove_tag_by_name(buffer, "font='10'", &start, &end);
+        gtk_text_buffer_remove_tag_by_name(buffer, "font='12'", &start, &end);
+        gtk_text_buffer_remove_tag_by_name(buffer, "font='14'", &start, &end);
+        gtk_text_buffer_remove_tag_by_name(buffer, "font='16'", &start, &end);
+        if(combo7_id==1)gtk_text_buffer_apply_tag_by_name(buffer, "font='8'", &start, &end);
+        else if(combo7_id==2)gtk_text_buffer_apply_tag_by_name(buffer, "font='10'", &start, &end);
+        else if(combo7_id==3)gtk_text_buffer_apply_tag_by_name(buffer, "font='12'", &start, &end);
+        else if(combo7_id==4)gtk_text_buffer_apply_tag_by_name(buffer, "font='14'", &start, &end);
+        else gtk_text_buffer_apply_tag_by_name(buffer, "font='16'", &start, &end);
+      }
+  }
+static void clear_tags(GtkWidget *widget, gpointer data)
+  {
+    GtkTextIter start, end;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data));
+    gtk_text_buffer_get_start_iter(buffer, &start);
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    gtk_text_buffer_remove_all_tags(buffer, &start, &end);
+  }
 int main(int argc, char *argv[])
   {
     gtk_init(&argc, &argv);
@@ -45,9 +102,19 @@ int main(int argc, char *argv[])
     GtkWidget *textview1=gtk_text_view_new();
     gtk_widget_set_hexpand(textview1, TRUE);
     gtk_widget_set_vexpand(textview1, TRUE);
-    GtkTextBuffer *buffer1 = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview1));
+    GtkTextBuffer *buffer1=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview1));
     gtk_text_buffer_set_text(GTK_TEXT_BUFFER(buffer1), "       This is the title for the report.\n This is a short description.", -1);
-
+    gtk_text_buffer_create_tag(buffer1, "font='8'", "font", "8", NULL);
+    gtk_text_buffer_create_tag(buffer1, "font='10'", "font", "10", NULL);
+    gtk_text_buffer_create_tag(buffer1, "font='12'", "font", "12", NULL);
+    gtk_text_buffer_create_tag(buffer1, "font='14'", "font", "14", NULL);
+    gtk_text_buffer_create_tag(buffer1, "font='16'", "font", "16", NULL);
+    gtk_text_buffer_create_tag(buffer1, "weight='900'", "weight", "900", NULL); 
+    gtk_text_buffer_create_tag(buffer1, "underline='single'", "underline", PANGO_UNDERLINE_SINGLE, NULL);
+    PangoFontDescription *font=pango_font_description_from_string("Monospace 12"); 
+    gtk_widget_override_font(textview1, font);
+    pango_font_description_free(font);
+    
     GtkWidget *scroll1=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_hexpand(scroll1, TRUE);
     gtk_widget_set_vexpand(scroll1, TRUE);
@@ -129,12 +196,15 @@ int main(int argc, char *argv[])
 
     GtkWidget *button2=gtk_button_new_with_label("Bold");
     gtk_widget_set_hexpand(button2, FALSE);
+    g_signal_connect(button2, "clicked", G_CALLBACK(set_bold_tag), textview1);
 
     GtkWidget *button3=gtk_button_new_with_label("Underline");
     gtk_widget_set_hexpand(button3, FALSE);
+    g_signal_connect(button3, "clicked", G_CALLBACK(set_underline_tag), textview1);
 
     GtkWidget *button4=gtk_button_new_with_label("Clear");
     gtk_widget_set_hexpand(button4, FALSE);
+    g_signal_connect(button4, "clicked", G_CALLBACK(clear_tags), textview1);
 
     GtkWidget *button5=gtk_button_new_with_label("Set Labels");
 
@@ -162,6 +232,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 3, "4", "Monospace 14");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 4, "5", "Monospace 16");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo3), "3");
+    g_signal_connect(combo3, "changed", G_CALLBACK(change_textview_font), textview1);
 
     GtkWidget *combo4=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 0, "1", "Random");
@@ -194,6 +265,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo7), 3, "4", "Font 14");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo7), 4, "5", "Font 16");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo7), "3");
+    g_signal_connect(combo7, "changed", G_CALLBACK(set_font_tags), textview1);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
