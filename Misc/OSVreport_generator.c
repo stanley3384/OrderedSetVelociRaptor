@@ -69,6 +69,139 @@ static void clear_tags(GtkWidget *widget, gpointer data)
     gtk_text_buffer_get_end_iter(buffer, &end);
     gtk_text_buffer_remove_all_tags(buffer, &start, &end);
   }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "OSV Report Generator");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A report generator for the Ordered Set VelociRaptor program.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2015 C. Eric Cashon");
+    GError *error=NULL;
+    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino2.png", &error);
+     if(!pixbuf)
+       {
+         g_print("%s\n", error->message);
+         g_error_free(error);
+       }
+     else
+       {
+         gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
+       }
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+static void message_dialog(gchar *string)
+  {
+    GtkWidget *dialog=gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "%s",  string);
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);    
+  }
+static gint validate_entries(GtkWidget *ws[])
+  {
+    gint e1=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
+    gint e2=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
+    gint e3=atoi(gtk_entry_get_text(GTK_ENTRY(ws[2])));
+    gint e4=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
+    gint e5=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
+    gint e6=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
+    gint e7=atoi(gtk_entry_get_text(GTK_ENTRY(ws[6])));
+    gint e8=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+    gint e11=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
+    gchar *message=NULL;
+
+    if(0>=e1||e1>100)
+      {
+        message=g_strdup_printf("Rows %s, Range 0<Rows<=100", gtk_entry_get_text(GTK_ENTRY(ws[0]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(0>=e2||e2>50)
+      {
+        message=g_strdup_printf("Columns %s, Range 0<Columns<=50", gtk_entry_get_text(GTK_ENTRY(ws[1]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(0>e3||e3>30)
+      {
+        message=g_strdup_printf("Shift Right %s, Range 0<=Shift Right<=30", gtk_entry_get_text(GTK_ENTRY(ws[0]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(1>e4||e4>10)
+      {
+        message=g_strdup_printf("Shift Down %s, Range 1<=Shift Down<=10", gtk_entry_get_text(GTK_ENTRY(ws[3]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(2>e5||e5>20)
+      {
+        message=g_strdup_printf("Column Width %s, Range 2<=Column Width<=20", gtk_entry_get_text(GTK_ENTRY(ws[4]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(0>e6||e6>5)
+      {
+        message=g_strdup_printf("Pad Number %s, Range 0<=Pad Number<=5", gtk_entry_get_text(GTK_ENTRY(ws[5]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(0>e7||e7>5)
+      {
+        message=g_strdup_printf("Pad Column %s, Range 0<=Pad Column<=5", gtk_entry_get_text(GTK_ENTRY(ws[6]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(1>e8||e8>20)
+      {
+        message=g_strdup_printf("Tables %s, Range 1<=Tables<=20", gtk_entry_get_text(GTK_ENTRY(ws[7]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(1>e11||e11>7)
+      {
+        message=g_strdup_printf("Round Floats %s, Range 0<Round Floats<=7", gtk_entry_get_text(GTK_ENTRY(ws[10]))); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else if(e1*e2*e8>5000)
+      {
+        message=g_strdup_printf("Max Rectangles %i, Range rows*columns*tables<=5000", e1*e2*e8); 
+        message_dialog(message);
+        g_free(message);
+        return 1;
+      }
+    else return 0;
+  }
+static void save_json_file(gchar *string, GtkWidget *ws[])
+  {
+    gint ret_val=validate_entries(ws);
+    g_print("Return %i\n", ret_val);
+  }
+static void save_report(GtkWidget *widget, GtkWidget *ws[])
+  {
+    GtkWidget *dialog=gtk_file_chooser_dialog_new("Save Report", GTK_WINDOW(ws[21]), GTK_FILE_CHOOSER_ACTION_SAVE, "Cancel", GTK_RESPONSE_CANCEL, "Save", GTK_RESPONSE_ACCEPT, NULL);
+    //gtk_widget_show_all(dialog);
+    gint result=gtk_dialog_run(GTK_DIALOG(dialog));
+    if(result==GTK_RESPONSE_ACCEPT)
+      {
+        gchar *filename=NULL;
+        filename=gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        if(filename) save_json_file(filename, ws);
+        if(filename!=NULL) g_free(filename);
+      }
+    gtk_widget_destroy(dialog); 
+  }
 int main(int argc, char *argv[])
   {
     gtk_init(&argc, &argv);
@@ -90,10 +223,11 @@ int main(int argc, char *argv[])
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
     
     GtkWidget *menu2=gtk_menu_new();
-    GtkWidget *menu2item1=gtk_menu_item_new_with_label("Open Report");
+    GtkWidget *menu2item1=gtk_menu_item_new_with_label("Report Generator");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu2), menu2item1);
     GtkWidget *title2=gtk_menu_item_new_with_label("About");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title2), menu2);
+    g_signal_connect(menu2item1, "activate", G_CALLBACK(about_dialog), window);
 
     GtkWidget *menu_bar=gtk_menu_bar_new();
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
@@ -267,6 +401,9 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo7), "3");
     g_signal_connect(combo7, "changed", G_CALLBACK(set_font_tags), textview1);
 
+    GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window};
+    g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
+ 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 5);
