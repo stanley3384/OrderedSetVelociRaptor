@@ -26,6 +26,11 @@ static void save_report(GtkWidget *widget, GtkWidget *ws[]);
 static void labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void activate_table_labels_button(GtkWidget *widget, gpointer data);
+static void table_combo_changed(GtkWidget *widget, gpointer data);
+static void load_table_labels(GtkWidget *widget, gpointer data);
+
+gint table_combo_block=0;
+GPtrArray *g_table_labels=NULL;
 
 int main(int argc, char *argv[])
   {
@@ -231,6 +236,9 @@ int main(int argc, char *argv[])
     g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
     g_signal_connect(button5, "clicked", G_CALLBACK(labels_dialog), ws);
     g_signal_connect(button6, "clicked", G_CALLBACK(table_labels_dialog), ws);
+
+    //Initailize global arrays.
+    g_table_labels=g_ptr_array_new_full(5, g_free);
  
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
@@ -588,9 +596,11 @@ static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[])
           }
         gtk_combo_box_set_entry_text_column(GTK_COMBO_BOX(table_combo), 0);
         gtk_combo_box_set_active(GTK_COMBO_BOX(table_combo), 0);
+        table_combo_block=g_signal_connect(GTK_COMBO_BOX(table_combo), "changed", G_CALLBACK(table_combo_changed), NULL);
 
         GtkWidget *focus_button=gtk_dialog_get_widget_for_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK); 
         gtk_widget_grab_focus(focus_button);
+        g_signal_connect(focus_button, "clicked", G_CALLBACK(load_table_labels), table_combo);
 
         GtkWidget *grid=gtk_grid_new();
         gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
@@ -601,7 +611,17 @@ static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[])
 
         GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
         gtk_container_add(GTK_CONTAINER(content_area), grid);
-        gtk_widget_show_all(dialog);           
+        gtk_widget_show_all(dialog);
+
+        gint result=gtk_dialog_run(GTK_DIALOG(dialog));
+        if(result==GTK_RESPONSE_OK)
+          {
+            g_print("Table Label Values\n");
+            gint length=g_table_labels->len;
+            for(i=0;i<length;i++) g_print("%s ", (char*)g_ptr_array_index(g_table_labels, i));
+            g_print("\n");                 
+          }
+        gtk_widget_destroy(dialog);           
       }
     else
       {
@@ -619,6 +639,44 @@ static void activate_table_labels_button(GtkWidget *widget, gpointer data)
     else
       {
         gtk_widget_set_sensitive(GTK_WIDGET(data), FALSE);
+      }
+  }
+static void table_combo_changed(GtkWidget *widget, gpointer data)
+  {
+    static gint active_row=0;
+    gchar *text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
+    gint text_id=gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+    if(text_id!=-1)
+      {
+        active_row=text_id;
+      }
+    if(text!=NULL)
+      {
+        g_signal_handler_block((gpointer)widget, table_combo_block);
+        gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(widget), active_row, text);
+        gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(widget), active_row+1);
+        g_signal_handler_unblock((gpointer)widget, table_combo_block);
+      }
+    if(text!=NULL) g_free(text);
+  }
+static void load_table_labels(GtkWidget *widget, gpointer data)
+  {
+    GtkTreeIter tree_iter;
+    GtkTreeModel *model=gtk_combo_box_get_model(GTK_COMBO_BOX(data));
+    gboolean iter_found=gtk_tree_model_get_iter_first(model, &tree_iter);
+    gint i=0;
+    gint array_length=g_table_labels->len;
+    for(i=0;i<array_length; i++)
+      {
+        g_ptr_array_remove_index_fast(g_table_labels, 0);
+      }
+    while(iter_found)
+      {
+        gchar *str_data=NULL;
+        gtk_tree_model_get(model, &tree_iter, 0, &str_data, -1);
+        g_ptr_array_add(g_table_labels, g_strdup(str_data)); 
+        iter_found=gtk_tree_model_iter_next(model, &tree_iter);
+        if(str_data!=NULL) g_free(str_data);
       }
   }
 
