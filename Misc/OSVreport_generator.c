@@ -24,12 +24,21 @@ static gint validate_entries(GtkWidget *ws[]);
 static void save_json_file(gchar *string, GtkWidget *ws[]);
 static void save_report(GtkWidget *widget, GtkWidget *ws[]);
 static void labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
+static void row_combo_changed(GtkWidget *widget, gpointer data);
+static void column_combo_changed(GtkWidget *widget, gpointer data);
+static void load_labels(GtkWidget *widget, GtkWidget *cs[]);
+static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[]);
+static void get_letters(GPtrArray *micro_labels, gint rows);
 static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void activate_table_labels_button(GtkWidget *widget, gpointer data);
 static void table_combo_changed(GtkWidget *widget, gpointer data);
 static void load_table_labels(GtkWidget *widget, gpointer data);
 
+static gint row_combo_block=0;
+static gint column_combo_block=0;
 static gint table_combo_block=0;
+static GPtrArray *g_row_labels=NULL;
+static GPtrArray *g_column_labels=NULL;
 static GPtrArray *g_table_labels=NULL;
 
 int main(int argc, char *argv[])
@@ -238,6 +247,8 @@ int main(int argc, char *argv[])
     g_signal_connect(button6, "clicked", G_CALLBACK(table_labels_dialog), ws);
 
     //Initailize global arrays.
+    g_row_labels=g_ptr_array_new_full(5, g_free);
+    g_column_labels=g_ptr_array_new_full(5, g_free);
     g_table_labels=g_ptr_array_new_full(5, g_free);
  
     GtkWidget *grid=gtk_grid_new();
@@ -530,6 +541,8 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
           }
         gtk_combo_box_set_entry_text_column(GTK_COMBO_BOX(row_combo), 0);
         gtk_combo_box_set_active(GTK_COMBO_BOX(row_combo), 0);
+        gint active_row1=0;
+        row_combo_block=g_signal_connect(GTK_COMBO_BOX(row_combo), "changed", G_CALLBACK(row_combo_changed), &active_row1);
 
         GtkWidget *column_label=gtk_label_new("Set Column Labels");
         GtkWidget *column_combo=gtk_combo_box_text_new_with_entry();
@@ -543,6 +556,10 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
           }
         gtk_combo_box_set_entry_text_column(GTK_COMBO_BOX(column_combo), 0);
         gtk_combo_box_set_active(GTK_COMBO_BOX(column_combo), 0);
+        gint active_row2=0;
+        column_combo_block=g_signal_connect(GTK_COMBO_BOX(column_combo), "changed", G_CALLBACK(column_combo_changed), &active_row2);
+
+        GtkWidget *cs[]={row_combo, column_combo};
 
         GtkWidget *standard_label=gtk_label_new("Standard Formats");
         GtkWidget *standard_combo=gtk_combo_box_text_new();
@@ -550,9 +567,11 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "2", "Numbers");
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "3", "Microtiter");
         gtk_combo_box_set_active_id(GTK_COMBO_BOX(standard_combo), "1");
+        g_signal_connect(GTK_COMBO_BOX(standard_combo), "changed", G_CALLBACK(change_standard_labels), cs);
 
         GtkWidget *focus_button=gtk_dialog_get_widget_for_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK); 
         gtk_widget_grab_focus(focus_button);
+        g_signal_connect(focus_button, "clicked", G_CALLBACK(load_labels), cs);
 
         GtkWidget *grid=gtk_grid_new();
         gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
@@ -565,7 +584,21 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
  
         GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
         gtk_container_add(GTK_CONTAINER(content_area), grid);
-        gtk_widget_show_all(dialog);       
+        gtk_widget_show_all(dialog);
+
+        gint result=gtk_dialog_run(GTK_DIALOG(dialog));
+        if(result==GTK_RESPONSE_OK)
+          {
+            g_print("Row Label Values\n");
+            gint length1=g_row_labels->len;
+            for(i=0;i<length1;i++) g_print("%s ", (char*)g_ptr_array_index(g_row_labels, i));
+            g_print("\n");
+            g_print("Column Label Values\n"); 
+            gint length2=g_column_labels->len;
+            for(i=0;i<length2;i++) g_print("%s ", (char*)g_ptr_array_index(g_column_labels, i));
+            g_print("\n");                   
+          }
+        gtk_widget_destroy(dialog);            
       }
     else
       {
@@ -573,6 +606,283 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
         message_dialog(message);
         g_free(message);
       }
+  }
+static void row_combo_changed(GtkWidget *widget, gpointer data)
+  {
+    gint active_row=*(gint*)data;
+    gchar *text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
+    gint text_id=gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+    if(text_id!=-1)
+      {
+        active_row=text_id;
+        *(gint*)data=active_row;
+      }
+    if(text!=NULL)
+      {
+        g_signal_handler_block((gpointer)widget, row_combo_block);
+        gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(widget), active_row, text);
+        gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(widget), active_row+1);
+        g_signal_handler_unblock((gpointer)widget, row_combo_block);
+      }
+    if(text!=NULL) g_free(text);
+  }
+static void column_combo_changed(GtkWidget *widget, gpointer data)
+  {
+    gint active_row=*(gint*)data;
+    gchar *text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
+    gint text_id=gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+    if(text_id!=-1)
+      {
+        active_row=text_id;
+        *(gint*)data=active_row;
+      }
+    if(text!=NULL)
+      {
+        g_signal_handler_block((gpointer)widget, column_combo_block);
+        gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(widget), active_row, text);
+        gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(widget), active_row+1);
+        g_signal_handler_unblock((gpointer)widget, column_combo_block);
+      }
+    if(text!=NULL) g_free(text);
+  }
+static void load_labels(GtkWidget *widget, GtkWidget *cs[])
+  {
+    //Row Labels.
+    GtkTreeIter tree_iter1;
+    GtkTreeModel *model1=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[0]));
+    gboolean iter_found1=gtk_tree_model_get_iter_first(model1, &tree_iter1);
+    gint i=0;
+    gint array_length1=g_row_labels->len;
+    for(i=0;i<array_length1; i++)
+      {
+        g_ptr_array_remove_index_fast(g_row_labels, 0);
+      }
+    while(iter_found1)
+      {
+        gchar *str_data1=NULL;
+        gtk_tree_model_get(model1, &tree_iter1, 0, &str_data1, -1);
+        g_ptr_array_add(g_row_labels, g_strdup(str_data1)); 
+        iter_found1=gtk_tree_model_iter_next(model1, &tree_iter1);
+        if(str_data1!=NULL) g_free(str_data1);
+      }
+    //Column Labels.
+    GtkTreeIter tree_iter2;
+    GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[1]));
+    gboolean iter_found2=gtk_tree_model_get_iter_first(model2, &tree_iter2);
+    gint array_length2=g_column_labels->len;
+    for(i=0;i<array_length2; i++)
+      {
+        g_ptr_array_remove_index_fast(g_row_labels, 0);
+      }
+    while(iter_found2)
+      {
+        gchar *str_data2=NULL;
+        gtk_tree_model_get(model2, &tree_iter2, 0, &str_data2, -1);
+        g_ptr_array_add(g_column_labels, g_strdup(str_data2)); 
+        iter_found2=gtk_tree_model_iter_next(model2, &tree_iter2);
+        if(str_data2!=NULL) g_free(str_data2);
+      }
+  }
+static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[])
+  {
+    gint combo_id=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget)));
+    gint i=0;
+    if(combo_id==1)
+      {
+        //Row labels.
+        GtkTreeIter tree_iter1;
+        GtkTreeModel *model1=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[0]));
+        gtk_tree_model_get_iter_first(model1, &tree_iter1);
+        gint rows1=1;
+        while(gtk_tree_model_iter_next(model1, &tree_iter1)) rows1++;
+        g_signal_handler_block((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[0]));
+        for(i=0;i<rows1;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);
+            gchar *label=g_strdup_printf("row %i", i+1);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[0]), id, label);
+            g_free(id);
+            g_free(label);
+          }
+        g_signal_handler_unblock((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[0]), 0);
+        //Column labels.
+        GtkTreeIter tree_iter2;
+        GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[1]));
+        gtk_tree_model_get_iter_first(model2, &tree_iter2);
+        gint rows2=1;
+        while(gtk_tree_model_iter_next(model2, &tree_iter2)) rows2++;
+        g_signal_handler_block((gpointer)cs[1], column_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[1]));
+        for(i=0;i<rows2;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);
+            gchar *label=g_strdup_printf("column %i", i+1);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[1]), id, label);
+            g_free(id);
+            g_free(label);
+          }
+        g_signal_handler_unblock((gpointer)cs[1], column_combo_block);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[1]), 0);
+      }
+    if(combo_id==2)
+      {
+        //Row labels.
+        GtkTreeIter tree_iter1;
+        GtkTreeModel *model1=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[0]));
+        gtk_tree_model_get_iter_first(model1, &tree_iter1);
+        gint rows1=1;
+        while(gtk_tree_model_iter_next(model1, &tree_iter1)) rows1++;
+        g_signal_handler_block((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[0]));
+        for(i=0;i<rows1;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);
+            gchar *label=g_strdup_printf(" %i ", i+1);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[0]), id, label);
+            g_free(id);
+            g_free(label);
+          }
+        g_signal_handler_unblock((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[0]), 0);
+        //Column labels.
+        GtkTreeIter tree_iter2;
+        GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[1]));
+        gtk_tree_model_get_iter_first(model2, &tree_iter2);
+        gint rows2=1;
+        while(gtk_tree_model_iter_next(model2, &tree_iter2)) rows2++;
+        g_signal_handler_block((gpointer)cs[1], column_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[1]));
+        for(i=0;i<rows2;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);
+            gchar *label=g_strdup_printf("%i", i+1);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[1]), id, label);
+            g_free(id);
+            g_free(label);
+          }
+        g_signal_handler_unblock((gpointer)cs[1], column_combo_block);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[1]), 0);
+      }
+    if(combo_id==3)
+      {
+        //Row labels.
+        GtkTreeIter tree_iter1;
+        GtkTreeModel *model1=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[0]));
+        gtk_tree_model_get_iter_first(model1, &tree_iter1);
+        gint rows1=1;
+        while(gtk_tree_model_iter_next(model1, &tree_iter1)) rows1++;
+        GPtrArray *micro_labels=g_ptr_array_new_full(10, g_free);
+        get_letters(micro_labels, rows1);
+        g_signal_handler_block((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[0]));
+        for(i=0;i<rows1;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[0]), id, (char*)g_ptr_array_index(micro_labels, i));
+            g_free(id);
+          }
+        g_ptr_array_free(micro_labels, TRUE);
+        g_signal_handler_unblock((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[0]), 0);
+        //Column labels.
+        GtkTreeIter tree_iter2;
+        GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[1]));
+        gtk_tree_model_get_iter_first(model2, &tree_iter2);
+        gint rows2=1;
+        while(gtk_tree_model_iter_next(model2, &tree_iter2)) rows2++;
+        g_signal_handler_block((gpointer)cs[1], column_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[1]));
+        for(i=0;i<rows2;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);
+            gchar *label=g_strdup_printf("%i", i+1);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[1]), id, label);
+            g_free(id);
+            g_free(label);
+          }
+        g_signal_handler_unblock((gpointer)cs[1], column_combo_block);
+
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[1]), 0);
+      }
+  }
+static void get_letters(GPtrArray *micro_labels, gint rows)
+  {
+     char letters[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+    int i=0;
+    int j=0;
+    int k=0;
+    int counter=0;
+    
+    if(rows<=26)
+      {
+        for(i=0;i<rows;i++)
+          {
+            gchar *str_data=g_strdup_printf(" %c ", letters[i]); 
+            g_ptr_array_add(micro_labels, g_strdup(str_data)); 
+            if(str_data!=NULL) g_free(str_data);
+          }
+      }
+    if(rows>26&&rows<=376)
+      {
+        for(i=0;i<26;i++)
+          {
+            gchar *str_data=g_strdup_printf(" %c ", letters[i]); 
+            g_ptr_array_add(micro_labels, g_strdup(str_data)); 
+            if(str_data!=NULL) g_free(str_data);
+            counter++;
+          }
+        for(i=0;i<26;i++)
+          {
+            for(j=0;j<26-i;j++)
+              {
+                gchar *str_data=g_strdup_printf(" %c%c ", letters[i], letters[j+i]); 
+                g_ptr_array_add(micro_labels, g_strdup(str_data)); 
+                if(str_data!=NULL) g_free(str_data);
+                if(counter==rows) break;
+                counter++;
+              }
+            if(counter==rows) break;
+          }
+      }
+    if(rows>376)
+      {
+        for(i=0;i<26;i++)
+          {
+            printf(" %i.%c", counter, letters[i]);
+            gchar *str_data=g_strdup_printf(" %c ", letters[i]); 
+            g_ptr_array_add(micro_labels, g_strdup(str_data)); 
+            if(str_data!=NULL) g_free(str_data);
+            counter++;
+          }
+        for(i=0;i<26;i++)
+          {
+            for(j=0;j<26-i;j++)
+              {
+                gchar *str_data=g_strdup_printf(" %c%c ", letters[i], letters[j+i]); 
+                g_ptr_array_add(micro_labels, g_strdup(str_data)); 
+                if(str_data!=NULL) g_free(str_data);
+                counter++;
+              }
+          }
+        for(i=0;i<26;i++)
+          {
+            for(j=0;j<26-i;j++)
+              {
+                for(k=0;k<26-i-j;k++)
+                  {
+                    gchar *str_data=g_strdup_printf(" %c%c%c ", letters[i], letters[j+i], letters[j+i+k]); 
+                    g_ptr_array_add(micro_labels, g_strdup(str_data)); 
+                    if(str_data!=NULL) g_free(str_data);
+                    if(counter==rows) break;
+                    counter++;
+                  }
+                if(counter==rows) break;
+              }
+            if(counter==rows) break;
+          }
+      } 
   }
 static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[])
   {
