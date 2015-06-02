@@ -29,8 +29,8 @@ static void activate_table_labels_button(GtkWidget *widget, gpointer data);
 static void table_combo_changed(GtkWidget *widget, gpointer data);
 static void load_table_labels(GtkWidget *widget, gpointer data);
 
-gint table_combo_block=0;
-GPtrArray *g_table_labels=NULL;
+static gint table_combo_block=0;
+static GPtrArray *g_table_labels=NULL;
 
 int main(int argc, char *argv[])
   {
@@ -596,7 +596,8 @@ static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[])
           }
         gtk_combo_box_set_entry_text_column(GTK_COMBO_BOX(table_combo), 0);
         gtk_combo_box_set_active(GTK_COMBO_BOX(table_combo), 0);
-        table_combo_block=g_signal_connect(GTK_COMBO_BOX(table_combo), "changed", G_CALLBACK(table_combo_changed), NULL);
+        gint active_row=0;
+        table_combo_block=g_signal_connect(GTK_COMBO_BOX(table_combo), "changed", G_CALLBACK(table_combo_changed), &active_row);
 
         GtkWidget *focus_button=gtk_dialog_get_widget_for_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK); 
         gtk_widget_grab_focus(focus_button);
@@ -643,12 +644,13 @@ static void activate_table_labels_button(GtkWidget *widget, gpointer data)
   }
 static void table_combo_changed(GtkWidget *widget, gpointer data)
   {
-    static gint active_row=0;
+    gint active_row=*(gint*)data;
     gchar *text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
     gint text_id=gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
     if(text_id!=-1)
       {
         active_row=text_id;
+        *(gint*)data=active_row;
       }
     if(text!=NULL)
       {
