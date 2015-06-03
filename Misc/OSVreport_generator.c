@@ -672,7 +672,7 @@ static void load_labels(GtkWidget *widget, GtkWidget *cs[])
     gint array_length2=g_column_labels->len;
     for(i=0;i<array_length2; i++)
       {
-        g_ptr_array_remove_index_fast(g_row_labels, 0);
+        g_ptr_array_remove_index_fast(g_column_labels, 0);
       }
     while(iter_found2)
       {
