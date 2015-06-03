@@ -4,39 +4,59 @@
     Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
 over so far along with a few functions. Work in progress.
  
-    gcc -Wall OSVreport_generator.c -o OSVreport_generator `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 
 
     C. Eric Cashon
 
 */
 
 #include<gtk/gtk.h>
+#include <json-glib/json-glib.h>
 #include<stdlib.h>
 
+//Textview funtions.
 static void change_textview_font(GtkWidget *widget, gpointer data);
 static void set_bold_tag(GtkWidget *widget, gpointer data);
 static void set_underline_tag(GtkWidget *widget, gpointer data);
 static void set_font_tags(GtkWidget *widget, gpointer data);
 static void clear_tags(GtkWidget *widget, gpointer data);
+//General program functions.
 static void about_dialog(GtkWidget *widget, gpointer data);
 static void message_dialog(gchar *string);
 static gint validate_entries(GtkWidget *ws[]);
-static void save_json_file(gchar *string, GtkWidget *ws[]);
+static gboolean save_current_row_value(GtkWidget *widget, GdkEvent *event, gpointer data);
+static gboolean clear_row_labels(GtkWidget *widget, GdkEvent *event, gpointer data);
+static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gpointer data);
+static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer data);
+static gboolean save_current_table_value(GtkWidget *widget, GdkEvent *event, gpointer data);
+static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer data);
+//For saving and getting reports.
+static void open_json_file(gchar *file_name, GtkWidget *ws[]);
+static void save_json_file(gchar *file_name, GtkWidget *ws[]);
+static void open_report(GtkWidget *widget, GtkWidget *ws[]);
 static void save_report(GtkWidget *widget, GtkWidget *ws[]);
+//Dialog and funtions for row and column labels.
 static void labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void row_combo_changed(GtkWidget *widget, gpointer data);
 static void column_combo_changed(GtkWidget *widget, gpointer data);
 static void load_labels(GtkWidget *widget, GtkWidget *cs[]);
 static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[]);
 static void get_letters(GPtrArray *micro_labels, gint rows);
+//Dialog and functions for table labels.
 static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void activate_table_labels_button(GtkWidget *widget, gpointer data);
 static void table_combo_changed(GtkWidget *widget, gpointer data);
 static void load_table_labels(GtkWidget *widget, gpointer data);
 
+//Globals for blocking signals when inserting rows into combo boxes.
 static gint row_combo_block=0;
 static gint column_combo_block=0;
 static gint table_combo_block=0;
+//For comparison and clearing pointer arrays.
+gint g_row_value=10;
+gint g_column_value=5;
+gint g_table_value=5;
+//Globals for storing labels.
 static GPtrArray *g_row_labels=NULL;
 static GPtrArray *g_column_labels=NULL;
 static GPtrArray *g_table_labels=NULL;
@@ -180,10 +200,16 @@ int main(int argc, char *argv[])
     g_signal_connect(button4, "clicked", G_CALLBACK(clear_tags), textview1);
 
     GtkWidget *button5=gtk_button_new_with_label("Set Labels");
+    g_signal_connect(entry1, "focus_in_event", G_CALLBACK(save_current_row_value), button5);
+    g_signal_connect(entry1, "focus_out_event", G_CALLBACK(clear_row_labels), button5);
+    g_signal_connect(entry2, "focus_in_event", G_CALLBACK(save_current_column_value), button5);
+    g_signal_connect(entry2, "focus_out_event", G_CALLBACK(clear_column_labels), button5);
 
     GtkWidget *button6=gtk_button_new_with_label("Set Table Labels");
     gtk_widget_set_sensitive(button6, FALSE);
     g_signal_connect(check1, "clicked", G_CALLBACK(activate_table_labels_button), button6);
+    g_signal_connect(entry8, "focus_in_event", G_CALLBACK(save_current_table_value), button6);
+    g_signal_connect(entry8, "focus_out_event", G_CALLBACK(clear_table_labels), button6);
     
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "White");
@@ -242,6 +268,7 @@ int main(int argc, char *argv[])
     g_signal_connect(combo7, "changed", G_CALLBACK(set_font_tags), textview1);
 
     GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window};
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(open_report), ws);
     g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
     g_signal_connect(button5, "clicked", G_CALLBACK(labels_dialog), ws);
     g_signal_connect(button6, "clicked", G_CALLBACK(table_labels_dialog), ws);
@@ -500,15 +527,355 @@ static gint validate_entries(GtkWidget *ws[])
       }
     else return 0;
   }
-static void save_json_file(gchar *string, GtkWidget *ws[])
+static gboolean save_current_row_value(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    if(r_value>0&&r_value<=100) g_row_value=r_value;
+    else g_print("Rows %s, Range 0<Rows<=100", gtk_entry_get_text(GTK_ENTRY(widget)));         
+    return FALSE;  
+  }
+static gboolean clear_row_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint i=0;
+    gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    if(r_value>0&&r_value<=100)
+      {
+        if(g_row_labels->len>0&&r_value!=g_row_value)
+          {
+            g_print("Clear Row Labels\n");
+            gint array_length=g_row_labels->len;
+            for(i=0;i<array_length; i++)
+              {
+                g_ptr_array_remove_index_fast(g_row_labels, 0);
+              }
+            GtkWidget *child=gtk_bin_get_child(GTK_BIN(data));
+            gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Labels Changed</span>");
+          } 
+      }
+    else g_print("Rows %s, Range 0<Rows<=100", gtk_entry_get_text(GTK_ENTRY(widget)));  
+    return FALSE;
+  }
+static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    if(r_value>0&&r_value<=50) g_column_value=r_value;
+    else g_print("Columns %s, Range 0<Columns<=50", gtk_entry_get_text(GTK_ENTRY(widget)));         
+    return FALSE;  
+  }
+static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint i=0;
+    gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    if(r_value>0&&r_value<=50)
+      {
+        if(g_column_labels->len>0&&r_value!=g_column_value)
+          {
+            g_print("Clear Column Labels\n");
+            gint array_length=g_column_labels->len;
+            for(i=0;i<array_length; i++)
+              {
+                g_ptr_array_remove_index_fast(g_column_labels, 0);
+              }
+            GtkWidget *child=gtk_bin_get_child(GTK_BIN(data));
+            gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Labels Changed</span>");
+          }
+      }
+    else g_print("Columns %s, Range 0<Columns<=50", gtk_entry_get_text(GTK_ENTRY(widget)));  
+    return FALSE;
+  }
+static gboolean save_current_table_value(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    if(r_value>0&&r_value<=20) g_table_value=r_value;
+    else g_print("Tables %s, Range 0<Tables<=20", gtk_entry_get_text(GTK_ENTRY(widget)));         
+    return FALSE;  
+  }
+static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint i=0;
+    gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    if(r_value>0&&r_value<=20)
+      {
+        if(g_table_labels->len>0&&r_value!=g_table_value)
+          {
+            g_print("Clear Table Labels\n");
+            gint array_length=g_table_labels->len;
+            for(i=0;i<array_length; i++)
+              {
+                g_ptr_array_remove_index_fast(g_table_labels, 0);
+              }
+            GtkWidget *child=gtk_bin_get_child(GTK_BIN(data));
+            gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Table Labels Changed</span>");
+          }
+      }
+    else g_print("Tables %s, Range 0<Tables<=100", gtk_entry_get_text(GTK_ENTRY(widget)));  
+    return FALSE;
+  }
+static void open_json_file(gchar *file_name, GtkWidget *ws[])
+  {
+    gint i=0;
+    if(g_file_test(file_name, G_FILE_TEST_EXISTS)) 
+     {
+       //Get the data from the file.
+       GError *error=NULL;
+       JsonParser *parser = json_parser_new();
+       json_parser_load_from_file(parser, file_name, &error);
+       if(error)
+         {
+           g_print("Couldn't open report file. %s\n", error->message);
+           g_error_free(error);
+           g_object_unref(parser);
+         }
+       else
+         {
+           gboolean found_member=TRUE;
+           JsonReader *reader = json_reader_new(json_parser_get_root(parser));
+           found_member=json_reader_read_member(reader, "e1");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[0]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e2");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[1]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e3");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[2]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e4");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[3]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e5");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[4]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e6");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[5]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e7");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[6]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e8");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[7]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e9");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[8]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e10");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[9]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "e11");
+           if(!found_member) goto bad_element;
+           gtk_entry_set_text(GTK_ENTRY(ws[10]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c1");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[11]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c2");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[12]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c3");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[13]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c4");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[14]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c5");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[15]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c6");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[16]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "c7");
+           if(!found_member) goto bad_element;
+           gtk_combo_box_set_active_id(GTK_COMBO_BOX(ws[17]), json_reader_get_string_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "ch1");
+           if(!found_member) goto bad_element;
+           gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ws[18]), (gboolean)json_reader_get_int_value(reader));
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "ch2");
+           if(!found_member) goto bad_element;
+           gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ws[19]), (gboolean)json_reader_get_int_value(reader));
+           json_reader_end_member(reader);
+           GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+           found_member=json_reader_read_member(reader, "markup");
+           if(!found_member) goto bad_element;
+           gtk_text_buffer_set_text(buffer, json_reader_get_string_value(reader), -1);
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "g_row_labels");
+           if(!found_member) goto bad_element;
+           gint elements1=json_reader_count_elements(reader);
+           gint array_length1=g_row_labels->len;
+           for(i=0;i<array_length1; i++)
+             {
+               g_ptr_array_remove_index_fast(g_row_labels, 0);
+             }
+           for(i=0;i<elements1;i++)
+             {
+               json_reader_read_element(reader, i);
+               g_ptr_array_add(g_row_labels, g_strdup(json_reader_get_string_value(reader))); 
+               json_reader_end_element(reader);
+             }
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "g_column_labels");
+           if(!found_member) goto bad_element;
+           gint elements2=json_reader_count_elements(reader);
+           gint array_length2=g_column_labels->len;
+           for(i=0;i<array_length2; i++)
+             {
+               g_ptr_array_remove_index_fast(g_column_labels, 0);
+             }
+           for(i=0;i<elements2;i++)
+             {
+               json_reader_read_element(reader, i);
+               g_ptr_array_add(g_column_labels, g_strdup(json_reader_get_string_value(reader))); 
+               json_reader_end_element(reader);
+             }
+           json_reader_end_member(reader);
+           found_member=json_reader_read_member(reader, "g_table_labels");
+           if(!found_member) goto bad_element;
+           gint elements3=json_reader_count_elements(reader);
+           gint array_length3=g_table_labels->len;
+           for(i=0;i<array_length3; i++)
+             {
+               g_ptr_array_remove_index_fast(g_table_labels, 0);
+             }
+           for(i=0;i<elements3;i++)
+             {
+               json_reader_read_element(reader, i);
+               g_ptr_array_add(g_table_labels, g_strdup(json_reader_get_string_value(reader))); 
+               json_reader_end_element(reader);
+             }
+           json_reader_end_member(reader);
+           g_print("Report Opened\n");
+           bad_element:
+           if(!found_member) g_print("Bad Element in Report\n");
+         }
+    }
+  } 
+static void save_json_file(gchar *file_name, GtkWidget *ws[])
   {
     gint ret_val=validate_entries(ws);
-    g_print("Return %i\n", ret_val);
+    gint i=0;
+    if(ret_val==0)
+      {
+        JsonBuilder *builder=json_builder_new();
+        json_builder_begin_object (builder);
+        json_builder_set_member_name(builder, "e1");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[0])));
+        json_builder_set_member_name(builder, "e2");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[1])));
+        json_builder_set_member_name(builder, "e3");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[2])));
+        json_builder_set_member_name(builder, "e4");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[3])));
+        json_builder_set_member_name(builder, "e5");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[4])));
+        json_builder_set_member_name(builder, "e6");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[5])));
+        json_builder_set_member_name(builder, "e7");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[6])));
+        json_builder_set_member_name(builder, "e8");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[7])));
+        json_builder_set_member_name(builder, "e9");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[8])));
+        json_builder_set_member_name(builder, "e10");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[9])));
+        json_builder_set_member_name(builder, "e11");
+        json_builder_add_string_value(builder, gtk_entry_get_text(GTK_ENTRY(ws[10])));
+        json_builder_set_member_name(builder, "c1");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[11])));
+        json_builder_set_member_name(builder, "c2");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[12])));
+        json_builder_set_member_name(builder, "c3");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[13])));
+        json_builder_set_member_name(builder, "c4");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
+        json_builder_set_member_name(builder, "c5");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[15])));
+        json_builder_set_member_name(builder, "c6");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[16])));
+        json_builder_set_member_name(builder, "c7");
+        json_builder_add_string_value(builder, gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[17])));
+        json_builder_set_member_name(builder, "ch1");
+        json_builder_add_int_value(builder, (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18])));
+        json_builder_set_member_name(builder, "ch2");
+        json_builder_add_int_value(builder, (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[19])));
+        GtkTextIter start, end;
+        GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+        gtk_text_buffer_get_start_iter(buffer, &start);
+        gtk_text_buffer_get_end_iter(buffer, &end);
+        json_builder_set_member_name(builder, "markup");
+        json_builder_add_string_value(builder, gtk_text_buffer_get_text(buffer, &start, &end, TRUE));
+        json_builder_set_member_name(builder, "g_row_labels");
+        json_builder_begin_array(builder);
+        for(i=0;i<g_row_labels->len;i++)
+          {
+            json_builder_add_string_value(builder, (char*)g_ptr_array_index(g_row_labels, i));
+          }
+        json_builder_end_array(builder); 
+        json_builder_set_member_name(builder, "g_column_labels");
+        json_builder_begin_array(builder);
+        for(i=0;i<g_column_labels->len;i++)
+          {
+            json_builder_add_string_value(builder, (char*)g_ptr_array_index(g_column_labels, i));
+          }
+        json_builder_end_array(builder);  
+        json_builder_set_member_name(builder, "g_table_labels");
+        json_builder_begin_array(builder);
+        for(i=0;i<g_table_labels->len;i++)
+          {
+            json_builder_add_string_value(builder, (char*)g_ptr_array_index(g_table_labels, i));
+          }
+        json_builder_end_array(builder);        
+        json_builder_end_object(builder);
+
+        //Save the data to the file.
+        GError *error=NULL;
+        JsonGenerator *generator = json_generator_new();
+        JsonNode *root = json_builder_get_root(builder);
+        json_generator_set_root(generator, root);
+        gboolean file_saved=json_generator_to_file(generator, file_name, &error);
+        if(file_saved) g_print("File Saved\n");
+        else g_print("JSON File: %s\n", error->message);
+
+        json_node_free(root);
+        g_object_unref(builder);
+        g_object_unref(generator);
+      }
+    else g_print("Couldn't save report file.\n");
+  }
+static void open_report(GtkWidget *widget, GtkWidget *ws[])
+  {
+    GtkWidget *dialog=gtk_file_chooser_dialog_new("Open Report", GTK_WINDOW(ws[21]), GTK_FILE_CHOOSER_ACTION_OPEN, "Cancel", GTK_RESPONSE_CANCEL, "Open", GTK_RESPONSE_ACCEPT, NULL);
+    
+    gint result=gtk_dialog_run(GTK_DIALOG(dialog));
+    if(result==GTK_RESPONSE_ACCEPT)
+      {
+        gchar *file_name=NULL;
+        file_name=gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        if(file_name) open_json_file(file_name, ws);
+        if(file_name!=NULL) g_free(file_name);
+      }
+    gtk_widget_destroy(dialog); 
   }
 static void save_report(GtkWidget *widget, GtkWidget *ws[])
   {
     GtkWidget *dialog=gtk_file_chooser_dialog_new("Save Report", GTK_WINDOW(ws[21]), GTK_FILE_CHOOSER_ACTION_SAVE, "Cancel", GTK_RESPONSE_CANCEL, "Save", GTK_RESPONSE_ACCEPT, NULL);
-    //gtk_widget_show_all(dialog);
+    
     gint result=gtk_dialog_run(GTK_DIALOG(dialog));
     if(result==GTK_RESPONSE_ACCEPT)
       {
