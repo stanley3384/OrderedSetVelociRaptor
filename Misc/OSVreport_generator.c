@@ -4,7 +4,7 @@
     Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
 over so far along with a few functions. Work in progress.
  
-    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 
+    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3
 
     C. Eric Cashon
 
@@ -12,6 +12,7 @@ over so far along with a few functions. Work in progress.
 
 #include<gtk/gtk.h>
 #include <json-glib/json-glib.h>
+#include<sqlite3.h>
 #include<stdlib.h>
 
 //Textview funtions.
@@ -23,7 +24,9 @@ static void clear_tags(GtkWidget *widget, gpointer data);
 //General program functions.
 static void about_dialog(GtkWidget *widget, gpointer data);
 static void message_dialog(gchar *string);
+static void change_sql_entry(GtkWidget *widget, gpointer data);
 static gint validate_entries(GtkWidget *ws[]);
+static gint check_sql_string(const gchar *sql_string, GtkWidget *ws[]);
 static gboolean save_current_row_value(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean clear_row_labels(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -241,6 +244,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 3, "4", "CrosstabFromDB");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 4, "5", "TableFromDB");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo4), "1");
+    g_signal_connect(combo4, "changed", G_CALLBACK(change_sql_entry), entry10);
 
     GtkWidget *combo5=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo5), 0, "1", "No Frame");
@@ -267,7 +271,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo7), "3");
     g_signal_connect(combo7, "changed", G_CALLBACK(set_font_tags), textview1);
 
-    GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window};
+    GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window, label2};
     g_signal_connect(menu1item1, "activate", G_CALLBACK(open_report), ws);
     g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
     g_signal_connect(button5, "clicked", G_CALLBACK(labels_dialog), ws);
@@ -442,6 +446,12 @@ static void message_dialog(gchar *string)
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);    
   }
+static void change_sql_entry(GtkWidget *widget, gpointer data)
+  {
+    gint active_id=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget)));
+    if(active_id==1||active_id==2||active_id==3) gtk_widget_set_sensitive(GTK_WIDGET(data), FALSE);
+    else gtk_widget_set_sensitive(GTK_WIDGET(data), TRUE);
+  }
 static gint validate_entries(GtkWidget *ws[])
   {
     gint e1=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
@@ -525,7 +535,102 @@ static gint validate_entries(GtkWidget *ws[])
         g_free(message);
         return 1;
       }
+    else if(gtk_widget_get_sensitive(ws[9]))
+      {
+        gint database_rows=check_sql_string(gtk_entry_get_text(GTK_ENTRY(ws[9])), ws);
+        g_print("Database rows %i\n", database_rows);
+        gint numbers=e1*e2*e8;
+        if(database_rows<numbers&&database_rows>0)
+          {
+            message=g_strdup_printf("There are not enough rows in the database table\nto print the requested rows, columns and tables.\nDatabase rows %i Requested %i", database_rows, numbers);
+            message_dialog(message);
+            g_free(message);
+            return 1; 
+          }
+         else if(database_rows==0)
+          {
+            message=g_strdup_printf("The SQL statement isn't valid.");
+            message_dialog(message);
+            g_free(message);
+            return 1; 
+          }
+         else return 0;
+      }
     else return 0;
+  }
+static gint check_sql_string(const gchar *sql_string, GtkWidget *ws[])
+  {
+    gboolean valid_string=TRUE;
+    gint ret_value=0;
+    gchar *sql1="SELECT count(*) ";
+    gchar *select_rows=NULL;
+    //Build a row count SELECT statement.
+    GMatchInfo *match_info1;
+    GRegex *regex1=g_regex_new("(?i)(FROM).*", 0, 0, NULL);
+    g_regex_match(regex1, sql_string, 0, &match_info1);
+    if(g_match_info_matches(match_info1))
+      {
+        gchar *string1=g_match_info_fetch(match_info1, 0);
+        g_print("Found: %s\n", string1);
+        select_rows=g_strdup_printf("%s%s%s", sql1, string1, ";");
+        g_print("%s\n", select_rows);  
+        g_free(string1);
+      }
+    //Count the number of columns in the SELECT statement and change UI columns.
+    //At least one column even if there isn't any problem code. Need at least a 1
+    //if the column entry gets changed.
+    GMatchInfo *match_info2;
+    GRegex *regex2=g_regex_new("(?i)(?<=SELECT)(.*?)(?=FROM)", 0, 0, NULL);
+    g_regex_match(regex2, sql_string, 0, &match_info2);
+    if(g_match_info_matches(match_info2))
+      {
+        gchar *string2=g_match_info_fetch(match_info2, 0);
+        g_print("Found: %s\n", string2);
+        gchar **string_array=g_strsplit(string2, ",", -1);
+        gint i=0;
+        while(string_array[i]!=NULL) i++;
+        g_print("Columns in SELECT %i\n", i);
+        g_strfreev(string_array);
+        g_free(string2);
+        if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])))==5)
+          {
+            if(atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])))!=i)
+              {
+                gchar *text=g_strdup_printf("%i", i);
+                gtk_entry_set_text(GTK_ENTRY(ws[1]), text);
+                g_free(text);
+                gtk_label_set_markup(GTK_LABEL(ws[22]), "<span foreground='blue'>Columns Changed</span>");
+              }
+          }
+      }
+    if(g_match_info_matches(match_info1))
+      {
+        sqlite3 *cnn=NULL;
+        sqlite3_stmt *stmt1=NULL;
+        sqlite3_stmt *stmt2=NULL;
+        sqlite3_open("VelociRaptorData.db", &cnn);
+        sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
+        if(stmt1==NULL) valid_string=FALSE;
+        if(valid_string)
+          {
+            sqlite3_prepare_v2(cnn, select_rows, -1, &stmt2, 0);
+            if(stmt2!=NULL)
+              {
+                sqlite3_step(stmt2);
+                ret_value=sqlite3_column_int(stmt2, 0);
+              }
+          }
+        if(stmt1!=NULL) sqlite3_finalize(stmt1);
+        if(stmt2!=NULL) sqlite3_finalize(stmt2);
+        sqlite3_close(cnn);
+      }
+
+    g_match_info_free(match_info1);
+    g_regex_unref(regex1);
+    g_match_info_free(match_info2);
+    g_regex_unref(regex2);
+    if(select_rows!=NULL) g_free(select_rows);
+    return ret_value;
   }
 static gboolean save_current_row_value(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
