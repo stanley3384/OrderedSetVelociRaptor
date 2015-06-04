@@ -52,7 +52,7 @@ static void load_table_labels(GtkWidget *widget, gpointer data);
 static gint row_combo_block=0;
 static gint column_combo_block=0;
 static gint table_combo_block=0;
-//For comparison and clearing pointer arrays.
+//For comparison and clearing pointer arrays when entry value changes.
 gint g_row_value=10;
 gint g_column_value=5;
 gint g_table_value=5;
@@ -624,7 +624,6 @@ static void open_json_file(gchar *file_name, GtkWidget *ws[])
          {
            g_print("Couldn't open report file. %s\n", error->message);
            g_error_free(error);
-           g_object_unref(parser);
          }
        else
          {
@@ -763,7 +762,9 @@ static void open_json_file(gchar *file_name, GtkWidget *ws[])
            g_print("Report Opened\n");
            bad_element:
            if(!found_member) g_print("Bad Element in Report\n");
-         }
+           g_object_unref(reader);
+        } 
+      g_object_unref(parser);
     }
   } 
 static void save_json_file(gchar *file_name, GtkWidget *ws[])
