@@ -50,11 +50,18 @@ static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void activate_table_labels_button(GtkWidget *widget, gpointer data);
 static void table_combo_changed(GtkWidget *widget, gpointer data);
 static void load_table_labels(GtkWidget *widget, gpointer data);
+//Drawing functions.
+static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
+static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws2[]);
+static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 
+//Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
 static gint row_combo_block=0;
 static gint column_combo_block=0;
 static gint table_combo_block=0;
+static gint da_block=0;
+static gboolean da_blocking=FALSE;
 //For comparison and clearing pointer arrays when entry value changes.
 gint g_row_value=10;
 gint g_column_value=5;
@@ -63,6 +70,10 @@ gint g_table_value=5;
 static GPtrArray *g_row_labels=NULL;
 static GPtrArray *g_column_labels=NULL;
 static GPtrArray *g_table_labels=NULL;
+//Drawing globals.
+static gint plate_counter=1;
+static gint plate_counter_sql=1;
+static gint line_count=0;
 
 int main(int argc, char *argv[])
   {
@@ -325,8 +336,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry10, 0, 11, 6, 1);
     gtk_grid_attach(GTK_GRID(grid), menu_bar, 1, 12, 1, 1);
     
-    GtkWidget *da1=gtk_drawing_area_new();
-    gtk_widget_set_size_request(da1, 10000, 10000);
+    GtkWidget *da=gtk_drawing_area_new();
+    gtk_widget_set_size_request(da, 10000, 10000);
+    da_block=g_signal_connect(da, "draw", G_CALLBACK(draw_report), ws);
 
     GtkWidget *scroll2=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_hexpand(scroll2, TRUE);
@@ -336,7 +348,7 @@ int main(int argc, char *argv[])
     gtk_layout_set_size(GTK_LAYOUT(layout), 10000, 10000);
     gtk_widget_set_hexpand(layout, TRUE);
     gtk_widget_set_vexpand(layout, TRUE);
-    gtk_layout_put(GTK_LAYOUT(layout), da1, 0, 0);
+    gtk_layout_put(GTK_LAYOUT(layout), da, 0, 0);
     gtk_container_add(GTK_CONTAINER(scroll2), layout);
 
     GtkWidget *notebook=gtk_notebook_new();
@@ -344,6 +356,8 @@ int main(int argc, char *argv[])
     GtkWidget *nb_label2=gtk_label_new("Drawing");
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid, nb_label1);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scroll2, nb_label2);
+    GtkWidget *ws2[]={da, scroll2};
+    g_signal_connect(notebook, "switch_page", G_CALLBACK(start_draw_report), ws2);
 
     gtk_container_add(GTK_CONTAINER(window), notebook);
     
@@ -1463,6 +1477,62 @@ static void load_table_labels(GtkWidget *widget, gpointer data)
         iter_found=gtk_tree_model_iter_next(model, &tree_iter);
         if(str_data!=NULL) g_free(str_data);
       }
+  }
+static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
+  {
+    gint return_value=validate_entries(ws);
+    if(return_value!=0&&da_blocking==FALSE)
+      {
+        g_signal_handler_block((gpointer)da, da_block);
+        da_blocking=TRUE;
+      }
+    if(return_value==0&&da_blocking==TRUE)
+      {
+        g_signal_handler_unblock((gpointer)da, da_block);
+        da_blocking=FALSE;
+      }
+    if(return_value==0) drawing_area_preview(da, cr, ws);
+    return TRUE;
+  }
+static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws2[])
+  {
+    if(da_blocking)
+      {
+        g_signal_handler_unblock((gpointer)ws2[0], da_block);
+        da_blocking=FALSE;
+      }
+    GtkAdjustment *adj1=gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(ws2[1]));
+    GtkAdjustment *adj2=gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(ws2[1]));
+    gtk_adjustment_set_value(adj1, 0);
+    gtk_adjustment_set_value(adj2, 0);
+  }
+static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
+  {
+    g_print("Draw Report\n");
+    plate_counter=1;
+    plate_counter_sql=1;
+    line_count=0;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+    gint count_lines=gtk_text_buffer_get_line_count(buffer);
+    gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+    gchar *font_string=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(ws[17]));
+    font_string=g_strdup_printf("%s", font_string);
+    PangoFontDescription *font_desc=pango_font_description_from_string(font_string); 
+    PangoContext *pango_context=gtk_widget_get_pango_context(da);
+    PangoLayout *pango_layout=pango_layout_new(pango_context);
+    gint width=gtk_widget_get_allocated_width(da);
+    gint height=gtk_widget_get_allocated_height(da);
+    pango_layout_set_width(pango_layout, PANGO_SCALE*width);
+    pango_layout_set_height(pango_layout, PANGO_SCALE*height);
+    pango_layout_set_font_description(pango_layout, font_desc);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_paint(cr);
+    g_print("Font %s, Tables %i, Count Lines %i\n", font_string, tables, count_lines);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    pango_layout_set_markup(pango_layout, "Test Draw\nTest Draw\nTest Draw\nTest Draw\nTest Draw", -1);
+    pango_cairo_show_layout(cr, pango_layout);
+    g_object_unref(pango_layout);
+    if(font_string!=NULL) g_free(font_string);
   }
 
 
