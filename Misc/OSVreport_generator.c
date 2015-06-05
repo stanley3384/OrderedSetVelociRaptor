@@ -54,6 +54,7 @@ static void load_table_labels(GtkWidget *widget, gpointer data);
 static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws2[]);
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
+static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -1508,7 +1509,7 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
   }
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
   {
-    g_print("Draw Report\n");
+    gint i=0;
     plate_counter=1;
     plate_counter_sql=1;
     line_count=0;
@@ -1527,12 +1528,49 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     pango_layout_set_font_description(pango_layout, font_desc);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_paint(cr);
-    g_print("Font %s, Tables %i, Count Lines %i\n", font_string, tables, count_lines);
     cairo_set_source_rgb(cr, 0, 0, 0);
-    pango_layout_set_markup(pango_layout, "Test Draw\nTest Draw\nTest Draw\nTest Draw\nTest Draw", -1);
+
+    GString *string=g_string_new("");
+    GString *table_string=g_string_new("");
+    for(i=0;i<tables;i++)
+      {
+        draw_tables(pango_layout, cr, string, ws, 0, i+1, count_lines);
+        g_string_append_printf(table_string, "%s", string->str);
+        g_string_truncate(string, 0);        
+      }
+
+
+    pango_layout_set_markup(pango_layout, table_string->str, -1);
     pango_cairo_show_layout(cr, pango_layout);
+
     g_object_unref(pango_layout);
+    g_string_free(string, TRUE);
+    g_string_free(table_string, TRUE);
     if(font_string!=NULL) g_free(font_string);
+  }
+static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines)
+  {
+    gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
+    gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
+    gint shift_margin=atoi(gtk_entry_get_text(GTK_ENTRY(ws[2])));
+    gint shift_below_text=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
+    gint column_width=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
+    gint shift_number_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
+    gint shift_column_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[6])));
+    gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+    gchar *table_name=g_strdup(gtk_entry_get_text(GTK_ENTRY(ws[8])));
+    gchar *sql_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(ws[9])));
+    gint round_float=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
+    gboolean check1_active=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18]));
+    gint combo1_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[11])));
+    gint combo2_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[12])));
+    gint combo4_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
+    gboolean show_numbers = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[19]));
+
+    g_string_append_printf(string, "Test %i %i %i %i %i %i %i %i %i %s %s %i %i %i %i %i %i\n", table, rows, columns, shift_margin, shift_below_text, column_width, shift_number_left, shift_column_left, tables, table_name, sql_string, round_float, check1_active, combo1_index, combo2_index, combo4_index, show_numbers);
+
+    if(table_name!=NULL) g_free(table_name);
+    if(sql_string!=NULL) g_free(sql_string);
   }
 
 
