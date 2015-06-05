@@ -109,7 +109,6 @@ class TextBox(Gtk.TextView):
         self.get_pango_markup()
         self.pango_layout.set_markup(self.markup_string + self.table_string)
         PangoCairo.show_layout(cr, self.pango_layout)
-        pango_layout = PangoCairo.create_layout(cr)
            
     def print_dialog(self, entries_array):
         self.entries_array_text = entries_array
@@ -121,7 +120,7 @@ class TextBox(Gtk.TextView):
 
     def begin_print(self, operation, gtk_context):
         self.plate_counter = 1
-        self.plate_counter_sql =1
+        self.plate_counter_sql = 1
         self.page_width = gtk_context.get_width()
         self.page_height = gtk_context.get_height()
         pango_context = self.get_pango_context()
@@ -1409,7 +1408,6 @@ class MainWindow(Gtk.Window):
         #self.notebook.set_scrollable(True)
         self.notebook.append_page(self.grid, notebook_label1)
         self.notebook.append_page(self.scrolled_window, notebook_label2)
-        #self.notebook.add(self.grid)
         self.add(self.notebook)
         style_provider = Gtk.CssProvider()
         css = "GtkWindow, GtkNotebook{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}"
@@ -1499,7 +1497,7 @@ class MainWindow(Gtk.Window):
             self.message_dialog(message)
             return 1
         elif(1 > e11 or e11 > 7):
-            message = "Round Floats " + self.entry11.get_text() + ", Range 1<=Tables<=7"
+            message = "Round Floats " + self.entry11.get_text() + ", Range 1<=Round Floats<=7"
             self.message_dialog(message)
             return 1
         elif(e1*e2*e8 > 5000):
@@ -1568,7 +1566,7 @@ class MainWindow(Gtk.Window):
                 cur.execute(sql_string)
             except lite.OperationalError: 
                 valid_string = False
-            #If valid check how many row there are.
+            #If valid check how many rows there are.
             if(valid_string):
                 cur.execute(select_rows)           
                 records = cur.fetchone()
@@ -1589,7 +1587,7 @@ class MainWindow(Gtk.Window):
             response = dialog.run()        
             dialog.destroy()
         else:
-            message = "0<Rows<100 and 0<Columns<20"
+            message = "0<Rows<100 and 0<Columns<50"
             self.message_dialog(message)
 
     def table_labels_dialog(self, button):
@@ -1763,7 +1761,7 @@ class MainWindow(Gtk.Window):
         dialog.destroy()
         
     def save_pickle_file(self, file_name):
-        print("Save File report1")
+        print("Save File")
         ret_value = self.validate_entries()
         if(ret_value==0):
             e1 = self.entry1.get_text()

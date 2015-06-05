@@ -636,7 +636,7 @@ static gboolean save_current_row_value(GtkWidget *widget, GdkEvent *event, gpoin
   {
     gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
     if(r_value>0&&r_value<=100) g_row_value=r_value;
-    else g_print("Rows %s, Range 0<Rows<=100", gtk_entry_get_text(GTK_ENTRY(widget)));         
+    else g_print("Rows %s, Range 0<Rows<=100\n", gtk_entry_get_text(GTK_ENTRY(widget)));         
     return FALSE;  
   }
 static gboolean clear_row_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -657,14 +657,14 @@ static gboolean clear_row_labels(GtkWidget *widget, GdkEvent *event, gpointer da
             gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Labels Changed</span>");
           } 
       }
-    else g_print("Rows %s, Range 0<Rows<=100", gtk_entry_get_text(GTK_ENTRY(widget)));  
+    else g_print("Rows %s, Range 0<Rows<=100\n", gtk_entry_get_text(GTK_ENTRY(widget)));  
     return FALSE;
   }
 static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
     if(r_value>0&&r_value<=50) g_column_value=r_value;
-    else g_print("Columns %s, Range 0<Columns<=50", gtk_entry_get_text(GTK_ENTRY(widget)));         
+    else g_print("Columns %s, Range 0<Columns<=50\n", gtk_entry_get_text(GTK_ENTRY(widget)));         
     return FALSE;  
   }
 static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -685,14 +685,14 @@ static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer
             gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Labels Changed</span>");
           }
       }
-    else g_print("Columns %s, Range 0<Columns<=50", gtk_entry_get_text(GTK_ENTRY(widget)));  
+    else g_print("Columns %s, Range 0<Columns<=50\n", gtk_entry_get_text(GTK_ENTRY(widget)));  
     return FALSE;
   }
 static gboolean save_current_table_value(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
     if(r_value>0&&r_value<=20) g_table_value=r_value;
-    else g_print("Tables %s, Range 0<Tables<=20", gtk_entry_get_text(GTK_ENTRY(widget)));         
+    else g_print("Tables %s, Range 0<Tables<=20\n", gtk_entry_get_text(GTK_ENTRY(widget)));         
     return FALSE;  
   }
 static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -713,7 +713,7 @@ static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer 
             gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Table Labels Changed</span>");
           }
       }
-    else g_print("Tables %s, Range 0<Tables<=100", gtk_entry_get_text(GTK_ENTRY(widget)));  
+    else g_print("Tables %s, Range 0<Tables<=100\n", gtk_entry_get_text(GTK_ENTRY(widget)));  
     return FALSE;
   }
 static void open_json_file(gchar *file_name, GtkWidget *ws[])
