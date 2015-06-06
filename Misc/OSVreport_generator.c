@@ -4,7 +4,7 @@
     Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
 over so far along with a few functions. Work in progress.
  
-    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3
+    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
 
     C. Eric Cashon
 
@@ -14,6 +14,7 @@ over so far along with a few functions. Work in progress.
 #include <json-glib/json-glib.h>
 #include<sqlite3.h>
 #include<stdlib.h>
+#include<math.h>
 
 //Textview funtions.
 static void change_textview_font(GtkWidget *widget, gpointer data);
@@ -52,9 +53,10 @@ static void table_combo_changed(GtkWidget *widget, gpointer data);
 static void load_table_labels(GtkWidget *widget, gpointer data);
 //Drawing functions.
 static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
-static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws2[]);
+static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[]);
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
+static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -71,6 +73,9 @@ gint g_table_value=5;
 static GPtrArray *g_row_labels=NULL;
 static GPtrArray *g_column_labels=NULL;
 static GPtrArray *g_table_labels=NULL;
+//Drawing array for values.
+static GPtrArray *g_data_values=NULL;
+static GArray *g_min_max=NULL;
 //Drawing globals.
 static gint plate_counter=1;
 static gint plate_counter_sql=1;
@@ -283,16 +288,12 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo7), "3");
     g_signal_connect(combo7, "changed", G_CALLBACK(set_font_tags), textview1);
 
-    GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window, label2};
-    g_signal_connect(menu1item1, "activate", G_CALLBACK(open_report), ws);
-    g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
-    g_signal_connect(button5, "clicked", G_CALLBACK(labels_dialog), ws);
-    g_signal_connect(button6, "clicked", G_CALLBACK(table_labels_dialog), ws);
-
     //Initailize global arrays.
     g_row_labels=g_ptr_array_new_full(5, g_free);
     g_column_labels=g_ptr_array_new_full(5, g_free);
     g_table_labels=g_ptr_array_new_full(5, g_free);
+    g_data_values=g_ptr_array_new_full(5000, g_free);
+    g_min_max=g_array_new(FALSE, TRUE, sizeof(gdouble));
  
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
@@ -339,7 +340,6 @@ int main(int argc, char *argv[])
     
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_size_request(da, 10000, 10000);
-    da_block=g_signal_connect(da, "draw", G_CALLBACK(draw_report), ws);
 
     GtkWidget *scroll2=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_hexpand(scroll2, TRUE);
@@ -357,8 +357,14 @@ int main(int argc, char *argv[])
     GtkWidget *nb_label2=gtk_label_new("Drawing");
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid, nb_label1);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scroll2, nb_label2);
-    GtkWidget *ws2[]={da, scroll2};
-    g_signal_connect(notebook, "switch_page", G_CALLBACK(start_draw_report), ws2);
+
+    GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window, label2, da, scroll2};
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(open_report), ws);
+    g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
+    g_signal_connect(button5, "clicked", G_CALLBACK(labels_dialog), ws);
+    g_signal_connect(button6, "clicked", G_CALLBACK(table_labels_dialog), ws);
+    da_block=g_signal_connect(da, "draw", G_CALLBACK(draw_report), ws);
+    g_signal_connect(notebook, "switch_page", G_CALLBACK(start_draw_report), ws);
 
     gtk_container_add(GTK_CONTAINER(window), notebook);
     
@@ -1492,20 +1498,42 @@ static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
         g_signal_handler_unblock((gpointer)da, da_block);
         da_blocking=FALSE;
       }
-    if(return_value==0) drawing_area_preview(da, cr, ws);
+    if(return_value==0)
+      {
+        drawing_area_preview(da, cr, ws);
+      }
     return TRUE;
   }
-static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws2[])
+static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[])
   {
+    g_print("Start Draw %i\n", page_num);
+    gint i=0;
     if(da_blocking)
       {
-        g_signal_handler_unblock((gpointer)ws2[0], da_block);
+        g_print("Unblock\n");
+        g_signal_handler_unblock((gpointer)ws[23], da_block);
         da_blocking=FALSE;
       }
-    GtkAdjustment *adj1=gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(ws2[1]));
-    GtkAdjustment *adj2=gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(ws2[1]));
-    gtk_adjustment_set_value(adj1, 0);
-    gtk_adjustment_set_value(adj2, 0);
+    if(page_num==1)
+      {
+        GtkAdjustment *adj1=gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(ws[24]));
+        GtkAdjustment *adj2=gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(ws[24]));
+        gtk_adjustment_set_value(adj1, 0);
+        gtk_adjustment_set_value(adj2, 0);
+        gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
+        gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
+        gint column_width=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
+        gint shift_number_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
+        gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+        gint round_float=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
+        //Clear data arrays.
+        gint array_length1=g_data_values->len;
+        for(i=0;i<array_length1; i++) g_ptr_array_remove_index_fast(g_data_values, 0);
+        gint array_length2=g_min_max->len;
+        for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, i);       
+        //Get the data.
+        get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+      }
   }
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
   {
@@ -1539,7 +1567,6 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
         g_string_truncate(string, 0);        
       }
 
-
     pango_layout_set_markup(pango_layout, table_string->str, -1);
     pango_cairo_show_layout(cr, pango_layout);
 
@@ -1571,6 +1598,43 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string,
 
     if(table_name!=NULL) g_free(table_name);
     if(sql_string!=NULL) g_free(sql_string);
+  }
+static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float)
+  {
+    g_print("Get Test Data\n");
+    gint i=0;
+    gint j=0;
+    gint k=0;
+    gdouble random_number=0;
+    gint number_width=column_width-shift_number_left;
+    gchar buffer[number_width+1];
+    gdouble min=G_MAXDOUBLE;
+    gdouble max=-G_MAXDOUBLE;
+    GRand *rand1=g_rand_new();
+    gchar *fill=g_strnfill(shift_number_left, ' ');
+    for(i=0;i<tables;i++)
+      {
+        for(j=0;j<rows;j++)
+          {
+            for(k=0;k<columns;k++)
+              {
+                random_number=100*g_rand_double(rand1), number_width;
+                g_ascii_formatd(buffer, number_width+1, "%f", random_number);
+                //g_print("|%s%s|\n", buffer, fill);
+                g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer, fill));
+                if(random_number<min) min=random_number;
+                if(random_number>max) max=random_number;
+              }
+          }
+        g_array_append_val(g_min_max, min);
+        g_array_append_val(g_min_max, max);
+        //g_print("min %f max %f\n", min, max);
+        min=G_MAXDOUBLE;
+        max=-G_MAXDOUBLE;
+      }
+    
+    if(fill!=NULL) g_free(fill);
+    g_rand_free(rand1);
   }
 
 
