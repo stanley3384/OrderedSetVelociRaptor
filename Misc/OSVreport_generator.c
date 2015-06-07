@@ -4,7 +4,7 @@
     Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
 over so far along with a few functions. Work in progress.
  
-    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
+    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3
 
     C. Eric Cashon
 
@@ -14,7 +14,6 @@ over so far along with a few functions. Work in progress.
 #include <json-glib/json-glib.h>
 #include<sqlite3.h>
 #include<stdlib.h>
-#include<math.h>
 
 //Textview funtions.
 static void change_textview_font(GtkWidget *widget, gpointer data);
@@ -57,6 +56,7 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
+static void get_labels_for_drawing(gint rows, gint columns, gint column_width, gint shift_column_left);
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -64,6 +64,8 @@ static gint row_combo_block=0;
 static gint column_combo_block=0;
 static gint table_combo_block=0;
 static gint da_block=0;
+static gint row_clear_block=0;
+static gint column_clear_block=0;
 static gboolean da_blocking=FALSE;
 //For comparison and clearing pointer arrays when entry value changes.
 gint g_row_value=10;
@@ -221,9 +223,9 @@ int main(int argc, char *argv[])
 
     GtkWidget *button5=gtk_button_new_with_label("Set Labels");
     g_signal_connect(entry1, "focus_in_event", G_CALLBACK(save_current_row_value), button5);
-    g_signal_connect(entry1, "focus_out_event", G_CALLBACK(clear_row_labels), button5);
+    row_clear_block=g_signal_connect(entry1, "focus_out_event", G_CALLBACK(clear_row_labels), button5);
     g_signal_connect(entry2, "focus_in_event", G_CALLBACK(save_current_column_value), button5);
-    g_signal_connect(entry2, "focus_out_event", G_CALLBACK(clear_column_labels), button5);
+    column_clear_block=g_signal_connect(entry2, "focus_out_event", G_CALLBACK(clear_column_labels), button5);
 
     GtkWidget *button6=gtk_button_new_with_label("Set Table Labels");
     gtk_widget_set_sensitive(button6, FALSE);
@@ -698,10 +700,7 @@ static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer
           {
             g_print("Clear Column Labels\n");
             gint array_length=g_column_labels->len;
-            for(i=0;i<array_length; i++)
-              {
-                g_ptr_array_remove_index_fast(g_column_labels, 0);
-              }
+            for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
             GtkWidget *child=gtk_bin_get_child(GTK_BIN(data));
             gtk_label_set_markup(GTK_LABEL(child), "<span foreground='blue'>Labels Changed</span>");
           }
@@ -1508,6 +1507,20 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
   {
     g_print("Start Draw %i\n", page_num);
     gint i=0;
+    //Don't unblock on first call.
+    static guint block_lag=0;
+    if(page_num==1)
+      {
+        g_signal_handler_block((gpointer)ws[0], row_clear_block);
+        g_signal_handler_block((gpointer)ws[1], column_clear_block);
+        block_lag++;
+      }
+    if(page_num==0&&block_lag>0)
+      {
+        g_signal_handler_unblock((gpointer)ws[0], row_clear_block);
+        g_signal_handler_unblock((gpointer)ws[1], column_clear_block);
+      }
+
     if(da_blocking)
       {
         g_print("Unblock\n");
@@ -1524,15 +1537,18 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
         gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
         gint column_width=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
         gint shift_number_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
+        gint shift_column_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[6])));
         gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
         gint round_float=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
         //Clear data arrays.
         gint array_length1=g_data_values->len;
         for(i=0;i<array_length1; i++) g_ptr_array_remove_index_fast(g_data_values, 0);
         gint array_length2=g_min_max->len;
-        for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, i);       
+        for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0);       
         //Get the data.
         get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+        //Get the labels. Shift them or truncate them to fit in the rectangles.
+        get_labels_for_drawing(rows, columns, column_width, shift_column_left);
       }
   }
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
@@ -1635,6 +1651,58 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     
     if(fill!=NULL) g_free(fill);
     g_rand_free(rand1);
+  }
+static void get_labels_for_drawing(gint rows, gint columns, gint column_width, gint shift_column_left)
+  {
+    g_print("Edit Labels\n");
+    gint i=0;
+    gint array_length=0;
+    gchar buffer[column_width+1];
+    gchar *fill=g_strnfill(shift_column_left, ' ');
+    //Set row labels for drawing.
+    if(g_row_labels->len==0||g_row_labels->len!=rows)
+      {
+        array_length=g_row_labels->len;
+        for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_row_labels, 0);
+        for(i=0;i<rows;i++)
+          {
+            g_ptr_array_add(g_row_labels, g_strdup_printf(" %i ", i+1));
+          }
+      } 
+    //Set column labels for drawing.
+    if(g_column_labels->len==0||g_column_labels->len!=columns)
+      {
+        array_length=g_column_labels->len;
+        for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
+        for(i=0;i<columns;i++)
+          {
+            g_snprintf(buffer, column_width+1, "%s%i%s", "column", i+1, fill);
+            g_ptr_array_add(g_column_labels, g_strdup_printf("%s", buffer));
+          }
+      } 
+    else
+     {
+        //Need to copy because couldn't maintain the order in the g_column_labels array.
+        GPtrArray *temp_labels=g_ptr_array_new_full(columns, g_free);
+        for(i=0;i<columns;i++)
+          {
+            g_snprintf(buffer, column_width+1, "%s", (char*)g_ptr_array_index(g_column_labels, i));
+            g_ptr_array_add(temp_labels, g_strdup_printf("%s", buffer));
+          }
+        array_length=g_column_labels->len;
+        for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
+        for(i=0;i<columns;i++) g_ptr_array_add(g_column_labels, g_strdup_printf("%s", (char*)g_ptr_array_index(temp_labels, i)));
+        g_ptr_array_free(temp_labels, TRUE);
+     }
+
+    gint length1=g_row_labels->len;
+    for(i=0;i<length1;i++) g_print("%s ", (char*)g_ptr_array_index(g_row_labels, i));
+    g_print("\n");
+    gint length2=g_column_labels->len;
+    for(i=0;i<length2;i++) g_print("%s ", (char*)g_ptr_array_index(g_column_labels, i));
+    g_print("\n");
+
+    if(fill!=NULL) g_free(fill);    
   }
 
 
