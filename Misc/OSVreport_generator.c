@@ -1575,8 +1575,12 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     cairo_paint(cr);
     cairo_set_source_rgb(cr, 0, 0, 0);
 
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter(buffer, &start);
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    gchar *report=gtk_text_buffer_get_text(buffer, &start, &end, TRUE);
     GString *string=g_string_new("");
-    GString *table_string=g_string_new("");
+    GString *table_string=g_string_new(report);
     for(i=0;i<tables;i++)
       {
         get_table_string(string, ws, 0, i+1, count_lines);
@@ -1590,6 +1594,7 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     g_object_unref(pango_layout);
     g_string_free(string, TRUE);
     g_string_free(table_string, TRUE);
+    if(report!=NULL) g_free(report);
     if(font_string!=NULL) g_free(font_string);
   }
 static void get_table_string(GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines)
