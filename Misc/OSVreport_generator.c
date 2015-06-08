@@ -14,6 +14,7 @@ over so far along with a few functions. Work in progress.
 #include <json-glib/json-glib.h>
 #include<sqlite3.h>
 #include<stdlib.h>
+#include<string.h>
 
 //Textview funtions.
 static void change_textview_font(GtkWidget *widget, gpointer data);
@@ -1627,7 +1628,8 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
     GRand *rand1=g_rand_new();
-    gchar *fill=g_strnfill(shift_number_left, ' ');
+    gchar *fill_end=g_strnfill(shift_number_left, ' ');
+    gint length=0;
     for(i=0;i<tables;i++)
       {
         for(j=0;j<rows;j++)
@@ -1636,10 +1638,13 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
               {
                 random_number=100*g_rand_double(rand1), number_width;
                 g_ascii_formatd(buffer, number_width+1, "%f", random_number);
-                //g_print("|%s%s|\n", buffer, fill);
-                g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer, fill));
+                length=strlen(buffer);
+                gchar *fill_start=g_strnfill((number_width+1)-(shift_number_left+length), ' ');
+                //g_print("|%s|%s%s| %i\n", fill_start, buffer, fill_end, strlen(buffer));
+                g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer, fill_end));
                 if(random_number<min) min=random_number;
                 if(random_number>max) max=random_number;
+                g_free(fill_start);
               }
           }
         g_array_append_val(g_min_max, min);
@@ -1649,7 +1654,7 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
         max=-G_MAXDOUBLE;
       }
     
-    if(fill!=NULL) g_free(fill);
+    if(fill_end!=NULL) g_free(fill_end);
     g_rand_free(rand1);
   }
 static void get_labels_for_drawing(gint rows, gint columns, gint column_width, gint shift_column_left)
@@ -1658,9 +1663,13 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
     gint i=0;
     gint array_length=0;
     gchar buffer[column_width+1];
-    gchar *fill=g_strnfill(shift_column_left, ' ');
-    //Set row labels for drawing.
-    if(g_row_labels->len==0||g_row_labels->len!=rows)
+    gchar *fill_end=g_strnfill(shift_column_left, ' ');
+    gchar length=0;
+    //If column width changes, remake default column labels.
+    static gint pre_column_width=-1;
+     if(pre_column_width==-1) pre_column_width=column_width;
+    //Set row labels for drawing. They aren't filled like the column labels and data values.
+    if(g_row_labels->len==0||g_row_labels->len!=rows||pre_column_width!=column_width)
       {
         array_length=g_row_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_row_labels, 0);
@@ -1670,14 +1679,18 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
           }
       } 
     //Set column labels for drawing.
-    if(g_column_labels->len==0||g_column_labels->len!=columns)
+    if(g_column_labels->len==0||g_column_labels->len!=columns||pre_column_width!=column_width)
       {
         array_length=g_column_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
         for(i=0;i<columns;i++)
           {
-            g_snprintf(buffer, column_width+1, "%s%i%s", "column", i+1, fill);
-            g_ptr_array_add(g_column_labels, g_strdup_printf("%s", buffer));
+            g_snprintf(buffer, column_width+1, "%s%i%s", "column", i+1, fill_end);
+            length=strlen(buffer);
+            gchar *fill_start=g_strnfill((column_width+1)-(shift_column_left+length), ' ');
+            g_print("1|%s%s| %i\n", fill_start, buffer, strlen(buffer));
+            g_ptr_array_add(g_column_labels, g_strdup_printf("%s%s", fill_start, buffer));
+            g_free(fill_start);
           }
       } 
     else
@@ -1686,8 +1699,12 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
         GPtrArray *temp_labels=g_ptr_array_new_full(columns, g_free);
         for(i=0;i<columns;i++)
           {
-            g_snprintf(buffer, column_width+1, "%s", (char*)g_ptr_array_index(g_column_labels, i));
-            g_ptr_array_add(temp_labels, g_strdup_printf("%s", buffer));
+            g_snprintf(buffer, column_width+1, "%s%s", (char*)g_ptr_array_index(g_column_labels, i), fill_end);
+            length=strlen(buffer);
+            gchar *fill_start=g_strnfill((column_width+1)-(shift_column_left+length), ' ');
+            g_print("2|%s%s| %i\n", fill_start, buffer, strlen(buffer));
+            g_ptr_array_add(temp_labels, g_strdup_printf("%s%s", fill_start, buffer));
+            g_free(fill_start);
           }
         array_length=g_column_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
@@ -1702,7 +1719,8 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
     for(i=0;i<length2;i++) g_print("%s ", (char*)g_ptr_array_index(g_column_labels, i));
     g_print("\n");
 
-    if(fill!=NULL) g_free(fill);    
+    pre_column_width=column_width;
+    if(fill_end!=NULL) g_free(fill_end);    
   }
 
 
