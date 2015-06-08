@@ -55,9 +55,9 @@ static void load_table_labels(GtkWidget *widget, gpointer data);
 static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[]);
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
-static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
+static void get_table_string(GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
-static void get_labels_for_drawing(gint rows, gint columns, gint column_width, gint shift_column_left);
+static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     GtkWidget *entry4=gtk_entry_new();
     gtk_widget_set_halign(entry4, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry4), 3);
-    gtk_entry_set_text(GTK_ENTRY(entry4), "3");
+    gtk_entry_set_text(GTK_ENTRY(entry4), "2");
 
     GtkWidget *label5=gtk_label_new("Column Width");
     GtkWidget *entry5=gtk_entry_new();
@@ -1549,7 +1549,7 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
         //Get the data.
         get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
         //Get the labels. Shift them or truncate them to fit in the rectangles.
-        get_labels_for_drawing(rows, columns, column_width, shift_column_left);
+        get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
       }
   }
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
@@ -1561,7 +1561,7 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
     gint count_lines=gtk_text_buffer_get_line_count(buffer);
     gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
-    gchar *font_string=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(ws[17]));
+    gchar *font_string=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(ws[13]));
     font_string=g_strdup_printf("%s", font_string);
     PangoFontDescription *font_desc=pango_font_description_from_string(font_string); 
     PangoContext *pango_context=gtk_widget_get_pango_context(da);
@@ -1579,7 +1579,7 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     GString *table_string=g_string_new("");
     for(i=0;i<tables;i++)
       {
-        draw_tables(pango_layout, cr, string, ws, 0, i+1, count_lines);
+        get_table_string(string, ws, 0, i+1, count_lines);
         g_string_append_printf(table_string, "%s", string->str);
         g_string_truncate(string, 0);        
       }
@@ -1592,29 +1592,75 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     g_string_free(table_string, TRUE);
     if(font_string!=NULL) g_free(font_string);
   }
-static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines)
+static void get_table_string(GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines)
   {
+    gint i=0;
+    gint j=0;
     gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
     gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
     gint shift_margin=atoi(gtk_entry_get_text(GTK_ENTRY(ws[2])));
     gint shift_below_text=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
-    gint column_width=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
-    gint shift_number_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
-    gint shift_column_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[6])));
-    gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
     gchar *table_name=g_strdup(gtk_entry_get_text(GTK_ENTRY(ws[8])));
-    gchar *sql_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(ws[9])));
-    gint round_float=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
     gboolean check1_active=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18]));
-    gint combo1_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[11])));
     gint combo2_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[12])));
-    gint combo4_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
     gboolean show_numbers = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[19]));
+    gint shift_index=(table-1)*(rows*columns-1);
 
-    g_string_append_printf(string, "Test %i %i %i %i %i %i %i %i %i %s %s %i %i %i %i %i %i\n", table, rows, columns, shift_margin, shift_below_text, column_width, shift_number_left, shift_column_left, tables, table_name, sql_string, round_float, check1_active, combo1_index, combo2_index, combo4_index, show_numbers);
+    //Space between tables.
+    if(shift_below_text>1)
+      {
+        gchar *shift_below_str=g_strnfill(shift_below_text-1, '\n');
+        g_string_append_printf(string, "%s\n", shift_below_str);
+        g_free(shift_below_str);
+      }
+  
+    //Padding for moving the drawing to the right.
+    gchar *shift_margin_str=g_strnfill(shift_margin, ' ');
 
+    //Add table label if needed.
+    if(check1_active) g_string_append_printf(string, "%s%s", shift_margin_str, table_name);
+    if(check1_active&&g_table_labels->len!=0) g_string_append_printf(string, "%s\n", (char*)g_ptr_array_index(g_table_labels, table-1));
+    if(check1_active&&g_table_labels->len==0) g_string_append_printf(string, "%i\n", table);
+    
+
+    //Shift column labels by row label width.
+    if(combo2_index==2) g_string_append_printf(string, "%s", shift_margin_str);
+    if(combo2_index==3)
+      {
+        gint row_label_length=strlen((char*)g_ptr_array_index(g_row_labels, 0));
+        gchar *shift_column_labels=g_strnfill(row_label_length, ' ');
+        if(combo2_index==3) g_string_append_printf(string, "%s%s", shift_margin_str, shift_column_labels);
+        g_free(shift_column_labels);
+      }
+
+    //Get string for column labels.
+    if(combo2_index==2||combo2_index==3)
+      {
+        for(i=0;i<columns;i++)
+          {
+            g_string_append_printf(string, "%s", (char*)g_ptr_array_index(g_column_labels, i));
+          }
+        g_string_append_printf(string, "%s", "\n");
+      }
+
+    //Get string for row labels and table.
+    for(i=0;i<rows;i++)
+      {
+        if(combo2_index==3) g_string_append_printf(string, "%s%s", shift_margin_str, (char*)g_ptr_array_index(g_row_labels, i));
+        else g_string_append_printf(string, "%s", shift_margin_str);
+        if(!show_numbers) g_string_append_printf(string, "%s", "\n");
+        if(show_numbers)
+          {
+            for(j=0;j<columns;j++)
+              {
+                g_string_append_printf(string, "%s", (char*)g_ptr_array_index(g_data_values, (i*columns+j)+shift_index)); 
+              }
+            g_string_append_printf(string, "%s", "\n");
+          }
+      }
+
+    if(shift_margin_str!=NULL) g_free(shift_margin_str);
     if(table_name!=NULL) g_free(table_name);
-    if(sql_string!=NULL) g_free(sql_string);
   }
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float)
   {
@@ -1657,7 +1703,7 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     if(fill_end!=NULL) g_free(fill_end);
     g_rand_free(rand1);
   }
-static void get_labels_for_drawing(gint rows, gint columns, gint column_width, gint shift_column_left)
+static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left)
   {
     g_print("Edit Labels\n");
     gint i=0;
@@ -1667,17 +1713,36 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
     gchar length=0;
     //If column width changes, remake default column labels.
     static gint pre_column_width=-1;
-     if(pre_column_width==-1) pre_column_width=column_width;
-    //Set row labels for drawing. They aren't filled like the column labels and data values.
+    if(pre_column_width==-1) pre_column_width=column_width;
+    //Set row labels for drawing. Check validate_entries() for row limit.
     if(g_row_labels->len==0||g_row_labels->len!=rows||pre_column_width!=column_width)
       {
         array_length=g_row_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_row_labels, 0);
-        for(i=0;i<rows;i++)
+        if(rows<10)
           {
-            g_ptr_array_add(g_row_labels, g_strdup_printf(" %i ", i+1));
+            for(i=0;i<rows;i++) g_ptr_array_add(g_row_labels, g_strdup_printf(" %i ", i+1));
           }
-      } 
+        if(rows>=10&&rows<100)
+          {
+            for(i=0;i<rows;i++)
+              {
+                if(i<9) g_ptr_array_add(g_row_labels, g_strdup_printf("  %i ", i+1));
+                if(i>=9) g_ptr_array_add(g_row_labels, g_strdup_printf(" %i ", i+1));
+              }
+          } 
+        if(rows>=100&&rows<1000)
+          {
+            for(i=0;i<rows;i++)
+              {
+                if(i<9) g_ptr_array_add(g_row_labels, g_strdup_printf("   %i ", i+1));
+                if(i>=9&&i<99) g_ptr_array_add(g_row_labels, g_strdup_printf("  %i ", i+1));
+                if(i>=99&&i<999) g_ptr_array_add(g_row_labels, g_strdup_printf(" %i ", i+1));
+              }
+          }             
+      }
+    //Need to square off labels from dialog also.
+ 
     //Set column labels for drawing.
     if(g_column_labels->len==0||g_column_labels->len!=columns||pre_column_width!=column_width)
       {
@@ -1688,7 +1753,7 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
             g_snprintf(buffer, column_width+1, "%s%i%s", "column", i+1, fill_end);
             length=strlen(buffer);
             gchar *fill_start=g_strnfill((column_width+1)-(shift_column_left+length), ' ');
-            g_print("1|%s%s| %i\n", fill_start, buffer, strlen(buffer));
+            //g_print("1|%s%s| %i\n", fill_start, buffer, strlen(buffer));
             g_ptr_array_add(g_column_labels, g_strdup_printf("%s%s", fill_start, buffer));
             g_free(fill_start);
           }
@@ -1702,7 +1767,7 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
             g_snprintf(buffer, column_width+1, "%s%s", (char*)g_ptr_array_index(g_column_labels, i), fill_end);
             length=strlen(buffer);
             gchar *fill_start=g_strnfill((column_width+1)-(shift_column_left+length), ' ');
-            g_print("2|%s%s| %i\n", fill_start, buffer, strlen(buffer));
+            //g_print("2|%s%s| %i\n", fill_start, buffer, strlen(buffer));
             g_ptr_array_add(temp_labels, g_strdup_printf("%s%s", fill_start, buffer));
             g_free(fill_start);
           }
@@ -1711,6 +1776,13 @@ static void get_labels_for_drawing(gint rows, gint columns, gint column_width, g
         for(i=0;i<columns;i++) g_ptr_array_add(g_column_labels, g_strdup_printf("%s", (char*)g_ptr_array_index(temp_labels, i)));
         g_ptr_array_free(temp_labels, TRUE);
      }
+
+    //If table labels array doesn't match the number of tables remove items from the array.
+    if(g_table_labels->len!=0&&g_table_labels->len!=tables)
+      {
+        array_length=g_table_labels->len;
+        for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_table_labels, 0);
+      }
 
     gint length1=g_row_labels->len;
     for(i=0;i<length1;i++) g_print("%s ", (char*)g_ptr_array_index(g_row_labels, i));
