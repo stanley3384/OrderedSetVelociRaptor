@@ -56,6 +56,10 @@ static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[]);
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void get_table_string(GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
+static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[], gint page_number, gint table, gint count_lines);
+static void heatmap_value_rgb(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
+static void heatmap_value_bry(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
+static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
 
@@ -1583,11 +1587,13 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     GString *table_string=g_string_new(report);
     for(i=0;i<tables;i++)
       {
-        get_table_string(string, ws, 0, i+1, count_lines);
+        get_table_string(string, ws, 0, i, count_lines);
+        draw_tables(pango_layout, cr, ws, 0, i, count_lines);
         g_string_append_printf(table_string, "%s", string->str);
         g_string_truncate(string, 0);        
       }
 
+    cairo_set_source_rgb(cr, 0, 0, 0);
     pango_layout_set_markup(pango_layout, table_string->str, -1);
     pango_cairo_show_layout(cr, pango_layout);
 
@@ -1609,7 +1615,7 @@ static void get_table_string(GString *string, GtkWidget *ws[], gint page_number,
     gboolean check1_active=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18]));
     gint combo2_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[12])));
     gboolean show_numbers = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[19]));
-    gint shift_index=(table-1)*(rows*columns-1);
+    gint shift_index=(table)*(rows*columns);
 
     //Space between tables.
     if(shift_below_text>1)
@@ -1666,6 +1672,251 @@ static void get_table_string(GString *string, GtkWidget *ws[], gint page_number,
 
     if(shift_margin_str!=NULL) g_free(shift_margin_str);
     if(table_name!=NULL) g_free(table_name);
+  }
+static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[], gint page_number, gint table, gint count_lines)
+  {
+    gint i=0;
+    gint j=0;
+    gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
+    gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
+    gint shift_margin=atoi(gtk_entry_get_text(GTK_ENTRY(ws[2])));
+    gint shift_below_text=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
+    gint column_width=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
+    gint combo1_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[11])));
+    gint combo2_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[12])));
+    gboolean check1_active=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18]));
+    gint shift_index=(table)*(rows*columns);
+    gint shift_below_text2=0;
+    gint markup_difference=0;
+    gint table_title_shift=1;
+    
+    //Shift tables for multiple tables.
+    if(check1_active) table_title_shift=2;
+    if(combo2_index==1) table_title_shift=0;
+    if(combo2_index==1&&check1_active) table_title_shift=1;
+    if(page_number==0) shift_below_text2=(count_lines+table_title_shift)+shift_below_text+(table*(rows+shift_below_text+table_title_shift));
+    else shift_below_text2=shift_below_text+(table*(rows+shift_below_text+1));
+
+    //Get size difference in text due to font tags on page 1.
+    markup_difference=0;
+
+    //Get rectangle for one monospace char for sizing.
+    pango_layout_set_markup(pango_layout, "5", -1);
+    PangoRectangle rectangle_ink;
+    PangoRectangle rectangle_log;
+    pango_layout_get_extents(pango_layout, &rectangle_ink, &rectangle_log);
+    //g_print("Width %i Height %i", rectangle_ink.width, rectangle_ink.height);
+
+    //Draw vertical label rectangle for crosstabs.
+    gint top=line_count+shift_below_text2-2;
+    gint bottom = top + rows;
+    //g_print("top %i bottom %i line count %i shift2 %i\n", top, bottom, line_count, shift_below_text2);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+    gint max_vertical_label=strlen((char*)g_ptr_array_index(g_row_labels, 0));
+    if(combo2_index==3)
+      {
+        cairo_rectangle(cr, ((shift_margin) * rectangle_log.width)/PANGO_SCALE, (rectangle_log.height * (top) + markup_difference)/PANGO_SCALE, (rectangle_log.width/PANGO_SCALE)*(max_vertical_label+.10), (rectangle_log.height*(rows+1))/PANGO_SCALE);
+        cairo_fill(cr);
+        cairo_stroke(cr);
+        //Draw lines for rectangle.
+        //Vertical left.
+        //cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_move_to(cr, ((shift_margin)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height* (top) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((shift_margin)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height*(bottom+1) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr);
+        //Vertical right is drawn with grid.
+        //Short top horizontal.
+        cairo_move_to(cr, ((shift_margin)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height* (top) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((shift_margin+max_vertical_label)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height*(top) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr);  
+        //Short bottom horizontal
+        cairo_move_to(cr, ((shift_margin)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height* (bottom+1) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((shift_margin+max_vertical_label)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height*(bottom+1) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr);
+      } 
+
+    //Draw horizontal label rectangle for both crosstab and tabular data.
+    top=line_count+shift_below_text2-2;
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
+    if(combo2_index==1||combo2_index==2) max_vertical_label=0;
+    if(combo2_index==2||combo2_index==3)
+      {
+        cairo_rectangle(cr, ((shift_margin+max_vertical_label) * rectangle_log.width)/PANGO_SCALE, (rectangle_log.height * (top) + markup_difference)/PANGO_SCALE, ((rectangle_log.width*columns*column_width)/PANGO_SCALE), (rectangle_log.height)/PANGO_SCALE);
+        cairo_fill(cr);
+        cairo_stroke(cr);
+        //Draw lines for rectangle.
+        cairo_set_line_width(cr, 2);
+        //Top horizontal
+        //cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_move_to(cr, ((shift_margin+max_vertical_label)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height* (top) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((shift_margin+max_vertical_label+(column_width*columns)) *rectangle_log.width)/PANGO_SCALE, (rectangle_log.height*(top) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr); 
+        //Short top vertical left.
+        cairo_move_to(cr, ((shift_margin+max_vertical_label)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height* (top) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((shift_margin+max_vertical_label)*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height*(top+1) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr); 
+        //Short top vertical right.
+        cairo_move_to(cr, ((shift_margin+max_vertical_label + (column_width*columns))*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height * (top) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((shift_margin+max_vertical_label+(column_width*columns))*rectangle_log.width)/PANGO_SCALE, (rectangle_log.height*(top+1) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr); 
+      }
+
+    //Background color for each cell.
+    gdouble red=0;
+    gdouble green=0;
+    gdouble blue=0;
+    gdouble min=g_array_index(g_min_max, gdouble, 2*table);
+    gdouble max=g_array_index(g_min_max, gdouble, (2*table)+1);
+    //g_print("%i min %f max %f\n", table, min, max);
+    gdouble data_value=0;
+    gint counter=0;
+    top=line_count+shift_below_text2-1;
+    shift_margin=shift_margin+max_vertical_label;
+    if(combo1_index!=1)
+      {
+        for(i=0;i<rows;i++)
+          {
+            for(j=0;j<columns+1;j++)
+              {
+                if(combo1_index==2)
+                  {
+                    if(i%2) cairo_set_source_rgb(cr, 0.5, 0.7, 1.0);
+                    else cairo_set_source_rgb(cr, 0.7, 1.0, 1.0);
+                  }
+                else
+                  {
+                    //Correct for rectangles that don't fill. Should be a better way to do this.
+                    //Extend width by 2. This leaves a fragment on the bottom right that needs 
+                    //to be corrected after the grid is drawn.
+                    if(j!=columns)
+                      {
+                        if(combo1_index==3)
+                          { 
+                            data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            //g_print("%i %s %f\n", counter+shift_index, (char*)g_ptr_array_index(g_data_values, counter+shift_index), data_value); 
+                            counter++;
+                            heatmap_value_rgb(data_value, min, max, &red, &green, &blue);
+                          }
+                        else if(combo1_index==4)
+                          {
+                            data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            
+                            counter++;
+                            heatmap_value_bry(data_value, min, max, &red, &green, &blue);
+                          }
+                        else
+                          {
+                            data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            counter++;
+                            heatmap_value_iris(data_value, min, max, &red, &green, &blue); 
+                          }
+                        //g_print("r %f g %f b %f\n", red, green, blue);
+                        cairo_set_source_rgb(cr, red, green, blue);
+                      }
+                  } 
+                if(j!=columns)
+                  {
+                    cairo_rectangle(cr, ((shift_margin +(column_width*j)) * rectangle_log.width)/PANGO_SCALE, (rectangle_log.height * (top + i) + markup_difference)/PANGO_SCALE, (rectangle_log.width/PANGO_SCALE)*(column_width+2), (rectangle_log.height)/PANGO_SCALE);
+                    cairo_fill(cr);
+                    cairo_stroke(cr);
+                  }
+                else
+                  {
+                    //White out after end of table.
+                    if(i!=0)
+                      {
+                        cairo_set_source_rgb(cr, 1.0, 1.0, 1.0); 
+                        cairo_rectangle(cr, ((shift_margin +(column_width*j)) * rectangle_log.width)/PANGO_SCALE, (rectangle_log.height * (top + i - 1) + markup_difference)/PANGO_SCALE, (rectangle_log.width/PANGO_SCALE)*column_width, (rectangle_log.height*2)/PANGO_SCALE);
+                        cairo_fill(cr);
+                        cairo_stroke(cr);
+                      }
+                  }
+              }
+          }    
+      }
+
+    //Table grid for test numbers.
+    top=line_count+shift_below_text2-1;
+    bottom=top+rows;
+    gint total_chars=column_width*columns;
+    gdouble left_margin=(shift_margin*rectangle_log.width)/PANGO_SCALE;
+    //First draw over fragment left by overlapping color backgrounds.
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_set_line_width(cr, 2);
+    cairo_move_to(cr, ((rectangle_log.width * total_chars)/PANGO_SCALE) + left_margin, (rectangle_log.height  *(top + rows) + markup_difference)/PANGO_SCALE);
+    cairo_line_to(cr, ((rectangle_log.width * (total_chars+3))/PANGO_SCALE) + left_margin, (rectangle_log.height  *(top + rows) + markup_difference)/PANGO_SCALE);
+    cairo_stroke(cr); 
+    cairo_move_to(cr, ((rectangle_log.width * total_chars)/PANGO_SCALE) + left_margin, (rectangle_log.height  *(top) + markup_difference)/PANGO_SCALE);
+    cairo_line_to(cr, ((rectangle_log.width * (total_chars+3))/PANGO_SCALE) + left_margin, (rectangle_log.height  *(top) + markup_difference)/PANGO_SCALE);
+    cairo_stroke(cr); 
+    //Draw grid.
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
+    cairo_set_line_width(cr, 2);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+    for(i=0;i<rows+1;i++)
+      { 
+        cairo_move_to(cr, left_margin, (rectangle_log.height * (top + i) + markup_difference)/PANGO_SCALE);
+        cairo_line_to(cr, ((rectangle_log.width * total_chars)/PANGO_SCALE) + left_margin, (rectangle_log.height  *(top + i) + markup_difference)/PANGO_SCALE);
+        cairo_stroke(cr); 
+        for(j=0;j<columns+1;j++)
+          { 
+            cairo_move_to(cr, ((rectangle_log.width * j * column_width)/PANGO_SCALE) + left_margin, (rectangle_log.height*top + markup_difference)/PANGO_SCALE);
+            cairo_line_to(cr, ((rectangle_log.width * j * column_width)/PANGO_SCALE) + left_margin, (rectangle_log.height*bottom + markup_difference)/PANGO_SCALE);
+            cairo_stroke(cr);
+          }
+      } 
+  }
+static void heatmap_value_rgb(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue)
+  {
+    gdouble percent=((data_value-min)/(max-min));
+    //g_print("Percent %f\n", percent);
+    if(percent>0.75)
+      {
+        *red=1.0; 
+        *green=0.0+(4*(1-percent));
+        *blue = 0.0;
+      }
+    else if(percent<=0.75&&percent>0.50)
+      {
+        *red=1.0-(4*(0.75-percent));
+        *green=1.0;
+        *blue=0.0;
+      }
+    else if(percent<=0.50&&percent>0.25)
+      {
+        *red=0.0; 
+        *green=1.0;
+        *blue=0.0+(4*(0.5-percent));
+      }
+    else
+      {
+        *red=0.0;
+        *green=1.0-(4*(0.25-percent));
+        *blue=1.0;
+      }  
+  }
+static void heatmap_value_bry(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue)
+  {
+    gdouble percent=((data_value-min)/(max-min));
+    if(percent>0.50)
+      {
+        *red=1.0; 
+        *green=1.0-(2*(1-percent));
+        *blue=0.0;
+      }
+    else
+      {
+        *red=1.0-(2*(0.50-percent));
+        *green=0.0;
+        *blue=0.0+(2*(0.50-percent));
+      }  
+  }
+static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue)
+  {
+    gdouble percent=((data_value-min)/(max-min));
+    *red=1.0; 
+    *green=1.0-(1-percent);
+    *blue=0.0+(1-percent); 
   }
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float)
   {
