@@ -62,6 +62,8 @@ static void heatmap_value_rgb(gdouble data_value, gdouble min, double max, gdoub
 static void heatmap_value_bry(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
 static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
+static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
+static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
 static gdouble round1(gdouble x, guint digits);
 
@@ -1514,6 +1516,7 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
   {
     g_print("Start Draw %i\n", page_num);
     gint i=0;
+    gint combo4_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
     //Don't unblock on first call.
     static guint block_lag=0;
     if(page_num==1)
@@ -1553,7 +1556,22 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
         gint array_length2=g_min_max->len;
         for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0);       
         //Get the data.
-        get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+        if(combo4_index==1)
+          {
+            get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+          }
+        if(combo4_index==2)
+          {
+            get_test_data2(rows, columns, tables, column_width, shift_number_left);
+          }
+        if(combo4_index==3)
+          {
+            get_test_data3(rows, columns, tables, column_width, shift_number_left);
+          }
+        else
+          {
+            get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+          }
         //Get the labels. Shift them or truncate them to fit in the rectangles.
         get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
       }
@@ -1922,14 +1940,18 @@ static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdou
   }
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float)
   {
-    g_print("Get Test Data\n");
+    g_print("Get Test Data1\n");
     gint i=0;
     gint j=0;
     gint k=0;
+    gint l=0;
     gint fill_temp=0;
     gdouble random_number=0;
+    gint counter=-1;
+    gboolean found_decimal=FALSE;
     gint buffer_len=column_width-shift_number_left;
-    gchar buffer[buffer_len+1];
+    gchar buffer1[G_ASCII_DTOSTR_BUF_SIZE];
+    gchar buffer2[buffer_len+1];
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
     GRand *rand1=g_rand_new();
@@ -1942,30 +1964,44 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
           {
             for(k=0;k<columns;k++)
               {
-                random_number=round1(100*g_rand_double(rand1), 7);
-                g_ascii_formatd(buffer, buffer_len+1, "%f", random_number);
-                length=strlen(buffer);
+                random_number=round1(100*g_rand_double(rand1), round_float);
+                g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", random_number);
+                length=strlen(buffer1);
+                counter=-1;
+                found_decimal=FALSE;
+                for(l=0;l<buffer_len+1;l++) 
+                  {
+                    if(buffer1[l]=='.') found_decimal=TRUE;
+                    if(counter==round_float)
+                      {
+                        buffer2[l]='\0';
+                        break;
+                      }
+                    buffer2[l]=buffer1[l];
+                    if(found_decimal) counter++;
+                  }
+                length=strlen(buffer2);
                 fill_temp=column_width-length-shift_number_left;
                 gchar *fill_start=NULL;
                 if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
                 if(fill_temp>0&&shift_number_left>0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer, fill_end));
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer2, fill_end));
                     //g_print("1|%s|%s%s| %i fill %i\n", fill_start, buffer, fill_end, strlen(buffer), fill_temp);
                   }
                 else if(fill_temp<1&&shift_number_left>0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer, fill_end));
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer2, fill_end));
                     //g_print("2|%s%s| %i fill %i\n", buffer, fill_end, strlen(buffer), fill_temp);
                   }
                 else if(fill_temp>0&&shift_number_left==0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, buffer));
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, buffer2));
                     //g_print("3|%s%s| %i fill %i\n", fill_start, buffer, strlen(buffer), fill_temp);
                   }
                 else
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer));
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer2));
                     //g_print("4|%s| %i fill %i\n", buffer, strlen(buffer), fill_temp);
                   }
                 if(random_number<min) min=random_number;
@@ -1982,6 +2018,118 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     
     if(fill_end!=NULL) g_free(fill_end);
     g_rand_free(rand1);
+  }
+static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left)
+  {
+    g_print("Get Test Data2\n");
+    gint i=0;
+    gint j=0;
+    gint k=0;
+    gint fill_temp=0;
+    gdouble min=G_MAXDOUBLE;
+    gdouble max=-G_MAXDOUBLE;
+    gint counter=1;
+    gint length=0;
+    gchar *fill_end=NULL;
+    if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
+    for(i=0;i<tables;i++)
+      {
+        for(j=0;j<rows;j++)
+          {
+            for(k=0;k<columns;k++)
+              {
+                gchar *string=g_strdup_printf("%i", counter);
+                counter++;
+                length=strlen(string);
+                fill_temp=column_width-length-shift_number_left;
+                gchar *fill_start=NULL;
+                if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+                if(fill_temp>0&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, string, fill_end));
+                  }
+                else if(fill_temp<1&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", string, fill_end));
+                  }
+                else if(fill_temp>0&&shift_number_left==0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, string));
+                  }
+                else
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", string));
+                  }
+                if(counter<min) min=counter;
+                if(counter>max) max=counter;
+                if(fill_start!=NULL) g_free(fill_start);
+                if(string!=NULL) g_free(string);
+              }
+          }
+        g_array_append_val(g_min_max, min);
+        g_array_append_val(g_min_max, max);
+        //g_print("min %f max %f\n", min, max);
+        min=G_MAXDOUBLE;
+        max=-G_MAXDOUBLE;
+      }
+    
+    if(fill_end!=NULL) g_free(fill_end);
+  }
+static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left)
+  {
+    g_print("Get Test Data2\n");
+    gint i=0;
+    gint j=0;
+    gint k=0;
+    gint fill_temp=0;
+    gdouble min=G_MAXDOUBLE;
+    gdouble max=-G_MAXDOUBLE;
+    gint sequence_number=0;
+    gint length=0;
+    gchar *fill_end=NULL;
+    if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
+    for(i=0;i<tables;i++)
+      {
+        for(j=0;j<rows;j++)
+          {
+            for(k=0;k<columns;k++)
+              {
+                sequence_number=(rows*k+1)+j+(rows*columns*i);
+                gchar *string=g_strdup_printf("%i", sequence_number);
+                length=strlen(string);
+                fill_temp=column_width-length-shift_number_left;
+                gchar *fill_start=NULL;
+                if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+                if(fill_temp>0&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, string, fill_end));
+                  }
+                else if(fill_temp<1&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", string, fill_end));
+                  }
+                else if(fill_temp>0&&shift_number_left==0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, string));
+                  }
+                else
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", string));
+                  }
+                if(sequence_number<min) min=sequence_number;
+                if(sequence_number>max) max=sequence_number;
+                if(fill_start!=NULL) g_free(fill_start);
+                if(string!=NULL) g_free(string);
+              }
+          }
+        g_array_append_val(g_min_max, min);
+        g_array_append_val(g_min_max, max);
+        //g_print("min %f max %f\n", min, max);
+        min=G_MAXDOUBLE;
+        max=-G_MAXDOUBLE;
+      }
+    
+    if(fill_end!=NULL) g_free(fill_end);
   }
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left)
   {
