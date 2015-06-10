@@ -1928,14 +1928,14 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     gint k=0;
     gint fill_temp=0;
     gdouble random_number=0;
-    g_print("Shift %i\n", shift_number_left);
-    gint number_width=column_width-shift_number_left;
-    gchar buffer[number_width+1];
+    gint buffer_len=column_width-shift_number_left;
+    gchar buffer[buffer_len+1];
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
     GRand *rand1=g_rand_new();
-    gchar *fill_end=g_strnfill(shift_number_left, ' ');
     gint length=0;
+    gchar *fill_end=NULL;
+    if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
     for(i=0;i<tables;i++)
       {
         for(j=0;j<rows;j++)
@@ -1943,20 +1943,30 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
             for(k=0;k<columns;k++)
               {
                 random_number=round1(100*g_rand_double(rand1), 7);
-                g_ascii_formatd(buffer, number_width+1, "%f", random_number);
+                g_ascii_formatd(buffer, buffer_len+1, "%f", random_number);
                 length=strlen(buffer);
-                fill_temp=(number_width)-(shift_number_left+length-1);
+                fill_temp=column_width-length-shift_number_left;
                 gchar *fill_start=NULL;
-                if(fill_temp>0) fill_start=g_strnfill((number_width)-(shift_number_left+length-1), ' ');
-                if(fill_temp<1)
+                if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+                if(fill_temp>0&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer, fill_end));
+                    //g_print("1|%s|%s%s| %i fill %i\n", fill_start, buffer, fill_end, strlen(buffer), fill_temp);
+                  }
+                else if(fill_temp<1&&shift_number_left>0)
                   {
                     g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer, fill_end));
-                    //g_print("|%s%s| %i fill %i\n", buffer, fill_end, strlen(buffer), fill_temp);
+                    //g_print("2|%s%s| %i fill %i\n", buffer, fill_end, strlen(buffer), fill_temp);
+                  }
+                else if(fill_temp>0&&shift_number_left==0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, buffer));
+                    //g_print("3|%s%s| %i fill %i\n", fill_start, buffer, strlen(buffer), fill_temp);
                   }
                 else
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer, fill_end));
-                    //g_print("|%s|%s%s| %i fill %i\n", fill_start, buffer, fill_end, strlen(buffer), fill_temp);
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer));
+                    //g_print("4|%s| %i fill %i\n", buffer, strlen(buffer), fill_temp);
                   }
                 if(random_number<min) min=random_number;
                 if(random_number>max) max=random_number;
@@ -1978,12 +1988,15 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
     g_print("Edit Labels\n");
     gint i=0;
     gint array_length=0;
+    gint fill_temp=0;
     gchar buffer[column_width+1];
     gchar *fill_end=g_strnfill(shift_column_left, ' ');
     gchar length=0;
     //If column width changes, remake default column labels.
     static gint pre_column_width=-1;
+    static gint pre_shift_column=-1;
     if(pre_column_width==-1) pre_column_width=column_width;
+    if(pre_shift_column==-1) pre_shift_column=shift_column_left;
     //Set row labels for drawing. Check validate_entries() for row limit.
     if(g_row_labels->len==0||g_row_labels->len!=rows||pre_column_width!=column_width)
       {
@@ -2014,7 +2027,7 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
     //Need to square off labels from dialog also.
  
     //Set column labels for drawing. Need to correct padding.
-    if(g_column_labels->len==0||g_column_labels->len!=columns||pre_column_width!=column_width)
+    if(g_column_labels->len==0||g_column_labels->len!=columns||pre_column_width!=column_width||pre_shift_column!=shift_column_left)
       {
         array_length=g_column_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
@@ -2022,10 +2035,13 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
           {
             g_snprintf(buffer, column_width+1, "%s%i%s", "column", i+1, fill_end);
             length=strlen(buffer);
-            gchar *fill_start=g_strnfill((column_width+1)-(shift_column_left+length), ' ');
-            //g_print("1|%s%s| %i\n", fill_start, buffer, strlen(buffer));
-            g_ptr_array_add(g_column_labels, g_strdup_printf("%s%s", fill_start, buffer));
-            g_free(fill_start);
+            fill_temp=column_width-length;
+            gchar *fill_start=NULL;
+            if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+            //g_print("1fill %i %i %i\n", fill_temp, shift_column_left, length);
+            if(fill_temp>0) g_ptr_array_add(g_column_labels, g_strdup_printf("%s%s", fill_start, buffer));
+            else g_ptr_array_add(g_column_labels, g_strdup_printf("%s", buffer));
+            if(fill_start!=NULL) g_free(fill_start);
           }
       } 
     else
@@ -2036,10 +2052,13 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
           {
             g_snprintf(buffer, column_width+1, "%s%s", (char*)g_ptr_array_index(g_column_labels, i), fill_end);
             length=strlen(buffer);
-            gchar *fill_start=g_strnfill((column_width+1)-(shift_column_left+length), ' ');
-            //g_print("2|%s%s| %i\n", fill_start, buffer, strlen(buffer));
-            g_ptr_array_add(temp_labels, g_strdup_printf("%s%s", fill_start, buffer));
-            g_free(fill_start);
+            fill_temp=column_width-length;
+            gchar *fill_start=NULL;
+            if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+            //g_print("2fill %i %i %i\n", fill_temp, shift_column_left, length);
+            if(fill_temp>0) g_ptr_array_add(temp_labels, g_strdup_printf("%s%s", fill_start, buffer));
+            else g_ptr_array_add(temp_labels, g_strdup_printf("%s", buffer));
+            if(fill_start!=NULL) g_free(fill_start);
           }
         array_length=g_column_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_column_labels, 0);
