@@ -4,7 +4,7 @@
     Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
 over so far along with a few functions. Work in progress.
  
-    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3
+    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
 
     C. Eric Cashon
 
@@ -15,6 +15,7 @@ over so far along with a few functions. Work in progress.
 #include<sqlite3.h>
 #include<stdlib.h>
 #include<string.h>
+#include<math.h>
 
 //Textview funtions.
 static void change_textview_font(GtkWidget *widget, gpointer data);
@@ -62,6 +63,7 @@ static void heatmap_value_bry(gdouble data_value, gdouble min, double max, gdoub
 static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
+static gdouble round1(gdouble x, guint digits);
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -1924,7 +1926,9 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     gint i=0;
     gint j=0;
     gint k=0;
+    gint fill_temp=0;
     gdouble random_number=0;
+    g_print("Shift %i\n", shift_number_left);
     gint number_width=column_width-shift_number_left;
     gchar buffer[number_width+1];
     gdouble min=G_MAXDOUBLE;
@@ -1938,15 +1942,25 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
           {
             for(k=0;k<columns;k++)
               {
-                random_number=100*g_rand_double(rand1), number_width;
+                random_number=round1(100*g_rand_double(rand1), 7);
                 g_ascii_formatd(buffer, number_width+1, "%f", random_number);
                 length=strlen(buffer);
-                gchar *fill_start=g_strnfill((number_width+1)-(shift_number_left+length), ' ');
-                //g_print("|%s|%s%s| %i\n", fill_start, buffer, fill_end, strlen(buffer));
-                g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer, fill_end));
+                fill_temp=(number_width)-(shift_number_left+length-1);
+                gchar *fill_start=NULL;
+                if(fill_temp>0) fill_start=g_strnfill((number_width)-(shift_number_left+length-1), ' ');
+                if(fill_temp<1)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer, fill_end));
+                    //g_print("|%s%s| %i fill %i\n", buffer, fill_end, strlen(buffer), fill_temp);
+                  }
+                else
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer, fill_end));
+                    //g_print("|%s|%s%s| %i fill %i\n", fill_start, buffer, fill_end, strlen(buffer), fill_temp);
+                  }
                 if(random_number<min) min=random_number;
                 if(random_number>max) max=random_number;
-                g_free(fill_start);
+                if(fill_start!=NULL) g_free(fill_start);
               }
           }
         g_array_append_val(g_min_max, min);
@@ -1999,7 +2013,7 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
       }
     //Need to square off labels from dialog also.
  
-    //Set column labels for drawing.
+    //Set column labels for drawing. Need to correct padding.
     if(g_column_labels->len==0||g_column_labels->len!=columns||pre_column_width!=column_width)
       {
         array_length=g_column_labels->len;
@@ -2049,6 +2063,11 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
 
     pre_column_width=column_width;
     if(fill_end!=NULL) g_free(fill_end);    
+  }
+static double round1(gdouble x, guint digits)
+  {
+    gdouble fac = pow(10, digits);
+    return round(x*fac)/fac;
   }
 
 
