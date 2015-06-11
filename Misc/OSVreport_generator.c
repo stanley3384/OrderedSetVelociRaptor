@@ -66,6 +66,11 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
 static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
 static gdouble round1(gdouble x, guint digits);
+//Print functions.
+static void print_dialog(GtkWidget *widget, GtkWidget *ws[]);
+static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, GtkWidget *ws[]);
+static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, GtkWidget *ws[]);
+static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, gpointer data);
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -90,7 +95,12 @@ static GArray *g_min_max=NULL;
 //Drawing globals.
 static gint plate_counter=1;
 static gint plate_counter_sql=1;
-static gint line_count=0;
+//Printing globals
+static gint lines_per_page=0;
+static gint total_lines=0;
+static gint table_count=0;
+static gint table_print=0;
+static PangoLayout *pango_layout_print=NULL;
 
 int main(int argc, char *argv[])
   {
@@ -372,6 +382,7 @@ int main(int argc, char *argv[])
     GtkWidget *ws[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, combo1, combo2, combo3, combo4, combo5, combo6, combo7, check1, check2, textview1, window, label2, da, scroll2};
     g_signal_connect(menu1item1, "activate", G_CALLBACK(open_report), ws);
     g_signal_connect(menu1item2, "activate", G_CALLBACK(save_report), ws);
+    g_signal_connect(menu1item3, "activate", G_CALLBACK(print_dialog), ws);
     g_signal_connect(button5, "clicked", G_CALLBACK(labels_dialog), ws);
     g_signal_connect(button6, "clicked", G_CALLBACK(table_labels_dialog), ws);
     da_block=g_signal_connect(da, "draw", G_CALLBACK(draw_report), ws);
@@ -1581,7 +1592,6 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     gint i=0;
     plate_counter=1;
     plate_counter_sql=1;
-    line_count=0;
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
     gint count_lines=gtk_text_buffer_get_line_count(buffer);
     gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
@@ -1651,7 +1661,7 @@ static void get_table_string(GString *string, GtkWidget *ws[], gint page_number,
     //Add table label if needed.
     if(check1_active) g_string_append_printf(string, "%s%s", shift_margin_str, table_name);
     if(check1_active&&g_table_labels->len!=0) g_string_append_printf(string, "%s\n", (char*)g_ptr_array_index(g_table_labels, table-1));
-    if(check1_active&&g_table_labels->len==0) g_string_append_printf(string, "%i\n", table);
+    if(check1_active&&g_table_labels->len==0) g_string_append_printf(string, "%i\n", table+1);
     
 
     //Shift column labels by row label width.
@@ -1705,18 +1715,30 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     gint combo1_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[11])));
     gint combo2_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[12])));
     gboolean check1_active=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18]));
+    //shift_index getting heatmap color values.
     gint shift_index=(table)*(rows*columns);
     gint shift_below_text2=0;
     gint markup_difference=0;
     gint table_title_shift=1;
     
+    //If printing set the drawing to table_print.
+    if(page_number>0) table=table_print;
     //Shift tables for multiple tables.
     if(check1_active) table_title_shift=2;
     if(combo2_index==1) table_title_shift=0;
     if(combo2_index==1&&check1_active) table_title_shift=1;
     if(page_number==0) shift_below_text2=(count_lines+table_title_shift)+shift_below_text+(table*(rows+shift_below_text+table_title_shift));
-    else shift_below_text2=shift_below_text+(table*(rows+shift_below_text+1));
-
+    if(page_number>0&&combo2_index==1)
+      {
+        shift_below_text2=shift_below_text+(table*(rows+shift_below_text+table_title_shift));
+      }
+    if(page_number>0&&combo2_index!=1)
+      {
+        shift_below_text2=shift_below_text+(table*(rows+shift_below_text+table_title_shift));
+      }
+    //g_print("shift below %i table title %i\n", shift_below_text2, table_title_shift);
+    //Global variable for reseting drawings on print page.
+    table_print++;
     //Get size difference in text due to font tags on page 1.
     markup_difference=0;
 
@@ -1728,9 +1750,13 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     //g_print("Width %i Height %i", rectangle_ink.width, rectangle_ink.height);
 
     //Draw vertical label rectangle for crosstabs.
-    gint top=line_count+shift_below_text2-2;
+    gint top=0;
+    if(page_number==0) top=shift_below_text2-2;
+    else if(combo2_index==1&&page_number>0) top=shift_below_text2-1;
+    else top=shift_below_text2-(1-table_title_shift);
+    if(table_title_shift>0&&page_number>0&&combo2_index==1) top=top+table_title_shift;  
     gint bottom = top + rows;
-    //g_print("top %i bottom %i line count %i shift2 %i\n", top, bottom, line_count, shift_below_text2);
+    //g_print("top %i bottom %i shift2 %i\n", top, bottom, shift_below_text2);
     cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
     gint max_vertical_label=strlen((char*)g_ptr_array_index(g_row_labels, 0));
     if(combo2_index==3)
@@ -1756,7 +1782,6 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
       } 
 
     //Draw horizontal label rectangle for both crosstab and tabular data.
-    top=line_count+shift_below_text2-2;
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
     if(combo2_index==1||combo2_index==2) max_vertical_label=0;
     if(combo2_index==2||combo2_index==3)
@@ -1790,7 +1815,13 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     //g_print("%i min %f max %f\n", table, min, max);
     gdouble data_value=0;
     gint counter=0;
-    top=line_count+shift_below_text2-1;
+
+    if(page_number==0) top=shift_below_text2-1;
+    else if(combo2_index==1&&page_number>0) top=shift_below_text2;
+    else top=shift_below_text2+table_title_shift;
+    if(table_title_shift>0&&page_number>0&&combo2_index==1) top=top+table_title_shift;   
+    bottom=top+rows;
+
     shift_margin=shift_margin+max_vertical_label;
     if(combo1_index!=1)
       {
@@ -1856,8 +1887,6 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
       }
 
     //Table grid for test numbers.
-    top=line_count+shift_below_text2-1;
-    bottom=top+rows;
     gint total_chars=column_width*columns;
     gdouble left_margin=(shift_margin*rectangle_log.width)/PANGO_SCALE;
     //First draw over fragment left by overlapping color backgrounds.
@@ -2077,7 +2106,7 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
   }
 static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left)
   {
-    g_print("Get Test Data2\n");
+    g_print("Get Test Data3\n");
     gint i=0;
     gint j=0;
     gint k=0;
@@ -2235,6 +2264,160 @@ static double round1(gdouble x, guint digits)
   {
     gdouble fac = pow(10, digits);
     return round(x*fac)/fac;
+  }
+static void print_dialog(GtkWidget *widget, GtkWidget *ws[])
+  {
+    g_print("Print Dialog\n");
+    GtkPrintOperation *operation=gtk_print_operation_new();
+    gtk_print_operation_set_default_page_setup(operation, NULL);
+    g_signal_connect(operation, "begin_print", G_CALLBACK(begin_print), ws);
+    g_signal_connect(operation, "draw_page", G_CALLBACK(draw_page), ws);
+    g_signal_connect(operation, "end_print", G_CALLBACK(end_print), NULL);
+    GtkPrintOperationResult res=gtk_print_operation_run(operation, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, GTK_WINDOW(ws[21]), NULL);
+    if(res==GTK_PRINT_OPERATION_RESULT_APPLY)
+      {
+        g_print("Print\n");
+      }
+    g_object_unref(operation);
+  }
+static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, GtkWidget *ws[])
+  {
+    g_print("Begin Print\n");
+    gint i=0;
+    gdouble page_width=gtk_print_context_get_width(context);
+    gdouble page_height=gtk_print_context_get_height(context);
+    PangoContext *pango_context=gtk_widget_get_pango_context(ws[20]);
+    PangoFontDescription *description=pango_context_get_font_description(pango_context);
+    pango_layout_print=gtk_print_context_create_pango_layout(context);
+    pango_layout_set_font_description(pango_layout_print, description);
+    pango_layout_set_width(pango_layout_print, page_width*PANGO_SCALE);
+    pango_layout_set_height(pango_layout_print, page_height*PANGO_SCALE);
+    gint text_height=pango_layout_get_height(pango_layout_print);
+
+    //Set start table count global to 0.
+    table_count=0;
+    
+    //Figure out number of pages.
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+    gint count_lines=gtk_text_buffer_get_line_count(buffer);
+    
+    gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
+    gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])));
+    gint shift_below_text=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
+    gint column_width=atoi(gtk_entry_get_text(GTK_ENTRY(ws[4])));
+    gint shift_number_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
+    gint shift_column_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[6])));
+    gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+    gint round_float=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
+    gint combo4_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
+    gint combo6_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[16])));
+    gint label_lines=tables;
+
+    pango_layout_set_markup(pango_layout_print, "5", -1);
+    PangoRectangle rectangle_ink;
+    PangoRectangle rectangle_log;
+    pango_layout_get_extents(pango_layout_print, &rectangle_ink, &rectangle_log);
+
+    lines_per_page=(int)(text_height/rectangle_log.height);
+    g_print("Lines per page %i\n", lines_per_page);
+    total_lines=count_lines+((shift_below_text-1)*tables)+(tables*rows)+label_lines+combo6_index;
+    g_print("Total Lines %i Lines per Page %i\n", total_lines, lines_per_page);
+    gint pages=(int)(ceil((double)total_lines/(double)lines_per_page));
+    g_print("Pages %i\n", pages);
+
+    gtk_print_operation_set_n_pages(operation, pages);
+    //Turn off wrapping.
+    pango_layout_set_width(pango_layout_print, -1);
+
+    //Clear data arrays for test data.
+    gint array_length1=g_data_values->len;
+    for(i=0;i<array_length1; i++) g_ptr_array_remove_index_fast(g_data_values, 0);
+    gint array_length2=g_min_max->len;
+    for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0);       
+    //Get the data.
+    if(combo4_index==1)
+      {
+        get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+      }
+    if(combo4_index==2)
+      {
+        get_test_data2(rows, columns, tables, column_width, shift_number_left);
+      }
+    if(combo4_index==3)
+      {
+        get_test_data3(rows, columns, tables, column_width, shift_number_left);
+      }
+    else
+      {
+        get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+      }
+    //Get the labels. Shift them or truncate them to fit in the rectangles.
+    get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
+    
+  }
+static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, GtkWidget *ws[])
+  {
+    g_print("Draw Page %i\n", page_nr);
+    gint i=0;
+    gint index=0;
+    gint tables_left_to_print=0;
+    gint tables_on_page=0;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+    gint count_lines=gtk_text_buffer_get_line_count(buffer);
+    gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
+    gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+    gint shift_below_text=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
+
+    //Account for first page with title and text.
+    gint tables_first_page = (int)floor((double)(lines_per_page)/(double)(rows+shift_below_text+count_lines));
+    if(tables<tables_first_page) tables_first_page=tables;
+    gint tables_next_page=(int)(lines_per_page/(rows+shift_below_text-1));
+    if(page_nr==0)
+      {
+        tables_left_to_print=tables;
+      }
+    else
+      {
+        index=page_nr-1;        
+        tables_left_to_print=(int)(tables-(index*tables_next_page)-tables_first_page);
+      }
+    g_print("Tables Left to Print %i\n", tables_left_to_print);
+    gint pages=(int)ceil((double)total_lines/(double)lines_per_page);
+    if(page_nr==0) tables_on_page=tables_first_page;
+    else if(page_nr==pages-1) tables_on_page=tables_left_to_print;
+    else tables_on_page=tables_next_page;
+    g_print("Tables on Page %i\n", tables_on_page);
+    cairo_t *cr=gtk_print_context_get_cairo_context(context);
+
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter(buffer, &start);
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    gchar *report=gtk_text_buffer_get_text(buffer, &start, &end, TRUE);
+    GString *string=g_string_new("");
+    GString *table_string=g_string_new("");
+    if(page_nr==0) g_string_append(table_string, report);
+    //Reset global variable for drawing on pages.
+    table_print=0;
+    for(i=0;i<tables_on_page;i++)
+      {
+        get_table_string(string, ws, page_nr, table_count, count_lines);
+        draw_tables(pango_layout_print, cr, ws, page_nr, table_count, count_lines);
+        g_string_append_printf(table_string, "%s", string->str);
+        g_string_truncate(string, 0);
+        table_count++;        
+      }
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    pango_layout_set_markup(pango_layout_print, table_string->str, -1);
+    pango_cairo_show_layout(cr, pango_layout_print);
+
+    g_string_free(string, TRUE);
+    g_string_free(table_string, TRUE);
+    
+  }
+static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, gpointer data)
+  {
+    g_print("End Print\n");
+    g_object_unref(pango_layout_print);
   }
 
 
