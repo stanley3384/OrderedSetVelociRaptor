@@ -35,6 +35,10 @@ static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gp
 static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean save_current_table_value(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer data);
+static void get_pango_markup(GtkWidget *ws[], GString *string);
+static void get_tags(GtkTextTag *tag, void *data[]);
+static void load_pango_list(GString *string, void *data[]);
+static int get_next_list_value(void *data[], gint last);
 //For saving and getting reports.
 static void open_json_file(gchar *file_name, GtkWidget *ws[]);
 static void save_json_file(gchar *file_name, GtkWidget *ws[]);
@@ -755,6 +759,109 @@ static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer 
       }
     else g_print("Tables %s, Range 0<Tables<=100\n", gtk_entry_get_text(GTK_ENTRY(widget)));  
     return FALSE;
+  }
+static void get_pango_markup(GtkWidget *ws[], GString *string)
+  {
+    g_print("Get Pango Markup\n");
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+    GtkTextTagTable *tag_list=gtk_text_buffer_get_tag_table(buffer);
+    GSList *pango_tag_list = NULL;
+    void *data[]={buffer, pango_tag_list};
+    gtk_text_tag_table_foreach(tag_list, (GtkTextTagTableForeach)get_tags , data);
+    load_pango_list(string, data);
+    g_slist_free_full(pango_tag_list, (GDestroyNotify)g_free);    
+  }
+static void get_tags(GtkTextTag *tag, void *data[])
+  {
+    gboolean loop=TRUE;
+    gboolean switch1=FALSE;
+    gint offset1=0;
+    gint offset2=0;
+    GtkTextIter start;
+    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);    
+    gboolean not_end=gtk_text_iter_forward_to_tag_toggle(&start, tag);
+
+    while(loop)
+      {
+        if(not_end)
+          {
+            offset1=gtk_text_iter_get_offset(&start);
+            if(offset1==offset2) break;
+            if(switch1)
+              {
+                gchar *tag_name=NULL;
+                g_object_get(tag, "name", &tag_name, NULL);
+                //g_print("Tag Found at %i %i %s\n", offset2, offset1, tag_name);
+                data[1]=g_slist_append(data[1], g_strdup_printf("%i", offset2));
+                data[1]=g_slist_append(data[1], g_strdup_printf("%i", offset1));
+                data[1]=g_slist_append(data[1], g_strdup(tag_name));
+                if(tag_name!=NULL) g_free(tag_name);
+                switch1=FALSE;
+              }
+            else switch1=TRUE;
+            offset2=offset1;
+            not_end=gtk_text_iter_forward_to_tag_toggle(&start, tag);
+          }
+        else loop=FALSE;
+      }
+
+  }
+static void load_pango_list(GString *string, void *data[])
+  {
+    g_print("Load Pango List\n");
+    GSList *iterator=NULL;
+    gint counter=1;
+    for(iterator=data[1]; iterator; iterator=iterator->next)
+     {
+       if(counter%3!=0) g_print("%s atoi %i ", (gchar*)iterator->data, atoi((gchar*)iterator->data));
+       else g_print("%s\n", (gchar*)iterator->data);
+       counter++;
+     }
+
+    gint i=0;
+    gint check_in_list=G_MININT;
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter(data[0], &start);
+    gtk_text_buffer_get_end_iter(data[0], &end);
+    gchar *text=gtk_text_buffer_get_text(data[0], &start, &end, TRUE);
+    gint length=strlen(text);
+    for(i=0;i<length;i++)
+      {
+        if(i>check_in_list&&check_in_list!=-1)
+          {
+            check_in_list=get_next_list_value(data, check_in_list); 
+            g_print("Check %i %i\n", i, check_in_list);
+          }
+      }
+    
+    if(text!=NULL) g_free(text);
+  }
+static int get_next_list_value(void *data[], gint last)
+  {
+    //Every third element is a tag name in the list. 
+    GSList *iterator=NULL;
+    gint value=-1;
+    gint lower=-1;
+    gint upper=G_MAXINT;
+    gint counter=1;
+    for(iterator=data[1]; iterator; iterator=iterator->next)
+     {
+       lower=atoi((gchar*)iterator->data);
+       if(counter%3!=0)
+         {
+         if(lower>last&&lower<upper)
+           {
+             value=lower;
+             upper=lower; 
+           }
+         if(lower>last&&upper<lower)
+           {
+             value=upper;
+           } 
+         } 
+        counter++;      
+    }
+    return value;
   }
 static void open_json_file(gchar *file_name, GtkWidget *ws[])
   {
@@ -2393,6 +2500,12 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
     gtk_text_buffer_get_start_iter(buffer, &start);
     gtk_text_buffer_get_end_iter(buffer, &end);
     gchar *report=gtk_text_buffer_get_text(buffer, &start, &end, TRUE);
+
+    // Get the markup string.
+    GString *markup=g_string_new("");
+    get_pango_markup(ws, markup);
+    g_string_free(markup, TRUE);
+
     GString *string=g_string_new("");
     GString *table_string=g_string_new("");
     if(page_nr==0) g_string_append(table_string, report);
