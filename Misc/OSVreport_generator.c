@@ -762,14 +762,13 @@ static gboolean clear_table_labels(GtkWidget *widget, GdkEvent *event, gpointer 
   }
 static void get_pango_markup(GtkWidget *ws[], GString *string)
   {
-    g_print("Get Pango Markup\n");
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
     GtkTextTagTable *tag_list=gtk_text_buffer_get_tag_table(buffer);
-    GSList *pango_tag_list = NULL;
+    GPtrArray *pango_tag_list=g_ptr_array_new_full(10, g_free);
     void *data[]={buffer, pango_tag_list};
     gtk_text_tag_table_foreach(tag_list, (GtkTextTagTableForeach)get_tags , data);
     load_pango_list(string, data);
-    g_slist_free_full(pango_tag_list, (GDestroyNotify)g_free);    
+    g_ptr_array_free(pango_tag_list, TRUE);  
   }
 static void get_tags(GtkTextTag *tag, void *data[])
   {
@@ -792,9 +791,9 @@ static void get_tags(GtkTextTag *tag, void *data[])
                 gchar *tag_name=NULL;
                 g_object_get(tag, "name", &tag_name, NULL);
                 //g_print("Tag Found at %i %i %s\n", offset2, offset1, tag_name);
-                data[1]=g_slist_append(data[1], g_strdup_printf("%i", offset2));
-                data[1]=g_slist_append(data[1], g_strdup_printf("%i", offset1));
-                data[1]=g_slist_append(data[1], g_strdup(tag_name));
+                g_ptr_array_add(data[1], g_strdup_printf("%i", offset2));
+                g_ptr_array_add(data[1], g_strdup_printf("%i", offset1));
+                g_ptr_array_add(data[1], g_strdup(tag_name));
                 if(tag_name!=NULL) g_free(tag_name);
                 switch1=FALSE;
               }
@@ -808,46 +807,125 @@ static void get_tags(GtkTextTag *tag, void *data[])
   }
 static void load_pango_list(GString *string, void *data[])
   {
-    g_print("Load Pango List\n");
-    GSList *iterator=NULL;
-    gint counter=1;
-    for(iterator=data[1]; iterator; iterator=iterator->next)
-     {
-       if(counter%3!=0) g_print("%s atoi %i ", (gchar*)iterator->data, atoi((gchar*)iterator->data));
-       else g_print("%s\n", (gchar*)iterator->data);
-       counter++;
-     }
-
     gint i=0;
+    gint j=0;
     gint check_in_list=G_MININT;
     GtkTextIter start, end;
     gtk_text_buffer_get_start_iter(data[0], &start);
     gtk_text_buffer_get_end_iter(data[0], &end);
     gchar *text=gtk_text_buffer_get_text(data[0], &start, &end, TRUE);
-    gint length=strlen(text);
-    for(i=0;i<length;i++)
+    gint length1=strlen(text);
+    guint length2=((GPtrArray*)data[1])->len/3;
+    //g_print("Length2 %i\n", length2);
+    gboolean open_tags[]={FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
+    gboolean span_open=FALSE;
+    for(i=0;i<length1;i++)
       {
         if(i>check_in_list&&check_in_list!=-1)
           {
             check_in_list=get_next_list_value(data, check_in_list); 
-            g_print("Check %i %i\n", i, check_in_list);
+            //g_print("Check %i %i\n", i, check_in_list);
           }
+        if(i==check_in_list)
+          {
+            for(j=0;j<length2;j++)
+              {
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "underline='single'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[0]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "weight='900'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[1]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='8'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[2]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='10'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[3]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='12'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[4]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='14'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[5]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='16'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j))==i)
+                  {
+                    open_tags[6]=TRUE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "underline='single'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[0]=FALSE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "weight='900'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[1]=FALSE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='8'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[2]=FALSE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='10'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[3]=FALSE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='12'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[4]=FALSE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='14'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[5]=FALSE;
+                  }
+                if(g_strcmp0((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+2), "font='16'")==0&&atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], 3*j+1))==i)
+                  {
+                    open_tags[6]=FALSE;
+                  }
+              }
+            if(span_open)
+              {
+                g_string_append(string, "</span>");
+                span_open=FALSE;
+              }
+            if(open_tags[0]||open_tags[1]||open_tags[2]||open_tags[3]||open_tags[4]||open_tags[5]||open_tags[6])
+              {
+                g_string_append(string, "<span");
+                for(j=0;j<7;j++)
+                  {
+                    if(open_tags[j]&&j==0) g_string_append(string, " underline='single'");
+                    if(open_tags[j]&&j==1) g_string_append(string, " weight='900'");
+                    if(open_tags[j]&&j==2) g_string_append(string, " font='8'");
+                    if(open_tags[j]&&j==3) g_string_append(string, " font='10'");
+                    if(open_tags[j]&&j==4) g_string_append(string, " font='12'");
+                    if(open_tags[j]&&j==5) g_string_append(string, " font='14'");
+                    if(open_tags[j]&&j==6) g_string_append(string, " font='16'");
+                  }
+                g_string_append(string, ">"); 
+                span_open=TRUE;   
+              }
+          }
+        g_string_append_c(string, text[i]); 
       }
-    
+    //g_print("%s\n", string->str);
     if(text!=NULL) g_free(text);
   }
 static int get_next_list_value(void *data[], gint last)
   {
     //Every third element is a tag name in the list. 
-    GSList *iterator=NULL;
+    gint i=0;
     gint value=-1;
     gint lower=-1;
     gint upper=G_MAXINT;
-    gint counter=1;
-    for(iterator=data[1]; iterator; iterator=iterator->next)
+    gint length=((GPtrArray*)data[1])->len;
+    for(i=0;i<length;i++)
      {
-       lower=atoi((gchar*)iterator->data);
-       if(counter%3!=0)
+       lower=atoi((gchar*)g_ptr_array_index((GPtrArray*)data[1], i));
+       if((i+1)%3!=0)
          {
          if(lower>last&&lower<upper)
            {
@@ -858,8 +936,7 @@ static int get_next_list_value(void *data[], gint last)
            {
              value=upper;
            } 
-         } 
-        counter++;      
+         }       
     }
     return value;
   }
@@ -1067,12 +1144,11 @@ static void save_json_file(gchar *file_name, GtkWidget *ws[])
         json_builder_add_int_value(builder, (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18])));
         json_builder_set_member_name(builder, "ch2");
         json_builder_add_int_value(builder, (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[19])));
-        GtkTextIter start, end;
-        GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
-        gtk_text_buffer_get_start_iter(buffer, &start);
-        gtk_text_buffer_get_end_iter(buffer, &end);
+        GString *markup=g_string_new("");
+        get_pango_markup(ws, markup);
         json_builder_set_member_name(builder, "markup");
-        json_builder_add_string_value(builder, gtk_text_buffer_get_text(buffer, &start, &end, TRUE));
+        json_builder_add_string_value(builder, markup->str);
+        g_string_free(markup, TRUE);
         json_builder_set_member_name(builder, "g_row_labels");
         json_builder_begin_array(builder);
         for(i=0;i<g_row_labels->len;i++)
@@ -1716,12 +1792,12 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
     cairo_paint(cr);
     cairo_set_source_rgb(cr, 0, 0, 0);
 
-    GtkTextIter start, end;
-    gtk_text_buffer_get_start_iter(buffer, &start);
-    gtk_text_buffer_get_end_iter(buffer, &end);
-    gchar *report=gtk_text_buffer_get_text(buffer, &start, &end, TRUE);
+    // Get the markup string.
+    GString *markup=g_string_new("");
+    get_pango_markup(ws, markup);
+
     GString *string=g_string_new("");
-    GString *table_string=g_string_new(report);
+    GString *table_string=g_string_new(markup->str);
     for(i=0;i<tables;i++)
       {
         get_table_string(string, ws, 0, i, count_lines);
@@ -1736,8 +1812,8 @@ static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
 
     g_object_unref(pango_layout);
     g_string_free(string, TRUE);
+    g_string_free(markup, TRUE);
     g_string_free(table_string, TRUE);
-    if(report!=NULL) g_free(report);
     if(font_string!=NULL) g_free(font_string);
   }
 static void get_table_string(GString *string, GtkWidget *ws[], gint page_number, gint table, gint count_lines)
@@ -1846,8 +1922,34 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     //g_print("shift below %i table title %i\n", shift_below_text2, table_title_shift);
     //Global variable for reseting drawings on print page.
     table_print++;
+
     //Get size difference in text due to font tags on page 1.
-    markup_difference=0;
+    if(page_number==0)
+      {
+        GtkTextIter start, end;
+        GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+        gtk_text_buffer_get_start_iter(buffer, &start);
+        gtk_text_buffer_get_end_iter(buffer, &end);
+        gchar *text_buffer=gtk_text_buffer_get_text(buffer, &start, &end, TRUE);
+        pango_layout_set_markup(pango_layout, text_buffer, -1);
+        PangoRectangle rectangle_ink1;
+        PangoRectangle rectangle_log1;
+        pango_layout_get_extents(pango_layout, &rectangle_ink1, &rectangle_log1);
+        // Get the markup string.
+        GString *markup=g_string_new("");
+        get_pango_markup(ws, markup);
+        pango_layout_set_markup(pango_layout, markup->str, -1);
+        g_string_free(markup, TRUE);
+        PangoRectangle rectangle_ink2;
+        PangoRectangle rectangle_log2;
+        pango_layout_get_extents(pango_layout, &rectangle_ink2, &rectangle_log2);
+        if(rectangle_log2.height-rectangle_log1.height>0)
+          {
+            markup_difference=rectangle_log2.height-rectangle_log1.height;
+          }
+        else markup_difference=0; 
+      }
+    else markup_difference=0;
 
     //Get rectangle for one monospace char for sizing.
     pango_layout_set_markup(pango_layout, "5", -1);
@@ -2496,19 +2598,13 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
     g_print("Tables on Page %i\n", tables_on_page);
     cairo_t *cr=gtk_print_context_get_cairo_context(context);
 
-    GtkTextIter start, end;
-    gtk_text_buffer_get_start_iter(buffer, &start);
-    gtk_text_buffer_get_end_iter(buffer, &end);
-    gchar *report=gtk_text_buffer_get_text(buffer, &start, &end, TRUE);
-
     // Get the markup string.
     GString *markup=g_string_new("");
     get_pango_markup(ws, markup);
-    g_string_free(markup, TRUE);
 
     GString *string=g_string_new("");
     GString *table_string=g_string_new("");
-    if(page_nr==0) g_string_append(table_string, report);
+    if(page_nr==0) g_string_append(table_string, markup->str);
     //Reset global variable for drawing on pages.
     table_print=0;
     for(i=0;i<tables_on_page;i++)
@@ -2524,6 +2620,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
     pango_cairo_show_layout(cr, pango_layout_print);
 
     g_string_free(string, TRUE);
+    g_string_free(markup, TRUE);
     g_string_free(table_string, TRUE);
     
   }
