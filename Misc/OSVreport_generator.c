@@ -1,8 +1,8 @@
 
 /*
 
-    Re-write the report_generator.py program in C. A ways to go yet. Just some of the UI has been copied
-over so far along with a few functions. Work in progress.
+    Re-write the report_generator.py program in C. Still working on it. It still needs a couple
+of database functions. 
  
     gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
 
@@ -39,6 +39,7 @@ static void get_pango_markup(GtkWidget *ws[], GString *string);
 static void get_tags(GtkTextTag *tag, void *data[]);
 static void load_pango_list(GString *string, void *data[]);
 static int get_next_list_value(void *data[], gint last);
+static void parse_saved_markup_string(gchar *markup_string, GtkWidget *ws[]);
 //For saving and getting reports.
 static void open_json_file(gchar *file_name, GtkWidget *ws[]);
 static void save_json_file(gchar *file_name, GtkWidget *ws[]);
@@ -940,6 +941,107 @@ static int get_next_list_value(void *data[], gint last)
     }
     return value;
   }
+static void parse_saved_markup_string(gchar *markup_string, GtkWidget *ws[])
+  {
+    gint i=0;
+    gint j=0;
+    GtkTextIter start_iter, span_iter;
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
+    gtk_text_buffer_set_text(buffer, markup_string, -1);
+    gtk_text_buffer_get_start_iter(buffer, &start_iter);
+    gtk_text_buffer_get_start_iter(buffer, &span_iter);
+    gint index=0;
+    gboolean count=TRUE;
+    gint move_ahead_six=0;
+    GArray *tag_locations=g_array_new(FALSE, FALSE, sizeof(gint));
+    GPtrArray *tag_names=g_ptr_array_new_full(10, g_free);
+    GString *new_string=g_string_new("");
+    GString *span_string=g_string_new("");
+
+    //Parse markup string. Just check for span tags.
+    while(!gtk_text_iter_is_end(&start_iter))
+      {
+        if('<'==gtk_text_iter_get_char(&start_iter))
+          {
+            gtk_text_iter_assign(&span_iter, &start_iter);
+            gtk_text_iter_forward_chars(&span_iter, 5);
+            gchar *test_string=gtk_text_buffer_get_text(buffer, &start_iter, &span_iter, FALSE);
+            if(g_strcmp0(test_string, "<span")==0)
+              {
+                count=FALSE;
+                //g_print("start %i ", index);
+                g_array_append_val(tag_locations, index);
+                move_ahead_six=0;
+              }
+            if(g_strcmp0(test_string, "</spa")==0)
+              {
+                count=FALSE;
+                //g_print("end %i\n", index);
+                g_array_append_val(tag_locations, index);
+                move_ahead_six=0;
+              }
+            if(test_string!=NULL) g_free(test_string);
+          }
+        if(count==FALSE)
+          {
+            move_ahead_six+=1;
+            if(move_ahead_six>6)
+              {
+                if('>'!=gtk_text_iter_get_char(&start_iter))
+                  {
+                    g_string_append_c(span_string, gtk_text_iter_get_char(&start_iter));
+                  }
+              }
+          }
+        if(count==TRUE)
+          {
+            index+=1;
+            g_string_append_c(new_string, gtk_text_iter_get_char(&start_iter));
+          }
+        if('>'==gtk_text_iter_get_char(&start_iter)&&count==FALSE)
+          {
+            count=TRUE;
+            if(span_string->len!= 0)
+              {
+                //g_print("Tag %s ", span_string->str);
+                g_ptr_array_add(tag_names, g_strdup(span_string->str)); 
+              }
+            g_string_erase(span_string, 0, -1);
+          }
+        gtk_text_iter_forward_char(&start_iter);
+      }
+
+    gtk_text_buffer_set_text(buffer, new_string->str, -1);
+    //g_print("%s\n", new_string->str);
+
+    GtkTextIter offset1, offset2;
+    gtk_text_buffer_get_start_iter(buffer, &offset1);
+    gtk_text_buffer_get_start_iter(buffer, &offset2);
+    gint length1=tag_locations->len/2;
+    gint start=0;
+    gint end=0;
+    for(i=0;i<length1;i++)
+      {
+        start=g_array_index(tag_locations, gint, 2*i);
+        end=g_array_index(tag_locations, gint, 2*i+1);
+        gtk_text_iter_set_offset(&offset1, start);
+        gtk_text_iter_set_offset(&offset2, end);
+        gchar **string_array=g_strsplit((gchar*)g_ptr_array_index(tag_names, i), " ", -1);
+        j=0;
+        while(string_array[j]!=NULL)
+          {
+            //g_print("%i %i %s\n", start, end, string_array[j]);
+            gtk_text_buffer_apply_tag_by_name(buffer, string_array[j], &offset1, &offset2);
+            j++;
+          }
+        g_strfreev(string_array);
+      }
+    
+    g_array_free(tag_locations, TRUE);
+    g_ptr_array_free(tag_names, TRUE);
+    g_string_free(new_string, TRUE);
+    g_string_free(span_string, TRUE);
+  }
 static void open_json_file(gchar *file_name, GtkWidget *ws[])
   {
     gint i=0;
@@ -1038,10 +1140,12 @@ static void open_json_file(gchar *file_name, GtkWidget *ws[])
            if(!found_member) goto bad_element;
            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ws[19]), (gboolean)json_reader_get_int_value(reader));
            json_reader_end_member(reader);
-           GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(ws[20]));
            found_member=json_reader_read_member(reader, "markup");
            if(!found_member) goto bad_element;
-           gtk_text_buffer_set_text(buffer, json_reader_get_string_value(reader), -1);
+           gchar *markup_string=g_strdup(json_reader_get_string_value(reader));
+           //Parse and set the string to the text buffer.  
+           parse_saved_markup_string(markup_string, ws);
+           if(markup_string!=NULL) g_free(markup_string);
            json_reader_end_member(reader);
            found_member=json_reader_read_member(reader, "g_row_labels");
            if(!found_member) goto bad_element;
@@ -1708,7 +1812,7 @@ static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
   }
 static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[])
   {
-    g_print("Start Draw %i\n", page_num);
+    //g_print("Start Draw %i\n", page_num);
     gint i=0;
     gint combo4_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
     //Don't unblock on first call.
