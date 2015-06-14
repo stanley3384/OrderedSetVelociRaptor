@@ -69,6 +69,7 @@ static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdou
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
 static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
 static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
+static void get_test_data4(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
 static gdouble round1(gdouble x, guint digits);
 //Print functions.
@@ -105,6 +106,7 @@ static gint lines_per_page=0;
 static gint total_lines=0;
 static gint table_count=0;
 static gint table_print=0;
+gboolean drawing_data_valid=FALSE;
 static PangoLayout *pango_layout_print=NULL;
 
 int main(int argc, char *argv[])
@@ -1793,21 +1795,19 @@ static void load_table_labels(GtkWidget *widget, gpointer data)
   }
 static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
   {
-    gint return_value=validate_entries(ws);
-    if(return_value!=0&&da_blocking==FALSE)
+    if(da_blocking==FALSE)
       {
         g_signal_handler_block((gpointer)da, da_block);
         da_blocking=TRUE;
       }
-    if(return_value==0&&da_blocking==TRUE)
+    if(da_blocking==TRUE)
       {
         g_signal_handler_unblock((gpointer)da, da_block);
         da_blocking=FALSE;
       }
-    if(return_value==0)
-      {
-        drawing_area_preview(da, cr, ws);
-      }
+  
+    if(drawing_data_valid) drawing_area_preview(da, cr, ws);
+   
     return TRUE;
   }
 static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[])
@@ -1815,8 +1815,13 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
     //g_print("Start Draw %i\n", page_num);
     gint i=0;
     gint combo4_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])));
+    gint return_value=0;
+    if(page_num==1) return_value=validate_entries(ws);
+    if(return_value==0) drawing_data_valid=TRUE;
+    else drawing_data_valid=FALSE;
     //Don't unblock on first call.
     static guint block_lag=0;
+
     if(page_num==1)
       {
         g_signal_handler_block((gpointer)ws[0], row_clear_block);
@@ -1828,14 +1833,13 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
         g_signal_handler_unblock((gpointer)ws[0], row_clear_block);
         g_signal_handler_unblock((gpointer)ws[1], column_clear_block);
       }
-
     if(da_blocking)
       {
         g_print("Unblock\n");
         g_signal_handler_unblock((gpointer)ws[23], da_block);
         da_blocking=FALSE;
       }
-    if(page_num==1)
+    if(page_num==1&&return_value==0)
       {
         GtkAdjustment *adj1=gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(ws[24]));
         GtkAdjustment *adj2=gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(ws[24]));
@@ -1847,6 +1851,7 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
         gint shift_number_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[5])));
         gint shift_column_left=atoi(gtk_entry_get_text(GTK_ENTRY(ws[6])));
         gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
+        gchar *sql_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(ws[9])));
         gint round_float=atoi(gtk_entry_get_text(GTK_ENTRY(ws[10])));
         //Clear data arrays.
         gint array_length1=g_data_values->len;
@@ -1866,12 +1871,17 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
           {
             get_test_data3(rows, columns, tables, column_width, shift_number_left);
           }
+        if(combo4_index==4)
+          {
+            get_test_data4(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
+          }
         else
           {
             get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
           }
         //Get the labels. Shift them or truncate them to fit in the rectangles.
         get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
+        if(sql_string!=NULL) g_free(sql_string);
       }
   }
 static void drawing_area_preview(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
@@ -2471,6 +2481,95 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
         max=-G_MAXDOUBLE;
       }
     
+    if(fill_end!=NULL) g_free(fill_end);
+  }
+static void get_test_data4(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string)
+  {
+    g_print("Get Test Data1\n");
+    gint i=0;
+    gint j=0;
+    gint k=0;
+    gint l=0;
+    gint fill_temp=0;
+    gdouble double_number=0;
+    gint counter=-1;
+    gboolean found_decimal=FALSE;
+    gint buffer_len=column_width-shift_number_left;
+    gchar buffer1[G_ASCII_DTOSTR_BUF_SIZE];
+    gchar buffer2[buffer_len+1];
+    gdouble min=G_MAXDOUBLE;
+    gdouble max=-G_MAXDOUBLE;
+    gchar *select_string=g_strdup_printf("%s LIMIT %i;", sql_string, tables*rows*columns);
+    gint length=0;
+    gchar *fill_end=NULL;
+    if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
+  
+    gint step=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    sqlite3_open("VelociRaptorData.db", &cnn);
+    sqlite3_prepare_v2(cnn, select_string, -1, &stmt1, 0);
+    g_print("Column Type %s\n", sqlite3_column_decltype(stmt1, 0));
+    
+    for(i=0;i<tables;i++)
+      {
+        for(j=0;j<rows;j++)
+          {
+            for(k=0;k<columns;k++)
+              {
+                step=sqlite3_step(stmt1);
+                if(step==SQLITE_ROW) double_number=round1(sqlite3_column_double(stmt1, 0), round_float);
+                else double_number=0;
+                g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", double_number);
+                length=strlen(buffer1);
+                counter=-1;
+                found_decimal=FALSE;
+                for(l=0;l<buffer_len+1;l++) 
+                  {
+                    if(buffer1[l]=='.') found_decimal=TRUE;
+                    if(counter==round_float)
+                      {
+                        buffer2[l]='\0';
+                        break;
+                      }
+                    buffer2[l]=buffer1[l];
+                    if(found_decimal) counter++;
+                  }
+                length=strlen(buffer2);
+                fill_temp=column_width-length-shift_number_left;
+                gchar *fill_start=NULL;
+                if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+                if(fill_temp>0&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer2, fill_end));
+                  }
+                else if(fill_temp<1&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer2, fill_end));
+                  }
+                else if(fill_temp>0&&shift_number_left==0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, buffer2));
+                  }
+                else
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer2));
+                  }
+                if(double_number<min) min=double_number;
+                if(double_number>max) max=double_number;
+                if(fill_start!=NULL) g_free(fill_start);
+              }
+          }
+        g_array_append_val(g_min_max, min);
+        g_array_append_val(g_min_max, max);
+        //g_print("min %f max %f\n", min, max);
+        min=G_MAXDOUBLE;
+        max=-G_MAXDOUBLE;
+      }
+
+    if(stmt1!=NULL) sqlite3_finalize(stmt1);
+    sqlite3_close(cnn);
+    if(select_string!=NULL) g_free(select_string);
     if(fill_end!=NULL) g_free(fill_end);
   }
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left)
