@@ -14,6 +14,9 @@
    For the program image the code will look for dino2.png. Have the png in the same folder as the 
    report generator for showing the image in the about dialog and the toolbar.
 
+   Take a look in the Misc folder for the C version called OSVreport_generator. That way you can
+   do a comparison with Python, Cython and C.
+
    Python 2.7 with GTK 3.10 on Ubuntu 14.04.
 
    C. Eric Cashon

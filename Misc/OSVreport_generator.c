@@ -1,10 +1,15 @@
 
 /*
 
-    Re-write the report_generator.py program in C. Still working on it. It still needs a couple
-of database functions. 
+    Re-write the report_generator.py program in C. A good comparison with Python, Cython and C.
+The C program is faster for doing the scrolling and redraws. 
+
+    For the program image the code will look for dino2.png. It is in the Python folder. Have the
+png in the same folder as the report generator for showing the image in the about dialog and the toolbar.
+
+    GTK 3.10 on Ubuntu 14.04.
  
-    gcc -Wall OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
+    gcc -Wall -O2 OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
 
     C. Eric Cashon
 
@@ -69,7 +74,8 @@ static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdou
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
 static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
 static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
-static void get_test_data4(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string);
+static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string);
+static void get_db_data_for_table(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
 static gdouble round1(gdouble x, guint digits);
 //Print functions.
@@ -108,6 +114,8 @@ static gint table_count=0;
 static gint table_print=0;
 gboolean drawing_data_valid=FALSE;
 static PangoLayout *pango_layout_print=NULL;
+//The sqlite database.
+gchar *database_name="VelociRaptorData.db";
 
 int main(int argc, char *argv[])
   {
@@ -658,7 +666,7 @@ static gint check_sql_string(const gchar *sql_string, GtkWidget *ws[])
         sqlite3 *cnn=NULL;
         sqlite3_stmt *stmt1=NULL;
         sqlite3_stmt *stmt2=NULL;
-        sqlite3_open("VelociRaptorData.db", &cnn);
+        sqlite3_open(database_name, &cnn);
         sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
         if(stmt1==NULL) valid_string=FALSE;
         if(valid_string)
@@ -1873,11 +1881,11 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
           }
         if(combo4_index==4)
           {
-            get_test_data4(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
+            get_db_data_for_crosstab(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
           }
         else
           {
-            get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+            get_db_data_for_table(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
           }
         //Get the labels. Shift them or truncate them to fit in the rectangles.
         get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
@@ -2483,7 +2491,7 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
     
     if(fill_end!=NULL) g_free(fill_end);
   }
-static void get_test_data4(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string)
+static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string)
   {
     g_print("Get Test Data1\n");
     gint i=0;
@@ -2492,6 +2500,7 @@ static void get_test_data4(gint rows, gint columns, gint tables, gint column_wid
     gint l=0;
     gint fill_temp=0;
     gdouble double_number=0;
+    gint int_number=0;
     gint counter=-1;
     gboolean found_decimal=FALSE;
     gint buffer_len=column_width-shift_number_left;
@@ -2507,9 +2516,10 @@ static void get_test_data4(gint rows, gint columns, gint tables, gint column_wid
     gint step=0;
     sqlite3 *cnn=NULL;
     sqlite3_stmt *stmt1=NULL;
-    sqlite3_open("VelociRaptorData.db", &cnn);
+    sqlite3_open(database_name, &cnn);
     sqlite3_prepare_v2(cnn, select_string, -1, &stmt1, 0);
     g_print("Column Type %s\n", sqlite3_column_decltype(stmt1, 0));
+    gint column_type=0;
     
     for(i=0;i<tables;i++)
       {
@@ -2518,9 +2528,167 @@ static void get_test_data4(gint rows, gint columns, gint tables, gint column_wid
             for(k=0;k<columns;k++)
               {
                 step=sqlite3_step(stmt1);
-                if(step==SQLITE_ROW) double_number=round1(sqlite3_column_double(stmt1, 0), round_float);
+                column_type=sqlite3_column_type(stmt1, 0);
+                if(step==SQLITE_ROW)
+                  {
+                    if(column_type==SQLITE_INTEGER)
+                      {
+                        int_number=sqlite3_column_int(stmt1, 0);
+                      }
+                    else if(column_type==SQLITE_FLOAT)
+                      {
+                        double_number=round1(sqlite3_column_double(stmt1, 0), round_float);
+                      }
+                    else double_number=0;
+                  }
                 else double_number=0;
-                g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", double_number);
+                if(column_type==SQLITE_INTEGER)
+                  {
+                    g_snprintf(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%i", int_number);
+                  }
+                else if(column_type==SQLITE_FLOAT)
+                  {
+                    g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", double_number);
+                  }
+                else g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", double_number);
+                length=strlen(buffer1);
+                counter=-1;
+                found_decimal=FALSE;
+                for(l=0;l<buffer_len+1;l++) 
+                  {
+                    if(buffer1[l]=='.') found_decimal=TRUE;
+                    if(counter==round_float)
+                      {
+                        buffer2[l]='\0';
+                        break;
+                      }
+                    buffer2[l]=buffer1[l];
+                    if(found_decimal) counter++;
+                  }
+                length=strlen(buffer2);
+                fill_temp=column_width-length-shift_number_left;
+                gchar *fill_start=NULL;
+                if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
+                if(fill_temp>0&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, buffer2, fill_end));
+                  }
+                else if(fill_temp<1&&shift_number_left>0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", buffer2, fill_end));
+                  }
+                else if(fill_temp>0&&shift_number_left==0)
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, buffer2));
+                  }
+                else
+                  {
+                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer2));
+                  }
+                if(column_type==SQLITE_INTEGER)
+                  {
+                    if(int_number<min) min=int_number;
+                    if(int_number>max) max=int_number;
+                  }
+                if(column_type==SQLITE_FLOAT)
+                  {
+                    if(double_number<min) min=double_number;
+                    if(double_number>max) max=double_number;
+                  }
+                if(fill_start!=NULL) g_free(fill_start);
+              }
+          }
+        g_array_append_val(g_min_max, min);
+        g_array_append_val(g_min_max, max);
+        //g_print("min %f max %f\n", min, max);
+        min=G_MAXDOUBLE;
+        max=-G_MAXDOUBLE;
+      }
+
+    if(stmt1!=NULL) sqlite3_finalize(stmt1);
+    sqlite3_close(cnn);
+    if(select_string!=NULL) g_free(select_string);
+    if(fill_end!=NULL) g_free(fill_end);
+  }
+static void get_db_data_for_table(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string)
+  {
+    g_print("Get Test Data1\n");
+    gint i=0;
+    gint j=0;
+    gint k=0;
+    gint l=0;
+    gint fill_temp=0;
+    gdouble double_number=0;
+    gint int_number=0;
+    gint counter=-1;
+    gboolean found_decimal=FALSE;
+    gint buffer_len=column_width-shift_number_left;
+    gchar buffer1[G_ASCII_DTOSTR_BUF_SIZE];
+    gchar buffer2[buffer_len+1];
+    gdouble min=G_MAXDOUBLE;
+    gdouble max=-G_MAXDOUBLE;
+    gchar *select_string=g_strdup_printf("%s LIMIT %i;", sql_string, tables*rows*columns);
+    gint length=0;
+    gchar *fill_end=NULL;
+    if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
+  
+    gint step=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    sqlite3_open(database_name, &cnn);
+    sqlite3_prepare_v2(cnn, select_string, -1, &stmt1, 0);
+    gint sql_columns=sqlite3_column_count(stmt1);
+    gint column_type=0;
+    gint array_length=g_column_labels->len;
+    for(i=0;i<array_length; i++)
+      {
+        g_ptr_array_remove_index_fast(g_column_labels, 0);
+      }
+    for(i=0;i<sql_columns;i++)
+      {
+        g_ptr_array_add(g_column_labels, g_strdup(sqlite3_column_name(stmt1, i)));
+      }
+    
+    for(i=0;i<tables;i++)
+      {
+        for(j=0;j<rows;j++)
+          {
+            step=sqlite3_step(stmt1);
+            for(k=0;k<sql_columns;k++)
+              {
+                gchar *sql_text=NULL;
+                if(step==SQLITE_ROW)
+                  {
+                    column_type=sqlite3_column_type(stmt1, k);
+                    if(column_type==SQLITE_INTEGER)
+                      {
+                        int_number=sqlite3_column_int(stmt1, k);
+                      }
+                    else if(column_type==SQLITE_FLOAT)
+                      {
+                        double_number=round1(sqlite3_column_double(stmt1, k), round_float);
+                      }
+                    else if(column_type==SQLITE_TEXT)
+                      {
+                        sql_text=g_strdup((char*)sqlite3_column_text(stmt1, k));
+                      }
+                    else if(column_type==SQLITE_NULL) double_number=0;
+                    else double_number=0;
+                  }
+                else double_number=0;
+                if(column_type==SQLITE_INTEGER)
+                  {
+                    g_snprintf(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%i", int_number);
+                  }
+                else if(column_type==SQLITE_FLOAT)
+                  {
+                    g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", double_number);
+                  }
+                else if(column_type==SQLITE_TEXT)
+                  {
+                    g_snprintf(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%s", sql_text);
+                  }
+                else g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", double_number);
                 length=strlen(buffer1);
                 counter=-1;
                 found_decimal=FALSE;
@@ -2558,6 +2726,7 @@ static void get_test_data4(gint rows, gint columns, gint tables, gint column_wid
                 if(double_number<min) min=double_number;
                 if(double_number>max) max=double_number;
                 if(fill_start!=NULL) g_free(fill_start);
+                if(sql_text!=NULL) g_free(sql_text);
               }
           }
         g_array_append_val(g_min_max, min);
@@ -2779,6 +2948,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
     gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(ws[0])));
     gint tables=atoi(gtk_entry_get_text(GTK_ENTRY(ws[7])));
     gint shift_below_text=atoi(gtk_entry_get_text(GTK_ENTRY(ws[3])));
+    gint combo5_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[15])));
 
     //Account for first page with title and text.
     gint tables_first_page = (int)floor((double)(lines_per_page)/(double)(rows+shift_below_text+count_lines));
@@ -2818,6 +2988,18 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
         g_string_truncate(string, 0);
         table_count++;        
       }
+
+    if(combo5_index!=1)
+      {
+        if(combo5_index==2) cairo_set_source_rgb(cr, 0, 0, 0);
+        else if(combo5_index==3) cairo_set_source_rgb(cr, 1.0, 0, 0);
+        else if(combo5_index==4) cairo_set_source_rgb(cr, 0, 1.0, 0);
+        else if(combo5_index==5) cairo_set_source_rgb(cr, 0, 0, 1.0);
+        else cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+        cairo_rectangle(cr, 0, 0, gtk_print_context_get_width(context), gtk_print_context_get_height(context));
+        cairo_stroke(cr);
+      }
+
     cairo_set_source_rgb(cr, 0, 0, 0);
     pango_layout_set_markup(pango_layout_print, table_string->str, -1);
     pango_cairo_show_layout(cr, pango_layout_print);
