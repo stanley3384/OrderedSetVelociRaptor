@@ -63,6 +63,7 @@ static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void activate_table_labels_button(GtkWidget *widget, gpointer data);
 static void table_combo_changed(GtkWidget *widget, gpointer data);
 static void load_table_labels(GtkWidget *widget, gpointer data);
+static void get_sql_table_labels(GtkWidget *widget, void *wcs[]);
 //Drawing functions.
 static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[]);
 static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page_num, GtkWidget *ws[]);
@@ -1719,6 +1720,8 @@ static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[])
         gtk_combo_box_set_active(GTK_COMBO_BOX(table_combo), 0);
         gint active_row=0;
         table_combo_block=g_signal_connect(GTK_COMBO_BOX(table_combo), "changed", G_CALLBACK(table_combo_changed), &active_row);
+        void *wcs[]={table_combo, sql_entry, &tables};
+        g_signal_connect(button1, "clicked", G_CALLBACK(get_sql_table_labels), wcs);
 
         GtkWidget *focus_button=gtk_dialog_get_widget_for_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK); 
         gtk_widget_grab_focus(focus_button);
@@ -1801,6 +1804,83 @@ static void load_table_labels(GtkWidget *widget, gpointer data)
         iter_found=gtk_tree_model_iter_next(model, &tree_iter);
         if(str_data!=NULL) g_free(str_data);
       }
+  }
+static void get_sql_table_labels(GtkWidget *widget, void *wcs[])
+  {
+    gboolean error=FALSE;
+    gboolean end=FALSE;
+    gchar *sql_string=g_strdup_printf("%s%s%i;", gtk_entry_get_text(GTK_ENTRY(wcs[1])), " LIMIT ", *(int*)wcs[2]);
+    gint i=0;
+    gint column_type=0;
+    gint step=0;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    sqlite3_open(database_name, &cnn);
+    sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
+    if(stmt1!=NULL)
+      {
+        gint array_length=g_table_labels->len;
+        for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_table_labels, 0);
+        for(i=0;i<*(gint*)wcs[2];i++)
+          {
+            if(!end) step=sqlite3_step(stmt1);
+            column_type=sqlite3_column_type(stmt1, 0);
+            if(step==SQLITE_ROW&&!end)
+              {
+                if(column_type==SQLITE_INTEGER)
+                  {
+                    g_ptr_array_add(g_table_labels, g_strdup_printf("%i", sqlite3_column_int(stmt1, 0)));
+                  } 
+                else if(column_type==SQLITE_FLOAT)
+                  {
+                    g_ptr_array_add(g_table_labels, g_strdup_printf("%f", sqlite3_column_double(stmt1, 0)));
+                  }
+                else if(column_type==SQLITE_TEXT)
+                  {
+                    g_ptr_array_add(g_table_labels, g_strdup_printf("%s", sqlite3_column_text(stmt1, 0)));
+                  }
+                else if(column_type==SQLITE_BLOB)
+                  {
+                    g_ptr_array_add(g_table_labels, g_strdup_printf("%s", "Blob"));
+                  }
+                else if(column_type==SQLITE_NULL)
+                  {
+                    g_ptr_array_add(g_table_labels, g_strdup_printf("%s", "NULL"));
+                  }
+              }
+            else
+              {
+                //If not enough labels in the database fill in the list with numbers.
+                end=TRUE;
+                g_ptr_array_add(g_table_labels, g_strdup_printf("%i", i+1));
+              }
+          }
+      }
+    else error=TRUE;
+
+   
+    if(stmt1!=NULL) sqlite3_finalize(stmt1);
+    sqlite3_close(cnn);
+
+    if(g_table_labels->len==*(gint*)wcs[2])
+      {
+        g_signal_handler_block((gpointer)wcs[0], table_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(wcs[0]));
+        for(i=0;i<*(gint*)wcs[2];i++)
+          {
+            gchar *table_id=NULL;
+            table_id=g_strdup_printf("%i", i+1);
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(wcs[0]), table_id, (char*)g_ptr_array_index(g_table_labels, i));
+            if(table_id!=NULL) g_free(table_id);
+          }
+         g_signal_handler_unblock((gpointer)wcs[0], table_combo_block);
+         gtk_combo_box_set_active_id(GTK_COMBO_BOX(wcs[0]), "1");
+      }
+    else error=TRUE;
+
+    if(error) message_dialog("Error getting SQL labels");
+
+    if(sql_string!=NULL) g_free(sql_string);    
   }
 static gboolean draw_report(GtkWidget *da, cairo_t *cr, GtkWidget *ws[])
   {
@@ -1966,7 +2046,7 @@ static void get_table_string(GString *string, GtkWidget *ws[], gint page_number,
 
     //Add table label if needed.
     if(check1_active) g_string_append_printf(string, "%s%s", shift_margin_str, table_name);
-    if(check1_active&&g_table_labels->len!=0) g_string_append_printf(string, "%s\n", (char*)g_ptr_array_index(g_table_labels, table-1));
+    if(check1_active&&g_table_labels->len!=0) g_string_append_printf(string, "%s\n", (char*)g_ptr_array_index(g_table_labels, table));
     if(check1_active&&g_table_labels->len==0) g_string_append_printf(string, "%i\n", table+1);
     
 
