@@ -57,7 +57,7 @@ static void row_combo_changed(GtkWidget *widget, gpointer data);
 static void column_combo_changed(GtkWidget *widget, gpointer data);
 static void load_labels(GtkWidget *widget, GtkWidget *cs[]);
 static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[]);
-static void get_letters(GPtrArray *micro_labels, gint rows);
+static void get_letters(GPtrArray *micro_labels, gint rows, gboolean space);
 //Dialog and functions for table labels.
 static void table_labels_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void activate_table_labels_button(GtkWidget *widget, gpointer data);
@@ -1379,6 +1379,7 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "1", "RowColumns");
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "2", "Numbers");
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "3", "Microtiter1");
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "4", "Microtiter2");
         gtk_combo_box_set_active_id(GTK_COMBO_BOX(standard_combo), "1");
         g_signal_connect(GTK_COMBO_BOX(standard_combo), "changed", G_CALLBACK(change_standard_labels), cs);
 
@@ -1588,7 +1589,7 @@ static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[])
         gint rows1=1;
         while(gtk_tree_model_iter_next(model1, &tree_iter1)) rows1++;
         GPtrArray *micro_labels=g_ptr_array_new_full(10, g_free);
-        get_letters(micro_labels, rows1);
+        get_letters(micro_labels, rows1, TRUE);
         g_signal_handler_block((gpointer)cs[0], row_combo_block);
         gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[0]));
         for(i=0;i<rows1;i++)
@@ -1619,10 +1620,49 @@ static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[])
         g_signal_handler_unblock((gpointer)cs[1], column_combo_block);
 
         gtk_combo_box_set_active(GTK_COMBO_BOX(cs[1]), 0);
-      }  
+      }
+    if(combo_id==4)
+      {
+        //Row labels.
+        GtkTreeIter tree_iter1;
+        GtkTreeModel *model1=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[0]));
+        gtk_tree_model_get_iter_first(model1, &tree_iter1);
+        gint rows1=1;
+        while(gtk_tree_model_iter_next(model1, &tree_iter1)) rows1++;
+        g_signal_handler_block((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[0]));
+        for(i=0;i<rows1;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);
+            gchar *label=g_strdup_printf(" %i ", i+1);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[0]), id, label);
+            g_free(id);
+            g_free(label);
+          }
+        g_signal_handler_unblock((gpointer)cs[0], row_combo_block);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[0]), 0);
+        //Column labels.
+        GtkTreeIter tree_iter2;
+        GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[1]));
+        gtk_tree_model_get_iter_first(model2, &tree_iter2);
+        gint rows2=1;
+        while(gtk_tree_model_iter_next(model2, &tree_iter2)) rows2++;
+        g_signal_handler_block((gpointer)cs[1], column_combo_block);
+        GPtrArray *micro_labels=g_ptr_array_new_full(10, g_free);
+        get_letters(micro_labels, rows1, FALSE);
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[1]));
+        for(i=0;i<rows2;i++)
+          {
+            gchar *id=g_strdup_printf("%i", i);  
+            gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[1]), id, (char*)g_ptr_array_index(micro_labels, i));
+            g_free(id);
+          }
+        g_ptr_array_free(micro_labels, TRUE);
+        gtk_combo_box_set_active(GTK_COMBO_BOX(cs[1]), 0);
+      }    
 
   }
-static void get_letters(GPtrArray *micro_labels, gint rows)
+static void get_letters(GPtrArray *micro_labels, gint rows, gboolean space)
   {
      char letters[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
     int i=0;
@@ -1634,7 +1674,9 @@ static void get_letters(GPtrArray *micro_labels, gint rows)
       {
         for(i=0;i<rows;i++)
           {
-            gchar *str_data=g_strdup_printf(" %c ", letters[i]); 
+            gchar *str_data=NULL;
+            if(space) str_data=g_strdup_printf(" %c ", letters[i]);
+            else str_data=g_strdup_printf("%c", letters[i]); 
             g_ptr_array_add(micro_labels, g_strdup(str_data)); 
             if(str_data!=NULL) g_free(str_data);
           }
@@ -1643,7 +1685,9 @@ static void get_letters(GPtrArray *micro_labels, gint rows)
       {
         for(i=0;i<26;i++)
           {
-            gchar *str_data=g_strdup_printf(" %c ", letters[i]); 
+            gchar *str_data=NULL;
+            if(space) str_data=g_strdup_printf(" %c ", letters[i]);
+            else str_data=g_strdup_printf("%c", letters[i]); 
             g_ptr_array_add(micro_labels, g_strdup(str_data)); 
             if(str_data!=NULL) g_free(str_data);
             counter++;
@@ -1652,7 +1696,9 @@ static void get_letters(GPtrArray *micro_labels, gint rows)
           {
             for(j=0;j<26-i;j++)
               {
-                gchar *str_data=g_strdup_printf(" %c%c ", letters[i], letters[j+i]); 
+                gchar *str_data=NULL;
+                if(space) str_data=g_strdup_printf(" %c%c ", letters[i], letters[j+i]);
+                else str_data=g_strdup_printf("%c%c", letters[i], letters[j+i]); 
                 g_ptr_array_add(micro_labels, g_strdup(str_data)); 
                 if(str_data!=NULL) g_free(str_data);
                 if(counter==rows) break;
@@ -1666,7 +1712,9 @@ static void get_letters(GPtrArray *micro_labels, gint rows)
         for(i=0;i<26;i++)
           {
             printf(" %i.%c", counter, letters[i]);
-            gchar *str_data=g_strdup_printf(" %c ", letters[i]); 
+            gchar *str_data=NULL;
+            if(space) str_data=g_strdup_printf(" %c ", letters[i]);
+            else str_data=g_strdup_printf("%c", letters[i]); 
             g_ptr_array_add(micro_labels, g_strdup(str_data)); 
             if(str_data!=NULL) g_free(str_data);
             counter++;
@@ -1675,7 +1723,9 @@ static void get_letters(GPtrArray *micro_labels, gint rows)
           {
             for(j=0;j<26-i;j++)
               {
-                gchar *str_data=g_strdup_printf(" %c%c ", letters[i], letters[j+i]); 
+                gchar *str_data=NULL;
+                if(space) g_strdup_printf(" %c%c ", letters[i], letters[j+i]);
+                else g_strdup_printf("%c%c", letters[i], letters[j+i]); 
                 g_ptr_array_add(micro_labels, g_strdup(str_data)); 
                 if(str_data!=NULL) g_free(str_data);
                 counter++;
@@ -1687,7 +1737,9 @@ static void get_letters(GPtrArray *micro_labels, gint rows)
               {
                 for(k=0;k<26-i-j;k++)
                   {
-                    gchar *str_data=g_strdup_printf(" %c%c%c ", letters[i], letters[j+i], letters[j+i+k]); 
+                    gchar *str_data=NULL;
+                    if(space) g_strdup_printf(" %c%c%c ", letters[i], letters[j+i], letters[j+i+k]);
+                    else g_strdup_printf("%c%c%c", letters[i], letters[j+i], letters[j+i+k]); 
                     g_ptr_array_add(micro_labels, g_strdup(str_data)); 
                     if(str_data!=NULL) g_free(str_data);
                     if(counter==rows) break;
