@@ -96,9 +96,9 @@ static gint row_clear_block=0;
 static gint column_clear_block=0;
 static gboolean da_blocking=FALSE;
 //For comparison and clearing pointer arrays when entry value changes.
-gint g_row_value=10;
-gint g_column_value=5;
-gint g_table_value=5;
+static gint g_row_value=10;
+static gint g_column_value=5;
+static gint g_table_value=5;
 //Globals for storing labels.
 static GPtrArray *g_row_labels=NULL;
 static GPtrArray *g_column_labels=NULL;
@@ -114,10 +114,10 @@ static gint lines_per_page=0;
 static gint total_lines=0;
 static gint table_count=0;
 static gint table_print=0;
-gboolean drawing_data_valid=FALSE;
+static gboolean drawing_data_valid=FALSE;
 static PangoLayout *pango_layout_print=NULL;
 //The sqlite database.
-gchar *database_name="VelociRaptorData.db";
+static gchar *database_name="VelociRaptorData.db";
 
 int main(int argc, char *argv[])
   {
@@ -729,6 +729,7 @@ static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gp
   }
 static gboolean clear_column_labels(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
+    g_print("Column Clear Block\n");
     gint i=0;
     gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
     if(r_value>0&&r_value<=50)
@@ -1377,7 +1378,7 @@ static void labels_dialog(GtkWidget *widget, GtkWidget *ws[])
         GtkWidget *standard_combo=gtk_combo_box_text_new();
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "1", "RowColumns");
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "2", "Numbers");
-        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "3", "Microtiter");
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(standard_combo), "3", "Microtiter1");
         gtk_combo_box_set_active_id(GTK_COMBO_BOX(standard_combo), "1");
         g_signal_connect(GTK_COMBO_BOX(standard_combo), "changed", G_CALLBACK(change_standard_labels), cs);
 
@@ -1459,6 +1460,7 @@ static void column_combo_changed(GtkWidget *widget, gpointer data)
   }
 static void load_labels(GtkWidget *widget, GtkWidget *cs[])
   {
+    g_print("Load Labels\n");
     //Row Labels.
     GtkTreeIter tree_iter1;
     GtkTreeModel *model1=gtk_combo_box_get_model(GTK_COMBO_BOX(cs[0]));
@@ -1617,7 +1619,8 @@ static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[])
         g_signal_handler_unblock((gpointer)cs[1], column_combo_block);
 
         gtk_combo_box_set_active(GTK_COMBO_BOX(cs[1]), 0);
-      }
+      }  
+
   }
 static void get_letters(GPtrArray *micro_labels, gint rows)
   {
@@ -1964,7 +1967,7 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
           {
             get_db_data_for_crosstab(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
           }
-        else
+        if(combo4_index==5)
           {
             get_db_data_for_table(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
           }
@@ -2049,15 +2052,22 @@ static void get_table_string(GString *string, GtkWidget *ws[], gint page_number,
     if(check1_active&&g_table_labels->len!=0) g_string_append_printf(string, "%s\n", (char*)g_ptr_array_index(g_table_labels, table));
     if(check1_active&&g_table_labels->len==0) g_string_append_printf(string, "%i\n", table+1);
     
-
+    gint row_label_length=1;
     //Shift column labels by row label width.
     if(combo2_index==2) g_string_append_printf(string, "%s", shift_margin_str);
     if(combo2_index==3)
       {
-        gint row_label_length=strlen((char*)g_ptr_array_index(g_row_labels, 0));
+        gint length=g_row_labels->len;
+        for(i=0;i<length;i++)
+          {
+            if(strlen((char*)g_ptr_array_index(g_row_labels, i))>row_label_length)
+              {
+                row_label_length=strlen((char*)g_ptr_array_index(g_row_labels, i));
+              }
+          }
         gchar *shift_column_labels=g_strnfill(row_label_length, ' ');
         if(combo2_index==3) g_string_append_printf(string, "%s%s", shift_margin_str, shift_column_labels);
-        g_free(shift_column_labels);
+        if(shift_column_labels!=NULL) g_free(shift_column_labels);
       }
 
     //Get string for column labels.
@@ -2073,7 +2083,20 @@ static void get_table_string(GString *string, GtkWidget *ws[], gint page_number,
     //Get string for row labels and table.
     for(i=0;i<rows;i++)
       {
-        if(combo2_index==3) g_string_append_printf(string, "%s%s", shift_margin_str, (char*)g_ptr_array_index(g_row_labels, i));
+        if(combo2_index==3)
+          {
+            if(strlen((char*)g_ptr_array_index(g_row_labels, i))<row_label_length)
+              {
+                gint diff=row_label_length-strlen((char*)g_ptr_array_index(g_row_labels, i));
+                gchar *fill=g_strnfill(diff, ' ');
+                g_string_append_printf(string, "%s%s%s", shift_margin_str, fill, (char*)g_ptr_array_index(g_row_labels, i));
+                if(fill!=NULL) g_free(fill);
+              }
+            else
+              {
+                g_string_append_printf(string, "%s%s", shift_margin_str, (char*)g_ptr_array_index(g_row_labels, i));
+              }
+          }
         else g_string_append_printf(string, "%s", shift_margin_str);
         if(!show_numbers) g_string_append_printf(string, "%s", "\n");
         if(show_numbers)
@@ -2170,7 +2193,16 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     gint bottom = top + rows;
     //g_print("top %i bottom %i shift2 %i\n", top, bottom, shift_below_text2);
     cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
-    gint max_vertical_label=strlen((char*)g_ptr_array_index(g_row_labels, 0));
+    //Need to move this a function level up. Duplicates in get_table_string.
+    gint max_vertical_label=0;
+    gint row_label_len=g_row_labels->len;
+    for(i=0;i<row_label_len;i++)
+      {
+        if(strlen((char*)g_ptr_array_index(g_row_labels, i))>max_vertical_label)
+          {
+            max_vertical_label=strlen((char*)g_ptr_array_index(g_row_labels, i));
+          }
+      }
     if(combo2_index==3)
       {
         cairo_rectangle(cr, ((shift_margin) * rectangle_log.width)/PANGO_SCALE, (rectangle_log.height * (top) + markup_difference)/PANGO_SCALE, (rectangle_log.width/PANGO_SCALE)*(max_vertical_label+.10), (rectangle_log.height*(rows+1))/PANGO_SCALE);
@@ -2920,6 +2952,7 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
     g_print("\n");
 
     pre_column_width=column_width;
+    pre_shift_column=shift_column_left;
     if(fill_end!=NULL) g_free(fill_end);    
   }
 static double round1(gdouble x, guint digits)
