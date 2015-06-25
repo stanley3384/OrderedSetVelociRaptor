@@ -2505,6 +2505,8 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
                     buffer2[l]=buffer1[l];
                     if(found_decimal) counter++;
                   }
+                //Safety to end buffer string
+                buffer2[buffer_len]='\0';
                 length=strlen(buffer2);
                 fill_temp=column_width-length-shift_number_left;
                 gchar *fill_start=NULL;
@@ -2730,6 +2732,8 @@ static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint 
                     buffer2[l]=buffer1[l];
                     if(found_decimal) counter++;
                   }
+                //Safety to end buffer string
+                buffer2[buffer_len]='\0';
                 length=strlen(buffer2);
                 fill_temp=column_width-length-shift_number_left;
                 gchar *fill_start=NULL;
@@ -2868,6 +2872,8 @@ static void get_db_data_for_table(gint rows, gint columns, gint tables, gint col
                     buffer2[l]=buffer1[l];
                     if(found_decimal) counter++;
                   }
+                //Safety to end buffer string
+                buffer2[buffer_len]='\0';
                 length=strlen(buffer2);
                 fill_temp=column_width-length-shift_number_left;
                 gchar *fill_start=NULL;
