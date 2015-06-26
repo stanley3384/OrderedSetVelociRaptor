@@ -103,9 +103,11 @@ static gint g_table_value=5;
 static GPtrArray *g_row_labels=NULL;
 static GPtrArray *g_column_labels=NULL;
 static GPtrArray *g_table_labels=NULL;
-//Drawing array for values.
-static GPtrArray *g_data_values=NULL;
+//Global for storing data for drawing. Needed for heatmapping after truncating values.
+static GArray *g_data=NULL;
 static GArray *g_min_max=NULL;
+//Drawing array for formatted data values.
+static GPtrArray *g_data_values=NULL;
 //Drawing globals.
 static gint plate_counter=1;
 static gint plate_counter_sql=1;
@@ -332,6 +334,7 @@ int main(int argc, char *argv[])
     g_table_labels=g_ptr_array_new_full(5, g_free);
     g_data_values=g_ptr_array_new_full(5000, g_free);
     g_min_max=g_array_new(FALSE, TRUE, sizeof(gdouble));
+    g_data=g_array_new(FALSE, TRUE, sizeof(gdouble));
  
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
@@ -2001,7 +2004,9 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
         gint array_length1=g_data_values->len;
         for(i=0;i<array_length1; i++) g_ptr_array_remove_index_fast(g_data_values, 0);
         gint array_length2=g_min_max->len;
-        for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0);       
+        for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0); 
+        gint array_length3=g_data->len;
+        for(i=0;i<array_length3;i++) g_array_remove_index_fast(g_data, 0);       
         //Get the data.
         if(combo4_index==1)
           {
@@ -2339,21 +2344,23 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
                       {
                         if(combo1_index==3)
                           { 
-                            data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            //data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
                             //g_print("%i %s %f\n", counter+shift_index, (char*)g_ptr_array_index(g_data_values, counter+shift_index), data_value); 
+                            data_value=g_array_index(g_data, gdouble, counter+shift_index);
                             counter++;
                             heatmap_value_rgb(data_value, min, max, &red, &green, &blue);
                           }
                         else if(combo1_index==4)
                           {
-                            data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
-                            
+                            //data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            data_value=g_array_index(g_data, gdouble, counter+shift_index);
                             counter++;
                             heatmap_value_bry(data_value, min, max, &red, &green, &blue);
                           }
                         else
                           {
-                            data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            //data_value=g_ascii_strtod((char*)g_ptr_array_index(g_data_values, counter+shift_index), NULL);
+                            data_value=g_array_index(g_data, gdouble, counter+shift_index);
                             counter++;
                             heatmap_value_iris(data_value, min, max, &red, &green, &blue); 
                           }
@@ -2471,6 +2478,7 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     gint k=0;
     gint l=0;
     gint fill_temp=0;
+    gdouble dtemp=0;
     gdouble random_number=0;
     gint counter=-1;
     gboolean found_decimal=FALSE;
@@ -2489,7 +2497,9 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
           {
             for(k=0;k<columns;k++)
               {
-                random_number=round1(100*g_rand_double(rand1), round_float);
+                dtemp=g_rand_double(rand1);
+                g_array_append_val(g_data, dtemp);
+                random_number=round1(100*dtemp, round_float);
                 g_ascii_formatd(buffer1, G_ASCII_DTOSTR_BUF_SIZE, "%f", random_number);
                 length=strlen(buffer1);
                 counter=-1;
@@ -2531,8 +2541,8 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
                     g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer2));
                     //g_print("4|%s| %i fill %i\n", buffer, strlen(buffer), fill_temp);
                   }
-                if(random_number<min) min=random_number;
-                if(random_number>max) max=random_number;
+                if(dtemp<min) min=dtemp;
+                if(dtemp>max) max=dtemp;
                 if(fill_start!=NULL) g_free(fill_start);
               }
           }
@@ -2552,6 +2562,7 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
     gint i=0;
     gint j=0;
     gint k=0;
+    gdouble dtemp=0;
     gint fill_temp=0;
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
@@ -2565,8 +2576,9 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
           {
             for(k=0;k<columns;k++)
               {
+                dtemp=(double)counter;
+                g_array_append_val(g_data, dtemp);
                 gchar *string=g_strdup_printf("%i", counter);
-                counter++;
                 length=strlen(string);
                 fill_temp=column_width-length-shift_number_left;
                 gchar *fill_start=NULL;
@@ -2591,6 +2603,7 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
                 if(counter>max) max=counter;
                 if(fill_start!=NULL) g_free(fill_start);
                 if(string!=NULL) g_free(string);
+                counter++;
               }
           }
         g_array_append_val(g_min_max, min);
@@ -2608,6 +2621,7 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
     gint i=0;
     gint j=0;
     gint k=0;
+    gdouble dtemp=0;
     gint fill_temp=0;
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
@@ -2622,6 +2636,8 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
             for(k=0;k<columns;k++)
               {
                 sequence_number=(rows*k+1)+j+(rows*columns*i);
+                dtemp=(double)sequence_number;
+                g_array_append_val(g_data, dtemp);
                 gchar *string=g_strdup_printf("%i", sequence_number);
                 length=strlen(string);
                 fill_temp=column_width-length-shift_number_left;
@@ -2758,12 +2774,15 @@ static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint 
                   {
                     if(int_number<min) min=int_number;
                     if(int_number>max) max=int_number;
+                    g_array_append_val(g_data, int_number);
                   }
-                if(column_type==SQLITE_FLOAT)
+                else if(column_type==SQLITE_FLOAT)
                   {
                     if(double_number<min) min=double_number;
                     if(double_number>max) max=double_number;
+                    g_array_append_val(g_data, double_number);
                   }
+                else g_array_append_val(g_data, double_number);
                 if(fill_start!=NULL) g_free(fill_start);
               }
           }
@@ -2840,6 +2859,7 @@ static void get_db_data_for_table(gint rows, gint columns, gint tables, gint col
                     else if(column_type==SQLITE_TEXT)
                       {
                         sql_text=g_strdup((char*)sqlite3_column_text(stmt1, k));
+                        double_number=0;
                       }
                     else if(column_type==SQLITE_NULL) double_number=0;
                     else double_number=0;
@@ -2894,8 +2914,20 @@ static void get_db_data_for_table(gint rows, gint columns, gint tables, gint col
                   {
                     g_ptr_array_add(g_data_values, g_strdup_printf("%s", buffer2));
                   }
-                if(double_number<min) min=double_number;
-                if(double_number>max) max=double_number;
+                //Shouldn't heatmap tablular layout. Put in filler values.
+                if(column_type==SQLITE_INTEGER)
+                  {
+                    if(int_number<min) min=int_number;
+                    if(int_number>max) max=int_number;
+                    g_array_append_val(g_data, int_number);
+                  }
+                else if(column_type==SQLITE_FLOAT)
+                  {
+                    if(double_number<min) min=double_number;
+                    if(double_number>max) max=double_number;
+                    g_array_append_val(g_data, double_number);
+                  }
+                else g_array_append_val(g_data, double_number);
                 if(fill_start!=NULL) g_free(fill_start);
                 if(sql_text!=NULL) g_free(sql_text);
               }
