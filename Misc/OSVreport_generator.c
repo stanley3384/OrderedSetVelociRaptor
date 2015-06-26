@@ -1652,11 +1652,11 @@ static void change_standard_labels(GtkWidget *widget, GtkWidget *cs[])
         while(gtk_tree_model_iter_next(model2, &tree_iter2)) rows2++;
         g_signal_handler_block((gpointer)cs[1], column_combo_block);
         GPtrArray *micro_labels=g_ptr_array_new_full(10, g_free);
-        get_letters(micro_labels, rows1, FALSE);
+        get_letters(micro_labels, rows2, FALSE);
         gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(cs[1]));
         for(i=0;i<rows2;i++)
           {
-            gchar *id=g_strdup_printf("%i", i);  
+            gchar *id=g_strdup_printf("%i", i);
             gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cs[1]), id, (char*)g_ptr_array_index(micro_labels, i));
             g_free(id);
           }
