@@ -2564,6 +2564,8 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
     gint k=0;
     gdouble dtemp=0;
     gint fill_temp=0;
+    gint buffer_len=column_width;
+    gchar buffer1[buffer_len+1];
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
     gint counter=1;
@@ -2585,20 +2587,22 @@ static void get_test_data2(gint rows, gint columns, gint tables, gint column_wid
                 if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
                 if(fill_temp>0&&shift_number_left>0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, string, fill_end));
+                    g_snprintf(buffer1, buffer_len+1, "%s%s%s", fill_start, string, fill_end);
                   }
                 else if(fill_temp<1&&shift_number_left>0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", string, fill_end));
+                    g_snprintf(buffer1, buffer_len+1, "%s%s", string, fill_end);
                   }
                 else if(fill_temp>0&&shift_number_left==0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, string));
+                    g_snprintf(buffer1, buffer_len+1, "%s%s", fill_start, string);
                   }
                 else
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s", string));
+                    g_snprintf(buffer1, buffer_len+1, "%s", string);
                   }
+                buffer1[buffer_len]='\0';
+                g_ptr_array_add(g_data_values, g_strdup(buffer1));
                 if(counter<min) min=counter;
                 if(counter>max) max=counter;
                 if(fill_start!=NULL) g_free(fill_start);
@@ -2623,6 +2627,8 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
     gint k=0;
     gdouble dtemp=0;
     gint fill_temp=0;
+    gint buffer_len=column_width;
+    gchar buffer1[buffer_len+1];
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
     gint sequence_number=0;
@@ -2645,20 +2651,23 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
                 if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
                 if(fill_temp>0&&shift_number_left>0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s%s", fill_start, string, fill_end));
+                    g_snprintf(buffer1, buffer_len+1, "%s%s%s", fill_start, string, fill_end);
                   }
                 else if(fill_temp<1&&shift_number_left>0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", string, fill_end));
+                    g_snprintf(buffer1, buffer_len+1, "%s%s", string, fill_end);
                   }
                 else if(fill_temp>0&&shift_number_left==0)
                   {
-                    g_ptr_array_add(g_data_values, g_strdup_printf("%s%s", fill_start, string));
+                    g_snprintf(buffer1, buffer_len+1, "%s%s", fill_start, string);
                   }
                 else
                   {
+                    g_snprintf(buffer1, buffer_len+1, "%s", string);
                     g_ptr_array_add(g_data_values, g_strdup_printf("%s", string));
                   }
+                buffer1[buffer_len]='\0';
+                g_ptr_array_add(g_data_values, g_strdup(buffer1));
                 if(sequence_number<min) min=sequence_number;
                 if(sequence_number>max) max=sequence_number;
                 if(fill_start!=NULL) g_free(fill_start);
