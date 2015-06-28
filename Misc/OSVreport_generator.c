@@ -74,8 +74,7 @@ static void heatmap_value_rgb(gdouble data_value, gdouble min, double max, gdoub
 static void heatmap_value_bry(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
 static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdouble *red, gdouble *green, gdouble *blue);
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float);
-static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
-static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left);
+static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint sequence);
 static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string);
 static void get_db_data_for_table(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string);
 static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint column_width, gint shift_column_left);
@@ -298,8 +297,9 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 0, "1", "Random");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 1, "2", "RCsequence");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 2, "3", "CRsequence");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 3, "4", "CrosstabFromDB");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 4, "5", "TableFromDB");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 3, "4", "MiddleSequence");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 4, "5", "CrosstabFromDB");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 5, "6", "TableFromDB");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo4), "1");
     g_signal_connect(combo4, "changed", G_CALLBACK(change_sql_entry), entry10);
 
@@ -512,7 +512,7 @@ static void message_dialog(gchar *string)
 static void change_sql_entry(GtkWidget *widget, gpointer data)
   {
     gint active_id=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget)));
-    if(active_id==1||active_id==2||active_id==3) gtk_widget_set_sensitive(GTK_WIDGET(data), FALSE);
+    if(active_id==1||active_id==2||active_id==3||active_id==4) gtk_widget_set_sensitive(GTK_WIDGET(data), FALSE);
     else gtk_widget_set_sensitive(GTK_WIDGET(data), TRUE);
   }
 static gint validate_entries(GtkWidget *ws[])
@@ -655,7 +655,7 @@ static gint check_sql_string(const gchar *sql_string, GtkWidget *ws[])
         g_print("Columns in SELECT %i\n", i);
         g_strfreev(string_array);
         g_free(string2);
-        if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])))==5)
+        if(atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[14])))==6)
           {
             if(atoi(gtk_entry_get_text(GTK_ENTRY(ws[1])))!=i)
               {
@@ -2014,17 +2014,21 @@ static void start_draw_report(GtkNotebook *notebook, GtkWidget *page, guint page
           }
         if(combo4_index==2)
           {
-            get_test_data2(rows, columns, tables, column_width, shift_number_left);
+            get_test_data2(rows, columns, tables, column_width, shift_number_left, 1);
           }
         if(combo4_index==3)
           {
-            get_test_data3(rows, columns, tables, column_width, shift_number_left);
+            get_test_data2(rows, columns, tables, column_width, shift_number_left, 2);
           }
         if(combo4_index==4)
           {
-            get_db_data_for_crosstab(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
+            get_test_data2(rows, columns, tables, column_width, shift_number_left, 3);
           }
         if(combo4_index==5)
+          {
+            get_db_data_for_crosstab(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
+          }
+        if(combo4_index==6)
           {
             get_db_data_for_table(rows, columns, tables, column_width, shift_number_left, round_float, sql_string);
           }
@@ -2472,7 +2476,6 @@ static void heatmap_value_iris(gdouble data_value, gdouble min, double max, gdou
   }
 static void get_test_data1(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float)
   {
-    g_print("Get Test Data1\n");
     gint i=0;
     gint j=0;
     gint k=0;
@@ -2556,72 +2559,8 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     if(fill_end!=NULL) g_free(fill_end);
     g_rand_free(rand1);
   }
-static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left)
+static void get_test_data2(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint sequence)
   {
-    g_print("Get Test Data2\n");
-    gint i=0;
-    gint j=0;
-    gint k=0;
-    gdouble dtemp=0;
-    gint fill_temp=0;
-    gint buffer_len=column_width;
-    gchar buffer1[buffer_len+1];
-    gdouble min=G_MAXDOUBLE;
-    gdouble max=-G_MAXDOUBLE;
-    gint counter=1;
-    gint length=0;
-    gchar *fill_end=NULL;
-    if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
-    for(i=0;i<tables;i++)
-      {
-        for(j=0;j<rows;j++)
-          {
-            for(k=0;k<columns;k++)
-              {
-                dtemp=(double)counter;
-                g_array_append_val(g_data, dtemp);
-                gchar *string=g_strdup_printf("%i", counter);
-                length=strlen(string);
-                fill_temp=column_width-length-shift_number_left;
-                gchar *fill_start=NULL;
-                if(fill_temp>0) fill_start=g_strnfill(fill_temp, ' ');
-                if(fill_temp>0&&shift_number_left>0)
-                  {
-                    g_snprintf(buffer1, buffer_len+1, "%s%s%s", fill_start, string, fill_end);
-                  }
-                else if(fill_temp<1&&shift_number_left>0)
-                  {
-                    g_snprintf(buffer1, buffer_len+1, "%s%s", string, fill_end);
-                  }
-                else if(fill_temp>0&&shift_number_left==0)
-                  {
-                    g_snprintf(buffer1, buffer_len+1, "%s%s", fill_start, string);
-                  }
-                else
-                  {
-                    g_snprintf(buffer1, buffer_len+1, "%s", string);
-                  }
-                buffer1[buffer_len]='\0';
-                g_ptr_array_add(g_data_values, g_strdup(buffer1));
-                if(counter<min) min=counter;
-                if(counter>max) max=counter;
-                if(fill_start!=NULL) g_free(fill_start);
-                if(string!=NULL) g_free(string);
-                counter++;
-              }
-          }
-        g_array_append_val(g_min_max, min);
-        g_array_append_val(g_min_max, max);
-        //g_print("min %f max %f\n", min, max);
-        min=G_MAXDOUBLE;
-        max=-G_MAXDOUBLE;
-      }
-    
-    if(fill_end!=NULL) g_free(fill_end);
-  }
-static void get_test_data3(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left)
-  {
-    g_print("Get Test Data3\n");
     gint i=0;
     gint j=0;
     gint k=0;
@@ -2632,6 +2571,7 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
     gint sequence_number=0;
+    gdouble middle=0;
     gint length=0;
     gchar *fill_end=NULL;
     if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
@@ -2641,7 +2581,13 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
           {
             for(k=0;k<columns;k++)
               {
-                sequence_number=(rows*k+1)+j+(rows*columns*i);
+                if(sequence==1) sequence_number=(j*columns+k+1)+(rows*columns*i);
+                if(sequence==2) sequence_number=(rows*k+1)+j+(rows*columns*i);
+                if(sequence==3)
+                  {
+                    middle=((rows*columns)/2+(rows*columns*i));
+                    sequence_number=abs(middle-((j*columns+k)+(rows*columns*i)))+(rows*columns*i);
+                  }
                 dtemp=(double)sequence_number;
                 g_array_append_val(g_data, dtemp);
                 gchar *string=g_strdup_printf("%i", sequence_number);
@@ -2685,7 +2631,6 @@ static void get_test_data3(gint rows, gint columns, gint tables, gint column_wid
   }
 static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string)
   {
-    g_print("Get Test Data1\n");
     gint i=0;
     gint j=0;
     gint k=0;
@@ -2809,7 +2754,6 @@ static void get_db_data_for_crosstab(gint rows, gint columns, gint tables, gint 
   }
 static void get_db_data_for_table(gint rows, gint columns, gint tables, gint column_width, gint shift_number_left, gint round_float, gchar *sql_string)
   {
-    g_print("Get Test Data1\n");
     gint i=0;
     gint j=0;
     gint k=0;
@@ -3042,14 +2986,14 @@ static void get_labels_for_drawing(gint tables, gint rows, gint columns, gint co
         array_length=g_table_labels->len;
         for(i=0;i<array_length; i++) g_ptr_array_remove_index_fast(g_table_labels, 0);
       }
-
+    /*
     gint length1=g_row_labels->len;
     for(i=0;i<length1;i++) g_print("%s ", (char*)g_ptr_array_index(g_row_labels, i));
     g_print("\n");
     gint length2=g_column_labels->len;
     for(i=0;i<length2;i++) g_print("%s ", (char*)g_ptr_array_index(g_column_labels, i));
     g_print("\n");
-
+    */
     pre_column_width=column_width;
     pre_shift_column=shift_column_left;
     if(fill_end!=NULL) g_free(fill_end);    
@@ -3135,11 +3079,15 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
       }
     if(combo4_index==2)
       {
-        get_test_data2(rows, columns, tables, column_width, shift_number_left);
+        get_test_data2(rows, columns, tables, column_width, shift_number_left, 1);
       }
     if(combo4_index==3)
       {
-        get_test_data3(rows, columns, tables, column_width, shift_number_left);
+        get_test_data2(rows, columns, tables, column_width, shift_number_left, 2);
+      }
+    if(combo4_index==4)
+      {
+        get_test_data2(rows, columns, tables, column_width, shift_number_left, 3);
       }
     else
       {
