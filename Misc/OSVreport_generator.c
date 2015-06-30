@@ -3,7 +3,12 @@
 
     Re-write the report_generator.py program in C. A good comparison with Python, Cython and C.
 The C program is faster for doing the scrolling and redraws. Also, the binary is smaller than what
-Cython produces.  
+Cython produces.
+    The order of some of the functions is different between the Python and C versions. The C version
+has a single point for data access where as the Python version gets data for each table being drawn.
+The C version also reuses the data for scrolling and the Python version rebuilds it during scrolling so
+the comparison between the two programs isn't an equivalent comparison. Some things got switched 
+around to try to improve the performance of the re-draws in the C version. 
 
     For the program image the code will look for dino2.png. It is in the Python folder. Have the
 png in the same folder as the report generator for showing the image in the about dialog and the toolbar.
