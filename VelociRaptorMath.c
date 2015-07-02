@@ -866,24 +866,35 @@ void database_to_box_graph_sql(int iRadioButton, int lower_bound, int upper_boun
           }     
         apop_query("COMMIT;");
 
+        //apop_query_to_matrix removed from Apophenia library.
+        apop_data *db_data=NULL;
         if(iRadioButton==1)
           {
-            plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Data AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);       
+            db_data=apop_query_to_data("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Data AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 4, lower_bound, upper_bound);       
+            //plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Data AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);       
           }
         if(iRadioButton==2)
-          {           
-            plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Percent AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);            
+          {   
+            db_data=apop_query_to_data("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Percent AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 4, lower_bound, upper_bound);  
+            //plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Percent AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);            
           }
         if(iRadioButton==3)
           { 
-            plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Data AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);        
+            db_data=apop_query_to_data("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Data AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 4, lower_bound, upper_bound);  
+            //plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Data AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);        
           }
         if(iRadioButton==4)
           { 
-            plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Percent AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);          
+            db_data=apop_query_to_data("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Percent AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 4, lower_bound, upper_bound);
+            //plot_matrix_now(apop_query_to_matrix("SELECT T4.BoxID, T3.D1 FROM (SELECT Plate|| '0' ||Groups AS V1, T2.Percent AS D1 FROM aux AS T1, data AS T2 WHERE T1.KeyID=T2.KeyID) AS T3, BoxGraphTemp AS T4 WHERE T3.V1=T4.Order1 AND BoxID >= %i AND BoxID <= %i ORDER BY T4.Order2;", lower_bound, upper_bound), 4, lower_bound, upper_bound);          
                  }
         apop_query("DROP TABLE IF EXISTS BoxGraphTemp;");
         apop_db_close(0);
+        apop_data_free(db_data);
    }
 void database_to_error_graph_sql(int iRadioButton1, int iRadioButton2, int lower_bound, int upper_bound)
    {
@@ -910,38 +921,52 @@ void database_to_error_graph_sql(int iRadioButton1, int iRadioButton2, int lower
           }
         apop_query("COMMIT;");
  
-
+        //apop_query_to_matrix removed from Apophenia library.
+        apop_data *db_data=NULL;
         if(iRadioButton2==1)
           {
-            plot_matrix_now(apop_query_to_matrix("SELECT ErrorID, Mean, StandardDev FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound), 3, lower_bound, upper_bound);   
+            db_data=apop_query_to_data("SELECT ErrorID, Mean, StandardDev FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 3, lower_bound, upper_bound);
+            //plot_matrix_now(apop_query_to_matrix("SELECT ErrorID, Mean, StandardDev FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound), 3, lower_bound, upper_bound);   
           }
         if(iRadioButton2==2)
-          {   
-            plot_matrix_now(apop_query_to_matrix("SELECT ErrorID, Mean, (2.0*StandardDev) FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound), 3, lower_bound, upper_bound);     
+          {  
+            db_data=apop_query_to_data("SELECT ErrorID, Mean, (2.0*StandardDev) FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 3, lower_bound, upper_bound);
+            //plot_matrix_now(apop_query_to_matrix("SELECT ErrorID, Mean, (2.0*StandardDev) FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound), 3, lower_bound, upper_bound);     
           }
         if(iRadioButton2==3)
           {    
-            plot_matrix_now(apop_query_to_matrix("SELECT ErrorID, Mean, (3.0*StandardDev) FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound), 3, lower_bound, upper_bound);
+            db_data=apop_query_to_data("SELECT ErrorID, Mean, (3.0*StandardDev) FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 3, lower_bound, upper_bound);
+            //plot_matrix_now(apop_query_to_matrix("SELECT ErrorID, Mean, (3.0*StandardDev) FROM ErrorGraphTemp WHERE ErrorID >= %i AND ErrorID <= %i;", lower_bound, upper_bound), 3, lower_bound, upper_bound);
           }
         
         apop_query("DROP TABLE IF EXISTS ErrorGraphTemp;");
         apop_db_close(0);
+        apop_data_free(db_data);
    }
 void database_to_scatter_graph_sql(int iRadioButton, int lower_bound, int upper_bound)
    {
       apop_opts.db_engine='l';
       apop_db_open("VelociRaptorData.db");
-
+      //apop_query_to_matrix removed from Apophenia library.
+      apop_data *db_data=NULL;
         if(iRadioButton==1)
           {
-            plot_matrix_now(apop_query_to_matrix("SELECT Data FROM data WHERE KeyID >= %i AND KeyID <= %i;", lower_bound, upper_bound), 1, lower_bound, upper_bound);       
+            db_data=apop_query_to_data("SELECT Data FROM data WHERE KeyID >= %i AND KeyID <= %i;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 1, lower_bound, upper_bound);
+            //plot_matrix_now(apop_query_to_matrix("SELECT Data FROM data WHERE KeyID >= %i AND KeyID <= %i;", lower_bound, upper_bound), 1, lower_bound, upper_bound);       
           }
         if(iRadioButton==2)
-          {   
-             plot_matrix_now(apop_query_to_matrix("SELECT Percent FROM data WHERE KeyID >= %i AND KeyID <= %i;", lower_bound, upper_bound), 2, lower_bound, upper_bound);
+          {  
+            db_data=apop_query_to_data("SELECT Percent FROM data WHERE KeyID >= %i AND KeyID <= %i;", lower_bound, upper_bound);
+            plot_matrix_now(db_data->matrix, 1, lower_bound, upper_bound); 
+            //plot_matrix_now(apop_query_to_matrix("SELECT Percent FROM data WHERE KeyID >= %i AND KeyID <= %i;", lower_bound, upper_bound), 2, lower_bound, upper_bound);
           }
               
       apop_db_close(0);
+      apop_data_free(db_data);
    }
 void plot_matrix_now(gsl_matrix *data, int graph, int lower_bound, int upper_bound)
    {
