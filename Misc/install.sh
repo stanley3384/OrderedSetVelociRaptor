@@ -56,8 +56,9 @@ if [ "$answer" = "y" ]; then
             cd ./OrderedSetVelociRaptor-master
             echo "Build the program"
             make
-            echo "Move program to install directory"
+            echo "Move programs to install directory"
             mv VelociRaptor ../../
+            mv OSVreport_generator ../../
             echo "Move icons to install directory"
             mv dino.svg ../../
             mv dino2.png ../../
