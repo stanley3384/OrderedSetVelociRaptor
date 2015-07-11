@@ -11,11 +11,18 @@ COMPILE4=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -D_GNU_SOURCE=1 -O2 -
 COMPILE5=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -D_GNU_SOURCE=1 -O2 -c VelociRaptorPrinting.c -o VelociRaptorPrinting.o `pkg-config --libs gtk+-3.0`
 COMPILE6=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -fopenmp -Wall -D_GNU_SOURCE=1 -O2 -c VelociRaptorPermutations.c -o VelociRaptorPermutations.o `pkg-config --libs gtk+-3.0`
 COMPILE7=gcc `pkg-config --cflags gtk+-3.0` -std=c99 -Wall -D_GNU_SOURCE=1 -O2 -c VelociRaptorHtmlTable.c -o VelociRaptorHtmlTable.o `pkg-config --libs gtk+-3.0`
+COMPILE8=gcc -Wall -O2 OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
 
-executable:$(OBJECTS)
+all: executable1 executable2
+
+executable1:$(OBJECTS)
 	@echo [CC] VelociRaptor
 	@gcc $(CFLAGS) $(OBJECTS) VelociRaptorUI.c $(LINKFLAGS) -o $(PROGNAME)
 
+executable2:OSVreport_generator.c
+	@echo [CC] OSVreport_generator
+	@$(COMPILE8)
+	
 mvdist.o: mvdist.f90
 	@echo [FC] $@
 	@$(COMPILE1)
@@ -48,8 +55,5 @@ VelociRaptorHtmlTable.o: VelociRaptorHtmlTable.c
 	@echo [CC] $@
 	@$(COMPILE7)
 
-run: executable
-	./$(PROGNAME)
-
 clean:
-	rm VelociRaptor mvdist.o FortranInterop.o mvstat.mod precision_model.mod HotellingsT2.o VelociRaptorMath.o VelociRaptorUI_Validation.o VelociRaptorPrinting.o VelociRaptorPermutations.o VelociRaptorHtmlTable.o
+	rm VelociRaptor OSVreport_generator mvdist.o FortranInterop.o mvstat.mod precision_model.mod HotellingsT2.o VelociRaptorMath.o VelociRaptorUI_Validation.o VelociRaptorPrinting.o VelociRaptorPermutations.o VelociRaptorHtmlTable.o
