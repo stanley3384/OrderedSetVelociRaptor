@@ -4,12 +4,12 @@ Some ideas for analysis.
 
 This file has int main() along with the UI code.
 
-Copyright (c) 2013 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
+Copyright (c) 2015 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
 
 Compile with make and makefile.
 
-Compiled on Ubuntu version 12.04 LTS using a netbook as the test computer. Gedit was the text editor used.
+Compiled on Ubuntu version 14.04 LTS using a netbook as the test computer. Gedit was the text editor used.
 
 */
 
@@ -433,6 +433,16 @@ int main(int argc, char *argv[])
     g_signal_connect(G_OBJECT(PlateNegControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);  
     
     gtk_container_add(GTK_CONTAINER(window), grid);
+
+    GError *css_error=NULL;
+    gchar css_string[]="GtkWindow, GtkNotebook{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}";
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GdkDisplay *display = gdk_display_get_default();
+    GdkScreen *screen = gdk_display_get_default_screen(display);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+    if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    g_object_unref(provider);
      
     gtk_widget_show_all(window);
 
