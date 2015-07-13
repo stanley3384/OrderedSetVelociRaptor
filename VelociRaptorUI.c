@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkWindow, GtkNotebook{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}";
+    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
