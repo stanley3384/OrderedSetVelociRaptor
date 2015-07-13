@@ -134,6 +134,18 @@ int main(int argc, char *argv[])
     gtk_container_set_border_width(GTK_CONTAINER(window), 15);
     gtk_window_set_default_size(GTK_WINDOW(window), 750, 550);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    //Set the icon for the launcher.
+    GError *error=NULL;
+    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino2.png", &error);
+    if(!pixbuf)
+      {
+        g_print("%s\n", error->message);
+        g_error_free(error);
+      }
+    else
+      {
+        gtk_window_set_icon(GTK_WINDOW(window), pixbuf);
+      }
 
     GtkWidget *menu1=gtk_menu_new();
     GtkWidget *menu1item1=gtk_menu_item_new_with_label("Open Report");
