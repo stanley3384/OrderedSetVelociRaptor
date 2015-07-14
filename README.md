@@ -2,8 +2,8 @@
 
 --The VelociRaptor program helps with some ordered set statistical analysis in high throughput screening and assay development. Included are percent of control, Dunnett's test, ANOVA, Levene's test, Anderson Darling test, permutation tests, heatmaps and a few more. The statistical result sets are in tabular format making the data easy to move into any relational database. There are a couple of different ways to produce heatmapped microtiter platemaps along with a few other useful types of graphical output. 
 
-Heatmap
-![ScreenShot](/HeatmapReadme.jpg)
+Descriptive Statistics
+![ScreenShot](/statistics.png)
 
 --Data sets can also be output to HTML from the application in a heatmapped microtiter plate format or in tablular format. If there is a need to customize a layout with HTML there is a Python script along with a couple C programs that make it easy to customize a layout with HTML. With a little HTML and CSS you can get a print layout exactly how you want it. 
 

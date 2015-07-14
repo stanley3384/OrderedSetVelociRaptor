@@ -26,7 +26,7 @@
 
 void basic_statistics_sql(GtkTextView *textview, int iRadioButton)
    {
-     printf("Basic Stats\n");
+     printf("Descriptive Stats\n");
      int i=0;
      int j=0;
      int check=0;
