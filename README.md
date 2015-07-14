@@ -1,6 +1,6 @@
 
 
---The VelociRaptor program helps with some ordered set statistical analysis in high throughput screening and assay development. Included are percent of control, Dunnett's test, ANOVA, Levene's test, Anderson Darling test, permutation tests, heatmaps and a few more. The statistical result sets are in tabular format making the data easy to move into any relational database. There are a couple of different ways to produce heatmapped microtiter platemaps along with a few other useful types of graphical output. 
+--The VelociRaptor program helps with some ordered set statistical analysis in high throughput screening and assay development. Included are percent of control, Dunnett's test, ANOVA, Levene's test, Anderson Darling test, permutation tests, heatmaps and a few more. The statistical result sets are in tabular format making the data easy to move into any relational database. 
 
 Descriptive Statistics
 ![ScreenShot](/statistics.png)
