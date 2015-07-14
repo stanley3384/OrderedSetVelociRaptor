@@ -11,7 +11,7 @@ Descriptive Statistics
 
 
 Some Heatmap Layouts
-![Screenshot2](/Heatmap1.png)
+![Screenshot2](/heatmap1.png)
 
 ![Screenshot3](/table1.jpg)
 
