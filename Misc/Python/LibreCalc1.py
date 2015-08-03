@@ -1,17 +1,22 @@
-#!/usr/bin/python
+#!/user/bin/python
 
 """
 Test code for automating LibreOffice Calc from GTK+. Build a couple of 96-well plates and
 heatmap them.
 
-For Ubuntu 14.04 
-   http://askubuntu.com/questions/418225/how-do-i-install-the-python-uno-package
-   run with: /usr/bin/python3 LibreCalc1.py
+Useful for uno
+  http://lucasmanual.com/mywiki/OpenOffice
+  https://wiki.openoffice.org/wiki/Extensions_development_python
 
-For Ubuntu 12.04
+For Ubuntu 12.04 using Python 2
   sudo apt-get install libreoffice-dev
   sudo apt-get install python-uno
-  run with: python LibreCalc1.py
+  start with: python LibreCalc1.py
+
+For Ubuntu 14.04 and Python 3
+  sudo apt-get install python3-gi
+  sudo apt-get install libreoffice-script-provider-python
+  start with: /usr/bin/python3 LibreCalc1.py
 
 C. Eric Cashon
 """
@@ -19,6 +24,11 @@ C. Eric Cashon
 import os
 import subprocess
 import time
+import sys
+import imp
+uno = imp.load_source('uno.py', '/usr/lib/python3/dist-packages/uno.py')
+unohelper = imp.load_source('unohelper.py', '/usr/lib/python3/dist-packages/unohelper.py')
+sys.path.append("/usr/lib/python3/dist-packages/")
 import uno
 import unohelper
 from com.sun.star.beans import PropertyValue
@@ -34,7 +44,7 @@ class MainWindow(Gtk.Window):
 
         style_provider = Gtk.CssProvider()
         #Add b for byte string error in python3.2. Works in 2.7 also.
-        css = b"""GtkWindow{background: green}
+        css = b"""GtkWindow{background: rgba(0,255,0,1)}
                   GtkLabel{color: black}
                   GtkButton{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,0,0,1)), color-stop(0.5,rgba(0,255,0,1)), color-stop(1.0,rgba(0,0,255,1)));}"""
         style_provider.load_from_data(css)
@@ -112,7 +122,7 @@ class MainWindow(Gtk.Window):
             #Fill in numbers
             low = float(plate*rows*columns)
             high = low + float(rows * columns - 1)
-            print str(low) + " " + str(high)
+            print(str(low) + " " + str(high))
             for row in range(rows):
                 for column in range(columns):
                     cell = sheet.getCellByPosition(column+2, (plate*(rows+1))+row+2)

@@ -1,17 +1,23 @@
-#!/usr/bin/python
+#!/user/bin/python
 
 """
 Test code for sending text to LibreOffice Writer from a GTK TextView. Change some Writer text 
 formats in the script and save to a pdf in the working directory.
 
-For Ubuntu 14.04 
-   http://askubuntu.com/questions/418225/how-do-i-install-the-python-uno-package
-   run with: /usr/bin/python3 LibreConnect1.py
+Useful places for uno
+  http://lucasmanual.com/mywiki/OpenOffice
+  https://wiki.openoffice.org/wiki/Extensions_development_python
 
-For Ubuntu 12.04
+For Ubuntu12.04 and Python 2
   sudo apt-get install libreoffice-dev
   sudo apt-get install python-uno
-  run with: python LibreConnect1.py
+  start with: python LibreConnect1.py
+
+For Ubuntu 14.04 and Python 3
+  sudo apt-get install python3-gi
+  sudo apt-get install libreoffice-script-provider-python
+  start with /usr/bin/python3 LibreConnect1.py
+  
 
 C. Eric Cashon
 """
