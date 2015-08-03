@@ -4,11 +4,14 @@
 Test code for automating LibreOffice Calc from GTK+. Build a couple of 96-well plates and
 heatmap them.
 
-For LibreOffice dev files on Ubuntu
+For Ubuntu 14.04 
+   http://askubuntu.com/questions/418225/how-do-i-install-the-python-uno-package
+   run with: /usr/bin/python3 LibreCalc1.py
+
+For Ubuntu 12.04
   sudo apt-get install libreoffice-dev
   sudo apt-get install python-uno
- 
-Uses python2.7
+  run with: python LibreCalc1.py
 
 C. Eric Cashon
 """
