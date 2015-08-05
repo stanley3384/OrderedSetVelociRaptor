@@ -161,14 +161,20 @@ static void get_sqlite_data(GtkListStore *store, const gchar *sql_string)
     sqlite3 *cnn=NULL;
     sqlite3_stmt *stmt1=NULL;
     sqlite3_open(database, &cnn);
-    //Sort the data as needed.
+    gint columns=0;
+    gint i=0;
+    GPtrArray *column_names=g_ptr_array_new_with_free_func(g_free);
+
+    //Sort the data as needed with SQL.
     if(sql_string!=NULL)
       { 
         sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
+        columns=sqlite3_column_count(stmt1);
       }
     else
       {
         sqlite3_prepare_v2(cnn, "SELECT program, image, used FROM treeview_data ORDER BY used DESC, program ASC;", -1, &stmt1, 0);
+        columns=sqlite3_column_count(stmt1);
       }
     if(stmt1==NULL) valid_string=FALSE;
 
@@ -176,15 +182,76 @@ static void get_sqlite_data(GtkListStore *store, const gchar *sql_string)
     if(valid_string)
       {
         ret_val=sqlite3_step(stmt1);
+        //Check generalized column types.
+        gint column_types[columns+1];
+        g_print("Column Names and Types\n");
+        for(i=0;i<columns;i++)
+          {
+            column_types[i]=sqlite3_column_type(stmt1, i);
+            g_print("%s %i\n", sqlite3_column_name(stmt1, i), column_types[i]);
+            g_ptr_array_add(column_names, g_strdup(sqlite3_column_name(stmt1, i)));
+          }
+        //Get the rows.
         while(ret_val==SQLITE_ROW)
           {
-            g_print("%s, %s, %i, \n", sqlite3_column_text(stmt1, 0), sqlite3_column_text(stmt1, 1), sqlite3_column_int(stmt1, 2));
+            for(i=0;i<columns;i++)
+              {
+                switch(column_types[i])
+                  {
+                    case 1:
+                      //SQLITE_INTEGER 1
+                      g_print("%i ", sqlite3_column_int(stmt1, i));
+                      break;
+                    case 2:
+                      //SQLITE_FLOAT 2
+                      g_print("%f ", sqlite3_column_double(stmt1, i));
+                      break;
+                    case 3:
+                      //SQLITE_TEXT 3
+                      g_print("%s ", sqlite3_column_text(stmt1, i));
+                      break;
+                    case 4:
+                      //SQLITE_BLOB 4
+                      g_print("Blob ");
+                      break;
+                    case 5:
+                      //SQLITE_NULL 5
+                      g_print("NULL ");
+                      break;
+                  }
+              }
+            g_print("\n");
+            //Load the data into the store.
             gtk_list_store_append(store, &iter);
-            gtk_list_store_set(store, &iter, PROGRAM, sqlite3_column_text(stmt1, 0), IMAGE, sqlite3_column_text(stmt1, 1), USED, sqlite3_column_int(stmt1, 2), -1);
+            for(i=0;i<columns;i++)
+              {
+                if(g_strcmp0(g_ptr_array_index(column_names, i), "program")==0)
+                  {
+                    gtk_list_store_set(store, &iter, PROGRAM, sqlite3_column_text(stmt1, i), -1);
+                  }
+                else if(g_strcmp0(g_ptr_array_index(column_names, i), "image")==0)
+                  {
+                    gtk_list_store_set(store, &iter, IMAGE, sqlite3_column_text(stmt1, i), -1);
+                  }
+                else if(g_strcmp0(g_ptr_array_index(column_names, i), "used")==0)
+                  {
+                    gtk_list_store_set(store, &iter, USED, sqlite3_column_int(stmt1, i), -1);
+                  }
+                else
+                  {
+                    g_print("List Store Error\n");
+                  }
+              }
             ret_val=sqlite3_step(stmt1);
           }
       }
+    else            
+      {
+        g_print("The SQL statement isn't valid.\n");
+      }
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
+
+    g_ptr_array_free(column_names, TRUE);
   }
 
