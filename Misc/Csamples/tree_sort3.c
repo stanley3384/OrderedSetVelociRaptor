@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
     GtkCellRenderer *renderer1 = gtk_cell_renderer_text_new();
     g_object_set(renderer1, "xalign", 0.5, "editable", FALSE, NULL);
     GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("Program", renderer1, "text", PROGRAM, NULL);
+    gtk_tree_view_column_set_alignment(column1, 0.5);
     gtk_tree_view_column_set_sort_column_id(column1, PROGRAM);
     g_signal_connect(column1, "clicked", G_CALLBACK(column1_clicked), NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1);
@@ -58,11 +59,13 @@ int main(int argc, char *argv[])
     GtkCellRenderer *renderer2 = gtk_cell_renderer_text_new();
     g_object_set(renderer2, "xalign", 0.5, "editable", FALSE, NULL);
     GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("Image", renderer2, "text", IMAGE, NULL);
+    gtk_tree_view_column_set_alignment(column2, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column2);
    
     GtkCellRenderer *renderer3 = gtk_cell_renderer_text_new();
     g_object_set(renderer3, "xalign", 0.5, "editable", FALSE, NULL);
     GtkTreeViewColumn *column3 = gtk_tree_view_column_new_with_attributes("Used", renderer3, "text", USED, NULL);
+    gtk_tree_view_column_set_alignment(column3, 0.5);
     gtk_tree_view_column_set_sort_column_id(column3, USED);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column3);
 
