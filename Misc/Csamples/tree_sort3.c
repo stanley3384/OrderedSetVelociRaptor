@@ -1,6 +1,7 @@
 
 /*
    Test code for sorting data with a treeview and sqlite.
+   Extended from the discussion on GTK+ Forum called "how to sort multiple columns in GTK_TREE_SORTABLE"
 
    gcc -Wall tree_sort3.c -o tree_sort3 `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
@@ -50,23 +51,23 @@ int main(int argc, char *argv[])
 
     GtkCellRenderer *renderer1 = gtk_cell_renderer_text_new();
     g_object_set(renderer1, "xalign", 0.5, "editable", FALSE, NULL);
-    GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("Program", renderer1, "text", PROGRAM, NULL);
-    gtk_tree_view_column_set_alignment(column1, 0.5);
+    GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("program", renderer1, "text", PROGRAM, NULL);
     gtk_tree_view_column_set_sort_column_id(column1, PROGRAM);
     g_signal_connect(column1, "clicked", G_CALLBACK(column1_clicked), NULL);
+    gtk_tree_view_column_set_alignment(column1, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1);
 
     GtkCellRenderer *renderer2 = gtk_cell_renderer_text_new();
     g_object_set(renderer2, "xalign", 0.5, "editable", FALSE, NULL);
-    GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("Image", renderer2, "text", IMAGE, NULL);
+    GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("image", renderer2, "text", IMAGE, NULL);
     gtk_tree_view_column_set_alignment(column2, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column2);
    
     GtkCellRenderer *renderer3 = gtk_cell_renderer_text_new();
     g_object_set(renderer3, "xalign", 0.5, "editable", FALSE, NULL);
-    GtkTreeViewColumn *column3 = gtk_tree_view_column_new_with_attributes("Used", renderer3, "text", USED, NULL);
-    gtk_tree_view_column_set_alignment(column3, 0.5);
+    GtkTreeViewColumn *column3 = gtk_tree_view_column_new_with_attributes("used", renderer3, "text", USED, NULL);
     gtk_tree_view_column_set_sort_column_id(column3, USED);
+    gtk_tree_view_column_set_alignment(column3, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column3);
 
     GtkWidget *entry=gtk_entry_new();
@@ -255,28 +256,33 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[])
       }
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
-
-    //Set visible columns.
+    
+    //Reset columns locations.
     if(sql_string!=NULL)
-      { 
-        gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[2]), FALSE);
-        gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[3]), FALSE);
-        gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[4]), FALSE);
+      {
+        gint n_columns=gtk_tree_view_get_n_columns(GTK_TREE_VIEW(data[5]));
+        GtkTreeViewColumn *tree_column=NULL;
+        for(i=0;i<n_columns;i++)
+          {
+            tree_column=gtk_tree_view_get_column(GTK_TREE_VIEW(data[5]), 0);
+            g_object_ref(tree_column);
+            gtk_tree_view_remove_column(GTK_TREE_VIEW(data[5]), tree_column);
+          }
         for(i=0;i<columns;i++)
           {
             if(g_strcmp0(g_ptr_array_index(column_names, i), "program")==0)
               {
-                gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[2]), TRUE);
+                gtk_tree_view_append_column(GTK_TREE_VIEW(data[5]), GTK_TREE_VIEW_COLUMN(data[2]));
               }
             if(g_strcmp0(g_ptr_array_index(column_names, i), "image")==0)
               {
-                gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[3]), TRUE);
+                gtk_tree_view_append_column(GTK_TREE_VIEW(data[5]), GTK_TREE_VIEW_COLUMN(data[3]));
               }
             if(g_strcmp0(g_ptr_array_index(column_names, i), "used")==0)
               {
-                gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[4]), TRUE);
+                gtk_tree_view_append_column(GTK_TREE_VIEW(data[5]), GTK_TREE_VIEW_COLUMN(data[4]));
               }
-          }              
+          }
       }
 
     g_ptr_array_free(column_names, TRUE);
