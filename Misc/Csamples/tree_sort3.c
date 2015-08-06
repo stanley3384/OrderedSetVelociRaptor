@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Tree Sort");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 100);
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkListStore *store = gtk_list_store_new(COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT);
@@ -70,6 +70,9 @@ int main(int argc, char *argv[])
     gtk_tree_view_column_set_alignment(column3, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column3);
 
+    GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(scroll), tree);
+
     GtkWidget *entry=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry), "SELECT * FROM treeview_data;");
     gtk_widget_set_hexpand(entry, TRUE);
@@ -79,7 +82,7 @@ int main(int argc, char *argv[])
     g_signal_connect(button, "clicked", G_CALLBACK(run_sql), data2);
 
     GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), tree, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), scroll, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button, 0, 2, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
