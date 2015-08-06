@@ -24,7 +24,7 @@ const gchar *database="treeview_test.db";
 static void column1_clicked(GtkTreeViewColumn *treeviewcolumn, gpointer data);
 static void run_sql(GtkWidget *button, gpointer data[]);
 static void save_sqlite_data();
-static void get_sqlite_data(GtkListStore *store, const gchar *sql_string);
+static void get_sqlite_data(const gchar *sql_string, gpointer data[]);
 
 int main(int argc, char *argv[])
   {
@@ -37,8 +37,9 @@ int main(int argc, char *argv[])
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkListStore *store = gtk_list_store_new(COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT);
+    gpointer data1[]={NULL, store};
     save_sqlite_data();
-    get_sqlite_data(store, NULL);
+    get_sqlite_data(NULL, data1);
 
     GtkTreeModel *sortmodel=gtk_tree_model_sort_new_with_model(GTK_TREE_MODEL(store));
 
@@ -70,8 +71,8 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry, TRUE);
 
     GtkWidget *button=gtk_button_new_with_label("Run SQL");
-    gpointer data[]={entry, store};
-    g_signal_connect(button, "clicked", G_CALLBACK(run_sql), data);
+    gpointer data2[]={entry, store, column1, column2, column3, tree};
+    g_signal_connect(button, "clicked", G_CALLBACK(run_sql), data2);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), tree, 0, 0, 1, 1);
@@ -91,7 +92,7 @@ static void run_sql(GtkWidget *button, gpointer data[])
   {
     gchar *sql_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[0])));
     gtk_list_store_clear(GTK_LIST_STORE(data[1]));
-    get_sqlite_data(data[1], sql_string);
+    get_sqlite_data(sql_string, data);
   }
 static void save_sqlite_data()
   {
@@ -152,7 +153,7 @@ static void save_sqlite_data()
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
   }
-static void get_sqlite_data(GtkListStore *store, const gchar *sql_string)
+static void get_sqlite_data(const gchar *sql_string, gpointer data[])
   {
     g_print("SQLITE Read\n");
     GtkTreeIter iter;
@@ -222,20 +223,20 @@ static void get_sqlite_data(GtkListStore *store, const gchar *sql_string)
               }
             g_print("\n");
             //Load the data into the store.
-            gtk_list_store_append(store, &iter);
+            gtk_list_store_append(data[1], &iter);
             for(i=0;i<columns;i++)
               {
                 if(g_strcmp0(g_ptr_array_index(column_names, i), "program")==0)
                   {
-                    gtk_list_store_set(store, &iter, PROGRAM, sqlite3_column_text(stmt1, i), -1);
+                    gtk_list_store_set(data[1], &iter, PROGRAM, sqlite3_column_text(stmt1, i), -1);
                   }
                 else if(g_strcmp0(g_ptr_array_index(column_names, i), "image")==0)
                   {
-                    gtk_list_store_set(store, &iter, IMAGE, sqlite3_column_text(stmt1, i), -1);
+                    gtk_list_store_set(data[1], &iter, IMAGE, sqlite3_column_text(stmt1, i), -1);
                   }
                 else if(g_strcmp0(g_ptr_array_index(column_names, i), "used")==0)
                   {
-                    gtk_list_store_set(store, &iter, USED, sqlite3_column_int(stmt1, i), -1);
+                    gtk_list_store_set(data[1], &iter, USED, sqlite3_column_int(stmt1, i), -1);
                   }
                 else
                   {
@@ -251,6 +252,29 @@ static void get_sqlite_data(GtkListStore *store, const gchar *sql_string)
       }
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
+
+    //Set visible columns.
+    if(sql_string!=NULL)
+      { 
+        gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[2]), FALSE);
+        gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[3]), FALSE);
+        gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[4]), FALSE);
+        for(i=0;i<columns;i++)
+          {
+            if(g_strcmp0(g_ptr_array_index(column_names, i), "program")==0)
+              {
+                gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[2]), TRUE);
+              }
+            if(g_strcmp0(g_ptr_array_index(column_names, i), "image")==0)
+              {
+                gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[3]), TRUE);
+              }
+            if(g_strcmp0(g_ptr_array_index(column_names, i), "used")==0)
+              {
+                gtk_tree_view_column_set_visible(GTK_TREE_VIEW_COLUMN(data[4]), TRUE);
+              }
+          }              
+      }
 
     g_ptr_array_free(column_names, TRUE);
   }
