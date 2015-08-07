@@ -22,9 +22,9 @@ enum
 //SQLite will automatically create the database with this name.
 const gchar *database="treeview_test.db";
 
-static void column1_clicked(GtkTreeViewColumn *treeviewcolumn, gpointer data);
 static void run_sql(GtkWidget *button, gpointer data[]);
 static void save_sqlite_data();
+static void get_initial_sqlite_data(const gchar *sql_string, GtkListStore *store);
 static void get_sqlite_data(const gchar *sql_string, gpointer data[]);
 
 int main(int argc, char *argv[])
@@ -34,17 +34,16 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Tree Sort");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
+    gtk_window_set_default_size(GTK_WINDOW(window), 350, 200);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkListStore *store = gtk_list_store_new(COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT);
-    gpointer data1[]={NULL, store};
+    //Initial sort order for treeview.
+    const gchar *sql_string={"SELECT program, image, used FROM treeview_data ORDER BY used DESC, program ASC;"};
     save_sqlite_data();
-    get_sqlite_data(NULL, data1);
+    get_initial_sqlite_data(sql_string, store);
 
-    GtkTreeModel *sortmodel=gtk_tree_model_sort_new_with_model(GTK_TREE_MODEL(store));
-
-    GtkWidget *tree = gtk_tree_view_new_with_model(sortmodel);
+    GtkWidget *tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     g_object_unref(G_OBJECT(store));
     gtk_widget_set_hexpand(tree, TRUE);
     gtk_widget_set_vexpand(tree, TRUE);
@@ -52,21 +51,14 @@ int main(int argc, char *argv[])
     GtkCellRenderer *renderer1 = gtk_cell_renderer_text_new();
     g_object_set(renderer1, "xalign", 0.5, "editable", FALSE, NULL);
     GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("program", renderer1, "text", PROGRAM, NULL);
-    gtk_tree_view_column_set_sort_column_id(column1, PROGRAM);
-    g_signal_connect(column1, "clicked", G_CALLBACK(column1_clicked), NULL);
     gtk_tree_view_column_set_alignment(column1, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1);
 
-    GtkCellRenderer *renderer2 = gtk_cell_renderer_text_new();
-    g_object_set(renderer2, "xalign", 0.5, "editable", FALSE, NULL);
-    GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("image", renderer2, "text", IMAGE, NULL);
+    GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("image", renderer1, "text", IMAGE, NULL);
     gtk_tree_view_column_set_alignment(column2, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column2);
    
-    GtkCellRenderer *renderer3 = gtk_cell_renderer_text_new();
-    g_object_set(renderer3, "xalign", 0.5, "editable", FALSE, NULL);
-    GtkTreeViewColumn *column3 = gtk_tree_view_column_new_with_attributes("used", renderer3, "text", USED, NULL);
-    gtk_tree_view_column_set_sort_column_id(column3, USED);
+    GtkTreeViewColumn *column3 = gtk_tree_view_column_new_with_attributes("used", renderer1, "text", USED, NULL);
     gtk_tree_view_column_set_alignment(column3, 0.5);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column3);
 
@@ -78,8 +70,8 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry, TRUE);
 
     GtkWidget *button=gtk_button_new_with_label("Run SQL");
-    gpointer data2[]={entry, store, column1, column2, column3, tree};
-    g_signal_connect(button, "clicked", G_CALLBACK(run_sql), data2);
+    gpointer data[]={entry, tree};
+    g_signal_connect(button, "clicked", G_CALLBACK(run_sql), data);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), scroll, 0, 0, 1, 1);
@@ -91,15 +83,11 @@ int main(int argc, char *argv[])
     gtk_main();
     return 0;   
   }
-static void column1_clicked(GtkTreeViewColumn *treeviewcolumn, gpointer data)
-  {
-    g_print("Column1 Clicked\n");
-  }
 static void run_sql(GtkWidget *button, gpointer data[])
   {
     gchar *sql_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[0])));
-    gtk_list_store_clear(GTK_LIST_STORE(data[1]));
-    get_sqlite_data(sql_string, data);
+    if(g_utf8_strlen(sql_string, -1)) get_sqlite_data(sql_string, data);
+    else g_print("Need a valid SQL string.\n");
   }
 static void save_sqlite_data()
   {
@@ -160,6 +148,36 @@ static void save_sqlite_data()
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
   }
+static void get_initial_sqlite_data(const gchar *sql_string, GtkListStore *store)
+  {
+    g_print("SQLITE Read Iniitial\n");
+    GtkTreeIter iter;
+    gint ret_val=0;
+    gboolean valid_string=TRUE;
+    sqlite3 *cnn=NULL;
+    sqlite3_stmt *stmt1=NULL;
+    sqlite3_open(database, &cnn);
+
+    sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
+    if(stmt1==NULL) valid_string=FALSE;
+    if(valid_string)
+      {
+        ret_val=sqlite3_step(stmt1);
+        //Get the rows.
+        while(ret_val==SQLITE_ROW)
+          {
+            //Print rows to screen.
+            g_print("%s %s %i\n", sqlite3_column_text(stmt1, 0), sqlite3_column_text(stmt1, 1), sqlite3_column_int(stmt1, 2));                        
+            //Load the data for the default store on startup.
+            gtk_list_store_append(store, &iter);
+            gtk_list_store_set(store, &iter, PROGRAM, sqlite3_column_text(stmt1, 0), IMAGE, sqlite3_column_text(stmt1, 1), USED, sqlite3_column_int(stmt1, 2),  -1);            
+            ret_val=sqlite3_step(stmt1);
+          }
+      }
+
+    if(stmt1!=NULL) sqlite3_finalize(stmt1);
+    sqlite3_close(cnn);  
+  }
 static void get_sqlite_data(const gchar *sql_string, gpointer data[])
   {
     g_print("SQLITE Read\n");
@@ -172,84 +190,100 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[])
     gint columns=0;
     gint i=0;
     GPtrArray *column_names=g_ptr_array_new_with_free_func(g_free);
+    GtkListStore *new_store=NULL;
 
-    //Sort the data as needed with SQL.
-    if(sql_string!=NULL)
-      { 
-        sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
-        columns=sqlite3_column_count(stmt1);
-      }
-    else
-      {
-        sqlite3_prepare_v2(cnn, "SELECT program, image, used FROM treeview_data ORDER BY used DESC, program ASC;", -1, &stmt1, 0);
-        columns=sqlite3_column_count(stmt1);
-      }
+    //Prepare the incoming SQL statement.
+    sqlite3_prepare_v2(cnn, sql_string, -1, &stmt1, 0);
+    columns=sqlite3_column_count(stmt1);
+    new_store=gtk_list_store_new(1, G_TYPE_STRING);
+    
     if(stmt1==NULL) valid_string=FALSE;
 
-    //Another way to check the statement.
+    //Check the statement.
     if(valid_string)
       {
         ret_val=sqlite3_step(stmt1);
-        //Check generalized column types.
-        gint column_types[columns+1];
+        //Check generalized column types. SQLite dynamically typed so this may be trouble for mixed data.
+        gint column_types[columns];
+        GType type_array[columns];
         g_print("Column Names and Types\n");
         for(i=0;i<columns;i++)
           {
             column_types[i]=sqlite3_column_type(stmt1, i);
+            switch(column_types[i])
+              {
+                case 1:
+                  type_array[i]=G_TYPE_INT;
+                  break;
+                case 2:
+                  type_array[i]=G_TYPE_DOUBLE;
+                  break;
+                case 3:
+                  type_array[i]=G_TYPE_STRING;
+                  break;
+                default:
+                  g_print("Column Type Error\n");
+               }                  
             g_print("%s %i\n", sqlite3_column_name(stmt1, i), column_types[i]);
             g_ptr_array_add(column_names, g_strdup(sqlite3_column_name(stmt1, i)));
+          }
+        //Reset the list store based on column types.
+        if(sql_string!=NULL)
+          {
+            g_print("List Columns %i\n", columns);
+            gtk_list_store_set_column_types(GTK_LIST_STORE(new_store), columns, type_array);
           }
         //Get the rows.
         while(ret_val==SQLITE_ROW)
           {
+            //Print rows to screen.
             for(i=0;i<columns;i++)
               {
                 switch(column_types[i])
                   {
-                    case 1:
-                      //SQLITE_INTEGER 1
+                    case SQLITE_INTEGER:
+                      //SQLITE_INTEGER 1, define G_TYPE_INT G_TYPE_MAKE_FUNDAMENTAL(6)
                       g_print("%i ", sqlite3_column_int(stmt1, i));
                       break;
-                    case 2:
-                      //SQLITE_FLOAT 2
+                    case SQLITE_FLOAT:
+                      //SQLITE_FLOAT 2 #define G_TYPE_DOUBLE G_TYPE_MAKE_FUNDAMENTAL(15)
                       g_print("%f ", sqlite3_column_double(stmt1, i));
                       break;
-                    case 3:
-                      //SQLITE_TEXT 3
+                    case SQLITE_TEXT:
+                      //SQLITE_TEXT 3 #define G_TYPE_STRING G_TYPE_MAKE_FUNDAMENTAL(16)
                       g_print("%s ", sqlite3_column_text(stmt1, i));
                       break;
-                    case 4:
+                    case SQLITE_BLOB:
                       //SQLITE_BLOB 4
                       g_print("Blob ");
                       break;
-                    case 5:
+                    case SQLITE_NULL:
                       //SQLITE_NULL 5
                       g_print("NULL ");
                       break;
                   }
               }
             g_print("\n");
-            //Load the data into the store.
-            gtk_list_store_append(data[1], &iter);
+            //Load the list store with data.
+            gtk_list_store_append(new_store, &iter);
             for(i=0;i<columns;i++)
               {
-                if(g_strcmp0(g_ptr_array_index(column_names, i), "program")==0)
+                switch(column_types[i])
                   {
-                    gtk_list_store_set(data[1], &iter, PROGRAM, sqlite3_column_text(stmt1, i), -1);
-                  }
-                else if(g_strcmp0(g_ptr_array_index(column_names, i), "image")==0)
-                  {
-                    gtk_list_store_set(data[1], &iter, IMAGE, sqlite3_column_text(stmt1, i), -1);
-                  }
-                else if(g_strcmp0(g_ptr_array_index(column_names, i), "used")==0)
-                  {
-                    gtk_list_store_set(data[1], &iter, USED, sqlite3_column_int(stmt1, i), -1);
-                  }
-                else
-                  {
-                    g_print("List Store Error\n");
+                    case SQLITE_INTEGER:
+                      gtk_list_store_set(new_store, &iter, i, sqlite3_column_int(stmt1, i), -1);
+                      break;
+                    case SQLITE_FLOAT:
+                      gtk_list_store_set(new_store, &iter, i, sqlite3_column_double(stmt1, i), -1);
+                      break;
+                    case SQLITE_TEXT:
+                      gtk_list_store_set(new_store, &iter, i, sqlite3_column_text(stmt1, i), -1);
+                      break;
+                    default:
+                      g_print("Column Type Error\n");
                   }
               }
+            
             ret_val=sqlite3_step(stmt1);
           }
       }
@@ -259,35 +293,31 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[])
       }
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
-    
-    //Reset columns locations.
-    if(sql_string!=NULL)
+
+    //Setup new treeview.
+    if(valid_string)
       {
-        gint n_columns=gtk_tree_view_get_n_columns(GTK_TREE_VIEW(data[5]));
-        GtkTreeViewColumn *tree_column=NULL;
+        //Set new model.
+        gtk_tree_view_set_model(GTK_TREE_VIEW(data[1]), GTK_TREE_MODEL(new_store));
+        //Drop old columns. 
+        gint n_columns=gtk_tree_view_get_n_columns(GTK_TREE_VIEW(data[1]));
+        GtkTreeViewColumn *t_column=NULL;
         for(i=0;i<n_columns;i++)
           {
-            tree_column=gtk_tree_view_get_column(GTK_TREE_VIEW(data[5]), 0);
-            g_object_ref(tree_column);
-            gtk_tree_view_remove_column(GTK_TREE_VIEW(data[5]), tree_column);
+            t_column=gtk_tree_view_get_column(GTK_TREE_VIEW(data[1]), 0);
+            gtk_tree_view_remove_column(GTK_TREE_VIEW(data[1]), t_column);
           }
+        //Setup new columns.
+        GtkCellRenderer *renderer=gtk_cell_renderer_text_new();
+        g_object_set(renderer, "xalign", 0.5, "editable", FALSE, NULL);
         for(i=0;i<columns;i++)
           {
-            if(g_strcmp0(g_ptr_array_index(column_names, i), "program")==0)
-              {
-                gtk_tree_view_append_column(GTK_TREE_VIEW(data[5]), GTK_TREE_VIEW_COLUMN(data[2]));
-              }
-            if(g_strcmp0(g_ptr_array_index(column_names, i), "image")==0)
-              {
-                gtk_tree_view_append_column(GTK_TREE_VIEW(data[5]), GTK_TREE_VIEW_COLUMN(data[3]));
-              }
-            if(g_strcmp0(g_ptr_array_index(column_names, i), "used")==0)
-              {
-                gtk_tree_view_append_column(GTK_TREE_VIEW(data[5]), GTK_TREE_VIEW_COLUMN(data[4]));
-              }
+            t_column=gtk_tree_view_column_new_with_attributes(g_ptr_array_index(column_names, i), GTK_CELL_RENDERER(renderer) , "text", i, NULL);
+            gtk_tree_view_column_set_alignment(t_column, 0.5);
+            gtk_tree_view_append_column(GTK_TREE_VIEW(data[1]), t_column);
           }
       }
-
+    
     g_ptr_array_free(column_names, TRUE);
   }
 
