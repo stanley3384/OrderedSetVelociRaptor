@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Tree Sort");
+    gtk_window_set_title(GTK_WINDOW(window), "SQL Tree Sort");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 350, 200);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -78,6 +78,17 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button, 0, 2, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
+
+    GError *css_error=NULL;
+    gchar css_string[]="GtkButton{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkLabel{background:rgba(0,0,0,0.0);}";
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GdkDisplay *display = gdk_display_get_default();
+    GdkScreen *screen = gdk_display_get_default_screen(display);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+    if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    g_object_unref(provider);
+
    
     gtk_widget_show_all(window);
     gtk_main();
@@ -86,7 +97,11 @@ int main(int argc, char *argv[])
 static void run_sql(GtkWidget *button, gpointer data[])
   {
     gchar *sql_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[0])));
-    if(g_utf8_strlen(sql_string, -1)) get_sqlite_data(sql_string, data);
+    //Only want SELECT statements for the treeview.
+    if(g_utf8_strlen(sql_string, -1)>6&&(sql_string[0]=='S'||sql_string[0]=='s'))
+      {
+        get_sqlite_data(sql_string, data);
+      }
     else g_print("Need a valid SQL string.\n");
   }
 static void save_sqlite_data()
@@ -150,7 +165,7 @@ static void save_sqlite_data()
   }
 static void get_initial_sqlite_data(const gchar *sql_string, GtkListStore *store)
   {
-    g_print("SQLITE Read Iniitial\n");
+    g_print("SQLITE Read Initial\n");
     GtkTreeIter iter;
     gint ret_val=0;
     gboolean valid_string=TRUE;
