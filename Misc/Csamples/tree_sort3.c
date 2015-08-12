@@ -52,14 +52,17 @@ int main(int argc, char *argv[])
     g_object_set(renderer1, "xalign", 0.5, "editable", FALSE, NULL);
     GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("program", renderer1, "text", PROGRAM, NULL);
     gtk_tree_view_column_set_alignment(column1, 0.5);
+    gtk_tree_view_column_set_resizable(column1, TRUE);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1);
 
     GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("image", renderer1, "text", IMAGE, NULL);
     gtk_tree_view_column_set_alignment(column2, 0.5);
+    gtk_tree_view_column_set_resizable(column2, TRUE);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column2);
    
     GtkTreeViewColumn *column3 = gtk_tree_view_column_new_with_attributes("used", renderer1, "text", USED, NULL);
     gtk_tree_view_column_set_alignment(column3, 0.5);
+    gtk_tree_view_column_set_resizable(column3, TRUE);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column3);
 
     GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
@@ -329,6 +332,7 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[])
           {
             t_column=gtk_tree_view_column_new_with_attributes(g_ptr_array_index(column_names, i), GTK_CELL_RENDERER(renderer) , "text", i, NULL);
             gtk_tree_view_column_set_alignment(t_column, 0.5);
+            gtk_tree_view_column_set_resizable(t_column, TRUE);
             gtk_tree_view_append_column(GTK_TREE_VIEW(data[1]), t_column);
           }
       }
