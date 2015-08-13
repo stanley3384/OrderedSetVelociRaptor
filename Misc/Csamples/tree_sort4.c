@@ -19,6 +19,7 @@ static void run_sql(GtkWidget *button, gpointer data[]);
 static void get_sqlite_data(const gchar *sql_string, gpointer data[]);
 static void close_program(GtkWidget *widget, gpointer data);
 static void connect_db(GtkWidget *button1, GArray *widgets);
+static void error_message(const gchar *string, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
     database=g_string_new("VelociRaptorData.db");
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "SQL Tree Sort");
+    gtk_window_set_title(GTK_WINDOW(window), "SQLite Viewer");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 400);
     g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
@@ -55,6 +56,7 @@ int main(int argc, char *argv[])
     GArray *widgets=g_array_new(FALSE, FALSE, sizeof(GtkWidget*));
     g_array_append_val(widgets, l_entry1);
     g_array_append_val(widgets, l_tree);
+    g_array_append_val(widgets, window);
     g_signal_connect(l_button1, "clicked", G_CALLBACK(connect_db), widgets);
 
     GtkWidget *l_grid=gtk_grid_new();
@@ -76,7 +78,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(r_entry, TRUE);
 
     GtkWidget *r_button=gtk_button_new_with_label("Run SQL");
-    gpointer data[]={r_entry, r_tree, l_tree};
+    gpointer data[]={r_entry, r_tree, l_tree, window};
     g_signal_connect(r_button, "clicked", G_CALLBACK(run_sql), data);
 
     GtkWidget *r_grid=gtk_grid_new();
@@ -118,11 +120,13 @@ static void run_sql(GtkWidget *button, gpointer data[])
         else
           {
             g_print("Need a valid SQL string.\n");
+            error_message("Need a valid SQL string.", data[3]);
           }
       }
     else
       {
         g_print("Connect to a valid SQLite database.\n");
+        error_message("Connect to a valid SQLite database.", data[3]);
       }
   }
 static void get_sqlite_data(const gchar *sql_string, gpointer data[])
@@ -207,6 +211,7 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[])
     else            
       {
         g_print("The SQL statement isn't valid.\n");
+        error_message("The SQL statement isn't valid.", data[3]);
       }
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
@@ -261,6 +266,9 @@ static void connect_db(GtkWidget *button1, GArray *widgets)
     if(!g_file_test(try_database, G_FILE_TEST_EXISTS))
       {
         g_print("Couldn't find file %s\n", try_database);
+        gchar *message=g_strdup_printf("Couldn't find file %s.", try_database);
+        error_message(message, g_array_index(widgets, GtkWidget*, 2));
+        g_free(message);
         valid_database=FALSE;
         //Set empty store.
         gtk_tree_view_set_model(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)), GTK_TREE_MODEL(store)); 
@@ -326,4 +334,9 @@ static void connect_db(GtkWidget *button1, GArray *widgets)
     g_object_unref(G_OBJECT(store));
     if(try_database!=NULL) g_free(try_database);
   }
-
+static void error_message(const gchar *string, gpointer data)
+  {
+    GtkWidget *dialog=gtk_message_dialog_new(GTK_WINDOW(data), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", string);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
