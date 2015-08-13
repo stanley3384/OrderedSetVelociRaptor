@@ -3,7 +3,7 @@
    Test code for sorting data with a treeview and sqlite. Test with the VelociRaptorData.db
 to see if it will work well with the VelociRaptor application.
 
-   gcc -Wall tree_sort4.c -o tree_sort4 `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
+   gcc -Wall simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
    C. Eric Cashon
 */
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     database=g_string_new("VelociRaptorData.db");
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "SQLite Viewer");
+    gtk_window_set_title(GTK_WINDOW(window), "Simple SQLite Viewer");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 400);
     g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
