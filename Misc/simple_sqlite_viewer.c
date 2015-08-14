@@ -3,7 +3,7 @@
    Test code for sorting data with a treeview and sqlite. Test with the VelociRaptorData.db
 to see if it will work well with the VelociRaptor application.
 
-   gcc -Wall simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
+   gcc -Wall -O2 simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
    C. Eric Cashon
 */
@@ -20,6 +20,7 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[]);
 static void close_program(GtkWidget *widget, gpointer data);
 static void connect_db(GtkWidget *button1, GArray *widgets);
 static void error_message(const gchar *string, gpointer data);
+static void about_dialog(GtkWidget *widget, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -87,15 +88,27 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(r_grid), r_entry, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(r_grid), r_button, 0, 2, 1, 1);
 
-    //The pane widget.
     GtkWidget *pane=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_add1(GTK_PANED(pane), l_grid);
     gtk_paned_add2(GTK_PANED(pane), r_grid);
 
-    gtk_container_add(GTK_CONTAINER(window), pane);
+    GtkWidget *menu1=gtk_menu_new();
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Simple SQLite Viewer");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
+
+    GtkWidget *grid=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), pane, 0, 1, 1, 1);
+
+    gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkButton{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkLabel{background:rgba(0,0,0,0.0);}";
+    gchar css_string[]="GtkButton, GtkDialog{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkLabel{background:rgba(0,0,0,0.0);}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -338,6 +351,18 @@ static void connect_db(GtkWidget *button1, GArray *widgets)
 static void error_message(const gchar *string, gpointer data)
   {
     GtkWidget *dialog=gtk_message_dialog_new(GTK_WINDOW(data), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", string);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Simple SQLite Viewer");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A simple SQLite query viewer for the VelociRaptor program.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2015 C. Eric Cashon");
+   
+    gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
   }
