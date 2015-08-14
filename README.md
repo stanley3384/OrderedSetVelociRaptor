@@ -10,10 +10,10 @@ Descriptive Statistics
 --An additional utility program for formatting data for printing is report_generator.py which can generate a basic report layout for grids, tables and crosstabs from the sqlite database. The program is also written in C and called OSVreport_generator.c. The C version can do the redraws and scrolling of the drawings faster than the python version. The OSVreport_generator program is built along with the VelociRaptor program using make or it can be built by itself. For testing how it works there are a couple of different sequences that you can choose from that can be easily heatmapped to see a couple of general patterns. 
 
 
-Some Heatmap Layouts
+Some Data Layouts
 ![Screenshot2](/heatmap1.png)
 
-![Screenshot3](/table1.jpg)
+![Screenshot3](/viewer2.png)
 
 ![Screenshot4](/Heatmap3.jpg)
 
