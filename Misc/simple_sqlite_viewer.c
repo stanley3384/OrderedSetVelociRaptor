@@ -5,6 +5,8 @@ to see if it will work well with the VelociRaptor application.
 
    gcc -Wall -O2 simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
+   With: Ubuntu14.04 with GTK3.10
+
    C. Eric Cashon
 */
 
@@ -44,6 +46,7 @@ int main(int argc, char *argv[])
 
     //A treeview for tables and fields.
     GtkWidget *l_tree=gtk_tree_view_new();
+    gtk_widget_set_name(l_tree, "l_tree");
     gtk_widget_set_hexpand(l_tree, TRUE);
     gtk_widget_set_vexpand(l_tree, TRUE);
     GtkCellRenderer *l_renderer1=gtk_cell_renderer_text_new();
@@ -69,6 +72,9 @@ int main(int argc, char *argv[])
 
     //Setup for right pane.
     GtkWidget *r_tree = gtk_tree_view_new();
+    gtk_widget_set_name(r_tree, "r_tree");
+    //Deprecated in GTK3.14.
+    gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(r_tree), TRUE);
     gtk_widget_set_hexpand(r_tree, TRUE);
     gtk_widget_set_vexpand(r_tree, TRUE);
 
@@ -108,7 +114,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkButton, GtkDialog{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkLabel{background:rgba(0,0,0,0.0);}";
+    gchar css_string[]="GtkButton, GtkDialog{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkTreeView#r_tree row:nth-child(even){background-color:rgba(160,160,160,0.6);} GtkLabel{background:rgba(0,0,0,0.0);}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
