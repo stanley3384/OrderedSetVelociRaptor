@@ -1,7 +1,8 @@
 
 /*
    Test code for sorting data with a treeview and sqlite. Test with the VelociRaptorData.db
-to see if it will work well with the VelociRaptor application.
+to see if it will work well with the VelociRaptor application. The program only allows SELECT
+statements but could easily be changed for INSERT, DELETE and UPDATE statements.
 
    gcc -Wall -O2 simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
@@ -139,8 +140,8 @@ static void run_sql(GtkWidget *button, gpointer data[])
           }
         else
           {
-            g_print("Need a valid SQL string.\n");
-            error_message("Need a valid SQL string.", data[3]);
+            g_print("Need a valid SELECT statement.\n");
+            error_message("Need a valid SELECT statement.", data[3]);
           }
       }
     else
@@ -272,6 +273,7 @@ static void close_program(GtkWidget *widget, gpointer data)
 static void connect_db(GtkWidget *button1, GArray *widgets)
   {
     g_print("Connect DB\n");
+    gint db_error=0;
     gint sql_return1=0;
     gint sql_return2=0;
     sqlite3 *cnn=NULL;
@@ -297,59 +299,78 @@ static void connect_db(GtkWidget *button1, GArray *widgets)
     else
       {
         g_string_assign(database, try_database);
-        valid_database=TRUE;
-        sqlite3_open(try_database,&cnn);
-        sqlite3_prepare_v2(cnn, sql1, -1, &stmt1, 0);
-        sql_return1=sqlite3_step(stmt1);
-        while(sql_return1==SQLITE_ROW)
-         {
-           //g_print("%s\n", sqlite3_column_text(stmt1, 0));
-           gtk_tree_store_append(store, &iter1, NULL); 
-           gtk_tree_store_set(store, &iter1, 0, sqlite3_column_text(stmt1, 0), -1);
-           //Get the table fields.
-           gchar *fields=sqlite3_mprintf("PRAGMA table_info('%q');", sqlite3_column_text(stmt1, 0));
-           sqlite3_prepare_v2(cnn,fields,-1,&stmt2,0);
-           sql_return2=sqlite3_step(stmt2);
-             while(sql_return2==SQLITE_ROW)
-               {
-                  //g_print("  %s\n", sqlite3_column_text(stmt2, 1));
-                  gtk_tree_store_append(store, &iter2, &iter1);
-                  gtk_tree_store_set(store, &iter2, 0, sqlite3_column_text(stmt2, 1), -1);
-                  sql_return2=sqlite3_step(stmt2);
-               }
-           sqlite3_finalize(stmt2);
-           sqlite3_free(fields);
-
-           sql_return1=sqlite3_step(stmt1);
-         }
-        sqlite3_finalize(stmt1);
-        sqlite3_close(cnn);
-
-        //Print values loaded into the treeview store to check they are there.
-        //g_print("Print Treeview Values\n");
-        GtkTreeIter iter3, iter4;
-        gboolean check1=FALSE;
-        gboolean check2=FALSE;
-        check1=gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter3);
-        while(check1)
+        db_error=sqlite3_open(try_database,&cnn); 
+        if(db_error!=SQLITE_OK)
           {
-            gchar *string1=NULL;
-            gtk_tree_model_get(GTK_TREE_MODEL(store), &iter3, 0, &string1, -1);
-            //g_print("%s\n", string1);
-            check2=gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &iter4, &iter3);
-            while(check2)
-              {
-                gchar *string2=NULL;
-                gtk_tree_model_get(GTK_TREE_MODEL(store), &iter4, 0, &string2, -1);
-                //g_print("  %s\n", string2);
-                check2=gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter4);
-                if(string2!=NULL) g_free(string2);
-              }
-            check1=gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter3);
-            if(string1!=NULL) g_free(string1);
+            const gchar *message2=sqlite3_errmsg(cnn);
+            g_print("%s\n", message2);
+            error_message(message2, g_array_index(widgets, GtkWidget*, 2));
+            valid_database=FALSE;
           }
-        //Attach the store data to the treeview.
-        gtk_tree_view_set_model(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)), GTK_TREE_MODEL(store));  
+        else
+          {
+            sqlite3_prepare_v2(cnn, sql1, -1, &stmt1, 0);
+            if(stmt1==NULL)
+              {
+                const gchar *message2=sqlite3_errmsg(cnn);
+                g_print("%s\n", message2);
+                error_message(message2, g_array_index(widgets, GtkWidget*, 2));
+                valid_database=FALSE;
+              }
+            else
+              {
+                valid_database=TRUE;
+                sql_return1=sqlite3_step(stmt1);
+                while(sql_return1==SQLITE_ROW)
+                  {
+                    //g_print("%s\n", sqlite3_column_text(stmt1, 0));
+                    gtk_tree_store_append(store, &iter1, NULL); 
+                    gtk_tree_store_set(store, &iter1, 0, sqlite3_column_text(stmt1, 0), -1);
+                    //Get the table fields.
+                    gchar *fields=sqlite3_mprintf("PRAGMA table_info('%q');", sqlite3_column_text(stmt1, 0));
+                    sqlite3_prepare_v2(cnn,fields,-1,&stmt2,0);
+                    sql_return2=sqlite3_step(stmt2);
+                    while(sql_return2==SQLITE_ROW)
+                      {
+                        //g_print("  %s\n", sqlite3_column_text(stmt2, 1));
+                        gtk_tree_store_append(store, &iter2, &iter1);
+                        gtk_tree_store_set(store, &iter2, 0, sqlite3_column_text(stmt2, 1), -1);
+                        sql_return2=sqlite3_step(stmt2);
+                      }
+                    sqlite3_finalize(stmt2);
+                    sqlite3_free(fields);
+                    sql_return1=sqlite3_step(stmt1);
+                  }
+              }
+            if(stmt1!=NULL) sqlite3_finalize(stmt1);
+            sqlite3_close(cnn);
+          
+            //Print values loaded into the treeview store to check they are there.
+            //g_print("Print Treeview Values\n");
+            GtkTreeIter iter3, iter4;
+            gboolean check1=FALSE;
+            gboolean check2=FALSE;
+            check1=gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter3);
+            while(check1)
+              {
+                gchar *string1=NULL;
+                gtk_tree_model_get(GTK_TREE_MODEL(store), &iter3, 0, &string1, -1);
+                //g_print("%s\n", string1);
+                check2=gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &iter4, &iter3);
+                while(check2)
+                  {
+                    gchar *string2=NULL;
+                    gtk_tree_model_get(GTK_TREE_MODEL(store), &iter4, 0, &string2, -1);
+                    //g_print("  %s\n", string2);
+                    check2=gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter4);
+                    if(string2!=NULL) g_free(string2);
+                  }
+                check1=gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter3);
+                if(string1!=NULL) g_free(string1);
+              }
+            //Attach the store data to the treeview.
+            gtk_tree_view_set_model(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)), GTK_TREE_MODEL(store));  
+          }
       }
      
     g_object_unref(G_OBJECT(store));
