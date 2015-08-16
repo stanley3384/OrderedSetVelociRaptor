@@ -230,8 +230,9 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[])
       }
     else            
       {
-        g_print("The SQL statement isn't valid.\n");
-        error_message("The SQL statement isn't valid.", data[3]);
+        const gchar *message=sqlite3_errmsg(cnn);
+        g_print("%s\n", message);
+        error_message(message, data[3]);
       }
     if(stmt1!=NULL) sqlite3_finalize(stmt1);
     sqlite3_close(cnn);
