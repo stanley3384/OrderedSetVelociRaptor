@@ -120,7 +120,7 @@ static void build_aux_table_dialog(GtkWidget*, GtkWidget*);
 static void build_combo_table_dialog(GtkWidget*, GtkWidget*);
 static void build_permutation_table_dialog(GtkWidget*, GtkWidget*);
 static void about_dialog(GtkWidget*, GtkWidget*);
-static gboolean draw_veloci_raptor(GtkWidget*, cairo_t *cr, gpointer);
+static GdkPixbuf* draw_velociraptor();
 static gboolean draw_veloci_raptor_feet(GtkWidget*, cairo_t *cr, gpointer);
 static void connect_sqlite_db(GtkWidget *button1, GArray *widgets);
 static void get_treeview_selected(GtkWidget *button1, GArray *widgets);
@@ -129,7 +129,6 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 int main(int argc, char *argv[])
   {
     GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *grid, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
-    GError *error = NULL;
       
     //For printing
     Widgets *w;
@@ -142,18 +141,11 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Ordered Set VelociRaptor");
     gtk_container_set_border_width(GTK_CONTAINER(window), 8);
     gtk_window_set_default_size(GTK_WINDOW(window), 1024, 300);
-    //Set the icon for the launcher.
-    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino.svg", &error);
-    if(!pixbuf)
-      {
-        g_print("%s\n", error->message);
-        g_error_free(error);
-      }
-    else
-      {
-        gtk_window_set_icon(GTK_WINDOW(window), pixbuf);
-      }
 
+    //Set the icon for the launcher and about dialog.
+    GdkPixbuf *dino=draw_velociraptor();
+    gtk_window_set_default_icon(dino);
+    
     RaptorFeet=gtk_drawing_area_new();
     gtk_widget_set_size_request(RaptorFeet, 1024,35);
     g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), NULL);
@@ -212,7 +204,7 @@ int main(int argc, char *argv[])
     HtmlTableItem=gtk_menu_item_new_with_label("SQL Query to HTML");
 
     FileMenu6=gtk_menu_new();
-    AboutItem=gtk_menu_item_new_with_label("About");
+    AboutItem=gtk_menu_item_new_with_label("Ordered Set VelociRaptor");
 
     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), ImportItem);
     gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), AppendItem);
@@ -264,7 +256,7 @@ int main(int argc, char *argv[])
     FileItem3=gtk_menu_item_new_with_label("Analysis");
     FileItem4=gtk_menu_item_new_with_label("Graph");
     FileItem5=gtk_menu_item_new_with_label("Format");
-    FileItem6=gtk_menu_item_new_with_label("Help");
+    FileItem6=gtk_menu_item_new_with_label("About");
 
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem), FileMenu);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem2), FileMenu2);
@@ -2080,38 +2072,32 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
   }
 static void about_dialog(GtkWidget *menu, GtkWidget *window)
   {
-    GtkWidget *dialog, *content_area, *RaptorDrawing;
     const gchar *authors[]={"C. Eric Cashon", "Including the fine art.", "Check the references file\n for more author details.", NULL};
 
-    dialog=gtk_about_dialog_new();
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Ordered Set VelociRaptor");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A mean number crunching machine");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2015 C. Eric Cashon");
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), authors);
-    gtk_widget_set_size_request(dialog, 400,370);
-
-    content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    gtk_widget_set_size_request(content_area, 400,300);
-    //gtk_container_set_border_width(GTK_CONTAINER(content_area), 100);
-    RaptorDrawing=gtk_drawing_area_new();
-    gtk_widget_set_size_request(RaptorDrawing, 300,250);
-    gtk_container_add(GTK_CONTAINER(content_area), RaptorDrawing);   
-    g_signal_connect(G_OBJECT(RaptorDrawing), "draw", G_CALLBACK(draw_veloci_raptor), NULL); 
 
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
   }
-static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data)
+static GdkPixbuf* draw_velociraptor()
   {
+    //Some amateur drawing and cropping of the program dino. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1024, 576);
+    cairo_t *cr=cairo_create(surface);
     cairo_pattern_t *pattern=NULL;
     int i=0;
     int move=330;
     int height=220;
     int width=250;
-    double ScaleWidth=0;
-    double ScaleHeight=0;
+    double ScaleWidth=350;
+    double ScaleHeight=350;
     int points[21][2] = { 
       { 40, 85 }, 
       { 105, 75 }, 
@@ -2144,7 +2130,7 @@ static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data
 
     //Clear the surface.
     cairo_save(cr);
-    cairo_set_source_rgba(cr, 0.0, 0.1, 0.8, 1.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
     cairo_paint(cr);
     cairo_restore(cr);
     
@@ -2236,8 +2222,13 @@ static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data
     cairo_fill(cr);
     cairo_restore(cr);
 
+    GdkPixbuf *dino=gdk_pixbuf_get_from_surface(surface, 0, 0, 350, 350);
+    GdkPixbuf *crop_dino=gdk_pixbuf_new_subpixbuf(dino, 70, 0, 250, 250);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
     cairo_pattern_destroy(pattern);
-    return TRUE;
+    return crop_dino;
   }
 static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer data)
   {   

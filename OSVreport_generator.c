@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
     
     GtkWidget *menu2=gtk_menu_new();
-    GtkWidget *menu2item1=gtk_menu_item_new_with_label("Report Generator");
+    GtkWidget *menu2item1=gtk_menu_item_new_with_label("OSV Report Generator");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu2), menu2item1);
     GtkWidget *title2=gtk_menu_item_new_with_label("About");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title2), menu2);
