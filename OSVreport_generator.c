@@ -8,10 +8,8 @@ Cython produces.
 has a single point for data access where as the Python version gets data for each table being drawn.
 The C version also reuses the data for scrolling and the Python version rebuilds it during scrolling so
 the comparison between the two programs isn't an equivalent comparison. Some things got switched 
-around to try to improve the performance of the re-draws in the C version. 
-
-    For the program image the code will look for dino2.png. It is in the Python folder. Have the
-png in the same folder as the report generator for showing the image in the about dialog and the toolbar.
+around to try to improve the performance of the re-draws in the C version. A few things have also been
+added to the C version.
 
     GTK 3.10 on Ubuntu 14.04.
  
@@ -22,7 +20,7 @@ png in the same folder as the report generator for showing the image in the abou
 */
 
 #include<gtk/gtk.h>
-#include <json-glib/json-glib.h>
+#include<json-glib/json-glib.h>
 #include<sqlite3.h>
 #include<stdlib.h>
 #include<string.h>
@@ -89,6 +87,7 @@ static void print_dialog(GtkWidget *widget, GtkWidget *ws[]);
 static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, GtkWidget *ws[]);
 static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, GtkWidget *ws[]);
 static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, gpointer data);
+static GdkPixbuf* draw_velociraptor();
 
 //Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
@@ -134,18 +133,9 @@ int main(int argc, char *argv[])
     gtk_container_set_border_width(GTK_CONTAINER(window), 15);
     gtk_window_set_default_size(GTK_WINDOW(window), 750, 550);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    //Set the icon for the launcher.
-    GError *error=NULL;
-    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino2.png", &error);
-    if(!pixbuf)
-      {
-        g_print("%s\n", error->message);
-        g_error_free(error);
-      }
-    else
-      {
-        gtk_window_set_icon(GTK_WINDOW(window), pixbuf);
-      }
+
+    GdkPixbuf *dino=draw_velociraptor();
+    gtk_window_set_default_icon(dino);
 
     GtkWidget *menu1=gtk_menu_new();
     GtkWidget *menu1item1=gtk_menu_item_new_with_label("Open Report");
@@ -500,21 +490,12 @@ static void clear_tags(GtkWidget *widget, gpointer data)
 static void about_dialog(GtkWidget *widget, gpointer data)
   {
     GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "OSV Report Generator");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A report generator for the Ordered Set VelociRaptor program.");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2015 C. Eric Cashon");
-    GError *error=NULL;
-    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file("dino2.png", &error);
-     if(!pixbuf)
-       {
-         g_print("%s\n", error->message);
-         g_error_free(error);
-       }
-     else
-       {
-         gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
-       }
+    
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
@@ -3192,7 +3173,150 @@ static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, gp
     g_print("End Print\n");
     g_object_unref(pango_layout_print);
   }
+static GdkPixbuf* draw_velociraptor()
+  {
+    //Some amateur drawing and cropping of the program dino. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1024, 576);
+    cairo_t *cr=cairo_create(surface);
+    cairo_pattern_t *pattern=NULL;
+    int i=0;
+    int move=330;
+    int height=220;
+    int width=250;
+    double ScaleWidth=350;
+    double ScaleHeight=350;
+    int points[21][2] = { 
+      { 40, 85 }, 
+      { 105, 75 }, 
+      { 140, 10 }, 
+      { 165, 75 }, 
+      { 490, 100 },
+      { 790, 225 },
+      { 860, 310 }, 
+      //{ 900, 380 }, curve nose
+      { 860, 420 },
+      { 820, 380 },
+      { 780, 420 },
+      { 740, 380 },
+      { 700, 420 },
+      { 660, 380 },
+      { 650, 385 },
+      { 810, 520 }, 
+      { 440, 540 },
+      { 340, 840 },
+      { 240, 840 },
+      { 140, 200 },
+      { 90, 125 },
+      { 40, 85 } 
+  };
+    g_print("Draw Dino\n");
+    
+    //Scaled from a 1024x576 screen. Original graphic.
+    ScaleWidth=width/1024.0;
+    ScaleHeight=height/576.0;
 
+    //Clear the surface.
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 0.8, 0.0, 0.8, 1.0);
+    cairo_paint(cr);
+    cairo_restore(cr);
+    
+    cairo_save(cr);
+    //Draw raptor points and fill in green.
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    //Draw point to point.
+    for(i=0; i<20; i++)
+      {
+        cairo_line_to(cr, points[i][0]+move, points[i][1]);
+      }
+    //Draw curve at nose.
+    cairo_move_to(cr, 860+move, 310);
+    cairo_curve_to(cr, 900+move, 380, 900+move, 380, 860+move, 420);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0, 1, 0);
+    cairo_fill(cr);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Set up rotated black ellipses.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgba(cr, 0, 0, 0, 1);
+    cairo_set_line_width(cr, 7.0);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    for( i=0; i<36; i+=2)
+      {
+        cairo_save(cr);
+        cairo_rotate(cr, i*G_PI/36);
+        cairo_scale(cr, 0.3, 1);
+        cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+      }
+    cairo_restore(cr);
+
+    //Set up rotated purple ellipses.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgba(cr, 1, 0, 1.0, 1);
+    cairo_set_line_width(cr, 3.0);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    for(i=1; i<36; i+=2)
+      {
+        cairo_save(cr);
+        cairo_rotate(cr, i*G_PI/36);
+        cairo_scale(cr, 0.3, 1);
+        cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+      }
+    cairo_restore(cr);
+
+    //Pattern for the center eye ellipse.
+    pattern = cairo_pattern_create_linear(-120.0, 30.0, 120.0, 30.0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.1, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.5, 0, 0.5, 1);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.9, 0, 0, 0);
+
+    //Draw center elipse of eye.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 3);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    cairo_rotate(cr, 18 * G_PI/36);
+    cairo_scale(cr, 0.3, 1);
+    cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+    cairo_close_path(cr);
+    cairo_set_source(cr, pattern);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    //Draw center circle for the eye.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 3);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    cairo_rotate(cr, 18*G_PI/36);
+    cairo_scale(cr, 0.3, 1);
+    cairo_arc(cr, 0, 0, 15, 0, 2 * G_PI);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    GdkPixbuf *dino=gdk_pixbuf_get_from_surface(surface, 0, 0, 350, 350);
+    GdkPixbuf *crop_dino=gdk_pixbuf_new_subpixbuf(dino, 70, 0, 250, 250);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    cairo_pattern_destroy(pattern);
+    return crop_dino;
+  }
 
 
 
