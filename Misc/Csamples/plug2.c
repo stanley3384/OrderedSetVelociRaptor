@@ -16,9 +16,17 @@ static void on_embed(GtkPlug *plug, gpointer data)
   {
     g_print("Plug Embedded\n"); 
   }
-static void send_out(gpointer data)
+static gboolean send_out(gpointer data)
   {
-    g_print("%i\n", (gint)gtk_plug_get_id(GTK_PLUG(data))); 
+    static int counter=0;
+    g_print("%i\n", (gint)gtk_plug_get_id(GTK_PLUG(data)));
+    counter++;
+    if(counter>10)
+      {
+        g_print("Finish Broadcasting Window ID\n");
+        return FALSE;
+      }
+    else return TRUE;
   }
 int main(int argc, char *argv[])
   {
@@ -35,7 +43,7 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(plug);
 
     //Broadcast plug id. 
-    g_timeout_add(1500, (GSourceFunc)send_out, plug);
+    g_timeout_add(500, (GSourceFunc)send_out, plug);
 
     gtk_main();
     
