@@ -36,17 +36,24 @@ int main(int argc, char *argv[])
   {
     gtk_init(&argc, &argv);
 
-    g_print("Argv %s\n", argv[1]);
-    gchar *markup=g_strdup_printf("<span foreground='%s' size='xx-large'>Plug</span>", argv[1]);
-
     GtkWidget *plug=gtk_plug_new(0);
     gtk_widget_set_size_request(plug, 200, 100);
     g_signal_connect(plug, "embedded", G_CALLBACK(on_embed), NULL);
 
     GtkWidget *label=gtk_label_new("");
+    gchar *markup=NULL;
+    if(argc>1)
+      {
+        markup=g_strdup_printf("<span foreground='%s' size='xx-large'>Plug</span>", argv[1]);
+      }
+    else
+      {
+        markup=g_strdup("<span foreground='black' size='xx-large'>Plug</span>");
+      }
     gtk_label_set_markup(GTK_LABEL(label), markup);
     gtk_widget_set_hexpand(label, TRUE);
     gtk_widget_set_vexpand(label, TRUE);
+    g_free(markup);
 
     GtkWidget *button=gtk_button_new_with_label("Disconnect Plug");
     gtk_widget_set_hexpand(button, TRUE);

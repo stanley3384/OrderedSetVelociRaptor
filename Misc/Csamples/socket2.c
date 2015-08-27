@@ -31,7 +31,6 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Socket");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
-    g_signal_connect(window, "destroy", G_CALLBACK(quit_program), NULL);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_container_add(GTK_CONTAINER(window), grid);
@@ -43,6 +42,7 @@ int main(int argc, char *argv[])
     g_signal_connect(socket, "plug-removed", G_CALLBACK(plug_removed), NULL); 
 
     GString *plug_color=g_string_new("red");
+    g_signal_connect(window, "destroy", G_CALLBACK(quit_program), plug_color);
 
     GtkWidget *button1=gtk_button_new_with_label("Get Plug");
     gtk_widget_set_hexpand(button1, TRUE);
@@ -146,6 +146,7 @@ static void quit_program(GtkWidget *widget, gpointer data)
         g_spawn_close_pid(child_pid);
         g_free(string);
       }
+    g_string_free((GString*)data, TRUE);
     gtk_main_quit();
   }
 static void change_color(GtkComboBox *combo, gpointer data)
