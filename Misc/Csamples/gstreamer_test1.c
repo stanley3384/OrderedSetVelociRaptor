@@ -18,21 +18,23 @@ as the program. Used a test ogg file from the following.
 #include<stdio.h>
 
 //The sound file to test. Change for testing
-gchar *ogg_file="Metal_Hit.ogg";
+static gchar *ogg_file="Metal_Hit.ogg";
+static gchar *ogg_file_uri="playbin2 uri=file:///home/owner/eric/Rectangle2/Metal_Hit.ogg";
 /*
   The timer doesn't give a total time for async since it returns right away. Gstreamer will
 return the play time of the sound file for sync, async and system. The program timer gives
-the total time for gstreamer, syc and system.
+the total time for gstreamer, gstreamer_playbin, sync and system.
 */
-GTimer *timer=NULL;
+static GTimer *timer=NULL;
 //gstreamer variables
-GstElement *pipeline=NULL;
-guint bus_watch_id=0;
+static GstElement *pipeline=NULL;
+static guint bus_watch_id=0;
 
 static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data);
 static void on_pad_added(GstElement *element, GstPad *pad, gpointer data);
 static void play_sound(GtkWidget *button, gpointer data);
 static void sound_pipeline(GtkWidget *button);
+static void sound_pipeline_playbin(GtkWidget *button);
 static void spawn_sound(gpointer data);
 static void click_button(GtkWidget *button, gpointer data);
 
@@ -50,9 +52,10 @@ int main(int argc, char *argv[])
    GtkWidget *combo=gtk_combo_box_text_new();
    gtk_widget_set_hexpand(combo, TRUE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "gstreamer");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "sync");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "async");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 3, "4", "system");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "gstreamer playbin");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "sync");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 3, "4", "async");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 4, "5", "system");
    gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo), "1");
 
    GtkWidget *button1=gtk_button_new_with_label("Play Sound");
@@ -83,10 +86,8 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
    switch(GST_MESSAGE_TYPE(msg))
     {
       case GST_MESSAGE_EOS:
-        g_print ("End of Stream\n");
-        g_print("Stopping Playback\n");
+        //g_print ("End of Stream\n");
         gst_element_set_state (pipeline, GST_STATE_NULL);
-        g_print("Deleting Pipeline\n");
         //Unreference the pipeline and other element objects stored in the pipeline.
         gst_object_unref(GST_OBJECT(pipeline));
         pipeline=NULL;
@@ -112,7 +113,6 @@ static void on_pad_added(GstElement *element, GstPad *pad, gpointer data)
   {
     GstPad *sinkpad;
     GstElement *decoder=(GstElement*)data;  
-    g_print("Dynamic pad created, linking demuxer/decoder\n");
     sinkpad=gst_element_get_static_pad(decoder, "sink");
     gst_pad_link(pad, sinkpad);
     gst_object_unref(sinkpad);   
@@ -122,8 +122,9 @@ static void play_sound(GtkWidget *button, gpointer data)
     timer=g_timer_new(); 
     //The set sensitive won't prevent the button from queuing up clicks in sync and system.      
     gtk_widget_set_sensitive(button, FALSE);
-    //set_sensitive changed and timer stopped at end of stream(EOS) in sound_pipeline().
+    //set_sensitive changed and timer stopped at end of stream(EOS) in sound_pipeline() and sound_pipeline_playbin.
     if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==0) sound_pipeline(button);
+    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==1) sound_pipeline_playbin(button);
     else
       {
         spawn_sound(data);
@@ -162,14 +163,46 @@ static void sound_pipeline(GtkWidget *button)
 
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
   }
+static void sound_pipeline_playbin(GtkWidget *button)
+  {
+    //The short version of sound_pipeline().
+    GstBus *bus=NULL;
+    GstMessage *msg=NULL;
+    pipeline=gst_parse_launch(ogg_file_uri, NULL);
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+   
+    bus=gst_element_get_bus(pipeline);
+    msg=gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ERROR | GST_MESSAGE_EOS);
+   
+    if(msg!=NULL)
+      {
+        if(GST_MESSAGE_TYPE(msg)==GST_MESSAGE_ERROR)
+          {
+            GError *error=NULL;
+            gst_message_parse_error(msg, &error, NULL);
+            g_print("Error: %s\n", error->message);
+            g_error_free(error);
+          }
+        gst_message_unref(msg);
+      }
+    gst_object_unref(bus);
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+    pipeline=NULL;
+    g_timer_stop(timer);
+    g_print("Time %f\n", g_timer_elapsed(timer, NULL));
+    g_timer_destroy(timer);
+    timer=NULL;
+    gtk_widget_set_sensitive(button, TRUE);
+  }
 static void spawn_sound(gpointer data)
   {
     gchar *string=g_strdup_printf("gst-launch-1.0 filesrc location=%s ! decodebin ! pulsesink", ogg_file);
-    if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==1)
+    if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==2)
       {
         g_spawn_command_line_sync(string, NULL, NULL, NULL, NULL);
       }
-    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==2)
+    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==3)
       {
         g_spawn_command_line_async(string, NULL);
       }
