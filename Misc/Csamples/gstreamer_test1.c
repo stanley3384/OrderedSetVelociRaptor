@@ -17,9 +17,10 @@ as the program. Used a test ogg file from the following.
 #include<gst/gst.h>
 #include<stdio.h>
 
-//The sound file to test. Change for testing
+//The sound file to test. Change ogg char strings for testing
 static gchar *ogg_file="Metal_Hit.ogg";
 static gchar *ogg_file_uri="playbin2 uri=file:///home/owner/eric/Rectangle2/Metal_Hit.ogg";
+static gchar *ogg_file_spawn="gst-launch-1.0 filesrc location=Metal_Hit.ogg ! decodebin ! pulsesink";
 /*
   The timer doesn't give a total time for async since it returns right away. Gstreamer will
 return the play time of the sound file for sync, async and system. The program timer gives
@@ -197,20 +198,18 @@ static void sound_pipeline_playbin(GtkWidget *button)
   }
 static void spawn_sound(gpointer data)
   {
-    gchar *string=g_strdup_printf("gst-launch-1.0 filesrc location=%s ! decodebin ! pulsesink", ogg_file);
     if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==2)
       {
-        g_spawn_command_line_sync(string, NULL, NULL, NULL, NULL);
+        g_spawn_command_line_sync(ogg_file_spawn, NULL, NULL, NULL, NULL);
       }
     else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==3)
       {
-        g_spawn_command_line_async(string, NULL);
+        g_spawn_command_line_async(ogg_file_spawn, NULL);
       }
     else
       {
-        system(string);
+        system(ogg_file_spawn);
       }
-    g_free(string);
   }
 static void click_button(GtkWidget *button, gpointer data)
   {
