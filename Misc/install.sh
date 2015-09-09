@@ -59,6 +59,7 @@ if [ "$answer" = "y" ]; then
             echo "Move programs to install directory"
             mv VelociRaptor ../../
             mv OSVreport_generator ../../
+            mv simple_sqlite_viewer ../../
             cd ../../
             echo "Run with ./VelociRaptor"
             ./VelociRaptor

@@ -1,8 +1,8 @@
 
 /*
-   Test code for sorting data with a treeview and sqlite. Test with the VelociRaptorData.db
-to see if it will work well with the VelociRaptor application. The program only allows SELECT
-statements but could easily be changed for INSERT, DELETE and UPDATE statements.
+   This program only allows SELECT statements but could easily be changed for INSERT, DELETE and UPDATE
+statements. It compiles along with the VelociRaptor program using make or can be compiled by itself. A 
+limit isn't enforced by the code but by a limit with the sql statement. 
 
    gcc -Wall -O2 simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(r_scroll), r_tree);
 
     GtkWidget *r_entry=gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(r_entry), "SELECT * FROM data;");
+    gtk_entry_set_text(GTK_ENTRY(r_entry), "SELECT * FROM data LIMIT 1000;");
     gtk_widget_set_hexpand(r_entry, TRUE);
 
     GtkWidget *r_button=gtk_button_new_with_label("Run SQL");
