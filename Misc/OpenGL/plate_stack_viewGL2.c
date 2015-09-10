@@ -5,12 +5,14 @@
 to get uniform random data and database data dynamically. Provide a couple of heatmap settings
 also.
 
-Test the environment and FPS on atom netbook with Mesa driver. Ubuntu 12.04. OK, it works.
+Test the environment and FPS on atom netbook with Mesa driver. OK, it works.
     vblank_mode=0 glxgears
     glxinfo
 
 About Xlib windows and displays.
     http://www.sbin.org/doc/Xlib/chapt_03.html
+
+With Ubuntu14.04 and GTK3.10
 
 Compile with
     gcc -Wall -std=c99 -O2 `pkg-config --cflags gtk+-3.0` plate_stack_viewGL2.c -o plate_stack_viewGL2 -lGL -lGLU -lX11 -lm -lgsl -lgslcblas -lsqlite3 `pkg-config --libs gtk+-3.0 gdk-x11-3.0`
@@ -61,7 +63,6 @@ static double setting_percent=0.10;
 typedef struct{GtkWidget *sEntry; GtkWidget *sDA;}sEntryDA;
 static void data_db_dialog(GtkWidget *menu, gpointer p);
 static void data_test_dialog(GtkWidget *menu, gpointer p);
-static void about_dialog(GtkWidget *menu, gpointer p);
 static void setting_above_below_dialog(GtkWidget *menu, gpointer p);
 static void close_program(void);
 static void get_data_points(void);
@@ -78,6 +79,8 @@ static void stop_rotation(GtkWidget *da, gpointer data);
 static void stop_advance_rotation(GtkWidget *da, sEntryDA *data);
 static void scale_drawing(GtkRange *range,  gpointer data);
 static void rotation_axis(GtkWidget *axis, gpointer data);
+static void about_dialog(GtkWidget *menu, gpointer p);
+static GdkPixbuf* draw_velociraptor();
 
 
 int main(int argc, char **argv)
@@ -95,6 +98,9 @@ int main(int argc, char **argv)
    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Platemap Viewer 3d");
    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
+
+   GdkPixbuf *dino=draw_velociraptor();
+   gtk_window_set_default_icon(dino);
 
    data_menu=gtk_menu_new();
    data_db=gtk_menu_item_new_with_label("Database");
@@ -130,7 +136,7 @@ int main(int argc, char **argv)
    g_signal_connect(settings_toggle, "activate", G_CALLBACK(setting_toggle_background), NULL);
 
    help_menu=gtk_menu_new();
-   help_about=gtk_menu_item_new_with_label("About");
+   help_about=gtk_menu_item_new_with_label("Platemap Viewer 3d");
    gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), help_about);
    g_signal_connect(help_about, "activate", G_CALLBACK(about_dialog), NULL);
 
@@ -145,7 +151,7 @@ int main(int argc, char **argv)
    settings_item=gtk_menu_item_new_with_label("Settings");
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_item), settings_menu);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), settings_item);
-   help_item=gtk_menu_item_new_with_label("Help");
+   help_item=gtk_menu_item_new_with_label("About");
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(help_item), help_menu);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), help_item);
 
@@ -216,7 +222,7 @@ static void data_db_dialog(GtkWidget *menu, gpointer p)
      GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *radio1, *radio2, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("VelociRaptor Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("VelociRaptor Data", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
 
@@ -302,7 +308,7 @@ static void data_test_dialog(GtkWidget *menu, gpointer p)
      GtkWidget *dialog, *grid1, *entry1, *entry2, *entry3, *label1, *label2, *label3, *label4, *content_area, *action_area;
     int result;
 
-     dialog=gtk_dialog_new_with_buttons("Test Data", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     dialog=gtk_dialog_new_with_buttons("Test Data", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
      
@@ -374,8 +380,8 @@ static void setting_above_below_dialog(GtkWidget *menu, gpointer p)
      GtkWidget *dialog, *grid1, *combo1, *label1, *label2, *content_area, *action_area;
      int result;
 
-     if(*(int*)p==1) dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
-     else dialog=gtk_dialog_new_with_buttons("Heatmap Below", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+     if(*(int*)p==1) dialog=gtk_dialog_new_with_buttons("Heatmap Above", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+     else dialog=gtk_dialog_new_with_buttons("Heatmap Below", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
      gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
      
@@ -427,22 +433,6 @@ static void setting_above_below_dialog(GtkWidget *menu, gpointer p)
 
      gtk_widget_destroy(dialog);
   
-  }
-static void about_dialog(GtkWidget *menu, gpointer p)
-  {
-    GtkWidget *dialog;
-    const gchar *authors[]={"C. Eric Cashon", NULL};
-
-    dialog=gtk_about_dialog_new();
-    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Platemap Viewer 3d");
-    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
-    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "With GTK+ and OpenGL");
-    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2014 C. Eric Cashon");
-    gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), authors);
-
-    gtk_widget_show_all(dialog);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
   }
 static void close_program()
  {
@@ -891,5 +881,161 @@ static void rotation_axis(GtkWidget *axis, gpointer data)
        rotation[2]=1.0;
      }
  }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Platemap Viewer 3d");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "An OpenGL 3d viewer for the VelociRaptor program.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2015 C. Eric Cashon");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+static GdkPixbuf* draw_velociraptor()
+  {
+    //Some amateur drawing and cropping of the program dino. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1024, 576);
+    cairo_t *cr=cairo_create(surface);
+    cairo_pattern_t *pattern=NULL;
+    int i=0;
+    int move=330;
+    int height=220;
+    int width=250;
+    double ScaleWidth=350;
+    double ScaleHeight=350;
+    int points[21][2] = { 
+      { 40, 85 }, 
+      { 105, 75 }, 
+      { 140, 10 }, 
+      { 165, 75 }, 
+      { 490, 100 },
+      { 790, 225 },
+      { 860, 310 }, 
+      //{ 900, 380 }, curve nose
+      { 860, 420 },
+      { 820, 380 },
+      { 780, 420 },
+      { 740, 380 },
+      { 700, 420 },
+      { 660, 380 },
+      { 650, 385 },
+      { 810, 520 }, 
+      { 440, 540 },
+      { 340, 840 },
+      { 240, 840 },
+      { 140, 200 },
+      { 90, 125 },
+      { 40, 85 } 
+  };
+    g_print("Draw Dino\n");
+    
+    //Scaled from a 1024x576 screen. Original graphic.
+    ScaleWidth=width/1024.0;
+    ScaleHeight=height/576.0;
 
+    //Clear the surface.
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_paint(cr);
+    cairo_restore(cr);
+    
+    cairo_save(cr);
+    //Draw raptor points and fill in green.
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    //Draw point to point.
+    for(i=0; i<20; i++)
+      {
+        cairo_line_to(cr, points[i][0]+move, points[i][1]);
+      }
+    //Draw curve at nose.
+    cairo_move_to(cr, 860+move, 310);
+    cairo_curve_to(cr, 900+move, 380, 900+move, 380, 860+move, 420);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0, 1, 0);
+    cairo_fill(cr);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Set up rotated black ellipses.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgba(cr, 0, 0, 0, 1);
+    cairo_set_line_width(cr, 7.0);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    for( i=0; i<36; i+=2)
+      {
+        cairo_save(cr);
+        cairo_rotate(cr, i*G_PI/36);
+        cairo_scale(cr, 0.3, 1);
+        cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+      }
+    cairo_restore(cr);
+
+    //Set up rotated purple ellipses.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgba(cr, 1, 0, 1.0, 1);
+    cairo_set_line_width(cr, 3.0);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    for(i=1; i<36; i+=2)
+      {
+        cairo_save(cr);
+        cairo_rotate(cr, i*G_PI/36);
+        cairo_scale(cr, 0.3, 1);
+        cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_restore(cr);
+      }
+    cairo_restore(cr);
+
+    //Pattern for the center eye ellipse.
+    pattern = cairo_pattern_create_linear(-120.0, 30.0, 120.0, 30.0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.1, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.5, 0, 0.5, 1);
+    cairo_pattern_add_color_stop_rgb(pattern, 0.9, 0, 0, 0);
+
+    //Draw center elipse of eye.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 3);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    cairo_rotate(cr, 18 * G_PI/36);
+    cairo_scale(cr, 0.3, 1);
+    cairo_arc(cr, 0, 0, 60, 0, 2 * G_PI);
+    cairo_close_path(cr);
+    cairo_set_source(cr, pattern);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    //Draw center circle for the eye.
+    cairo_save(cr);
+    cairo_scale(cr, ScaleWidth, ScaleHeight);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_line_width(cr, 3);
+    cairo_translate(cr, width/(3.0*ScaleWidth), height/(3.0*ScaleHeight));
+    cairo_translate(cr, move, 0);
+    cairo_rotate(cr, 18*G_PI/36);
+    cairo_scale(cr, 0.3, 1);
+    cairo_arc(cr, 0, 0, 15, 0, 2 * G_PI);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    GdkPixbuf *dino=gdk_pixbuf_get_from_surface(surface, 0, 0, 350, 350);
+    GdkPixbuf *crop_dino=gdk_pixbuf_new_subpixbuf(dino, 70, 0, 250, 250);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    cairo_pattern_destroy(pattern);
+    return crop_dino;
+  }
 
