@@ -28,10 +28,12 @@ int main(int argc, char **argv)
     int error=0;
 
     SF_INFO sf_info;
+    SF_FORMAT_INFO sf_format_info;
     SNDFILE *sndfile = NULL;
 
     sndfile=sf_open(file_name, SFM_READ, &sf_info);
 
+    //Check the sndfile.
     if(sndfile==NULL)
       {
         const char *error_string=sf_error_number(sf_error(sndfile));
@@ -43,9 +45,18 @@ int main(int argc, char **argv)
         printf("Channels: %i\n", sf_info.channels);
         printf("Sample Rate: %d\n", sf_info.samplerate);
         printf("Sections: %d\n", sf_info.sections);
-        printf("Format: %d\n", sf_info.format);
+        sf_command(sndfile, SFC_GET_FORMAT_INFO, &sf_format_info, sizeof(sf_format_info));
+        if(sf_format_info.extension==NULL)
+          {
+            printf("Format: %08x %s\n", sf_format_info.format, sf_format_info.name);
+          }
+        else
+          {
+            printf("Format: %08x %s %s\n", sf_format_info.format, sf_format_info.name, sf_format_info.extension);
+          }
       }
 
+    //Check for alsa errors.
     if((error=snd_pcm_open(&pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, 0))<0)
       {
         printf("Cannot open audio device (%s)\n", snd_strerror(error));
