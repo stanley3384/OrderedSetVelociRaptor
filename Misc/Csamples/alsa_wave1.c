@@ -12,7 +12,9 @@ the wave file and passes them to the alsa functions to set up playback.
 #include<alsa/asoundlib.h>
 #include<stdio.h>
 
-static char *file_name = "piano2.wav";
+//Test a couple of sound formats. 
+static char *file_name="piano2.wav";
+//static char *file_name="0906.ogg";
 
 int main(int argc, char **argv)
   {
@@ -26,13 +28,23 @@ int main(int argc, char **argv)
     int error=0;
 
     SF_INFO sf_info;
-    SNDFILE *infile = NULL;
+    SNDFILE *sndfile = NULL;
 
-    infile=sf_open(file_name, SFM_READ, &sf_info);
-    printf("Channels: %i\n", sf_info.channels);
-    printf("Sample Rate: %d\n", sf_info.samplerate);
-    printf("Sections: %d\n", sf_info.sections);
-    printf("Format: %d\n", sf_info.format);
+    sndfile=sf_open(file_name, SFM_READ, &sf_info);
+
+    if(sndfile==NULL)
+      {
+        const char *error_string=sf_error_number(sf_error(sndfile));
+        printf("Couldn't open sound file. libsndfile error: %s\n", error_string);
+        exit(1);
+      }
+    else
+      {
+        printf("Channels: %i\n", sf_info.channels);
+        printf("Sample Rate: %d\n", sf_info.samplerate);
+        printf("Sections: %d\n", sf_info.sections);
+        printf("Format: %d\n", sf_info.format);
+      }
 
     if((error=snd_pcm_open(&pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, 0))<0)
       {
@@ -78,7 +90,7 @@ int main(int argc, char **argv)
 
     printf("Play %s\n", file_name);
     buffer=malloc(frames*sf_info.channels*sizeof(short));
-    while((counter=sf_readf_short(infile, buffer, frames))>0)
+    while((counter=sf_readf_short(sndfile, buffer, frames))>0)
      {
         frames_written=snd_pcm_writei(pcm_handle, buffer, counter);
         if(frames_written<0)
@@ -106,5 +118,6 @@ int main(int argc, char **argv)
     snd_pcm_drain(pcm_handle);
     snd_pcm_close(pcm_handle);
     free(buffer);
+    sf_close(sndfile);
     return 0;
 }
