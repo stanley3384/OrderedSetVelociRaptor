@@ -1,7 +1,8 @@
 
 /*
-    Test code for playing a wave file with alsa. The sndfile library gets the arguments from
-the wave file and passes them to the alsa functions to set up playback.
+    Test code for playing a wav file with alsa. The sndfile library gets the arguments from
+the wav file and passes them to the alsa functions to set up playback. It also will play other 
+sound files that aren't wav files such as ogg and aiff.
 
     gcc -Wall alsa_wave1.c -o alsa_wave1 -lasound -lsndfile
 
@@ -12,10 +13,8 @@ the wave file and passes them to the alsa functions to set up playback.
 #include<alsa/asoundlib.h>
 #include<stdio.h>
 
-//Test a 8 bit PCM wave file. 
+//Test wav file. 
 static char *file_name="piano2.wav";
-//Test a 8 bit PCM in an ogg container.
-//static char *file_name="0906.ogg";
 
 int main(int argc, char **argv)
   {
@@ -32,6 +31,8 @@ int main(int argc, char **argv)
     SF_FORMAT_INFO sf_format_info;
     SNDFILE *sndfile = NULL;
 
+    //Set format to 0 in accordance to the documentation.
+    sf_info.format=0;
     sndfile=sf_open(file_name, SFM_READ, &sf_info);
 
     //Check the sndfile.
@@ -46,17 +47,24 @@ int main(int argc, char **argv)
         printf("Channels: %i\n", sf_info.channels);
         printf("Sample Rate: %d\n", sf_info.samplerate);
         printf("Sections: %d\n", sf_info.sections);
+        //Look up format meanings for sndfile library reference.
+        printf("Format: %08x\n", sf_info.format);
+        //Set for playback of float wav files.
+        sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
+ 
+        /*
+          Tested an ogg and aiff sound file and they seemed to work also. Not sure why.
+          This always prints 00000001 Signed 8 bit PCM.
+        */        
         sf_command(sndfile, SFC_GET_FORMAT_INFO, &sf_format_info, sizeof(sf_format_info));
         if(sf_format_info.extension==NULL)
           {
-            printf("Format: %08x %s\n", sf_format_info.format, sf_format_info.name);
+            printf("Format Info: %08x %s\n", sf_format_info.format, sf_format_info.name);
           }
         else
           {
-            printf("Format: %08x %s %s\n", sf_format_info.format, sf_format_info.name, sf_format_info.extension);
+            printf("Format Info: %08x %s %s\n", sf_format_info.format, sf_format_info.name, sf_format_info.extension);
           }
-         //Set for wave files in float format.
-         sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
       }
 
     //Check for alsa errors.
