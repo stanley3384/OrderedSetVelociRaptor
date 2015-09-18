@@ -12,8 +12,9 @@ the wave file and passes them to the alsa functions to set up playback.
 #include<alsa/asoundlib.h>
 #include<stdio.h>
 
-//Test a couple of sound formats. 
+//Test a 8 bit PCM wave file. 
 static char *file_name="piano2.wav";
+//Test a 8 bit PCM in an ogg container.
 //static char *file_name="0906.ogg";
 
 int main(int argc, char **argv)
@@ -54,6 +55,8 @@ int main(int argc, char **argv)
           {
             printf("Format: %08x %s %s\n", sf_format_info.format, sf_format_info.name, sf_format_info.extension);
           }
+         //Set for wave files in float format.
+         sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
       }
 
     //Check for alsa errors.
