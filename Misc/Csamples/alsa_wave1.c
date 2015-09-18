@@ -13,7 +13,7 @@ sound files that aren't wav files such as ogg and aiff.
 #include<alsa/asoundlib.h>
 #include<stdio.h>
 
-//Test wav file. 
+//Test sound file. 
 static char *file_name="piano2.wav";
 
 int main(int argc, char **argv)
@@ -47,23 +47,20 @@ int main(int argc, char **argv)
         printf("Channels: %i\n", sf_info.channels);
         printf("Sample Rate: %d\n", sf_info.samplerate);
         printf("Sections: %d\n", sf_info.sections);
-        //Look up format meanings for sndfile library reference.
+        //Look up format meanings in sndfile library reference.
         printf("Format: %08x\n", sf_info.format);
         //Set for playback of float wav files.
         sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
  
-        /*
-          Tested an ogg and aiff sound file and they seemed to work also. Not sure why.
-          This always prints 00000001 Signed 8 bit PCM.
-        */        
+        sf_format_info.format=sf_info.format;       
         sf_command(sndfile, SFC_GET_FORMAT_INFO, &sf_format_info, sizeof(sf_format_info));
         if(sf_format_info.extension==NULL)
           {
-            printf("Format Info: %08x %s\n", sf_format_info.format, sf_format_info.name);
+            printf("Format Info: Name %s\n", sf_format_info.name);
           }
         else
           {
-            printf("Format Info: %08x %s %s\n", sf_format_info.format, sf_format_info.name, sf_format_info.extension);
+            printf("Format Info: Name %s Extension %s\n", sf_format_info.name, sf_format_info.extension);
           }
       }
 
