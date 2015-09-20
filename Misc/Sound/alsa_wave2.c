@@ -17,8 +17,8 @@ to work.
 #include<stdio.h>
 
 
-//Short test sounds. Sndfile won't recognize a mp3 so that one should produce an error.
-static char *sounds[]={"piano2.wav", "0906.ogg", "test24b.wav", "cougar.mp3"}; 
+//Short test sounds. Sndfile won't recognize a mp3 so don't use a mp3.
+static char *sounds[]={"piano2.wav", "0906.ogg", "test24b.wav"}; 
 static char *sound_file=NULL;
 
 static void exit_program(GtkWidget *widget, gpointer data);
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Thread Pool Sounds");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 250, 75);
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
 
     GError *pool_error=NULL;
     GThreadPool *sound_pool=g_thread_pool_new((GFunc)play_sound, sound_file, 4, TRUE, &pool_error);
@@ -45,13 +45,28 @@ int main(int argc, char *argv[])
     
     g_signal_connect(window, "destroy", G_CALLBACK(exit_program), sound_pool);
 
-    GtkWidget *button1=gtk_button_new_with_label("Play Sound");
+    GtkWidget *button1=gtk_button_new_with_label("Play Sound 1");
+    gtk_widget_set_name(button1, "b1");
     gtk_widget_set_hexpand(button1, TRUE);
     gtk_widget_set_vexpand(button1, TRUE);
     g_signal_connect(button1, "clicked", G_CALLBACK(play_sounds), sound_pool);
 
+    GtkWidget *button2=gtk_button_new_with_label("Play Sound 2");
+    gtk_widget_set_name(button2, "b2");
+    gtk_widget_set_hexpand(button2, TRUE);
+    gtk_widget_set_vexpand(button2, TRUE);
+    g_signal_connect(button2, "clicked", G_CALLBACK(play_sounds), sound_pool);
+
+    GtkWidget *button3=gtk_button_new_with_label("Play Sound 3");
+    gtk_widget_set_name(button3, "b3");
+    gtk_widget_set_hexpand(button3, TRUE);
+    gtk_widget_set_vexpand(button3, TRUE);
+    g_signal_connect(button3, "clicked", G_CALLBACK(play_sounds), sound_pool);
+
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button3, 0, 2, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     gtk_widget_show_all(window);
@@ -62,7 +77,7 @@ int main(int argc, char *argv[])
   }
 static void exit_program(GtkWidget *widget, gpointer data)
   {
-    g_thread_pool_free((GThreadPool*)data, FALSE, TRUE);
+    g_thread_pool_free((GThreadPool*)data, TRUE, FALSE);
     gtk_main_quit();
   }
 static void play_sounds(GtkWidget *button, gpointer data)
@@ -70,18 +85,19 @@ static void play_sounds(GtkWidget *button, gpointer data)
     GError *sound_error=NULL;
     gint i=0;
 
-    //Play one sound several times by clicking. Then try more than one sound.
-    for(i=0;i<1;i++)
+    if(g_strcmp0(gtk_widget_get_name(button), "b1")==0) i=0;
+    else if(g_strcmp0(gtk_widget_get_name(button), "b2")==0) i=1;
+    else if(g_strcmp0(gtk_widget_get_name(button), "b3")==0) i=2;
+    else i=0;
+ 
+    sound_file=sounds[i];
+    //play_sound(sound_file);
+    g_thread_pool_push((GThreadPool*)data, sound_file, &sound_error);
+    if(sound_error!=NULL)
       {
-        sound_file=sounds[i];
-        //play_sound(sound_file);
-        g_thread_pool_push((GThreadPool*)data, sound_file, &sound_error);
-        if(sound_error!=NULL)
-          {
-            g_print("Sound Error %s\n", sound_error->message);
-            g_clear_error(&sound_error);
-          }   
-      } 
+        g_print("Sound Error %s\n", sound_error->message);
+        g_clear_error(&sound_error);
+      }    
   }
 static int play_sound(char *sound_file)
   {
@@ -209,7 +225,7 @@ error_return:
 static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, snd_pcm_uframes_t frames, snd_pcm_sframes_t frames_written)
   {
     int counter=0;
-
+    printf("Frames %i FramesW %i\n", (int)frames, (int)frames_written);
     while((counter=sf_readf_short(sndfile, buffer, frames))>0)
       {
         frames_written=snd_pcm_writei(pcm_handle, buffer, counter);
