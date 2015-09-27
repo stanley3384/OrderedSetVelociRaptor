@@ -3,7 +3,8 @@
     Test code for playing sound files with alsa. Set up a thread pool to play a sound several
 times without binding up the UI. Concerned the playsound function isn't reentrant but it seems
 to work.
-    This one looks for wav files in the local directory and loads them into a combobox. 
+    This one looks for wav files in the local directory and loads them into a combobox. It tries
+to set the background transparency of the the main window also.
 
     Tested on Ubuntu14.03 with GTK3.10.
 
@@ -19,6 +20,7 @@ to work.
 
 static char *sound_file=NULL;
 
+static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void exit_program(GtkWidget *widget, gpointer data);
 static void load_sounds(GtkWidget *combo);
 static void play_sounds(GtkWidget *button, gpointer *data);
@@ -33,6 +35,16 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Thread Pool .wav Sounds");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 275, 100);
+    gtk_widget_set_app_paintable(window, TRUE);
+    //Set transparency of main window.
+    if(gtk_widget_is_composited(window))
+      {
+        GdkScreen *screen = gtk_widget_get_screen(window);
+        GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual(window, visual);
+      }
+    else g_print("Can't set window transparency.\n");
+    g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
 
     GError *pool_error=NULL;
     GThreadPool *sound_pool=g_thread_pool_new((GFunc)play_sound, sound_file, 4, TRUE, &pool_error);
@@ -57,15 +69,33 @@ int main(int argc, char *argv[])
     g_signal_connect(button1, "clicked", G_CALLBACK(play_sounds), combo_sound); 
 
     GtkWidget *grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
+
+    GError *css_error=NULL;
+    gchar css_string[]="GtkButton{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.9)), color-stop(0.5,rgba(180,180,180,0.9)), color-stop(1.0,rgba(25,0,200,0.9)));}";
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GdkDisplay *display = gdk_display_get_default();
+    GdkScreen *screen = gdk_display_get_default_screen(display);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+    if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    g_object_unref(provider);
 
     gtk_widget_show_all(window);
 
     gtk_main();
 
     return 0;   
+  }
+static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    g_print("Paint\n");
+    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
+    cairo_paint(cr);
+    return FALSE;
   }
 static void exit_program(GtkWidget *widget, gpointer data)
   {
