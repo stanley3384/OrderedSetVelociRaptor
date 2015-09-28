@@ -3,7 +3,7 @@
     Test code for playing sound files with alsa. Set up a thread pool to play a sound several
 times without binding up the UI. Concerned the playsound function isn't reentrant but it seems
 to work.
-    This one looks for wav files in the local directory and loads them into a combobox. It tries
+    This one looks for wav and ogg files in the local directory and loads them into a combobox. It tries
 to set the background transparency of the the main window also.
 
     Tested on Ubuntu14.03 with GTK3.10.
@@ -22,7 +22,7 @@ static char *sound_file=NULL;
 
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void exit_program(GtkWidget *widget, gpointer data);
-static void load_sounds(GtkWidget *combo);
+static void load_sounds(GtkWidget *combo, gpointer data);
 static void play_sounds(GtkWidget *button, gpointer *data);
 static int play_sound(char *sound_file);
 static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, snd_pcm_uframes_t frames, snd_pcm_sframes_t frames_written);
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Thread Pool .wav Sounds");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 275, 100);
+    gtk_window_set_default_size(GTK_WINDOW(window), 350, 200);
     gtk_widget_set_app_paintable(window, TRUE);
     //Set transparency of main window.
     if(gtk_widget_is_composited(window))
@@ -62,16 +62,25 @@ int main(int argc, char *argv[])
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
-    //Load the .wav files into the combobox.
-    load_sounds(combo1); 
+    //Load the .wav files into the combobox to start with.
+    load_sounds(combo1, NULL); 
 
     gpointer combo_sound[]={combo1, sound_pool};
     g_signal_connect(button1, "clicked", G_CALLBACK(play_sounds), combo_sound); 
 
+    GtkWidget *combo2=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo2, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", ".wav");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", ".ogg");
+    gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo2), "1");
+    g_signal_connect_swapped(combo2, "changed", G_CALLBACK(load_sounds), combo1);
+
     GtkWidget *grid=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 2, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
@@ -92,7 +101,7 @@ int main(int argc, char *argv[])
   }
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
-    g_print("Paint\n");
+    //g_print("Paint\n");
     cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
     cairo_paint(cr);
     return FALSE;
@@ -103,10 +112,16 @@ static void exit_program(GtkWidget *widget, gpointer data)
     if(sound_file!=NULL) g_free(sound_file);
     gtk_main_quit();
   }
-static void load_sounds(GtkWidget *combo)
+static void load_sounds(GtkWidget *combo, gpointer data)
   {
     GError *dir_error=NULL;
     const gchar *file_temp=NULL;
+    gchar *file_type=NULL;
+
+    gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(combo));
+
+    if(data!=NULL) file_type=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(data));
+    else file_type=g_strdup(".wav");
 
     GDir *directory=g_dir_open("./", 0, &dir_error);
     if(dir_error!=NULL)
@@ -120,7 +135,7 @@ static void load_sounds(GtkWidget *combo)
         file_temp=g_dir_read_name(directory);
         while(file_temp!=NULL)
           {
-            if(file_temp!=NULL&&g_str_has_suffix(file_temp,".wav"))
+            if(file_temp!=NULL&&g_str_has_suffix(file_temp, file_type))
               {
                 //g_print("%s\n", file_temp);
                 gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), file_temp);
@@ -131,6 +146,8 @@ static void load_sounds(GtkWidget *combo)
         gtk_widget_set_sensitive(combo, TRUE);
         g_dir_close(directory);
       }
+
+    if(file_type!=NULL) g_free(file_type);
 
   }
 static void play_sounds(GtkWidget *button, gpointer *data)
