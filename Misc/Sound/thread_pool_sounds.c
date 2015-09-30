@@ -8,7 +8,7 @@ to set the background transparency of the the main window also.
 
     Tested on Ubuntu14.03 with GTK3.10.
 
-    gcc -Wall alsa_wave_combo1.c -o alsa_wave_combo1 -lasound -lsndfile `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall thread_pool_sounds.c -o thread_pool_sounds -lasound -lsndfile `pkg-config --cflags --libs gtk+-3.0`
 
     C. Eric Cashon
 */
@@ -31,6 +31,7 @@ static void play_sounds(GtkWidget *button, gpointer *data);
 static int play_sound(char *sound_file);
 static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, snd_pcm_uframes_t frames, snd_pcm_sframes_t frames_written);
 static void about_dialog(GtkWidget *widget, gpointer data);
+static GdkPixbuf* draw_icon();
 
 int main(int argc, char *argv[])
   {
@@ -50,6 +51,8 @@ int main(int argc, char *argv[])
       }
     else g_print("Can't set window transparency.\n");
     g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
+    GdkPixbuf *icon=draw_icon();
+    gtk_window_set_default_icon(icon);
 
     g_mutex_init(&mutex);
 
@@ -399,7 +402,7 @@ static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, 
 static void about_dialog(GtkWidget *widget, gpointer data)
   {
     GtkWidget *dialog=gtk_about_dialog_new();
-    //gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Thread Pool Sounds");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Play multiple short sounds at once.");
@@ -408,4 +411,69 @@ static void about_dialog(GtkWidget *widget, gpointer data)
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+  }
+static GdkPixbuf* draw_icon()
+  {
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface);
+    
+    //Paint the background.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_paint(cr);
+
+    //A green icon border.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 6);
+    cairo_rectangle(cr, 0, 0, 256, 256);
+    cairo_stroke(cr);
+
+    //The diving note.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 1);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_translate(cr, 60, 60);
+    cairo_rotate(cr, 3*G_PI/4);
+    cairo_scale(cr, 1.0, 0.60);
+    cairo_arc(cr, 0, 0, 30, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //The diving note line.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 80, 40);
+    cairo_line_to(cr, 170, 130);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Two leg lines on diving note line.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 170, 130);
+    cairo_line_to(cr, 170, 90);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 150, 110);
+    cairo_line_to(cr, 150, 70);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //The diving board.
+    cairo_save(cr);
+    cairo_matrix_t matrix;
+    cairo_matrix_init(&matrix, 1.0, 0.5, 0.0, 1.0, 0.0, 0.0);
+    cairo_transform(cr, &matrix);
+    cairo_rectangle(cr, 148, 100, 140, 50);
+    cairo_stroke_preserve(cr);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    return icon;
   }
