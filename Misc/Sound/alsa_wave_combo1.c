@@ -30,13 +30,14 @@ static void load_sounds(GtkWidget *combo, gpointer data);
 static void play_sounds(GtkWidget *button, gpointer *data);
 static int play_sound(char *sound_file);
 static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, snd_pcm_uframes_t frames, snd_pcm_sframes_t frames_written);
+static void about_dialog(GtkWidget *widget, gpointer data);
 
 int main(int argc, char *argv[])
   {
     gtk_init(&argc, &argv);
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Thread Pool .wav Sounds");
+    gtk_window_set_title(GTK_WINDOW(window), "Thread Pool Sounds");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
     gtk_widget_set_app_paintable(window, TRUE);
@@ -64,6 +65,9 @@ int main(int argc, char *argv[])
 
     GtkWidget *button1=gtk_button_new_with_label("Play Sound");
     gtk_widget_set_hexpand(button1, TRUE);
+    GtkWidget *b1_label=gtk_bin_get_child(GTK_BIN(button1));
+    gtk_widget_set_name(b1_label, "b1_label");
+    gtk_label_set_markup(GTK_LABEL(b1_label), "<span foreground='yellow' size='x-large'>Play Sound</span>");
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
@@ -89,6 +93,15 @@ int main(int argc, char *argv[])
     gpointer combo_sound[]={combo1, sound_pool, label2};
     g_signal_connect(button1, "clicked", G_CALLBACK(play_sounds), combo_sound); 
 
+    GtkWidget *menu1=gtk_menu_new();
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Thread Pool Sounds");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
+
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
@@ -97,10 +110,11 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 4, 1, 3);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 5, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkButton{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.9)), color-stop(0.5,rgba(180,180,180,0.9)), color-stop(1.0,rgba(25,0,200,0.9)));} GtkLabel{color: yellow}";
+    gchar css_string[]="GtkWidget{background-color: rgba(0,0,255,0.3); color: yellow} GtkButton{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.9)), color-stop(0.5,rgba(180,180,180,0.9)), color-stop(1.0,rgba(25,0,200,0.9)));} GtkLabel#b1_label{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.9)), color-stop(0.5,rgba(180,180,180,0.9)), color-stop(1.0,rgba(25,0,200,0.9)))} GtkDialog{background: rgba(0,0,255,1.0)}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -381,4 +395,17 @@ static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, 
          }
       }
         
+  }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    //gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Thread Pool Sounds");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Play multiple short sounds at once.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2015 C. Eric Cashon");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
   }
