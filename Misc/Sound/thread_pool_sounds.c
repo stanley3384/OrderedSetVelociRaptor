@@ -422,12 +422,6 @@ static GdkPixbuf* draw_icon()
     cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
     cairo_paint(cr);
 
-    //A green icon border.
-    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-    cairo_set_line_width(cr, 6);
-    cairo_rectangle(cr, 0, 0, 256, 256);
-    cairo_stroke(cr);
-
     //The diving note.
     cairo_save(cr);
     cairo_set_line_width(cr, 1);
@@ -460,6 +454,21 @@ static GdkPixbuf* draw_icon()
     cairo_line_to(cr, 150, 70);
     cairo_stroke(cr);
     cairo_restore(cr);
+
+    //The pool arc.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.5);
+    cairo_arc(cr, 128, 380, 240, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //A green border.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 6);
+    cairo_rectangle(cr, 0, 0, 256, 256);
+    cairo_stroke(cr);
 
     //The diving board.
     cairo_save(cr);
