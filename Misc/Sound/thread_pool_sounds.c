@@ -412,6 +412,7 @@ static void about_dialog(GtkWidget *widget, gpointer data)
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
   }
+//The diving and swimming pool notes.
 static GdkPixbuf* draw_icon()
   {
     //Create a surface to draw a 256x256 icon. 
@@ -462,6 +463,30 @@ static GdkPixbuf* draw_icon()
     cairo_arc(cr, 128, 380, 240, 0, 2*G_PI);
     cairo_fill(cr);
     cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //A note in the pool.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 1);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_translate(cr, 70, 230);
+    cairo_rotate(cr, G_PI);
+    cairo_scale(cr, 0.60, 1.0);
+    cairo_arc(cr, 0, 0, 15, 0, G_PI);
+    cairo_fill(cr);
+    cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //Note flag legs.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 2);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 100, 180);
+    cairo_line_to(cr, 105, 170);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 105, 180);
+    cairo_line_to(cr, 110, 170);
+    cairo_stroke(cr);
     cairo_restore(cr);
 
     //A green border.
