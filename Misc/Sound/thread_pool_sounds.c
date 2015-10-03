@@ -32,6 +32,7 @@ static int play_sound(char *sound_file);
 static void spool_sound(snd_pcm_t *pcm_handle, SNDFILE *sndfile, short *buffer, snd_pcm_uframes_t frames, snd_pcm_sframes_t frames_written);
 static void about_dialog(GtkWidget *widget, gpointer data);
 static GdkPixbuf* draw_icon();
+static void error_message(const gchar *string);
 
 int main(int argc, char *argv[])
   {
@@ -169,6 +170,7 @@ static void load_sounds(GtkWidget *combo, gpointer data)
     GError *dir_error=NULL;
     const gchar *file_temp=NULL;
     gchar *file_type=NULL;
+    gint i=0;
 
     gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(combo));
 
@@ -191,11 +193,17 @@ static void load_sounds(GtkWidget *combo, gpointer data)
               {
                 //g_print("%s\n", file_temp);
                 gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), file_temp);
+                i++;
               }
             file_temp=g_dir_read_name(directory);
           }
-        gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
-        gtk_widget_set_sensitive(combo, TRUE);
+        if(i>0)
+          {
+            g_print("Active\n");
+            gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+            gtk_widget_set_sensitive(combo, TRUE);
+          }
+        else gtk_widget_set_sensitive(combo, FALSE);
         g_dir_close(directory);
       }
 
@@ -229,7 +237,8 @@ static void play_sounds(GtkWidget *button, gpointer *data)
             g_clear_error(&sound_error);
           } 
         g_string_free(active_sounds, TRUE);
-      }   
+      } 
+    else error_message("There are no sound files in the local directory.");  
   }
 static int play_sound(char *sound_file)
   {
@@ -511,3 +520,10 @@ static GdkPixbuf* draw_icon()
     cairo_surface_destroy(surface); 
     return icon;
   }
+static void error_message(const gchar *string)
+  {
+    GtkWidget *dialog=gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", string);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+
