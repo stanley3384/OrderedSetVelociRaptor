@@ -6,6 +6,9 @@ to work.
     This one looks for wav and ogg files in the local directory and loads them into a combobox. It tries
 to set the background transparency of the the main window also.
 
+    ALSA is thread safe and the following about sndfile.
+    http://comments.gmane.org/gmane.comp.audio.libsndfile.devel/563
+
     Tested on Ubuntu14.03 with GTK3.10.
 
     gcc -Wall thread_pool_sounds.c -o thread_pool_sounds -lasound -lsndfile `pkg-config --cflags --libs gtk+-3.0`
@@ -153,7 +156,6 @@ static gboolean check_list(gpointer data)
   }
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
-    //g_print("Paint\n");
     cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
     cairo_paint(cr);
     return FALSE;
@@ -199,7 +201,6 @@ static void load_sounds(GtkWidget *combo, gpointer data)
           }
         if(i>0)
           {
-            g_print("Active\n");
             gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
             gtk_widget_set_sensitive(combo, TRUE);
           }
@@ -242,6 +243,7 @@ static void play_sounds(GtkWidget *button, gpointer *data)
   }
 static int play_sound(char *sound_file)
   {
+    //Problem that the sound_file pointer is global. Is it a problem?
     gchar *sound=g_strdup_printf("%s\n", sound_file);
     snd_pcm_t *pcm_handle;
     snd_pcm_hw_params_t *params;
@@ -447,6 +449,7 @@ static GdkPixbuf* draw_icon()
     //The diving note line.
     cairo_save(cr);
     cairo_set_line_width(cr, 6);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_move_to(cr, 80, 40);
     cairo_line_to(cr, 170, 130);
@@ -456,10 +459,11 @@ static GdkPixbuf* draw_icon()
     //Two leg lines on diving note line.
     cairo_save(cr);
     cairo_set_line_width(cr, 6);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);  
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_move_to(cr, 170, 130);
     cairo_line_to(cr, 170, 90);
-    cairo_stroke(cr);
+    cairo_stroke(cr); 
     cairo_move_to(cr, 150, 110);
     cairo_line_to(cr, 150, 70);
     cairo_stroke(cr);
