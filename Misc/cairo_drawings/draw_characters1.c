@@ -2,7 +2,7 @@
 /*
     Move text around in a drawing area and draw a rectangle around the text based on the size
 of the text. Draw a purple point on the shifted text that would print off screen and a blue 
-point for text that isn't shifted. 
+point for text that isn't shifted. Then put in random walk lines.
 
     gcc -Wall draw_characters1.c -o draw_characters1 -lm `pkg-config --cflags --libs gtk+-3.0`
 
@@ -94,25 +94,21 @@ static gboolean draw_characters(GtkWidget *widget, cairo_t *cr, gpointer *data)
     cairo_stroke(cr); 
     cairo_restore(cr);
 
-    //Draw point to check randomness.
+    //Draw point and line to check randomness.
     cairo_save(cr);
     array_len=((GArray*)data[1])->len;
     gint x_temp=0;
     for(i=0;i<array_len;i+=2)
       {  
         x_temp=g_array_index((GArray*)data[1], gint, i);
-        if(x_temp<0)
-          {
-            cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-            cairo_arc(cr, ABS(x_temp), g_array_index((GArray*)data[1], gint, i+1), 4, 0, 2*G_PI);
-          }
-        else
-          {
-            cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-            cairo_arc(cr, x_temp, g_array_index((GArray*)data[1], gint, i+1), 4, 0, 2*G_PI);
-          }
+        if(x_temp<0) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+        else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+        if(i!=0) cairo_line_to(cr, ABS(x_temp), g_array_index((GArray*)data[1], gint, i+1));
+        cairo_stroke(cr);
+        cairo_arc(cr, ABS(x_temp), g_array_index((GArray*)data[1], gint, i+1), 4, 0, 2*G_PI);
         cairo_fill(cr);
-        cairo_stroke(cr); 
+        cairo_stroke(cr);
+        cairo_move_to(cr, ABS(x_temp), g_array_index((GArray*)data[1], gint, i+1)); 
       }
     cairo_restore(cr);
 
