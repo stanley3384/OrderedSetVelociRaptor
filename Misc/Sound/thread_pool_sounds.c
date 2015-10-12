@@ -490,7 +490,7 @@ static GdkPixbuf* draw_icon()
     cairo_stroke_preserve(cr);
     cairo_restore(cr);
 
-    //Note flag legs.
+    //Note flag legs sticking up in pool.
     cairo_save(cr);
     cairo_set_line_width(cr, 2);
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
@@ -499,6 +499,21 @@ static GdkPixbuf* draw_icon()
     cairo_stroke(cr);
     cairo_move_to(cr, 105, 180);
     cairo_line_to(cr, 110, 170);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Note flag in pool.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 2);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 50, 190);
+    cairo_line_to(cr, 50, 170);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 50, 170);
+    cairo_line_to(cr, 43, 177);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 50, 175);
+    cairo_line_to(cr, 43, 182);
     cairo_stroke(cr);
     cairo_restore(cr);
 
