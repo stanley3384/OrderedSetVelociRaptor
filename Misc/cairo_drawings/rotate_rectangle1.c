@@ -116,6 +116,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_move_to(cr, -75, -125);
     cairo_show_text(cr, "7");  
     cairo_stroke(cr);
+    cairo_pattern_destroy(radial1);
     cairo_restore(cr);
 
     //x-axis in front of rectangle.
