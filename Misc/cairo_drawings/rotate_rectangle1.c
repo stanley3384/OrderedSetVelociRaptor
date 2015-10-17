@@ -1,6 +1,7 @@
 
 /*
-    Rotate a rectangle using cairo to get a 3d drawing and animation. Test some transparency also.
+    Rotate a rectangle using cairo to get a 3d drawing and animation. Test some transparency along
+with a radial pattern.
 
     gcc -Wall rotate_rectangle1.c -o rotate_rectangle1 -lm `pkg-config --cflags --libs gtk+-3.0`
 
@@ -10,9 +11,12 @@
 #include<gtk/gtk.h>
 #include<math.h>
 
+static guint timer_id=0;
+
 static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean start_drawing(gpointer drawing);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void quit_program(GtkWidget *widget, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -32,7 +36,7 @@ int main(int argc, char *argv[])
       }
     else g_print("Can't set window transparency.\n");
     g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(quit_program), NULL);
 
     GtkWidget *drawing=gtk_drawing_area_new();
     gtk_widget_set_hexpand(drawing, TRUE);
@@ -44,7 +48,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid);
     gtk_widget_show_all(window);
 
-    g_timeout_add(50, start_drawing, drawing); 
+    timer_id=g_timeout_add(50, start_drawing, drawing); 
 
     gtk_main();
 
@@ -91,15 +95,19 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_stroke(cr);
     cairo_restore(cr);
 
-    //Card
+    //Card drawn with radial pattern.
     cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.5);
+    cairo_pattern_t *radial1;
     cairo_scale(cr, scale_x, 1.0);
     cairo_translate(cr, scale_x_inv*(width/2), height/2);
+    radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, 500);  
+    cairo_pattern_add_color_stop_rgba(radial1, 0.3, 1.0, 0.0, 1.0, 0.5);
+    cairo_pattern_add_color_stop_rgba(radial1, 0.0, 1.0, 1.0, 0.0, 0.7);
+    cairo_set_source(cr, radial1);
     cairo_rectangle(cr, -100, -150, 200, 300);
     cairo_stroke_preserve(cr);
     cairo_fill(cr);
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_move_to(cr, 75, 125);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 20);
@@ -135,6 +143,12 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
     cairo_paint(cr);
     return FALSE;
+  }
+static void quit_program(GtkWidget *widget, gpointer data)
+  {
+    //Remove the timer before quiting to prevent possible GTK+ error on exit.
+    g_source_remove(timer_id);
+    gtk_main_quit();
   }
 
 
