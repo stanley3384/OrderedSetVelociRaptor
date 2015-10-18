@@ -58,6 +58,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
     static gboolean rise=TRUE;
+    gint j=0;
     gdouble scale_x=sin(i*G_PI/32);
     gdouble scale_x_inv=1.0/scale_x;
     i++;
@@ -78,7 +79,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
-        cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+        cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
         cairo_move_to(cr, width/2, height/2);
         if(rise) cairo_line_to(cr, fabs(scale_x*width/2), height/2);
         else cairo_line_to(cr, (width/2)+(1.0+scale_x)*width/2, height/2);
@@ -89,7 +90,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     //y-axis
     cairo_save(cr);
     cairo_set_line_width(cr, 4);
-    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    cairo_set_source_rgb(cr, 0.8, 0.0, 0.8);
     cairo_move_to(cr, width/2, height/2);
     cairo_line_to(cr, width/2, -height/2);
     cairo_stroke(cr);
@@ -100,7 +101,9 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_pattern_t *radial1;
     cairo_scale(cr, scale_x, 1.0);
     cairo_translate(cr, scale_x_inv*(width/2), height/2);
-    radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, 500);  
+    j=1000-((i%40)*25);
+    //g_print("I %i J %i\n", i, j);
+    radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, j);  
     cairo_pattern_add_color_stop_rgba(radial1, 0.3, 1.0, 0.0, 1.0, 0.5);
     cairo_pattern_add_color_stop_rgba(radial1, 0.0, 1.0, 1.0, 0.0, 0.7);
     cairo_set_source(cr, radial1);
@@ -124,7 +127,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
-        cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+        cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
         cairo_move_to(cr, width/2, height/2);
         if(rise) cairo_line_to(cr, scale_x*width/2, height/2);
         else cairo_line_to(cr, (width/2)+(1.0-scale_x)*width/2, height/2);
