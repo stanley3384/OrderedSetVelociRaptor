@@ -1,12 +1,10 @@
 
 /*
-
-    Test code for putting a simple cairo mesh on a rotating rectangle using cairo.
+    Test code for putting a simple cairo mesh on a rotating rectangle in 3d using cairo.
 
     gcc -Wall rotate_rectangle3.c -o rotate_rectangle3 -lm `pkg-config --cflags --libs gtk+-3.0`
 
     C. Eric Cashon
-
 */
 
 #include<gtk/gtk.h>
@@ -61,6 +59,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     static gboolean rise=TRUE;
     gdouble scale_x=sin(i*G_PI/32);
     gdouble scale_x_inv=1.0/scale_x;
+    //g_print("scale_x %f\n", scale_x);
     i++;
     if((int)fabs(scale_x)==1) 
       {
@@ -74,15 +73,27 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
     cairo_paint(cr);
 
+    //The oval behind the rectangle.
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 4);
+    cairo_scale(cr, 1.0, 0.20);
+    cairo_translate(cr, 0, 800);
+    cairo_arc(cr, width/2, height/2, 170, G_PI, 2*G_PI);
+    cairo_stroke(cr);
+    cairo_arc(cr, width/2, height/2, 130, G_PI, 2*G_PI);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
     //x-axis behind rectangle.
     if(scale_x<0)
       {
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
-        cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+        cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, fabs(scale_x*width/2), height/2);
-        else cairo_line_to(cr, (width/2)+(1.0+scale_x)*width/2, height/2);
+        if(rise) cairo_line_to(cr, width/2-(150-fabs(scale_x)*150), height/2+scale_x*20);
+        else cairo_line_to(cr, width/2+(150-fabs(scale_x)*150), height/2+scale_x*20);
         cairo_stroke(cr);
         cairo_restore(cr);
       }
@@ -109,17 +120,17 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_mesh_pattern_line_to(pattern, 0, 0);
     if(scale_x>0)
       {
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 0, 1, 0, 1);
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 1, 1, 1, 0);
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 2, 1, 0, 1);
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 3, 1, 1, 0);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 0, 1, 0, 1, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 1, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 2, 1, 0, 1, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 3, 1, 1, 0, 0.7);
       }
     else
       {
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 0, 1, 1, 0);
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 1, 0, 0, 1);
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 2, 1, 1, 0);
-        cairo_mesh_pattern_set_corner_color_rgb(pattern, 3, 0, 0, 1);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 0, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 1, 0, 0, 1, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 2, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern, 3, 0, 0, 1, 0.7);
       }
     cairo_mesh_pattern_end_patch(pattern);
     //g_print("Pattern Status %i\n", cairo_pattern_status(pattern));
@@ -147,6 +158,18 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_stroke(cr);
     cairo_restore(cr);
 
+    //The oval in front the rectangle.
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 4);
+    cairo_scale(cr, 1.0, 0.20);
+    cairo_translate(cr, 0, 800);
+    cairo_arc(cr, width/2, height/2, 170, 0, G_PI);
+    cairo_stroke(cr);
+    cairo_arc(cr, width/2, height/2, 130, 0, G_PI);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
     //x-axis in front of rectangle.
     if(scale_x>=0)
       {
@@ -154,8 +177,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
         cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, scale_x*width/2, height/2);
-        else cairo_line_to(cr, (width/2)+(1.0-scale_x)*width/2, height/2);
+        if(rise) cairo_line_to(cr, width/2-(150-scale_x*150), height/2+scale_x*20);
+        else cairo_line_to(cr, width/2+(150-scale_x*150), height/2+scale_x*20);
         cairo_stroke(cr);
         cairo_restore(cr);
       }
