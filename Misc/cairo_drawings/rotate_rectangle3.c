@@ -9,6 +9,7 @@
 
 #include<gtk/gtk.h>
 #include<math.h>
+#include<time.h>
 
 static guint timer_id=0;
 
@@ -47,7 +48,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid);
     gtk_widget_show_all(window);
 
-    timer_id=g_timeout_add(50, start_drawing, drawing); 
+    timer_id=g_timeout_add(100, start_drawing, drawing); 
 
     gtk_main();
 
@@ -58,7 +59,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     static gint i=1;
     static gboolean rise=TRUE;
     gdouble angle=i*G_PI/32;
-    gdouble scale_x=sin(i*G_PI/32);
+    gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     //g_print("scale_x %f\n", scale_x);
     i++;
@@ -67,6 +68,13 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         if(rise) rise=FALSE;
         else rise=TRUE;
       }
+
+    time_t time1;
+    struct tm* tm_info;
+    char string[30];
+    time(&time1);
+    tm_info=localtime(&time1);
+    strftime(string, 30, "%I:%M:%S", tm_info);
 
     gint width=gtk_widget_get_allocated_width(widget);
     gint height=gtk_widget_get_allocated_height(widget);
@@ -151,10 +159,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_move_to(cr, 75, 125);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 20);
-    cairo_show_text(cr, "7");  
-    cairo_stroke(cr);
-    cairo_move_to(cr, -75, -125);
-    cairo_show_text(cr, "7"); 
+    cairo_move_to(cr, -50, 100);
+    cairo_show_text(cr, string); 
     cairo_stroke(cr);
     cairo_restore(cr);
 
