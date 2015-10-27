@@ -57,6 +57,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
     static gboolean rise=TRUE;
+    gdouble angle=i*G_PI/32;
     gdouble scale_x=sin(i*G_PI/32);
     gdouble scale_x_inv=1.0/scale_x;
     //g_print("scale_x %f\n", scale_x);
@@ -92,8 +93,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, width/2-(150-fabs(scale_x)*150), height/2+scale_x*20);
-        else cairo_line_to(cr, width/2+(150-fabs(scale_x)*150), height/2+scale_x*20);
+        cairo_line_to(cr, width/2-(150*cos(angle)), height/2+30*sin(angle));
         cairo_stroke(cr);
         cairo_restore(cr);
       }
@@ -177,8 +177,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
         cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, width/2-(150-scale_x*150), height/2+scale_x*20);
-        else cairo_line_to(cr, width/2+(150-scale_x*150), height/2+scale_x*20);
+        cairo_line_to(cr, width/2-(150*cos(angle)), height/2+30*sin(angle));
         cairo_stroke(cr);
         cairo_restore(cr);
       }
