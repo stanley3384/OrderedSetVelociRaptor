@@ -9,7 +9,6 @@
 
 #include<gtk/gtk.h>
 #include<math.h>
-#include<time.h>
 
 static guint timer_id=0;
 
@@ -58,7 +57,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
     static gboolean rise=TRUE;
-    gdouble angle=i*G_PI/32;
+    gdouble angle=i*G_PI/32.0;
     gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     //g_print("scale_x %f\n", scale_x);
@@ -69,16 +68,18 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         else rise=TRUE;
       }
 
-    time_t time1;
-    struct tm* tm_info;
-    char string[30];
-    time(&time1);
-    tm_info=localtime(&time1);
-    strftime(string, 30, "%I:%M:%S", tm_info);
+    //Get the current time.
+    GTimeZone *time_zone=g_time_zone_new_local();
+    GDateTime *date_time=g_date_time_new_now(time_zone);
+    gchar *string=g_date_time_format(date_time, "%I:%M:%S");
+    g_time_zone_unref(time_zone);
+    g_date_time_unref(date_time);
 
+    //Get drawing area size.
     gint width=gtk_widget_get_allocated_width(widget);
     gint height=gtk_widget_get_allocated_height(widget);
 
+    //Paint the background as clear.
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
     cairo_paint(cr);
 
@@ -87,10 +88,10 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
     cairo_set_line_width(cr, 4);
     cairo_scale(cr, 1.0, 0.20);
-    cairo_translate(cr, 0, 800);
-    cairo_arc(cr, width/2, height/2, 170, G_PI, 2*G_PI);
+    cairo_translate(cr, 0.0, 800.0);
+    cairo_arc(cr, width/2.0, height/2.0, 170.0, G_PI, 2.0*G_PI);
     cairo_stroke(cr);
-    cairo_arc(cr, width/2, height/2, 130, G_PI, 2*G_PI);
+    cairo_arc(cr, width/2.0, height/2.0, 130.0, G_PI, 2.0*G_PI);
     cairo_stroke(cr);
     cairo_restore(cr);
 
@@ -100,8 +101,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-        cairo_move_to(cr, width/2, height/2);
-        cairo_line_to(cr, width/2-(150*cos(angle)), height/2+30*sin(angle));
+        cairo_move_to(cr, width/2.0, height/2.0);
+        cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0+30.0*sin(angle));
         cairo_stroke(cr);
         cairo_restore(cr);
       }
@@ -110,22 +111,22 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_save(cr);
     cairo_set_line_width(cr, 4);
     cairo_set_source_rgb(cr, 0.8, 0.0, 0.8);
-    cairo_move_to(cr, width/2, height/2);
-    cairo_line_to(cr, width/2, -height/2);
+    cairo_move_to(cr, width/2.0, height/2.0);
+    cairo_line_to(cr, width/2.0, -height/2.0);
     cairo_stroke(cr);
     cairo_restore(cr);
 
     //The mesh.
     cairo_save(cr);
     cairo_scale(cr, scale_x, 1.0);
-    cairo_translate(cr, scale_x_inv*(width/2)-100, height/2-150);
+    cairo_translate(cr, scale_x_inv*(width/2.0)-100, height/2.0-150);
     cairo_pattern_t *pattern = cairo_pattern_create_mesh();
     cairo_mesh_pattern_begin_patch(pattern);
-    cairo_mesh_pattern_move_to(pattern, 0, 0);
-    cairo_mesh_pattern_line_to(pattern, 200, 0);
-    cairo_mesh_pattern_line_to(pattern, 200, 300);
-    cairo_mesh_pattern_line_to(pattern, 0, 300);
-    cairo_mesh_pattern_line_to(pattern, 0, 0);
+    cairo_mesh_pattern_move_to(pattern, 0.0, 0.0);
+    cairo_mesh_pattern_line_to(pattern, 200.0, 0.0);
+    cairo_mesh_pattern_line_to(pattern, 200.0, 300.0);
+    cairo_mesh_pattern_line_to(pattern, 0.0, 300.0);
+    cairo_mesh_pattern_line_to(pattern, 0.0, 0.0);
     if(scale_x>0)
       {
         cairo_mesh_pattern_set_corner_color_rgba(pattern, 0, 1, 0, 1, 0.7);
@@ -143,7 +144,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_mesh_pattern_end_patch(pattern);
     //g_print("Pattern Status %i\n", cairo_pattern_status(pattern));
     cairo_set_source(cr, pattern);
-    cairo_rectangle(cr, 0, 0, 200, 300);
+    cairo_rectangle(cr, 0.0, 0.0, 200.0, 300.0);
     cairo_fill(cr);
     cairo_pattern_destroy(pattern);
     cairo_restore(cr);
@@ -152,14 +153,13 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_save(cr);
     cairo_scale(cr, scale_x, 1.0);
-    cairo_translate(cr, scale_x_inv*(width/2), height/2);
-    cairo_rectangle(cr, -100, -150, 200, 300);
+    cairo_translate(cr, scale_x_inv*(width/2.0), height/2.0);
+    cairo_rectangle(cr, -100.0, -150.0, 200.0, 300.0);
     cairo_stroke(cr);
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-    cairo_move_to(cr, 75, 125);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 20);
-    cairo_move_to(cr, -50, 100);
+    cairo_set_font_size(cr, 30);
+    cairo_move_to(cr, -70.0, 100.0);
     cairo_show_text(cr, string); 
     cairo_stroke(cr);
     cairo_restore(cr);
@@ -169,10 +169,10 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
     cairo_set_line_width(cr, 4);
     cairo_scale(cr, 1.0, 0.20);
-    cairo_translate(cr, 0, 800);
-    cairo_arc(cr, width/2, height/2, 170, 0, G_PI);
+    cairo_translate(cr, 0.0, 800.0);
+    cairo_arc(cr, width/2, height/2, 170.0, 0.0, G_PI);
     cairo_stroke(cr);
-    cairo_arc(cr, width/2, height/2, 130, 0, G_PI);
+    cairo_arc(cr, width/2, height/2, 130.0, 0.0, G_PI);
     cairo_stroke(cr);
     cairo_restore(cr);
 
@@ -182,8 +182,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-        cairo_move_to(cr, width/2, height/2);
-        cairo_line_to(cr, width/2-(150*cos(angle)), height/2+30*sin(angle));
+        cairo_move_to(cr, width/2.0, height/2.0);
+        cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0+30.0*sin(angle));
         cairo_stroke(cr);
         cairo_restore(cr);
       }
