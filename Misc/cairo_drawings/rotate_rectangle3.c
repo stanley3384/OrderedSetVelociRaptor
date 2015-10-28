@@ -9,6 +9,7 @@
 
 #include<gtk/gtk.h>
 #include<math.h>
+#include<string.h>
 
 static guint timer_id=0;
 
@@ -201,6 +202,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_restore(cr);
       }
 
+    g_free(string);
     return FALSE;
   }
 static gboolean start_drawing(gpointer drawing)
