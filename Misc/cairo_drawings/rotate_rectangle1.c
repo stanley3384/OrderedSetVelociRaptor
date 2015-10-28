@@ -59,7 +59,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     static gint i=1;
     static gboolean rise=TRUE;
     gint j=0;
-    gdouble scale_x=sin(i*G_PI/32);
+    gdouble angle=i*G_PI/32.0;
+    gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     i++;
     if((int)fabs(scale_x)==1) 
@@ -80,9 +81,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-        cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, fabs(scale_x*width/2), height/2);
-        else cairo_line_to(cr, (width/2)+(1.0+scale_x)*width/2, height/2);
+        cairo_move_to(cr, width/2.0, height/2.0);
+        cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0);
         cairo_stroke(cr);
         cairo_restore(cr);
       }
@@ -91,8 +91,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_save(cr);
     cairo_set_line_width(cr, 4);
     cairo_set_source_rgb(cr, 0.8, 0.0, 0.8);
-    cairo_move_to(cr, width/2, height/2);
-    cairo_line_to(cr, width/2, -height/2);
+    cairo_move_to(cr, width/2.0, height/2.0);
+    cairo_line_to(cr, width/2.0, -height/2.0);
     cairo_stroke(cr);
     cairo_restore(cr);
 
@@ -101,22 +101,22 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_pattern_t *radial1;
     cairo_scale(cr, scale_x, 1.0);
     cairo_translate(cr, scale_x_inv*(width/2), height/2);
-    j=1000-((i%40)*25);
+    j=1000.0-((double)(i%40)*25.0);
     //g_print("I %i J %i\n", i, j);
     radial1 = cairo_pattern_create_radial(0, 0, 1, 0, 0, j);  
     cairo_pattern_add_color_stop_rgba(radial1, 0.3, 1.0, 0.0, 1.0, 0.5);
     cairo_pattern_add_color_stop_rgba(radial1, 0.0, 1.0, 1.0, 0.0, 0.7);
     cairo_set_source(cr, radial1);
-    cairo_rectangle(cr, -100, -150, 200, 300);
+    cairo_rectangle(cr, -100.0, -150.0, 200.0, 300.0);
     cairo_stroke_preserve(cr);
     cairo_fill(cr);
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-    cairo_move_to(cr, 75, 125);
+    cairo_move_to(cr, 75.0, 125.0);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 20);
     cairo_show_text(cr, "7");  
     cairo_stroke(cr);
-    cairo_move_to(cr, -75, -125);
+    cairo_move_to(cr, -75.0, -125.0);
     cairo_show_text(cr, "7");  
     cairo_stroke(cr);
     cairo_pattern_destroy(radial1);
@@ -128,9 +128,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-        cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, scale_x*width/2, height/2);
-        else cairo_line_to(cr, (width/2)+(1.0-scale_x)*width/2, height/2);
+        cairo_move_to(cr, width/2.0, height/2.0);
+        cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0);
         cairo_stroke(cr);
         cairo_restore(cr);
       }

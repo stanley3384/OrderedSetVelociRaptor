@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
     //Set transparency of main window.
     if(gtk_widget_is_composited(window))
       {
-        GdkScreen *screen = gtk_widget_get_screen(window);
-        GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+        GdkScreen *screen=gtk_widget_get_screen(window);  
+        GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
         gtk_widget_set_visual(window, visual);
       }
     else g_print("Can't set window transparency.\n");
@@ -72,7 +72,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
     static gboolean rise=TRUE;
-    gdouble scale_x=sin(i*G_PI/32);
+    gdouble angle=i*G_PI/32.0;
+    gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     i++;
     if((int)fabs(scale_x)==1) 
@@ -93,9 +94,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-        cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, fabs(scale_x*width/2), height/2);
-        else cairo_line_to(cr, (width/2)+(1.0+scale_x)*width/2, height/2);
+        cairo_move_to(cr, width/2.0, height/2.0);
+        cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0);
         cairo_stroke(cr);
         cairo_restore(cr);
       }
@@ -104,8 +104,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_save(cr);
     cairo_set_line_width(cr, 4);
     cairo_set_source_rgb(cr, 0.8, 0.0, 0.8);
-    cairo_move_to(cr, width/2, height/2);
-    cairo_line_to(cr, width/2, -height/2);
+    cairo_move_to(cr, width/2.0, height/2.0);
+    cairo_line_to(cr, width/2.0, -height/2.0);
     cairo_stroke(cr);
     cairo_restore(cr);
 
@@ -114,21 +114,21 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         cairo_save(cr);
         cairo_scale(cr, scale_x, 1.0);
-        cairo_translate(cr, scale_x_inv*(width/2), height/2);    
+        cairo_translate(cr, scale_x_inv*(width/2.0), height/2.0);    
         cairo_surface_t *card=NULL;
         if(scale_x<0.5&&scale_x>-0.5)
           {
-            card=cairo_surface_create_for_rectangle(cairo_get_target(cr), (width/2)+(1.0-fabs(scale_x)*100), height/2-150, 200, 300);
+            card=cairo_surface_create_for_rectangle(cairo_get_target(cr), (width/2.0)+(1.0-fabs(scale_x)*100.0), height/2.0-150.0, 200.0, 300.0);
           }
         else
           {
-            card=cairo_surface_create_for_rectangle(cairo_get_target(cr), (width/2-100)+(((1.0-fabs(scale_x))*100)), height/2-150, 200, 300);
+            card=cairo_surface_create_for_rectangle(cairo_get_target(cr), (width/2.0-100.0)+(((1.0-fabs(scale_x))*100.0)), height/2.0-150.0, 200.0, 300.0);
           }
         cairo_t *cr2=cairo_create(card);
         cairo_scale(cr2, fabs(scale_x), 1.0);    
-        cairo_set_source_surface(cr2, (cairo_surface_t*)data, 0, 0);
+        cairo_set_source_surface(cr2, (cairo_surface_t*)data, 0.0, 0.0);
         cairo_paint(cr2);
-        cairo_set_source_surface(cr, card, 0, 0);
+        cairo_set_source_surface(cr, card, 0.0, 0.0);
         cairo_destroy(cr2);
         cairo_surface_destroy(card);
         cairo_restore(cr);
@@ -138,18 +138,18 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
     cairo_save(cr);
     cairo_scale(cr, scale_x, 1.0);
-    cairo_translate(cr, scale_x_inv*(width/2), height/2);
-    cairo_rectangle(cr, -100, -150, 200, 300);
+    cairo_translate(cr, scale_x_inv*(width/2.0), height/2.0);
+    cairo_rectangle(cr, -100.0, -150.0, 200.0, 300.0);
     if(scale_x<0) cairo_fill(cr);
     if(scale_x>0)
       {
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-        cairo_move_to(cr, 75, 125);
+        cairo_move_to(cr, 75.0, 125.0);
         cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, 20);
         cairo_show_text(cr, "7");  
         cairo_stroke(cr);
-        cairo_move_to(cr, -75, -125);
+        cairo_move_to(cr, -75.0, -125.0);
         cairo_show_text(cr, "7");
       }  
     cairo_stroke(cr);
@@ -161,9 +161,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-        cairo_move_to(cr, width/2, height/2);
-        if(rise) cairo_line_to(cr, scale_x*width/2, height/2);
-        else cairo_line_to(cr, (width/2)+(1.0-scale_x)*width/2, height/2);
+        cairo_move_to(cr, width/2.0, height/2.0);
+        cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0);
         cairo_stroke(cr);
         cairo_restore(cr);
       }
