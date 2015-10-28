@@ -57,7 +57,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
     static gboolean rise=TRUE;
-    gdouble angle=i*G_PI/32.0;
+    gdouble angle=i*G_PI/64.0;
     gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     //g_print("scale_x %f\n", scale_x);
@@ -160,7 +160,20 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 30);
     cairo_move_to(cr, -70.0, 100.0);
-    cairo_show_text(cr, string); 
+    gint j=0;
+    int n_glyphs=g_utf8_strlen(string, -1);
+    cairo_glyph_t glyphs[n_glyphs];
+    /*
+      Problem code. Adjust Courier font for glyphs. If cairo_show_text() is used the text is jumpy.
+      Number shifted to asci code page decimal value. Hex and decimal problem.
+    */
+    for(j=0;j<n_glyphs;j++)
+      {
+        glyphs[j]=(cairo_glyph_t){(gulong)string[j]-31, -100.0+20.0*(double)j + 20.0, 100.0};
+        //g_print("%i %c %02x %i %i| ", j, string[j], string[j], (int)string[j], (int)string[j]-31);
+      }
+    //g_print("\n");
+    cairo_show_glyphs(cr, glyphs, n_glyphs);
     cairo_stroke(cr);
     cairo_restore(cr);
 
