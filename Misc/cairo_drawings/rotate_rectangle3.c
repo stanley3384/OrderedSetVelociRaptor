@@ -56,18 +56,12 @@ int main(int argc, char *argv[])
 static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
-    static gboolean rise=TRUE;
     gdouble angle=i*G_PI/64.0;
     gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     //g_print("scale_x %f\n", scale_x);
     i++;
-    if((int)fabs(scale_x)==1) 
-      {
-        if(rise) rise=FALSE;
-        else rise=TRUE;
-      }
-
+    
     //Get the current time.
     GTimeZone *time_zone=g_time_zone_new_local();
     GDateTime *date_time=g_date_time_new_now(time_zone);
@@ -159,7 +153,6 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 30);
-    cairo_move_to(cr, -70.0, 100.0);
     gint j=0;
     int n_glyphs=g_utf8_strlen(string, -1);
     cairo_glyph_t glyphs[n_glyphs];
