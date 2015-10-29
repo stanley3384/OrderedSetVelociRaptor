@@ -9,7 +9,6 @@
 
 #include<gtk/gtk.h>
 #include<math.h>
-#include<string.h>
 
 static guint timer_id=0;
 
@@ -166,12 +165,12 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_glyph_t glyphs[n_glyphs];
     /*
       Problem code. Adjust Courier font for glyphs. If cairo_show_text() is used the text is jumpy.
-      Number shifted to asci code page decimal value. 
+      Number shifted to asci code page decimal value. Subtract out the control chars? 
     */
     for(j=0;j<n_glyphs;j++)
       {
         glyphs[j]=(cairo_glyph_t){(gulong)string[j]-31, -100.0+20.0*(double)j + 20.0, 100.0};
-        //g_print("%i %c %i %i| ", j, string[j], (int)string[j], (int)string[j]-31);
+        //g_print("%i %c %d %i| ", j, string[j], (int)string[j], (int)(string[j]-31));
       }
     //g_print("\n");
     cairo_show_glyphs(cr, glyphs, n_glyphs);
