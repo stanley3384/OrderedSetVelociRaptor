@@ -57,18 +57,12 @@ int main(int argc, char *argv[])
 static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
-    static gboolean rise=TRUE;
     gint j=0;
     gdouble angle=i*G_PI/32.0;
     gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     i++;
-    if((int)fabs(scale_x)==1) 
-      {
-        if(rise) rise=FALSE;
-        else rise=TRUE;
-      }
-
+    
     gint width=gtk_widget_get_allocated_width(widget);
     gint height=gtk_widget_get_allocated_height(widget);
 

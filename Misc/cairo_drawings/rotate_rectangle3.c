@@ -1,6 +1,7 @@
 
 /*
-    Test code for putting a simple cairo mesh on a rotating rectangle in 3d using cairo.
+    Test code for putting a simple cairo mesh on a rotating rectangle in 3d using cairo. Try
+a couple of different methods for applying text on the rotating surface.
 
     gcc -Wall rotate_rectangle3.c -o rotate_rectangle3 -lm `pkg-config --cflags --libs gtk+-3.0`
 
@@ -153,6 +154,25 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 30);
+    //Try cairo "toy" function.
+    cairo_move_to(cr, -80.0, 60.0);
+    cairo_show_text(cr, string);
+    cairo_stroke(cr);
+    //Try pango cairo.
+    PangoLayout *layout;
+    PangoFontDescription *font_description;
+    font_description=pango_font_description_new ();
+    pango_font_description_set_family(font_description, "courier");
+    pango_font_description_set_weight(font_description, PANGO_WEIGHT_BOLD);
+    pango_font_description_set_absolute_size(font_description, 30 * PANGO_SCALE);
+    layout=pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, font_description);
+    pango_layout_set_text(layout, string, -1);
+    cairo_move_to(cr, -80.0, 65.0);
+    pango_cairo_show_layout(cr, layout);
+    g_object_unref(layout);
+    pango_font_description_free(font_description);   
+    //Try glyphs.
     gint j=0;
     int n_glyphs=g_utf8_strlen(string, -1);
     cairo_glyph_t glyphs[n_glyphs];
@@ -162,11 +182,13 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     */
     for(j=0;j<n_glyphs;j++)
       {
-        glyphs[j]=(cairo_glyph_t){(gulong)string[j]-31, -100.0+20.0*(double)j + 20.0, 100.0};
+        glyphs[j]=(cairo_glyph_t){(gulong)string[j]-31, -100.0+20.0*(double)j + 20.0, 120.0};
         //g_print("%i %c %d %i| ", j, string[j], (int)string[j], (int)(string[j]-31));
       }
     //g_print("\n");
     cairo_show_glyphs(cr, glyphs, n_glyphs);
+    //cairo_status_t status=cairo_status(cr);
+    //g_print("Cairo Status %s\n", cairo_status_to_string(status));
     cairo_stroke(cr);
     cairo_restore(cr);
 
