@@ -174,21 +174,22 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     pango_font_description_free(font_description);   
     //Try glyphs.
     gint j=0;
-    int n_glyphs=g_utf8_strlen(string, -1);
-    cairo_glyph_t glyphs[n_glyphs];
-    /*
-      Problem code. Adjust Courier font for glyphs. If cairo_show_text() is used the text is jumpy.
-      Number shifted to asci code page decimal value. Subtract out the control chars? 
-    */
+    gint n_glyphs=0;
+    cairo_glyph_t *glyphs=NULL;
+    cairo_scaled_font_t *scaled_font=cairo_get_scaled_font(cr);
+    cairo_status_t status;
+    status=cairo_scaled_font_text_to_glyphs(scaled_font, 0.0, 0.0, string, -1, &glyphs, &n_glyphs, NULL, NULL, NULL);			       
     for(j=0;j<n_glyphs;j++)
       {
-        glyphs[j]=(cairo_glyph_t){(gulong)string[j]-31, -100.0+20.0*(double)j + 20.0, 120.0};
-        //g_print("%i %c %d %i| ", j, string[j], (int)string[j], (int)(string[j]-31));
+        glyphs[j].x=-100.0+20.0*(double)j + 20.0;
+        glyphs[j].y=-30;
       }
-    //g_print("\n");
-    cairo_show_glyphs(cr, glyphs, n_glyphs);
-    //cairo_status_t status=cairo_status(cr);
-    //g_print("Cairo Status %s\n", cairo_status_to_string(status));
+    if(status==CAIRO_STATUS_SUCCESS)
+      {
+        cairo_show_glyphs(cr, glyphs, n_glyphs);
+        cairo_glyph_free(glyphs);
+      }
+    else g_print("%s\n", cairo_status_to_string(status));
     cairo_stroke(cr);
     cairo_restore(cr);
 
