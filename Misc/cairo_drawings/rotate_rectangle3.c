@@ -78,12 +78,19 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
     cairo_paint(cr);
 
+    //The oval pattern.
+    cairo_pattern_t *pattern1;  
+    pattern1=cairo_pattern_create_linear(width/2.0, (height/2.0)-(180.0*0.2), width/2.0, (height/2.0)+(180.0*0.2));
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.1, 0.0, 0.0, 1.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 0.0, 1.0, 1.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.9, 1.0, 1.0, 0.0, 1.0);
+    
     //The oval behind the rectangle.
     cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-    cairo_set_line_width(cr, 4);
+    cairo_set_source(cr, pattern1);  
+    cairo_set_line_width(cr, 20);
     cairo_scale(cr, 1.0, 0.20);
-    cairo_translate(cr, 0.0, 800.0);
+    cairo_translate(cr, 0.0,  (height/2.0)*5-170.0);
     cairo_arc(cr, width/2.0, height/2.0, 170.0, G_PI, 2.0*G_PI);
     cairo_stroke(cr);
     cairo_arc(cr, width/2.0, height/2.0, 130.0, G_PI, 2.0*G_PI);
@@ -115,33 +122,33 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_save(cr);
     cairo_scale(cr, scale_x, 1.0);
     cairo_translate(cr, scale_x_inv*(width/2.0)-100, height/2.0-150);
-    cairo_pattern_t *pattern = cairo_pattern_create_mesh();
-    cairo_mesh_pattern_begin_patch(pattern);
-    cairo_mesh_pattern_move_to(pattern, 0.0, 0.0);
-    cairo_mesh_pattern_line_to(pattern, 200.0, 0.0);
-    cairo_mesh_pattern_line_to(pattern, 200.0, 300.0);
-    cairo_mesh_pattern_line_to(pattern, 0.0, 300.0);
-    cairo_mesh_pattern_line_to(pattern, 0.0, 0.0);
+    cairo_pattern_t *pattern2 = cairo_pattern_create_mesh();
+    cairo_mesh_pattern_begin_patch(pattern2);
+    cairo_mesh_pattern_move_to(pattern2, 0.0, 0.0);
+    cairo_mesh_pattern_line_to(pattern2, 200.0, 0.0);
+    cairo_mesh_pattern_line_to(pattern2, 200.0, 300.0);
+    cairo_mesh_pattern_line_to(pattern2, 0.0, 300.0);
+    cairo_mesh_pattern_line_to(pattern2, 0.0, 0.0);
     if(scale_x>0)
       {
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 0, 1, 0, 1, 0.7);
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 1, 1, 1, 0, 0.7);
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 2, 1, 0, 1, 0.7);
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 3, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 0, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 1, 0, 1, 1, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 2, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 3, 0, 1, 1, 0.7);
       }
     else
       {
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 0, 1, 1, 0, 0.7);
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 1, 0, 0, 1, 0.7);
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 2, 1, 1, 0, 0.7);
-        cairo_mesh_pattern_set_corner_color_rgba(pattern, 3, 0, 0, 1, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 0, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 1, 0, 0, 1, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 2, 1, 1, 0, 0.7);
+        cairo_mesh_pattern_set_corner_color_rgba(pattern2, 3, 0, 0, 1, 0.7);
       }
-    cairo_mesh_pattern_end_patch(pattern);
+    cairo_mesh_pattern_end_patch(pattern2);
     //g_print("Pattern Status %i\n", cairo_pattern_status(pattern));
-    cairo_set_source(cr, pattern);
+    cairo_set_source(cr, pattern2);
     cairo_rectangle(cr, 0.0, 0.0, 200.0, 300.0);
     cairo_fill(cr);
-    cairo_pattern_destroy(pattern);
+    cairo_pattern_destroy(pattern2);
     cairo_restore(cr);
 
     //Rectangle and font.
@@ -151,7 +158,8 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_translate(cr, scale_x_inv*(width/2.0), height/2.0);
     cairo_rectangle(cr, -100.0, -150.0, 200.0, 300.0);
     cairo_stroke(cr);
-    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    if(scale_x>=0) cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    else cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 30);
     //Try cairo "toy" function.
@@ -183,7 +191,9 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         glyphs[j].x=-100.0+20.0*(double)j + 20.0;
         glyphs[j].y=-30;
+        //g_print("%lu ", glyphs[j].index);
       }
+    //g_print("\n");
     if(status==CAIRO_STATUS_SUCCESS)
       {
         cairo_show_glyphs(cr, glyphs, n_glyphs);
@@ -195,10 +205,10 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //The oval in front the rectangle.
     cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-    cairo_set_line_width(cr, 4);
+    cairo_set_source(cr, pattern1);  
+    cairo_set_line_width(cr, 20);
     cairo_scale(cr, 1.0, 0.20);
-    cairo_translate(cr, 0.0, 800.0);
+    cairo_translate(cr, 0.0,  (height/2.0)*5-170.0);
     cairo_arc(cr, width/2, height/2, 170.0, 0.0, G_PI);
     cairo_stroke(cr);
     cairo_arc(cr, width/2, height/2, 130.0, 0.0, G_PI);
@@ -217,6 +227,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_restore(cr);
       }
 
+    cairo_pattern_destroy(pattern1);
     g_free(string);
     return FALSE;
   }
