@@ -1,6 +1,6 @@
 
 /*
-    Make a simple cairo digital space watch with 2d surfaces in 3d space out of the rotating rectangle code.
+    Make a simple cairo digital space clock with 2d surfaces in 3d space out of the rotating rectangle code.
 
     gcc -Wall space_clock.c -o space_clock -lm `pkg-config --cflags --libs gtk+-3.0`
 
@@ -57,6 +57,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
     gdouble angle=i*G_PI/64.0;
+    gdouble angle2=-angle-G_PI;
     gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
     //g_print("scale_x %f\n", scale_x);
@@ -96,11 +97,23 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_stroke(cr);
     cairo_restore(cr);
 
-    //x-axis behind rectangle.
+    //Short line behind and in front. Hour hand.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 4);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
+    if(scale_x<0) cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    else cairo_set_source_rgb(cr, 0.0, 1.0, 1.0); 
+    cairo_move_to(cr, width/2.0, height/2.0);
+    cairo_line_to(cr, width/2.0-(85.0*cos(angle2)), height/2.0+15.0*sin(angle2));
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Long line behind rectangle. Minute hand.
     if(scale_x<0)
       {
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
         cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         cairo_move_to(cr, width/2.0, height/2.0);
         cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0+30.0*sin(angle));
@@ -108,7 +121,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_restore(cr);
       }
 
-    //The mesh.
+    //The mesh on the rectangle.
     cairo_save(cr);
     cairo_scale(cr, scale_x, 1.0);
     cairo_translate(cr, scale_x_inv*(width/2.0)-100, height/2.0-150);
@@ -141,7 +154,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_pattern_destroy(pattern2);
     cairo_restore(cr);
 
-    //Rectangle and font.
+    //Rectangle and time font on rectangle.
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_save(cr);
     cairo_scale(cr, scale_x, 1.0);
@@ -187,11 +200,12 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_stroke(cr);
     cairo_restore(cr);
 
-    //x-axis in front of rectangle.
+    //Long line in front of rectangle. Minute hand.
     if(scale_x>=0)
       {
         cairo_save(cr);
         cairo_set_line_width(cr, 4);
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
         cairo_move_to(cr, width/2.0, height/2.0);
         cairo_line_to(cr, width/2.0-(150.0*cos(angle)), height/2.0+30.0*sin(angle));
