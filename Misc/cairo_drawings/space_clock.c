@@ -167,22 +167,41 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_font_size(cr, 30);   
     //Set glyphs for time.
     gint j=0;
-    gint n_glyphs=0;
-    cairo_glyph_t *glyphs=NULL;
+    gint n_glyphs1=0;
+    cairo_glyph_t *glyphs1=NULL;
     cairo_scaled_font_t *scaled_font=cairo_get_scaled_font(cr);
     cairo_status_t status;
-    status=cairo_scaled_font_text_to_glyphs(scaled_font, 0.0, 0.0, string, -1, &glyphs, &n_glyphs, NULL, NULL, NULL);			       
-    for(j=0;j<n_glyphs;j++)
+    status=cairo_scaled_font_text_to_glyphs(scaled_font, 0.0, 0.0, string, -1, &glyphs1, &n_glyphs1, NULL, NULL, NULL);			       
+    for(j=0;j<n_glyphs1;j++)
       {
-        glyphs[j].x=-100.0+20.0*(double)j + 20.0;
-        glyphs[j].y=100;
+        glyphs1[j].x=-100.0+20.0*(double)j + 20.0;
+        glyphs1[j].y=100;
         //g_print("%lu ", glyphs[j].index);
       }
     //g_print("\n");
     if(status==CAIRO_STATUS_SUCCESS)
       {
-        cairo_show_glyphs(cr, glyphs, n_glyphs);
-        cairo_glyph_free(glyphs);
+        cairo_show_glyphs(cr, glyphs1, n_glyphs1);
+        cairo_glyph_free(glyphs1);
+      }
+    else g_print("%s\n", cairo_status_to_string(status));
+    cairo_stroke(cr);
+    //Set glyphs for watch name.
+    if(scale_x>=0) cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
+    else cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 0.5);
+    cairo_set_font_size(cr, 20);  
+    gint n_glyphs2=0;
+    cairo_glyph_t *glyphs2=NULL;
+    status=cairo_scaled_font_text_to_glyphs(scaled_font, 0.0, 0.0, "CDSC", -1, &glyphs2, &n_glyphs2, NULL, NULL, NULL);			       
+    for(j=0;j<n_glyphs2;j++)
+      {
+        glyphs2[j].x=-30.0+15.0*(double)j;
+        glyphs2[j].y=-65;
+      }
+    if(status==CAIRO_STATUS_SUCCESS)
+      {
+        cairo_show_glyphs(cr, glyphs2, n_glyphs2);
+        cairo_glyph_free(glyphs2);
       }
     else g_print("%s\n", cairo_status_to_string(status));
     cairo_stroke(cr);
