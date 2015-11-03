@@ -89,7 +89,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source(cr, pattern1);  
     cairo_set_line_width(cr, 20);
     cairo_scale(cr, 1.0, 0.20);
-    cairo_translate(cr, 0.0,  (height/2.0)*5-170.0);
+    cairo_translate(cr, 0.0,  (height/2.0)*5.0-170.0+(200.0-(height/2.0)));
     cairo_arc(cr, width/2.0, height/2.0, 170.0, G_PI, 2.0*G_PI);
     cairo_stroke(cr);
     cairo_arc(cr, width/2.0, height/2.0, 130.0, G_PI, 2.0*G_PI);
@@ -180,10 +180,10 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source(cr, pattern1);  
     cairo_set_line_width(cr, 20);
     cairo_scale(cr, 1.0, 0.20);
-    cairo_translate(cr, 0.0,  (height/2.0)*5-170.0);
-    cairo_arc(cr, width/2, height/2, 170.0, 0.0, G_PI);
+    cairo_translate(cr, 0.0,  (height/2.0)*5.0-170.0+(200.0-(height/2.0)));
+    cairo_arc(cr, width/2.0, height/2.0, 170.0, 0.0, G_PI);
     cairo_stroke(cr);
-    cairo_arc(cr, width/2, height/2, 130.0, 0.0, G_PI);
+    cairo_arc(cr, width/2.0, height/2.0, 130.0, 0.0, G_PI);
     cairo_stroke(cr);
     cairo_restore(cr);
 
