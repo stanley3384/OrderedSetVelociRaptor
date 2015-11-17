@@ -25,8 +25,9 @@ struct sockaddr_in client;
 GThread *thread=NULL;
 
 static void close_program(GtkWidget *widget, gpointer data);
-static void send_receive_from_server(GtkButton *button, gpointer *data);
-//Test server functions on different thread.
+//The client.
+static void client_send_receive(GtkButton *button, gpointer *data);
+//Server functions on different thread.
 static void server_setup(gpointer data);
 static void server_accept();
 
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *button=gtk_button_new_with_label("Send to Server");
     gtk_widget_set_hexpand(button, TRUE);
-    g_signal_connect(GTK_BUTTON(button), "clicked", G_CALLBACK(send_receive_from_server), widgets);
+    g_signal_connect(GTK_BUTTON(button), "clicked", G_CALLBACK(client_send_receive), widgets);
 
     GtkWidget *grid = gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), entry, 0, 0, 1, 1);
@@ -77,7 +78,7 @@ static void close_program(GtkWidget *widget, gpointer data)
     gtk_main_quit();
   }
 //The client code.
-static void send_receive_from_server(GtkButton *button, gpointer *data)
+static void client_send_receive(GtkButton *button, gpointer *data)
   {
     int error = 0;
     char buffer[256];
