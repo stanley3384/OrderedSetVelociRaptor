@@ -2,44 +2,56 @@
 /*
 
     Test code for using a client server setup within a single process. Start the server on a different
-thread and just send data to and from the server in the single process.
+thread and just send data to and from the server in the single process. Keep GTK function calls on main 
+thread.
+    Also get the NIST atomic time with a client function. Check for the four second request limit
+specified by the NIST.
+
     Ubuntu14.04 with GTK3.10. 
 
-    gcc -Wall -std=c99 inet1.c -o inet1 `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall inet1.c -o inet1 `pkg-config --cflags --libs gtk+-3.0`
 
     C. Eric Cashon
 */
 
-#include <gtk/gtk.h>
-#include <stdio.h>
-#include <string.h>   
-#include <sys/socket.h> 
-#include <arpa/inet.h>
-#include <errno.h>
+#include<gtk/gtk.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>   
+#include<sys/socket.h> 
+#include<arpa/inet.h>
+#include<errno.h>
+#include<netdb.h>
+#include<time.h>
 
 ssize_t server_socket;
 ssize_t client_socket;
 ssize_t new_socket;
 struct sockaddr_in server;
 struct sockaddr_in client;
+struct sockaddr_in time_server;
 GThread *thread=NULL;
 
 static void close_program(GtkWidget *widget, gpointer data);
-//The client.
-static void client_send_receive(GtkButton *button, gpointer *data);
-//Server functions on different thread.
+//The client for local message passing.
+static void client_send_receive(GtkWidget *button, gpointer *data);
+//Server functions on different thread for local message passing.
 static void server_setup(gpointer data);
 static void server_accept();
-
+//NIST time.
+static void check_four_seconds(GtkWidget *button, gpointer data);
+static void nist_atomic_time(GtkWidget *button, gpointer data);
+unsigned long int unpacku32(unsigned char *buf);
 
 int main(int argc, char *argv[])
   {   
     gtk_init(&argc, &argv);
   
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "NIST and Local Time");
     gtk_container_set_border_width(GTK_CONTAINER(window),10);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 200);
+    gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
     g_signal_connect(window,"destroy",G_CALLBACK(close_program), NULL);
 
     GtkWidget *entry=gtk_entry_new();
@@ -52,14 +64,19 @@ int main(int argc, char *argv[])
 
     gpointer widgets[]={entry, textview};
 
-    GtkWidget *button=gtk_button_new_with_label("Send to Server");
-    gtk_widget_set_hexpand(button, TRUE);
-    g_signal_connect(GTK_BUTTON(button), "clicked", G_CALLBACK(client_send_receive), widgets);
+    GtkWidget *button1=gtk_button_new_with_label("Send Client Entry to Local Server");
+    gtk_widget_set_hexpand(button1, TRUE);
+    g_signal_connect(button1, "clicked", G_CALLBACK(client_send_receive), widgets);
+
+    GtkWidget *button2=gtk_button_new_with_label("Get NIST Atomic Time");
+    gtk_widget_set_hexpand(button2, TRUE);
+    g_signal_connect(button2, "clicked", G_CALLBACK(check_four_seconds), textview);
 
     GtkWidget *grid = gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), entry, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), textview, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), button, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 4, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     //Start test server.
@@ -78,7 +95,7 @@ static void close_program(GtkWidget *widget, gpointer data)
     gtk_main_quit();
   }
 //The client code.
-static void client_send_receive(GtkButton *button, gpointer *data)
+static void client_send_receive(GtkWidget *button, gpointer *data)
   {
     int error = 0;
     char buffer[256];
@@ -101,7 +118,7 @@ static void client_send_receive(GtkButton *button, gpointer *data)
     g_print("Buffer %s", buffer);
     if(error<0) fprintf(stderr, "Read: %s , errno %d\n", strerror(errno), errno);
   
-    GtkTextBuffer* text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(data[1]));
+    GtkTextBuffer* text_buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data[1]));
     GtkTextIter end;
     gtk_text_buffer_get_end_iter(text_buffer, &end);
     gtk_text_buffer_insert(text_buffer, &end, buffer, -1);
@@ -146,7 +163,116 @@ static void server_accept()
         g_free(string);
       }
   }
+static void check_four_seconds(GtkWidget *button, gpointer data)
+  {
+    static long seconds=-1;
+    time_t time1=time(NULL);
+    
+    if(time1-seconds>4||seconds==-1) nist_atomic_time(button, data);
+    else
+      {
+        g_print("Wait four seconds between time request. Time diff %ld\n", time1-seconds);
+      }
+    seconds=time1;
+  }
+static void nist_atomic_time(GtkWidget *widget, gpointer data)
+  {
+    g_print("Atomic Time\n");
+    struct sockaddr_in nist_server;
+    struct sockaddr_in response;
+    unsigned int response_size;
+    int client_socket;
+    int port=37;
+    char *hostname="time.nist.gov";
+    struct hostent *hostent;
+    char buffer[10];
+    int length; 
+    int fail_error=0;
 
+    hostent = gethostbyname(hostname);
+    if(hostent==NULL)
+      {
+        fprintf(stderr, "Hostname Error: %d\n", h_errno);
+        fail_error=-1;
+      }	
+    printf("Host's IP: %s\n", inet_ntoa(nist_server.sin_addr));
+	
+    client_socket=socket(AF_INET, SOCK_DGRAM, 0);
+    if(client_socket<0&&fail_error>=0)
+      {
+        fprintf(stderr, "Socket Error: %s\n", strerror(errno));
+	fail_error=-1;
+      }
+
+    if(fail_error>=0)
+      {
+        memset(buffer, '\0', 10*sizeof(char));
+        nist_server.sin_family=AF_INET;
+        nist_server.sin_port=htons(port);
+        nist_server.sin_addr.s_addr = *(unsigned long *)hostent->h_addr_list[0];
+      }
+
+    if(fail_error>=0)
+      {  
+        strcpy(buffer, "T");
+        printf("Sending to Server... %s\n", buffer);     
+        if(sendto(client_socket, buffer, strlen(buffer)+1, 0, (struct sockaddr *)&nist_server, sizeof(nist_server))<0)
+          {	
+            fprintf(stderr, "Send Error: %s\n", strerror(errno));
+            fail_error=-1;
+          } 
+      }
+
+    if(fail_error>=0)
+      {
+        response_size=sizeof(response);
+        printf("Receive From Server...\n");
+        length=recvfrom(client_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&response, &response_size);	
+        if(length<0)
+          {
+            fprintf(stderr, "Receive Error: %s\n", strerror(errno));
+            fail_error=-1;
+          }
+      }
+     
+    if(fail_error>=0)
+      {  
+        char time_buffer1[256];
+        char time_buffer2[256];
+        time_t time1=time(NULL); 
+        time_t time2=unpacku32((unsigned char*)buffer); 
+        time2=time2-(2208988800ul);
+        printf("Returned Buffer Length %i Client Time %lu, Nist Time %lu\n", length, time1, time2);
+
+        GtkTextBuffer *text_buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data));
+        GtkTextIter end;
+        gtk_text_buffer_get_end_iter(text_buffer, &end); 
+        gchar *string_time1=g_strdup_printf("Returned Buffer Length %i Client Time %lu, Nist Time %lu\n", length, time1, time2);
+        gtk_text_buffer_insert(text_buffer, &end, string_time1, -1);
+        g_free(string_time1);
+        
+        struct tm info1;
+        struct tm info2;
+        localtime_r(&time1, &info1);
+        localtime_r(&time2, &info2);
+   
+        strftime(time_buffer1, 256, "Client Time %A, %B %d,  %I:%M:%S %p %Y", &info1);
+        printf("%s\n", time_buffer1);
+        strftime(time_buffer2, 256, "NIST Server Time %A, %B %d,  %I:%M:%S %p %Y", &info2);
+        printf("%s\n", time_buffer2);
+
+        gtk_text_buffer_get_end_iter(text_buffer, &end); 
+        gchar *string_time2=g_strdup_printf("%s\n%s\n", time_buffer1, time_buffer2);
+        gtk_text_buffer_insert(text_buffer, &end, string_time2, -1);
+        g_free(string_time2);
+      }
+
+    if(client_socket>-1) close(client_socket);
+  }
+unsigned long int unpacku32(unsigned char *buf)
+  {
+    return ((unsigned long int)buf[0]<<24)|((unsigned long int)buf[1]<<16)|((unsigned long int)buf[2]<<8)|buf[3];
+  }
 
 
 
