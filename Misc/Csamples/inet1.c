@@ -207,7 +207,7 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
 
     if(fail_error>=0)
       {
-        memset(buffer, '\0', 10*sizeof(char));
+        memset(buffer, '\0', 5*sizeof(char));
         nist_server.sin_family=AF_INET;
         nist_server.sin_port=htons(port);
         nist_server.sin_addr.s_addr = *(unsigned long *)hostent->h_addr_list[0];
