@@ -24,6 +24,9 @@ specified by the NIST.
 #include<netdb.h>
 #include<time.h>
 
+#define LITTLE_ENDIAN1 0
+#define BIG_ENDIAN1    1
+
 ssize_t server_socket;
 ssize_t client_socket;
 ssize_t new_socket;
@@ -41,7 +44,9 @@ static void server_accept();
 //NIST time.
 static void check_four_seconds(GtkWidget *button, gpointer data);
 static void nist_atomic_time(GtkWidget *button, gpointer data);
+//http://www.ibm.com/developerworks/aix/library/au-endianc/
 unsigned long int unpacku32_lendian(unsigned char *buffer);
+static int check_endianess();
 
 int main(int argc, char *argv[])
   {   
@@ -253,15 +258,18 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
       {  
         char time_buffer1[256];
         char time_buffer2[256];
-        time_t time1=time(NULL); 
-        time_t time2=unpacku32_lendian((unsigned char*)buffer); 
+        time_t time1=time(NULL);
+        time_t time2;
+        //Check if computer is little endian. If it is, shift bits to change big endian int to little endian. 
+        if(check_endianess()==LITTLE_ENDIAN1) time2=unpacku32_lendian((unsigned char*)buffer);
+        else time2=atoi(buffer); 
         time2=time2-(2208988800ul);
-        printf("Returned Buffer Length %i Client Time %lu, Nist Time %lu\n", length, time1, time2);
+        printf("Returned Buffer: Length %i, Client Time %lu, Nist Time %lu\n", length, time1, time2);
 
         GtkTextBuffer *text_buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(data));
         GtkTextIter end;
         gtk_text_buffer_get_end_iter(text_buffer, &end); 
-        gchar *string_time1=g_strdup_printf("Returned Buffer Length %i Client Time %lu, Nist Time %lu\n", length, time1, time2);
+        gchar *string_time1=g_strdup_printf("Returned Buffer: Length %i, Client Time %lu, Nist Time %lu\n", length, time1, time2);
         gtk_text_buffer_insert(text_buffer, &end, string_time1, -1);
         g_free(string_time1);
         
@@ -270,9 +278,9 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
         localtime_r(&time1, &info1);
         localtime_r(&time2, &info2);
    
-        strftime(time_buffer1, 256, "Client Time %A, %B %d,  %I:%M:%S %p %Y", &info1);
+        strftime(time_buffer1, 256, "Local Client Time: %A, %B %d,  %I:%M:%S %p %Y", &info1);
         printf("%s\n", time_buffer1);
-        strftime(time_buffer2, 256, "NIST Server Time %A, %B %d,  %I:%M:%S %p %Y", &info2);
+        strftime(time_buffer2, 256, "NIST Server Time:  %A, %B %d,  %I:%M:%S %p %Y", &info2);
         printf("%s\n", time_buffer2);
 
         gtk_text_buffer_get_end_iter(text_buffer, &end); 
@@ -286,6 +294,14 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
 unsigned long int unpacku32_lendian(unsigned char *buffer)
   {
     return ((unsigned long int)buffer[0]<<24)|((unsigned long int)buffer[1]<<16)|((unsigned long int)buffer[2]<<8)|buffer[3];
+  }
+int check_endianess()
+  {
+    int i=1;
+    char *p =(char*)&i;
+
+    if(p[0]==1) return LITTLE_ENDIAN1;
+    else return BIG_ENDIAN1;
   }
 
 
