@@ -41,7 +41,7 @@ static void server_accept();
 //NIST time.
 static void check_four_seconds(GtkWidget *button, gpointer data);
 static void nist_atomic_time(GtkWidget *button, gpointer data);
-unsigned long int unpacku32(unsigned char *buf);
+unsigned long int unpacku32_lendian(unsigned char *buffer);
 
 int main(int argc, char *argv[])
   {   
@@ -185,7 +185,8 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
     int port=37;
     char *hostname="time.nist.gov";
     struct hostent *hostent;
-    char buffer[10];
+    //Store a 4 byte unsigned int for the time and a \0.
+    char buffer[5];
     int length; 
     int fail_error=0;
 
@@ -225,6 +226,19 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
 
     if(fail_error>=0)
       {
+        struct timeval tv;
+        //Set both sec and usec for receive timeout.
+        tv.tv_sec=1;
+        tv.tv_usec=500000;
+        if(setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO , &tv, sizeof(tv))<0)
+          {
+            fprintf(stderr, "Timeout Error: %s\n", strerror(errno));
+            fail_error=-1;
+          }
+      }
+
+    if(fail_error>=0)
+      {
         response_size=sizeof(response);
         printf("Receive From Server...\n");
         length=recvfrom(client_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&response, &response_size);	
@@ -240,7 +254,7 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
         char time_buffer1[256];
         char time_buffer2[256];
         time_t time1=time(NULL); 
-        time_t time2=unpacku32((unsigned char*)buffer); 
+        time_t time2=unpacku32_lendian((unsigned char*)buffer); 
         time2=time2-(2208988800ul);
         printf("Returned Buffer Length %i Client Time %lu, Nist Time %lu\n", length, time1, time2);
 
@@ -269,9 +283,9 @@ static void nist_atomic_time(GtkWidget *widget, gpointer data)
 
     if(client_socket>-1) close(client_socket);
   }
-unsigned long int unpacku32(unsigned char *buf)
+unsigned long int unpacku32_lendian(unsigned char *buffer)
   {
-    return ((unsigned long int)buf[0]<<24)|((unsigned long int)buf[1]<<16)|((unsigned long int)buf[2]<<8)|buf[3];
+    return ((unsigned long int)buffer[0]<<24)|((unsigned long int)buffer[1]<<16)|((unsigned long int)buffer[2]<<8)|buffer[3];
   }
 
 
