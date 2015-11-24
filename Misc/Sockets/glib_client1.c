@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
         else
           {
             gchar time_temp[5];
-            memset(buffer, '\0', 48*sizeof(gchar));
+            memset(time_temp, '\0', 5*sizeof(gchar));
             time_temp[0]=buffer[0];
             time_temp[1]=buffer[1];
             time_temp[2]=buffer[2];
