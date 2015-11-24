@@ -191,8 +191,8 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
           }
  
         time2=time2-(2208988800ul);
-        g_print("Returned Buffer Length %i, Client Time %lu, Nist Time %lu\n", length, time1, time2);
-        g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, Nist Time %lu\n", length, time1, time2);
+        g_print("Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
+        g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
 
         struct tm info1;
         struct tm info2;
