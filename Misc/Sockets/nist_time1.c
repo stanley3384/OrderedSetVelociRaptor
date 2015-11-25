@@ -4,6 +4,8 @@
     Test the NIST time servers with glib/GTK. Try the "TIME" protocol and NTP. Tested with
 Ubuntu14.04 and GTK3.10.
     This one adds a GTK UI to glib_client1.c. 
+   
+    NIST: http://tf.nist.gov/tf-cgi/servers.cgi
 
     gcc -Wall nist_time1.c -o nist_time1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -66,7 +68,6 @@ int main(int argc, char *argv[])
     gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
     if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
     g_object_unref(provider);
-
 
     gtk_widget_show_all(window);
     gtk_main();
@@ -180,7 +181,7 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
         time_t time2;
         if(ntp_time)
           {
-            //Move time values to start of buffer. Only using time values here.
+            //Move time values to start of buffer for bit shifting. Only using time value in second here.
             buffer[0]=buffer[40];
             buffer[1]=buffer[41];
             buffer[2]=buffer[42];
@@ -199,9 +200,10 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
             time_temp[1]=buffer[1];
             time_temp[2]=buffer[2];
             time_temp[3]=buffer[3];
-            time2=g_ascii_strtoll(time_temp, NULL, 0);
+            time2=g_ascii_strtoll(time_temp, NULL, 10);
           }
  
+        //Adjust time to start at Jan 1, 1970.
         time2=time2-(2208988800ul);
         if(ntp_time)
           {
