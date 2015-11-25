@@ -6,6 +6,7 @@ Ubuntu14.04 and GTK3.10.
     This one adds a GTK UI to glib_client1.c. 
    
     NIST: http://tf.nist.gov/tf-cgi/servers.cgi
+    Details: https://tools.ietf.org/html/rfc5905
 
     gcc -Wall nist_time1.c -o nist_time1 `pkg-config --cflags --libs gtk+-3.0`
 
