@@ -5,7 +5,7 @@
 Ubuntu14.04 and GTK3.10.
     This one adds a GTK UI to glib_client1.c. 
 
-    gcc -Wall glib_client2.c -o glib_client2 `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall nist_time1.c -o nist_time1 `pkg-config --cflags --libs gtk+-3.0`
 
     C. Eric Cashon
 
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "NIST Time");
     gtk_container_set_border_width(GTK_CONTAINER(window),10);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 300);
+    gtk_window_set_default_size(GTK_WINDOW(window), 600, 300);
     g_signal_connect(window,"destroy",G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *radio1=gtk_radio_button_new_with_label(NULL, "NTP Time");
@@ -56,6 +56,17 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 4, 1);
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 3, 4, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
+
+    GError *css_error=NULL;
+    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(255,255,0,0.8)), color-stop(0.5,rgba(255,170,0,0.8)), color-stop(1.0,rgba(255,0,0,0.8)));}GtkButton{background: rgba(220,220,220,0.5);}";
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GdkDisplay *display = gdk_display_get_default();
+    GdkScreen *screen = gdk_display_get_default_screen(display);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+    if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    g_object_unref(provider);
+
 
     gtk_widget_show_all(window);
     gtk_main();
@@ -84,6 +95,7 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
     gchar buffer[48];
     gboolean fail_error=FALSE;
     gboolean ntp_time=TRUE; //FALSE for time protocol on port 37.
+    gchar *protocol="NTP";
 
     if(!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data[1]))) ntp_time=FALSE;
 
@@ -191,22 +203,53 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
           }
  
         time2=time2-(2208988800ul);
-        g_print("Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
-        g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
+        if(ntp_time)
+          {
+            g_print("Returned Buffer Length %i, Client Time %lu, NIST %s Time %lu\n", length, time1, protocol, time2);
+            g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, NIST %s Time %lu\n", length, time1, protocol, time2);
+          }
+        else
+          {
+            g_print("Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
+            g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
+          }
 
+        size_t time_length=0;
         struct tm info1;
         struct tm info2;
         localtime_r(&time1, &info1);
         localtime_r(&time2, &info2);
         gchar time_buffer1[256];
         gchar time_buffer2[256];
-        strftime(time_buffer1, 256, "Local Client Time: %A, %B %d,  %I:%M:%S %p %Y", &info1);
-        g_print("%s\n", time_buffer1);
-        g_string_append_printf(string_builder, "%s\n", time_buffer1);
-        strftime(time_buffer2, 256, "NIST Server Time:  %A, %B %d,  %I:%M:%S %p %Y", &info2);
-        g_print("%s\n", time_buffer2);
-        g_string_append_printf(string_builder, "%s\n", time_buffer2);
-        gtk_label_set_text(GTK_LABEL(data[0]), string_builder->str);
+        time_length=strftime(time_buffer1, 256, "Local Client Time: %A, %B %d,  %I:%M:%S %p %Y", &info1);
+        if(time_length!=0)
+          {
+            g_print("%s\n", time_buffer1);
+            g_string_append_printf(string_builder, "%s\n", time_buffer1);
+          }
+        else
+          {
+            fail_error=TRUE;
+          }
+        time_length=strftime(time_buffer2, 256, "NIST Server Time:  %A, %B %d,  %I:%M:%S %p %Y", &info2);
+        if(time_length!=0&&!fail_error)
+          {
+            g_print("%s\n", time_buffer2);
+            g_string_append_printf(string_builder, "%s\n", time_buffer2);
+          }
+        else
+          {
+            fail_error=TRUE;
+          }
+        if(!fail_error)
+          {
+            gtk_label_set_text(GTK_LABEL(data[0]), string_builder->str);
+          }
+        else 
+          {
+            g_print("Time String Buffer Error\n");
+            gtk_label_set_text(GTK_LABEL(data[0]), "Time String Buffer Error");
+          }
         g_string_free(string_builder, TRUE);     
       }
    
