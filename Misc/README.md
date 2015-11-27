@@ -1,6 +1,6 @@
 
 
---Some miscellaneous items to experiment with. For the OpenGL programs, on Ubuntu, you can get the needed libraries to compile the examples with by getting the freeGLUT and Mesa libraries. If you have a good graphics card you might not need the Mesa libraries.
+--Some miscellaneous items to experiment with. For the OpenGL programs you can get the needed libraries to compile the examples by getting the freeGLUT and the Mesa libraries on Ubuntu. Some of the OpenGL programs use GTK+ for the UI and some use freeGLUT for the UI.
 
 sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
@@ -22,14 +22,14 @@ Shaders
 ![ScreenShot](/Misc/vertex.jpg)
 
 
---There are a variety of other programs that are small test programs. Good for figuring out how a certain technology works and easy to change around. For testing threads, linear gradients and radial gradients the css1.c program is a start. It uses Cairo along with CSS for some 2d color.
+--There are a variety of other programs that are small test programs. Good for figuring out how a certain technology works and easy to change around.
 
-Threads
+Thread Pool
 
 ![ScreenShot](/Misc/threads.png)
 
 
---There are a lot of 2d and 3d drawing capabilities on computers. Very useful for data visualization and a little bit of fun drawing with color. 
+--There are a lot of 2d and 3d drawing capabilities on computers. Very useful for data visualization and a little bit of fun drawing with color. If you are looking for some simple programs with sound, threads, sockets, time, etc. Take a look around in some of the above folders. There might be something useful.
 
 C. Eric Cashon
 
