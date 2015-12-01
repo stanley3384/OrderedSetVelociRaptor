@@ -2,8 +2,9 @@
 /*
 
     Bit shift a four byte unsigned char as a unsigned long int. Practice code for figuring
-out how to get time bytes from a NIST time server.
-    Tested on Ubuntu14.04 32bit intel computer. 
+out how to get time bytes from a NIST time server. Also get the individual bits in one of
+the char values.
+    Tested on a Ubuntu14.04 32bit intel computer. 
 
     gcc -Wall bit_shift1.c -o bit_shift1
 
@@ -13,6 +14,13 @@ out how to get time bytes from a NIST time server.
 
 #include<stdio.h>
 
+static unsigned char bit_value(unsigned char x, unsigned char p)
+  {
+    unsigned char ret_val=~0;
+    ret_val=(x<<(7-p));
+    ret_val=(ret_val>>7);
+    return ret_val;
+  }
 int main()
   {
     //Set max value for unsigned long int.
@@ -35,6 +43,9 @@ int main()
     printf("Buffer3 LE %lu\n",((unsigned long int)buffer3[0])+(((unsigned long int)buffer3[1])*256)+(((unsigned long int)buffer3[2])*256*256)+(((unsigned long int)buffer3[3])*256*256*256));
 
     printf("Buffer4 LE %lu\n",((unsigned long int)buffer4[0])|((unsigned long int)buffer4[1]<<8)|((unsigned long int)buffer4[2]<<16)|((unsigned long int)buffer4[3]<<24)); 
+
+    //Get individual bit values for buffer4[0].
+    printf("Buffer4[0] Bit Values %i %i %i %i %i %i %i %i\n", (int)bit_value(buffer4[0], 7), (int)bit_value(buffer4[0], 6), (int)bit_value(buffer4[0], 5), (int)bit_value(buffer4[0], 4), (int)bit_value(buffer4[0], 3), (int)bit_value(buffer4[0], 2), (int)bit_value(buffer4[0], 1), (int)bit_value(buffer4[0], 0));
        
     return 0;
   }
