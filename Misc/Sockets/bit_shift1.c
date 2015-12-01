@@ -16,10 +16,14 @@ the char values.
 
 static unsigned char bit_value(unsigned char x, unsigned char p)
   {
-    unsigned char ret_val=~0;
-    ret_val=(x<<(7-p));
-    ret_val=(ret_val>>7);
-    return ret_val;
+    return (x>>p)&1;
+    /*
+      another way
+      unsigned char ret_val=~0;
+      ret_val=(x<<(7-p));
+      ret_val=(ret_val>>7);
+      return ret_val;
+    */
   }
 int main()
   {
