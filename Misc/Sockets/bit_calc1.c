@@ -30,15 +30,19 @@ static void get_bits(gpointer *data)
     gtk_label_set_text(GTK_LABEL(data[3]), string1);
     gtk_label_set_text(GTK_LABEL(data[4]), string2);
 
-    //Bitwise and/or.
+    //Bitwise and/or/xor.
     unsigned char bit_logic=0;
     if(active_combo==0)
       {
         bit_logic=entry1_value&entry2_value;
       }
-    else
+    else if(active_combo==1)
       {
         bit_logic=entry1_value|entry2_value;
+      }
+    else
+      {
+        bit_logic=entry1_value^entry2_value;
       }
 
     gchar *string3=g_strdup_printf("%i %i %i %i %i %i %i %i\n", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
@@ -112,6 +116,7 @@ int main(int argc, char *argv[])
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "&");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "|");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "^");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo1), "1");
 
     GtkWidget *entry2=gtk_entry_new();
