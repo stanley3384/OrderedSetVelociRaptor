@@ -1,6 +1,5 @@
 
 /*
-
     A simple bit logic calculator.
 
     Tested on Ubuntu14.04 with GTK3.10 
@@ -8,7 +7,6 @@
     gcc -Wall bit_calc1.c -o bit_calc1 `pkg-config --cflags --libs gtk+-3.0`
 
     C. Eric Cashon
-
 */
 
 #include<gtk/gtk.h>
@@ -18,6 +16,8 @@ static void get_bits(gpointer *data);
 static int validate_shift_entries(gpointer *data);
 static void validate_number_entries(gpointer *data);
 static void validate_entries(GtkWidget *widget, gpointer *data);
+static GdkPixbuf* draw_icon();
+static void about_dialog(GtkWidget *widget, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -28,6 +28,18 @@ int main(int argc, char *argv[])
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);    
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    GdkPixbuf *icon=draw_icon();
+    gtk_window_set_default_icon(icon);
+
+    GtkWidget *menu1=gtk_menu_new();
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Bit Calc");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
 
     GtkWidget *entry1=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry1), "255");
@@ -97,10 +109,11 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 5, 1);
     gtk_grid_attach(GTK_GRID(grid), label3, 0, 6, 5, 1);
     gtk_grid_attach(GTK_GRID(grid), label4, 0, 7, 5, 1);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 8, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkWindow{background: yellow} GtkButton{background: cyan}";
+    gchar css_string[]="GtkWindow{background: rgba(153,204,255,1)} GtkButton{background: cyan}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -260,3 +273,92 @@ static void validate_entries(GtkWidget *widget, gpointer *data)
     gint check1=validate_shift_entries(data);
     if(check1==0) validate_number_entries(data);    
   }
+static GdkPixbuf* draw_icon()
+  {
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface);
+    gint i=0;
+    
+    //Paint the background.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_paint(cr);
+
+    //A blue icon border.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 6);
+    cairo_rectangle(cr, 0, 0, 256, 256);
+    cairo_stroke(cr);
+
+    //Smiley
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_scale(cr, 0.5, 0.5);
+    cairo_translate(cr, 128.0, 215.0);
+    cairo_set_line_width(cr, 10);
+    //Circle
+    cairo_arc(cr, 128, 128, 100, 0, 2*G_PI);
+    cairo_stroke(cr);
+    //Left eye.
+    cairo_arc(cr, 128-35, 90, 7, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_stroke(cr);
+    //Right eye.
+    cairo_arc(cr, 128+35, 90, 7, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_stroke(cr);
+    //Smile
+    cairo_arc(cr, 128, 130, 60, 0, G_PI);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Light bulbs.
+    for(i=0;i<8;i++)
+      {
+        cairo_save(cr);
+        cairo_translate(cr, i*28.0, 10.0);
+        cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+        cairo_set_line_width(cr, 3);
+        //Top Circle
+        cairo_arc(cr, 30, 30, 12, 0, 2*G_PI);
+        cairo_fill(cr);
+        cairo_stroke(cr);
+        //Curve of bulb
+        cairo_move_to(cr, 40, 35);
+        cairo_curve_to(cr, 30, 65, 37, 65, 37, 65);
+        cairo_stroke_preserve(cr);
+        cairo_line_to(cr, 23, 65);
+        cairo_stroke_preserve(cr);
+        cairo_curve_to(cr, 23, 65, 30, 65, 20, 35);
+        cairo_stroke_preserve(cr);
+        cairo_close_path(cr);
+        cairo_stroke_preserve(cr);
+        cairo_fill(cr);
+        //Bottom square on bulb.
+        cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+        cairo_move_to(cr, 0, 0);
+        cairo_rectangle(cr, 22, 55, 16, 20);
+        cairo_fill(cr);
+        cairo_restore(cr);
+      }
+
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    return icon;
+  }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    //Null will add the program icon to the logo.
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Bit Calc");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A simple bitwise calculator.");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+
