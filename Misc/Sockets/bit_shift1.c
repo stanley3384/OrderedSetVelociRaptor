@@ -14,7 +14,7 @@ the char values.
 
 #include<stdio.h>
 
-static unsigned char bit_value(unsigned char x, unsigned char p)
+inline static unsigned char bit_value(unsigned char x, unsigned char p)
   {
     return (x>>p)&1;
     /*
