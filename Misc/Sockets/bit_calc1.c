@@ -82,10 +82,12 @@ int main(int argc, char *argv[])
     GtkWidget *label2=gtk_label_new("0 0 0 0 0 0 0 0");
     gtk_widget_set_hexpand(label2, TRUE);
 
-    GtkWidget *label3=gtk_label_new("0 0 0 0 0 0 0 0");
+    GtkWidget *label3=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label3), "<span foreground='blue'>0 0 0 0 0 0 0 0</span>");
     gtk_widget_set_hexpand(label3, TRUE);
 
-    GtkWidget *label4=gtk_label_new("0");
+    GtkWidget *label4=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label4), "<span foreground='blue'>0</span>");
     gtk_widget_set_hexpand(label4, TRUE);
     
     gpointer widgets[]={entry1, entry2, entry3, entry4, combo1, combo2, combo3, label1, label2, label3, label4};
@@ -153,9 +155,9 @@ static void get_bits(gpointer *data)
     else entry2_value=~entry2_value;
 
     //Build bit labels.
-    gchar *string1=g_strdup_printf("%i %i %i %i %i %i %i %i\n", (int)bit_value(entry1_value, 7), (int)bit_value(entry1_value, 6), (int)bit_value(entry1_value, 5), (int)bit_value(entry1_value, 4), (int)bit_value(entry1_value, 3), (int)bit_value(entry1_value, 2), (int)bit_value(entry1_value, 1), (int)bit_value(entry1_value, 0));
+    gchar *string1=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry1_value, 7), (int)bit_value(entry1_value, 6), (int)bit_value(entry1_value, 5), (int)bit_value(entry1_value, 4), (int)bit_value(entry1_value, 3), (int)bit_value(entry1_value, 2), (int)bit_value(entry1_value, 1), (int)bit_value(entry1_value, 0));
 
-    gchar *string2=g_strdup_printf("%i %i %i %i %i %i %i %i\n", (int)bit_value(entry2_value, 7), (int)bit_value(entry2_value, 6), (int)bit_value(entry2_value, 5), (int)bit_value(entry2_value, 4), (int)bit_value(entry2_value, 3), (int)bit_value(entry2_value, 2), (int)bit_value(entry2_value, 1), (int)bit_value(entry2_value, 0));
+    gchar *string2=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry2_value, 7), (int)bit_value(entry2_value, 6), (int)bit_value(entry2_value, 5), (int)bit_value(entry2_value, 4), (int)bit_value(entry2_value, 3), (int)bit_value(entry2_value, 2), (int)bit_value(entry2_value, 1), (int)bit_value(entry2_value, 0));
 
     gtk_label_set_text(GTK_LABEL(data[7]), string1);
     gtk_label_set_text(GTK_LABEL(data[8]), string2);
@@ -175,7 +177,7 @@ static void get_bits(gpointer *data)
         bit_logic=entry1_value^entry2_value;
       }
 
-    gchar *string3=g_strdup_printf("<span foreground='blue'>%i %i %i %i %i %i %i %i\n</span>", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
+    gchar *string3=g_strdup_printf("<span foreground='blue'>%i %i %i %i %i %i %i %i</span>", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
     gchar *string4=g_strdup_printf("<span foreground='blue'>%i</span>", (gint)bit_logic);
 
     gtk_label_set_markup(GTK_LABEL(data[9]), string3);
