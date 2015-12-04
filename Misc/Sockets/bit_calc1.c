@@ -18,6 +18,7 @@ static void validate_number_entries(gpointer *data);
 static void validate_entries(GtkWidget *widget, gpointer *data);
 static GdkPixbuf* draw_icon();
 static void about_dialog(GtkWidget *widget, gpointer data);
+static void error_message(const gchar *string);
 
 int main(int argc, char *argv[])
   {
@@ -95,8 +96,9 @@ int main(int argc, char *argv[])
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_homogeneous(GTK_GRID(grid), TRUE);
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo1, 2, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry2, 3, 0, 1, 1);
@@ -109,7 +111,6 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 5, 1);
     gtk_grid_attach(GTK_GRID(grid), label3, 0, 6, 5, 1);
     gtk_grid_attach(GTK_GRID(grid), label4, 0, 7, 5, 1);
-    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 8, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
@@ -204,25 +205,37 @@ static int validate_shift_entries(gpointer *data)
               {
                 if(entry2_value>8||entry2_value<0)
                   {
-                    g_print("Shift2 Range 0 <= x <= 8\n");
+                    gchar *error_string=g_strdup("Shift2 Range 0 <= x <= 8");
+                    g_print("%s\n", error_string);
+                    error_message(error_string);
+                    g_free(error_string);
                     ret_val=1; 
                   }
               }
             else
               {
-                g_print("Shift1 Range 0 <= x <= 8\n");
+                gchar *error_string=g_strdup("Shift1 Range 0 <= x <= 8");
+                g_print("%s\n", error_string);
+                error_message(error_string);
+                g_free(error_string);
                 ret_val=1; 
               }
            }
         else
            {
-             g_print("Shift2 int conversion error.\n");
+             gchar *error_string=g_strdup("Shift2 int conversion error.");
+             g_print("%s\n", error_string);
+             error_message(error_string);
+             g_free(error_string);
              ret_val=1;
            }
       }
     else
       {
-        g_print("Shift1 int conversion error.\n");
+        gchar *error_string=g_strdup("Shift1 int conversion error.");
+        g_print("%s\n", error_string);
+        error_message(error_string);
+        g_free(error_string);
         ret_val=1;
       }
     return ret_val;
@@ -250,22 +263,34 @@ static void validate_number_entries(gpointer *data)
                   }
                 else
                   {
-                    g_print("Entry2 Range 0 <= x < 256\n"); 
+                    gchar *error_string=g_strdup("Entry2 Range 0 <= x < 256");
+                    g_print("%s\n", error_string);
+                    error_message(error_string);
+                    g_free(error_string); 
                   }
               }
             else
               {
-                g_print("Entry1 Range 0 <= x < 256\n"); 
+                gchar *error_string=g_strdup("Entry1 Range 0 <= x < 256");
+                g_print("%s\n", error_string);
+                error_message(error_string);
+                g_free(error_string);  
               }
            }
         else
            {
-             g_print("Entry2 int conversion error.\n");
+             gchar *error_string=g_strdup("Entry2 int conversion error.");
+             g_print("%s\n", error_string);
+             error_message(error_string);
+             g_free(error_string); 
            }
       }
     else
       {
-        g_print("Entry1 int conversion error.\n");
+        gchar *error_string=g_strdup("Entry1 int conversion error.\n");
+        g_print("%s\n", error_string);
+        error_message(error_string);
+        g_free(error_string); 
       }
   }
 static void validate_entries(GtkWidget *widget, gpointer *data)
@@ -358,6 +383,12 @@ static void about_dialog(GtkWidget *widget, gpointer data)
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A simple bitwise calculator.");
    
     gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+static void error_message(const gchar *string)
+  {
+    GtkWidget *dialog=gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", string);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
   }
