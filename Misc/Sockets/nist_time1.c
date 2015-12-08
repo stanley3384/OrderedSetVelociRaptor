@@ -1,9 +1,9 @@
 
 /*
 
-    Test the NIST time servers with glib/GTK. Try the "TIME" protocol and NTP. Tested with
-Ubuntu14.04 and GTK3.10.
-    This one adds a GTK UI to glib_client1.c. 
+    Test the NIST time servers with glib/GTK. Try the "TIME" protocol and NTP. The program adjusts the
+NTP fraction of a second to micro seconds to compare with system time.
+    Tested with Ubuntu14.04 and GTK3.10. 
    
     NIST: http://tf.nist.gov/tf-cgi/servers.cgi
     Details: https://tools.ietf.org/html/rfc5905
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "NIST Time");
     gtk_container_set_border_width(GTK_CONTAINER(window),10);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 600, 300);
+    gtk_window_set_default_size(GTK_WINDOW(window), 700, 300);
     g_signal_connect(window,"destroy",G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *radio1=gtk_radio_button_new_with_label(NULL, "NTP Time");
@@ -178,38 +178,56 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
    if(!fail_error)
       {
         GString *string_builder=g_string_new(NULL);
-        time_t time1=time(NULL);
+        gint64 system_time=g_get_real_time();
+        time_t time1=(time_t)(system_time/1e6); //time in seconds
         time_t time2;
+        gint64 system_micro=system_time-(gint64)((gint64)(system_time/1e6)*1e6);
+        gint64 ntp_micro=0;
+        gchar s_buffer[5];
+        gchar u_buffer[5];
+        memset(s_buffer, '\0', 5*sizeof(gchar));
+        memset(u_buffer, '\0', 5*sizeof(gchar));
+
         if(ntp_time)
           {
-            //Move time values to start of buffer for bit shifting. Only using time value in second here.
-            buffer[0]=buffer[40];
-            buffer[1]=buffer[41];
-            buffer[2]=buffer[42];
-            buffer[3]=buffer[43];
+            //Get the time values.
+            s_buffer[0]=buffer[40];
+            s_buffer[1]=buffer[41];
+            s_buffer[2]=buffer[42];
+            s_buffer[3]=buffer[43];
+            u_buffer[0]=buffer[44];
+            u_buffer[1]=buffer[45];
+            u_buffer[2]=buffer[46];
+            u_buffer[3]=buffer[47];
+          }
+        else
+          {
+            s_buffer[0]=buffer[0];
+            s_buffer[1]=buffer[1];
+            s_buffer[2]=buffer[2];
+            s_buffer[3]=buffer[3];
           } 
        
         if(check_endianess()==LITTLE_ENDIAN1)
           {
-            time2=unpacku32_lendian((unsigned char*)buffer);
+            time2=unpacku32_lendian((unsigned char*)s_buffer);
+            ntp_micro=unpacku32_lendian((unsigned char*)u_buffer);
           }
         else
           {
-            gchar time_temp[5];
-            memset(time_temp, '\0', 5*sizeof(gchar));
-            time_temp[0]=buffer[0];
-            time_temp[1]=buffer[1];
-            time_temp[2]=buffer[2];
-            time_temp[3]=buffer[3];
-            time2=g_ascii_strtoll(time_temp, NULL, 10);
+            time2=g_ascii_strtoll(s_buffer, NULL, 10);
+            ntp_micro=g_ascii_strtoll(u_buffer, NULL, 10);
           }
+
+        //Adjust NTP pico seconds to micro seconds.
+        if(ntp_time) ntp_micro=((ntp_micro*1000000)>>32);
  
         //Adjust time to start at Jan 1, 1970.
         time2=time2-(2208988800ul);
         if(ntp_time)
           {
-            g_print("Returned Buffer Length %i, Client Time %lu, NIST %s Time %lu\n", length, time1, protocol, time2);
-            g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, NIST %s Time %lu\n", length, time1, protocol, time2);
+            g_print("Returned Buffer Length %i, Client Time %lu.%llu, NIST %s Time %lu.%llu\n", length, time1, system_micro, protocol, time2, ntp_micro);
+            g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu.%llu, NIST %s Time %lu.%llu\n", length, time1, system_micro, protocol, time2, ntp_micro);
           }
         else
           {
@@ -217,6 +235,7 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
             g_string_append_printf(string_builder, "Returned Buffer Length %i, Client Time %lu, NIST Time %lu\n", length, time1, time2);
           }
 
+        //Format some date time strings.
         size_t time_length=0;
         struct tm info1;
         struct tm info2;
@@ -261,6 +280,9 @@ static void nist_atomic_time(GtkWidget *widget, gpointer *data)
   }
 unsigned long int unpacku32_lendian(unsigned char *buffer)
   {
+    g_print("Or %lu\n",((unsigned long int)buffer[0]<<24)|((unsigned long int)buffer[1]<<16)|((unsigned long int)buffer[2]<<8)|buffer[3]);
+    g_print("Plus %lu\n",((unsigned long int)buffer[0]<<24)+((unsigned long int)buffer[1]<<16)+((unsigned long int)buffer[2]<<8)+buffer[3]);
+
     return ((unsigned long int)buffer[0]<<24)|((unsigned long int)buffer[1]<<16)|((unsigned long int)buffer[2]<<8)|buffer[3];
   }
 int check_endianess()
