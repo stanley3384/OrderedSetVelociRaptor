@@ -5,7 +5,7 @@
 Roll a square, build a cycloid "bridge" wave, sine wave and cosine wave. Have the
 square disappear and reappear. Magic Square. Change around as needed.
 
-    gcc -Wall `pkg-config --cflags gtk+-3.0` SquareAnimate.c -o square `pkg-config --libs gtk+-3.0` -lm
+    gcc -Wall `pkg-config --cflags gtk+-3.0` magic_square1.c -o magic_square1 `pkg-config --libs gtk+-3.0` -lm
 
     C. Eric Cashon
 
@@ -36,14 +36,14 @@ int main (int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Magic Square");
     g_signal_connect(window, "destroy", G_CALLBACK(close_window), NULL);
 
-    GtkWidget *SquareDrawing = gtk_drawing_area_new();
-    gtk_widget_set_size_request(SquareDrawing, 950, 350);
-    gtk_widget_set_events(SquareDrawing, GDK_BUTTON_PRESS_MASK);
-    g_signal_connect(SquareDrawing, "button_press_event", G_CALLBACK(click_drawing), NULL); 
-    block_id=g_signal_connect(SquareDrawing, "draw", G_CALLBACK(draw_square), NULL); 
-    g_signal_connect(SquareDrawing, "realize", G_CALLBACK(realize_drawing), NULL); 
+    GtkWidget *drawing_area = gtk_drawing_area_new();
+    gtk_widget_set_size_request(drawing_area, 950, 350);
+    gtk_widget_set_events(drawing_area, GDK_BUTTON_PRESS_MASK);
+    g_signal_connect(drawing_area, "button_press_event", G_CALLBACK(click_drawing), NULL); 
+    block_id=g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_square), NULL); 
+    g_signal_connect(drawing_area, "realize", G_CALLBACK(realize_drawing), NULL); 
 
-    gtk_container_add(GTK_CONTAINER(window), SquareDrawing); 
+    gtk_container_add(GTK_CONTAINER(window), drawing_area); 
 
     gtk_widget_show_all(window);
     gtk_main();
@@ -55,7 +55,7 @@ static void close_window(GtkWidget *widget, gpointer data)
     //Remove timer on exit.
     if(moving)
       {
-        g_source_remove(timer_id);
+        if(timer_id!=0) g_source_remove(timer_id);
       }
     gtk_main_quit();
   }
@@ -85,16 +85,17 @@ static void click_drawing(GtkWidget *widget, gpointer data)
 
     if(click1) gtk_widget_queue_draw_area(widget, 0, 0, gtk_widget_get_allocated_width(widget), gtk_widget_get_allocated_height(widget)); 
 
-    //Toggle start and stop
+    //Toggle start and stop animation.
     if(click1)
       {
         click1=FALSE;
-        if(move>0) g_signal_handler_unblock(widget, block_id);
+        if(move>0) timer_id=g_timeout_add(30, start_drawing, widget);
       }
     else
       {
         click1=TRUE;
-        g_signal_handler_block(widget, block_id);
+        g_source_remove(timer_id);
+        timer_id=0;
       } 
   }
 static gboolean draw_square(GtkWidget *widget, cairo_t *cr, gpointer data)
