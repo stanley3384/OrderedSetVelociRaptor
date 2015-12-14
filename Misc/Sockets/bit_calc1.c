@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *entry1=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry1), "255");
+    gtk_widget_set_halign(entry1, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
@@ -54,6 +55,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *entry2=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry2), "0");
+    gtk_widget_set_halign(entry2, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 1);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
@@ -64,6 +66,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *entry3=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry3), "0");
+    gtk_widget_set_halign(entry3, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 3);
 
     GtkWidget *combo3=gtk_combo_box_text_new();
@@ -74,23 +77,33 @@ int main(int argc, char *argv[])
 
     GtkWidget *entry4=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry4), "0");
+    gtk_widget_set_halign(entry4, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry4), 1);
 
     GtkWidget *label1=gtk_label_new("1 1 1 1 1 1 1 1");
-    gtk_widget_set_hexpand(label1, TRUE);
+    gtk_widget_set_halign(label1, GTK_ALIGN_END);
 
     GtkWidget *label2=gtk_label_new("0 0 0 0 0 0 0 0");
-    gtk_widget_set_hexpand(label2, TRUE);
+    gtk_widget_set_halign(label2, GTK_ALIGN_END);
 
     GtkWidget *label3=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label3), "<span foreground='blue'>0 0 0 0 0 0 0 0</span>");
-    gtk_widget_set_hexpand(label3, TRUE);
+    gtk_widget_set_halign(label3, GTK_ALIGN_END);
 
     GtkWidget *label4=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label4), "<span foreground='blue'>0</span>");
-    gtk_widget_set_hexpand(label4, TRUE);
+    gtk_widget_set_halign(label4, GTK_ALIGN_END);
+
+    GtkWidget *label5=gtk_label_new(NULL);
+    gtk_label_set_text(GTK_LABEL(label5), "0xff");
+
+    GtkWidget *label6=gtk_label_new(NULL);
+    gtk_label_set_text(GTK_LABEL(label6), "0x0");
+
+    GtkWidget *label7=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label7), "<span foreground='blue'>0x0</span>");
     
-    gpointer widgets[]={entry1, entry2, entry3, entry4, combo1, combo2, combo3, label1, label2, label3, label4};
+    gpointer widgets[]={entry1, entry2, entry3, entry4, combo1, combo2, combo3, label1, label2, label3, label4, label5, label6, label7};
 
     GtkWidget *button1=gtk_button_new_with_label("Get Bits");
     gtk_widget_set_hexpand(button1, TRUE);
@@ -99,6 +112,7 @@ int main(int argc, char *argv[])
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_homogeneous(GTK_GRID(grid), TRUE);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
     gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 0, 1, 1);
@@ -109,10 +123,13 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), combo3, 2, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry4, 3, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 3, 5, 1);
-    gtk_grid_attach(GTK_GRID(grid), label1, 0, 4, 5, 1);
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 5, 1);
-    gtk_grid_attach(GTK_GRID(grid), label3, 0, 6, 5, 1);
-    gtk_grid_attach(GTK_GRID(grid), label4, 0, 7, 5, 1);
+    gtk_grid_attach(GTK_GRID(grid), label1, 1, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), label5, 3, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label2, 1, 5, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), label6, 3, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label3, 1, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), label7, 3, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label4, 2, 7, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
@@ -154,13 +171,18 @@ static void get_bits(gpointer *data)
     else if(active_combo_shift2==1) entry2_value=entry2_value<<shift_entry2;
     else entry2_value=~entry2_value;
 
-    //Build bit labels.
+    //Build bit and hex labels.
     gchar *string1=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry1_value, 7), (int)bit_value(entry1_value, 6), (int)bit_value(entry1_value, 5), (int)bit_value(entry1_value, 4), (int)bit_value(entry1_value, 3), (int)bit_value(entry1_value, 2), (int)bit_value(entry1_value, 1), (int)bit_value(entry1_value, 0));
 
     gchar *string2=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry2_value, 7), (int)bit_value(entry2_value, 6), (int)bit_value(entry2_value, 5), (int)bit_value(entry2_value, 4), (int)bit_value(entry2_value, 3), (int)bit_value(entry2_value, 2), (int)bit_value(entry2_value, 1), (int)bit_value(entry2_value, 0));
 
+    gchar *string3=g_strdup_printf("0x%0x", entry1_value);
+    gchar *string4=g_strdup_printf("0x%0x", entry2_value);
+
     gtk_label_set_text(GTK_LABEL(data[7]), string1);
     gtk_label_set_text(GTK_LABEL(data[8]), string2);
+    gtk_label_set_text(GTK_LABEL(data[11]), string3);
+    gtk_label_set_text(GTK_LABEL(data[12]), string4);
 
     //Bitwise and/or/xor.
     unsigned char bit_logic=0;
@@ -177,16 +199,21 @@ static void get_bits(gpointer *data)
         bit_logic=entry1_value^entry2_value;
       }
 
-    gchar *string3=g_strdup_printf("<span foreground='blue'>%i %i %i %i %i %i %i %i</span>", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
-    gchar *string4=g_strdup_printf("<span foreground='blue'>%i</span>", (gint)bit_logic);
+    gchar *string5=g_strdup_printf("<span foreground='blue'>%i %i %i %i %i %i %i %i</span>", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
+    gchar *string6=g_strdup_printf("<span foreground='blue'>%i</span>", (gint)bit_logic);
+    gchar *string7=g_strdup_printf("<span foreground='blue'>0x%0x</span>", bit_logic);
 
-    gtk_label_set_markup(GTK_LABEL(data[9]), string3);
-    gtk_label_set_markup(GTK_LABEL(data[10]), string4);
+    gtk_label_set_markup(GTK_LABEL(data[9]), string5);
+    gtk_label_set_markup(GTK_LABEL(data[10]), string6);
+    gtk_label_set_markup(GTK_LABEL(data[13]), string7);
 
     g_free(string1);
     g_free(string2);
     g_free(string3);
-    g_free(string4);     
+    g_free(string4); 
+    g_free(string5);  
+    g_free(string6); 
+    g_free(string7);      
   }
 static int validate_shift_entries(gpointer *data)
   {
