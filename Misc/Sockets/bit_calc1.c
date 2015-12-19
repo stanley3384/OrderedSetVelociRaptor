@@ -11,11 +11,14 @@
 
 #include<gtk/gtk.h>
 
-inline static unsigned char bit_value(unsigned char x, unsigned char p);
-static void get_bits(gpointer *data);
+//Some entry validation.
+static void validate_entries(GtkWidget *widget, gpointer *data);
 static int validate_shift_entries(gpointer *data);
 static void validate_number_entries(gpointer *data);
-static void validate_entries(GtkWidget *widget, gpointer *data);
+//Bit logic.
+static void get_bits(gpointer *data);
+inline static unsigned char bit_value(unsigned char x, unsigned char p);
+//Draw program icon.
 static GdkPixbuf* draw_icon();
 static void about_dialog(GtkWidget *widget, gpointer data);
 static void error_message(const gchar *string);
@@ -148,72 +151,10 @@ int main(int argc, char *argv[])
 
     return 0;   
   }
-inline static unsigned char bit_value(unsigned char x, unsigned char p)
+static void validate_entries(GtkWidget *widget, gpointer *data)
   {
-    return (x>>p)&1;
-  }
-static void get_bits(gpointer *data)
-  {
-    gint active_combo_shift1=gtk_combo_box_get_active(GTK_COMBO_BOX(data[4]));
-    gint active_combo=gtk_combo_box_get_active(GTK_COMBO_BOX(data[5]));
-    gint active_combo_shift2=gtk_combo_box_get_active(GTK_COMBO_BOX(data[6]));
-    unsigned char entry1_value=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[0])), NULL, 10);
-    unsigned char entry2_value=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[2])), NULL, 10);
-    unsigned char shift_entry1=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[1])), NULL, 10);
-    unsigned char shift_entry2=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[3])), NULL, 10);
-    
-    //Shift bits.
-    if(active_combo_shift1==0) entry1_value=entry1_value>>shift_entry1;
-    else if(active_combo_shift1==1) entry1_value=entry1_value<<shift_entry1;
-    else entry1_value=~entry1_value;
-
-    if(active_combo_shift2==0) entry2_value=entry2_value>>shift_entry2;
-    else if(active_combo_shift2==1) entry2_value=entry2_value<<shift_entry2;
-    else entry2_value=~entry2_value;
-
-    //Build bit and hex labels.
-    gchar *string1=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry1_value, 7), (int)bit_value(entry1_value, 6), (int)bit_value(entry1_value, 5), (int)bit_value(entry1_value, 4), (int)bit_value(entry1_value, 3), (int)bit_value(entry1_value, 2), (int)bit_value(entry1_value, 1), (int)bit_value(entry1_value, 0));
-
-    gchar *string2=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry2_value, 7), (int)bit_value(entry2_value, 6), (int)bit_value(entry2_value, 5), (int)bit_value(entry2_value, 4), (int)bit_value(entry2_value, 3), (int)bit_value(entry2_value, 2), (int)bit_value(entry2_value, 1), (int)bit_value(entry2_value, 0));
-
-    gchar *string3=g_strdup_printf("0x%0x", entry1_value);
-    gchar *string4=g_strdup_printf("0x%0x", entry2_value);
-
-    gtk_label_set_text(GTK_LABEL(data[7]), string1);
-    gtk_label_set_text(GTK_LABEL(data[8]), string2);
-    gtk_label_set_text(GTK_LABEL(data[11]), string3);
-    gtk_label_set_text(GTK_LABEL(data[12]), string4);
-
-    //Bitwise and/or/xor.
-    unsigned char bit_logic=0;
-    if(active_combo==0)
-      {
-        bit_logic=entry1_value&entry2_value;
-      }
-    else if(active_combo==1)
-      {
-        bit_logic=entry1_value|entry2_value;
-      }
-    else
-      {
-        bit_logic=entry1_value^entry2_value;
-      }
-
-    gchar *string5=g_strdup_printf("<span foreground='blue'>%i %i %i %i %i %i %i %i</span>", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
-    gchar *string6=g_strdup_printf("<span foreground='blue'>%i</span>", (gint)bit_logic);
-    gchar *string7=g_strdup_printf("<span foreground='blue'>0x%0x</span>", bit_logic);
-
-    gtk_label_set_markup(GTK_LABEL(data[9]), string5);
-    gtk_label_set_markup(GTK_LABEL(data[10]), string6);
-    gtk_label_set_markup(GTK_LABEL(data[13]), string7);
-
-    g_free(string1);
-    g_free(string2);
-    g_free(string3);
-    g_free(string4); 
-    g_free(string5);  
-    g_free(string6); 
-    g_free(string7);      
+    gint check1=validate_shift_entries(data);
+    if(check1==0) validate_number_entries(data);    
   }
 static int validate_shift_entries(gpointer *data)
   {
@@ -322,10 +263,72 @@ static void validate_number_entries(gpointer *data)
         g_free(error_string); 
       }
   }
-static void validate_entries(GtkWidget *widget, gpointer *data)
+static void get_bits(gpointer *data)
   {
-    gint check1=validate_shift_entries(data);
-    if(check1==0) validate_number_entries(data);    
+    gint active_combo_shift1=gtk_combo_box_get_active(GTK_COMBO_BOX(data[4]));
+    gint active_combo=gtk_combo_box_get_active(GTK_COMBO_BOX(data[5]));
+    gint active_combo_shift2=gtk_combo_box_get_active(GTK_COMBO_BOX(data[6]));
+    unsigned char entry1_value=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[0])), NULL, 10);
+    unsigned char entry2_value=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[2])), NULL, 10);
+    unsigned char shift_entry1=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[1])), NULL, 10);
+    unsigned char shift_entry2=(unsigned char)g_ascii_strtoll(gtk_entry_get_text(GTK_ENTRY(data[3])), NULL, 10);
+    
+    //Shift bits.
+    if(active_combo_shift1==0) entry1_value=entry1_value>>shift_entry1;
+    else if(active_combo_shift1==1) entry1_value=entry1_value<<shift_entry1;
+    else entry1_value=~entry1_value;
+
+    if(active_combo_shift2==0) entry2_value=entry2_value>>shift_entry2;
+    else if(active_combo_shift2==1) entry2_value=entry2_value<<shift_entry2;
+    else entry2_value=~entry2_value;
+
+    //Build bit and hex labels.
+    gchar *string1=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry1_value, 7), (int)bit_value(entry1_value, 6), (int)bit_value(entry1_value, 5), (int)bit_value(entry1_value, 4), (int)bit_value(entry1_value, 3), (int)bit_value(entry1_value, 2), (int)bit_value(entry1_value, 1), (int)bit_value(entry1_value, 0));
+
+    gchar *string2=g_strdup_printf("%i %i %i %i %i %i %i %i", (int)bit_value(entry2_value, 7), (int)bit_value(entry2_value, 6), (int)bit_value(entry2_value, 5), (int)bit_value(entry2_value, 4), (int)bit_value(entry2_value, 3), (int)bit_value(entry2_value, 2), (int)bit_value(entry2_value, 1), (int)bit_value(entry2_value, 0));
+
+    gchar *string3=g_strdup_printf("0x%0x", entry1_value);
+    gchar *string4=g_strdup_printf("0x%0x", entry2_value);
+
+    gtk_label_set_text(GTK_LABEL(data[7]), string1);
+    gtk_label_set_text(GTK_LABEL(data[8]), string2);
+    gtk_label_set_text(GTK_LABEL(data[11]), string3);
+    gtk_label_set_text(GTK_LABEL(data[12]), string4);
+
+    //Bitwise and/or/xor.
+    unsigned char bit_logic=0;
+    if(active_combo==0)
+      {
+        bit_logic=entry1_value&entry2_value;
+      }
+    else if(active_combo==1)
+      {
+        bit_logic=entry1_value|entry2_value;
+      }
+    else
+      {
+        bit_logic=entry1_value^entry2_value;
+      }
+
+    gchar *string5=g_strdup_printf("<span foreground='blue'>%i %i %i %i %i %i %i %i</span>", (int)bit_value(bit_logic, 7), (int)bit_value(bit_logic, 6), (int)bit_value(bit_logic, 5), (int)bit_value(bit_logic, 4), (int)bit_value(bit_logic, 3), (int)bit_value(bit_logic, 2), (int)bit_value(bit_logic, 1), (int)bit_value(bit_logic, 0));
+    gchar *string6=g_strdup_printf("<span foreground='blue'>%i</span>", (gint)bit_logic);
+    gchar *string7=g_strdup_printf("<span foreground='blue'>0x%0x</span>", bit_logic);
+
+    gtk_label_set_markup(GTK_LABEL(data[9]), string5);
+    gtk_label_set_markup(GTK_LABEL(data[10]), string6);
+    gtk_label_set_markup(GTK_LABEL(data[13]), string7);
+
+    g_free(string1);
+    g_free(string2);
+    g_free(string3);
+    g_free(string4); 
+    g_free(string5);  
+    g_free(string6); 
+    g_free(string7);      
+  }
+inline static unsigned char bit_value(unsigned char x, unsigned char p)
+  {
+    return (x>>p)&1;
   }
 static GdkPixbuf* draw_icon()
   {
