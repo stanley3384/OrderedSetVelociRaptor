@@ -1,6 +1,8 @@
 
 /*
     Make a simple cairo digital space clock with 2d surfaces in 3d space out of the rotating rectangle code.
+Add some moving stars for added animation.
+    Tested on Ubuntu14.04 with GTK3.10.
 
     gcc -Wall space_clock.c -o space_clock -lm `pkg-config --cflags --libs gtk+-3.0`
 
@@ -13,6 +15,7 @@
 static guint timer_id=0;
 
 static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord);
 static gboolean start_drawing(gpointer drawing);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void quit_program(GtkWidget *widget, gpointer data);
@@ -37,10 +40,44 @@ int main(int argc, char *argv[])
     g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
     g_signal_connect(window, "destroy", G_CALLBACK(quit_program), NULL);
 
+    gint i=0;
+    gdouble width=20.0;
+    gdouble height=20.0;
+    GRand *rand=g_rand_new();
+    gdouble *coord=g_malloc(240*sizeof(gdouble));
+    /*
+       Initialize stars in four quadrants with the origin at the center. The points are stored
+    in groups of four. The values are x coordinate, y coordinate, x slope, y slope. 240/4=60 points.
+    */   
+    for(i=0;i<240;i+=16)
+      {
+        //Quadrant I
+        coord[i]=width*g_rand_double(rand);
+        coord[i+1]=height*g_rand_double(rand);
+        coord[i+2]=g_rand_double(rand);
+        coord[i+3]=g_rand_double(rand);
+        //Quadrant II
+        coord[i+4]=-width*g_rand_double(rand);
+        coord[i+5]=height*g_rand_double(rand);
+        coord[i+6]=-g_rand_double(rand);
+        coord[i+7]=g_rand_double(rand);
+        //Quadrant III
+        coord[i+8]=-width*g_rand_double(rand);
+        coord[i+9]=-height*g_rand_double(rand);
+        coord[i+10]=-g_rand_double(rand);
+        coord[i+11]=-g_rand_double(rand);
+        //Quadrant IV
+        coord[i+12]=width*g_rand_double(rand);
+        coord[i+13]=-height*g_rand_double(rand);
+        coord[i+14]=g_rand_double(rand);
+        coord[i+15]=-g_rand_double(rand);
+      }
+    g_rand_free(rand);
+
     GtkWidget *drawing=gtk_drawing_area_new();
     gtk_widget_set_hexpand(drawing, TRUE);
     gtk_widget_set_vexpand(drawing, TRUE);
-    g_signal_connect(drawing, "draw", G_CALLBACK(rotate_rectangle), NULL);
+    g_signal_connect(drawing, "draw", G_CALLBACK(rotate_rectangle), coord);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), drawing, 0, 0, 1, 1);
@@ -50,6 +87,8 @@ int main(int argc, char *argv[])
     timer_id=g_timeout_add(100, start_drawing, drawing); 
 
     gtk_main();
+
+    g_free(coord);
 
     return 0;   
   }
@@ -77,6 +116,9 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Paint the background as clear.
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
     cairo_paint(cr);
+
+    //Draw the stars.
+    draw_stars(cr, width, height, data);
 
     //The oval pattern.
     cairo_pattern_t *pattern1;  
@@ -235,6 +277,27 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_pattern_destroy(pattern1);
     g_free(string);
     return FALSE;
+  }
+static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord)
+  {
+    gint i=0;
+    gdouble speed=4.0;
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_set_line_width(cr, 5);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
+    for(i=0;i<240;i+=4)
+      {
+        cairo_move_to(cr, coord[i]+((gdouble)width/2.0), coord[i+1]+((gdouble)height/2.0));
+        cairo_line_to(cr, coord[i]+1.0+((gdouble)width/2.0), coord[i+1]+((gdouble)height/2.0));
+        cairo_stroke(cr);
+        coord[i]+=(speed*coord[i+2]);
+        coord[i+1]+=(speed*coord[i+3]);
+        if(ABS(coord[i])>(gdouble)width/2.0||ABS(coord[i+1])>(gdouble)height/2.0)
+          {
+            coord[i]=0;
+            coord[i+1]=0;
+          }
+      }
   }
 static gboolean start_drawing(gpointer drawing)
   {
