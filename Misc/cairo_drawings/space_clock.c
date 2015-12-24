@@ -1,7 +1,7 @@
 
 /*
     Make a simple cairo digital space clock with 2d surfaces in 3d space out of the rotating rectangle code.
-Add some moving stars for added animation.
+Add some moving stars for added animation. Test some drawing with cairo.
     Tested on Ubuntu14.04 with GTK3.10.
 
     gcc -Wall space_clock.c -o space_clock -lm `pkg-config --cflags --libs gtk+-3.0`
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
     gtk_widget_set_app_paintable(window, TRUE);
-    //Set transparency of main window.
+    //Try to set transparency of main window.
     if(gtk_widget_is_composited(window))
       {
         GdkScreen *screen=gtk_widget_get_screen(window);  
@@ -44,10 +44,13 @@ int main(int argc, char *argv[])
     gdouble width=20.0;
     gdouble height=20.0;
     GRand *rand=g_rand_new();
+    //Shouldn't have a problem getting 240 doubles but it might be good to check the return value.
     gdouble *coord=g_malloc(240*sizeof(gdouble));
     /*
        Initialize stars in four quadrants with the origin at the center. The points are stored
     in groups of four. The values are x coordinate, y coordinate, x slope, y slope. 240/4=60 points.
+    The following loop adds four points. One point in each quadrant for each pass through the loop
+    body.
     */   
     for(i=0;i<240;i+=16)
       {
@@ -118,7 +121,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_paint(cr);
 
     //Draw the stars.
-    draw_stars(cr, width, height, data);
+    draw_stars(cr, width, height, (gdouble*)data);
 
     //The oval pattern.
     cairo_pattern_t *pattern1;  
