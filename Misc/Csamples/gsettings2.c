@@ -1,8 +1,8 @@
 
 /*
 
-    A simple test program using gsettings. Embed the XML into the C code and compile the schema if
-gschemas.compiled isn't in the path location.
+    A simple test program using gsettings. Embed the XML into the C code and compile the schema. If
+gschemas.compiled isn't in the path location create or recreate it.
 
     Tested on Ubuntu14.04 and GTK3.10. 
 
@@ -51,9 +51,9 @@ int main(int argc, char **argv)
     if(error==NULL)
       {
         schema=g_settings_schema_source_lookup(schema_source, schema_id, FALSE);
-        settings=g_settings_new_full(schema, NULL, path);
+        if(schema!=NULL) settings=g_settings_new_full(schema, NULL, path);
+        else g_print("Error: Invalid Schema\n");
         g_settings_schema_source_unref(schema_source);
-        g_settings_schema_unref(schema);
       }
     else g_print("Error: %s\n", error->message);
    
@@ -63,7 +63,11 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "3");
     gtk_widget_set_hexpand(combo1, TRUE);
     gtk_widget_set_vexpand(combo1, TRUE);
-    if(error==NULL) g_settings_bind(settings, "number", combo1, "active_id", G_SETTINGS_BIND_DEFAULT);
+    if(error==NULL&&schema!=NULL)
+      {
+        g_settings_bind(settings, "number", combo1, "active_id", G_SETTINGS_BIND_DEFAULT);
+        g_settings_schema_unref(schema);
+      }
     else gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
@@ -72,7 +76,11 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "blue");
     gtk_widget_set_hexpand(combo2, TRUE);
     gtk_widget_set_vexpand(combo2, TRUE);
-    if(error==NULL) g_settings_bind(settings, "color", combo2, "active_id", G_SETTINGS_BIND_DEFAULT);
+    if(error==NULL&&schema!=NULL)
+      {
+        g_settings_bind(settings, "color", combo2, "active_id", G_SETTINGS_BIND_DEFAULT);
+        g_settings_schema_unref(schema);
+      }
     else gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
 
     if(error!=NULL) g_error_free(error);
@@ -127,16 +135,22 @@ static void compile_default_schema(gchar *file_path)
       }
 
     //Compile XML file.
+    gchar *standard_output=NULL;
+    gchar *standard_error=NULL;
+    gint exit_status=0;
     GError *error2=NULL;
     gchar *command_line=g_strdup_printf("glib-compile-schemas %s", path);
-    g_print("Rebuild Schema: %s\n", command_line);
-    g_spawn_command_line_sync(command_line, NULL, NULL, NULL, &error2);
+    g_print("Compile Schema: %s\n", command_line);
+    g_spawn_command_line_sync(command_line, &standard_output, &standard_error, &exit_status, &error2);
+    g_print("Command Line Return: %i %s %s\n", exit_status, standard_output, standard_error);
     if(error2!=NULL)
       {
         g_print("XML Compile Error: %s\n", error2->message);
         g_error_free(error2);
       }
     g_free(command_line);
+    if(standard_output!=NULL) g_free(standard_output);
+    if(standard_error!=NULL) g_free(standard_error);
   }
 
 
