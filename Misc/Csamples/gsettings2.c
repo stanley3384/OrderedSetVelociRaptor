@@ -19,11 +19,10 @@ the gschemas.compiled file over to that location! If you do, your system won't w
 
 #include<gtk/gtk.h>
 
-gchar *path="/home/owner/eric/Rectangle4/";
 gchar *schema_id="org.test.gsettings1";
 gchar *xml_file_name="gsettings1.gschema.xml";
 
-static void compile_default_schema(gchar *file_path);
+static void compile_default_schema(gchar *xml_file_path, gchar *current_path);
 
 int main(int argc, char **argv)
   {
@@ -34,10 +33,13 @@ int main(int argc, char **argv)
     gtk_window_set_default_size(GTK_WINDOW(window), 200, 100);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    //Check if gschemas.compiled file is in the path. If it isn't, rebuild it.
-    gchar *compiled_file_path=g_strdup_printf("%sgschemas.compiled", path);
-    gchar *xml_file_path=g_strdup_printf("%s%s", path, xml_file_name);
-    if(!g_file_test(compiled_file_path, G_FILE_TEST_EXISTS)) compile_default_schema(xml_file_path);
+    //Check if gschemas.compiled file is in the path. If it isn't, build it.
+    gchar *current_dir=g_get_current_dir();
+    gchar *current_path=g_strdup_printf("%s/", current_dir);
+    gchar *compiled_file_path=g_strdup_printf("%sgschemas.compiled", current_path);
+    gchar *xml_file_path=g_strdup_printf("%s%s", current_path, xml_file_name);
+    if(!g_file_test(compiled_file_path, G_FILE_TEST_EXISTS)) compile_default_schema(xml_file_path, current_path);
+    g_free(current_dir);
     g_free(compiled_file_path);
     g_free(xml_file_path);
 
@@ -46,16 +48,16 @@ int main(int argc, char **argv)
     GSettingsSchemaSource *schema_source=NULL;
     GSettingsSchema *schema=NULL;
     GSettings *settings=NULL;
-    schema_source=g_settings_schema_source_new_from_directory(path, g_settings_schema_source_get_default(), FALSE, &error);
-
+    schema_source=g_settings_schema_source_new_from_directory(current_path, g_settings_schema_source_get_default(), FALSE, &error);
     if(error==NULL)
       {
         schema=g_settings_schema_source_lookup(schema_source, schema_id, FALSE);
-        if(schema!=NULL) settings=g_settings_new_full(schema, NULL, path);
+        if(schema!=NULL) settings=g_settings_new_full(schema, NULL, current_path);
         else g_print("Error: Invalid Schema\n");
         g_settings_schema_source_unref(schema_source);
       }
     else g_print("Error: %s\n", error->message);
+    g_free(current_path);
    
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "1");
@@ -96,7 +98,7 @@ int main(int argc, char **argv)
     gtk_main();
     return 0;   
   }
-static void compile_default_schema(gchar *file_path)
+static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
   {
     gchar *xml_string="<?xml version='1.0' encoding='UTF-8'?>\n"
                       "<schemalist>\n"
@@ -127,7 +129,7 @@ static void compile_default_schema(gchar *file_path)
 
     //Write XML file.
     GError *error1=NULL;
-    g_file_set_contents(file_path, xml_string, -1, &error1);
+    g_file_set_contents(xml_file_path, xml_string, -1, &error1);
     if(error1!=NULL)
       {
         g_print("File Write Error: %s\n", error1->message);
@@ -139,7 +141,7 @@ static void compile_default_schema(gchar *file_path)
     gchar *standard_error=NULL;
     gint exit_status=0;
     GError *error2=NULL;
-    gchar *command_line=g_strdup_printf("glib-compile-schemas %s", path);
+    gchar *command_line=g_strdup_printf("glib-compile-schemas %s", current_path);
     g_print("Compile Schema: %s\n", command_line);
     g_spawn_command_line_sync(command_line, &standard_output, &standard_error, &exit_status, &error2);
     g_print("Command Line Return: %i %s %s\n", exit_status, standard_output, standard_error);
