@@ -100,31 +100,31 @@ int main(int argc, char **argv)
   }
 static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
   {
-    gchar *xml_string="<?xml version='1.0' encoding='UTF-8'?>\n"
-                      "<schemalist>\n"
-                      "  <schema path='/home/owner/eric/Rectangle4/' id='org.test.gsettings1'>\n"
-                      "    <key name='number' type='s'>\n"
-                      "      <choices>\n"
-                      "        <choice value='1'/>\n"
-                      "        <choice value='2'/>\n"
-                      "        <choice value='3'/>\n"
-                      "      </choices>\n"
-                      "      <default>'1'</default>\n"
-                      "      <summary>Number</summary>\n"
-                      "      <description>Change a number.</description>\n"
-                      "    </key>\n"
-                      "    <key name='color' type='s'>\n"
-                      "      <choices>\n"
-                      "        <choice value='1'/>\n"
-                      "        <choice value='2'/>\n"
-                      "        <choice value='3'/>\n"
-                      "      </choices>\n"
-                      "      <default>'1'</default>\n"
-                      "      <summary>Color</summary>\n"
-                      "      <description>Change a color.</description>\n"
-                      "    </key>\n"
-                      "  </schema>\n"
-                      "</schemalist>\n";
+    gchar *xml_string=g_strdup_printf("<?xml version='1.0' encoding='UTF-8'?>\n"
+                                      "<schemalist>\n"
+                                      "  <schema path='%s' id='org.test.gsettings1'>\n"
+                                      "    <key name='number' type='s'>\n"
+                                      "      <choices>\n"
+                                      "        <choice value='1'/>\n"
+                                      "        <choice value='2'/>\n"
+                                      "        <choice value='3'/>\n"
+                                      "      </choices>\n"
+                                      "      <default>'1'</default>\n"
+                                      "      <summary>Number</summary>\n"
+                                      "      <description>Change a number.</description>\n"
+                                      "    </key>\n"
+                                      "    <key name='color' type='s'>\n"
+                                      "      <choices>\n"
+                                      "        <choice value='1'/>\n"
+                                      "        <choice value='2'/>\n"
+                                      "        <choice value='3'/>\n"
+                                      "      </choices>\n"
+                                      "      <default>'1'</default>\n"
+                                      "      <summary>Color</summary>\n"
+                                      "      <description>Change a color.</description>\n"
+                                      "    </key>\n"
+                                      "  </schema>\n"
+                                      "</schemalist>\n", current_path);
     //g_print("%s\n", xml_string);
 
     //Write XML file.
@@ -153,7 +153,10 @@ static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
     g_free(command_line);
     if(standard_output!=NULL) g_free(standard_output);
     if(standard_error!=NULL) g_free(standard_error);
+
+    g_free(xml_string);
   }
+
 
 
 
