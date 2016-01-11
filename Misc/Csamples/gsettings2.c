@@ -3,15 +3,14 @@
 
     A simple test program using gsettings. Embed the XML into the C code and compile the schema. If
 gschemas.compiled isn't in the path location create or recreate it.
-
-    Tested on Ubuntu14.04 and GTK3.10. 
-
-    Compile program: gcc -Wall gsettings2.c -o gsettings2 `pkg-config --cflags --libs gtk+-3.0`
-
     The program uses the current user so there is no need for sudo in this example. If you copy the xml file to /usr/share/glib-2.0/schemas and run glib-compile-schemas you need sudo. A warning, do not copy
 the gschemas.compiled file over to that location! If you do, your system won't work and you will have to boot the kernel and use the command prompt to rebuild the gschemas.compiled file there in order to get your computer operational again. Don't ask.
     Try starting two instances of the program and see if values change in both instances. Delete the LOCAL!!!
 (and not the system!) gschemas.compiled file and it will get rebuilt automatically at the program start.
+
+    Tested on Ubuntu14.04 and GTK3.10. 
+
+    Compile program: gcc -Wall gsettings2.c -o gsettings2 `pkg-config --cflags --libs gtk+-3.0`
 
     C. Eric Cashon
 
@@ -102,7 +101,7 @@ static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
   {
     gchar *xml_string=g_strdup_printf("<?xml version='1.0' encoding='UTF-8'?>\n"
                                       "<schemalist>\n"
-                                      "  <schema path='%s' id='org.test.gsettings1'>\n"
+                                      "  <schema path='%s' id='%s'>\n"
                                       "    <key name='number' type='s'>\n"
                                       "      <choices>\n"
                                       "        <choice value='1'/>\n"
@@ -124,7 +123,7 @@ static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
                                       "      <description>Change a color.</description>\n"
                                       "    </key>\n"
                                       "  </schema>\n"
-                                      "</schemalist>\n", current_path);
+                                      "</schemalist>\n", current_path, schema_id);
     //g_print("%s\n", xml_string);
 
     //Write XML file.

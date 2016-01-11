@@ -2,8 +2,10 @@
 /*
     A simple GTK+ test app that has desktop settings, icon and gsettings all combined into one file.
 It installs with current user permissions so there is no need for sudo. This is a combination of the gsettings2.c test program with the hello_world_app2.c test program. There is a lot here. Not really
-trivial. It does put together some ideas on how to integrate with the Gnome desktop and save settings
+trivial. It does put together some ideas on how to integrate with the GNOME desktop and save settings
 for multiple instances of an application along with saving settings when an application is closed.
+    There is a trivial GTK+ application example on GNOME developer that breaks everything into individual
+pieces. Two ways to look at the same sort of problem.
 
     Tested on Ubuntu14.04 and GTK3.10.
 
@@ -260,7 +262,7 @@ static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
   {
     gchar *xml_string=g_strdup_printf("<?xml version='1.0' encoding='UTF-8'?>\n"
                                       "<schemalist>\n"
-                                      "  <schema path='%s' id='org.test.gsettings1'>\n"
+                                      "  <schema path='%s' id='%s'>\n"
                                       "    <key name='number' type='s'>\n"
                                       "      <choices>\n"
                                       "        <choice value='1'/>\n"
@@ -282,7 +284,7 @@ static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
                                       "      <description>Change a color.</description>\n"
                                       "    </key>\n"
                                       "  </schema>\n"
-                                      "</schemalist>\n", current_path);
+                                      "</schemalist>\n", current_path, schema_id);
     //g_print("%s\n", xml_string);
 
     //Write XML file.
