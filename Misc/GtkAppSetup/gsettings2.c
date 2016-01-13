@@ -7,6 +7,12 @@ gschemas.compiled isn't in the path location create or recreate it.
 the gschemas.compiled file over to that location! If you do, your system won't work and you will have to boot the kernel and use the command prompt to rebuild the gschemas.compiled file there in order to get your computer operational again. Don't ask.
     Try starting two instances of the program and see if values change in both instances. Delete the LOCAL!!!
 (and not the system!) gschemas.compiled file and it will get rebuilt automatically at the program start.
+    In order to delete entries and files, delete the local xml and gschemas.compiled file. Then
+remove the entry in the dconf database using
+
+    dconf reset -f program_dir_path
+
+remove the program and that should just leave the gsettings2.c file left. 
 
     Tested on Ubuntu14.04 and GTK3.10. 
 
