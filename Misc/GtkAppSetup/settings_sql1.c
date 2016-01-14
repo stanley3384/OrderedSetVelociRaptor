@@ -18,6 +18,8 @@ created and if it gets deleted the program will recreate it.
 
 gchar *database="program_settings.db";
 
+static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void redraw_window(GtkWidget *widget, gpointer data);
 static void initialize_default_settings();
 static void save_settings(GtkWidget *widget, gpointer *data);
 static void get_settings_sql(GString *number, GString *color);
@@ -51,6 +53,10 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "blue");
     gtk_widget_set_hexpand(combo2, TRUE);
     gtk_widget_set_vexpand(combo2, TRUE);
+    g_signal_connect(combo2, "changed", G_CALLBACK(redraw_window), window);
+
+    gtk_widget_set_app_paintable(window, TRUE);
+    g_signal_connect(window, "draw", G_CALLBACK(draw_window_background), combo2);
 
     gpointer combos[]={combo1, combo2};
     get_saved_settings(NULL, combos);
@@ -64,6 +70,7 @@ int main(int argc, char **argv)
     g_signal_connect(button2, "clicked", G_CALLBACK(get_saved_settings), combos);
 
     GtkWidget *grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 1, 1);
@@ -75,6 +82,18 @@ int main(int argc, char **argv)
 
     gtk_main();
     return 0;   
+  }
+static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==0) cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==1) cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_paint(cr);
+    return FALSE;
+  }
+static void redraw_window(GtkWidget *widget, gpointer data)
+  {
+    gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void initialize_default_settings()
   {
