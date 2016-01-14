@@ -29,6 +29,10 @@ static void app_activate(GtkApplication *app, gpointer data);
 static void app_startup(GtkApplication *app, gpointer data);
 //Draw an icon with cairo.
 static GdkPixbuf* draw_icon();
+//Draw window color. Change it with combo box.
+static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void redraw_window(GtkWidget *widget, gpointer data);
+//Info dialog.
 static void about_dialog(GSimpleAction *action, GVariant *parameter, gpointer data);
 //Install icon and app name to desktop.
 static void install_desktop(GtkWidget *widget, gpointer data);
@@ -121,10 +125,15 @@ static void app_activate(GtkApplication *app, gpointer data)
         g_settings_schema_unref(schema);
       }
     else gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
+    g_signal_connect(combo2, "changed", G_CALLBACK(redraw_window), window);
 
     if(error!=NULL) g_error_free(error);
 
+    gtk_widget_set_app_paintable(window, TRUE);
+    g_signal_connect(window, "draw", G_CALLBACK(draw_window_background), combo2);
+
     GtkWidget *grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 1, 1, 1);
@@ -187,6 +196,18 @@ static GdkPixbuf* draw_icon()
     cairo_destroy(cr);
     cairo_surface_destroy(surface); 
     return icon;
+  }
+static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==0) cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==1) cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_paint(cr);
+    return FALSE;
+  }
+static void redraw_window(GtkWidget *widget, gpointer data)
+  {
+    gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void about_dialog(GSimpleAction *action, GVariant *parameter, gpointer data)
   {

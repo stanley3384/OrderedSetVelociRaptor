@@ -27,6 +27,8 @@ remove the program and that should just leave the gsettings2.c file left.
 gchar *schema_id="org.test.gsettings1";
 gchar *xml_file_name="gsettings1.gschema.xml";
 
+static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void redraw_window(GtkWidget *widget, gpointer data);
 static void compile_default_schema(gchar *xml_file_path, gchar *current_path);
 
 int main(int argc, char **argv)
@@ -89,10 +91,15 @@ int main(int argc, char **argv)
         g_settings_schema_unref(schema);
       }
     else gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
+    g_signal_connect(combo2, "changed", G_CALLBACK(redraw_window), window);
 
     if(error!=NULL) g_error_free(error);
 
+    gtk_widget_set_app_paintable(window, TRUE);
+    g_signal_connect(window, "draw", G_CALLBACK(draw_window_background), combo2);
+
     GtkWidget *grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 1, 1, 1);
 
@@ -102,6 +109,18 @@ int main(int argc, char **argv)
 
     gtk_main();
     return 0;   
+  }
+static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==0) cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(data))==1) cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_paint(cr);
+    return FALSE;
+  }
+static void redraw_window(GtkWidget *widget, gpointer data)
+  {
+    gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void compile_default_schema(gchar *xml_file_path, gchar *current_path)
   {
