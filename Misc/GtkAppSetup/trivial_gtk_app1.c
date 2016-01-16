@@ -32,6 +32,8 @@ static GdkPixbuf* draw_icon();
 //Draw window color. Change it with combo box.
 static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void redraw_window(GtkWidget *widget, gpointer data);
+//Change pango label color.
+static void change_pango_label(GtkWidget *widget, gpointer data);
 //Info dialog.
 static void about_dialog(GSimpleAction *action, GVariant *parameter, gpointer data);
 //Install icon and app name to desktop.
@@ -55,7 +57,7 @@ static void app_activate(GtkApplication *app, gpointer data)
     GtkWidget *window=gtk_application_window_new(GTK_APPLICATION(app));
     gtk_window_set_title(GTK_WINDOW(window), "Trivial GTK+ App");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
 
     GdkPixbuf *icon=draw_icon();
     gtk_window_set_default_icon(icon);
@@ -69,10 +71,6 @@ static void app_activate(GtkApplication *app, gpointer data)
     GtkWidget *button2=gtk_button_new_with_label("Uninstall Desktop");
     gtk_widget_set_hexpand(button2, TRUE);
     g_signal_connect(button2, "clicked", G_CALLBACK(uninstall_desktop), NULL);
-
-    GtkWidget *label1=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='blue'>Saved Settings</span>");
-    gtk_widget_set_hexpand(label1, TRUE);
 
     //Check if gschemas.compiled file is in the path. If it isn't, build it.
     gchar *current_dir=g_get_current_dir();
@@ -112,6 +110,14 @@ static void app_activate(GtkApplication *app, gpointer data)
         g_settings_schema_unref(schema);
       }
     else gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
+
+    GtkWidget *label1=gtk_label_new(NULL);
+    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
+    if(active==0) gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='yellow' weight='bold' font='20'>Saved Settings</span>");
+    else if(active==1) gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='purple' weight='bold' font='20'>Saved Settings</span>");
+    else gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='cyan' weight='bold' font='20'>Saved Settings</span>");
+    gtk_widget_set_hexpand(label1, TRUE);
+    g_signal_connect(combo1, "changed", G_CALLBACK(change_pango_label), label1);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "red");
@@ -208,6 +214,13 @@ static gboolean draw_window_background(GtkWidget *widget, cairo_t *cr, gpointer 
 static void redraw_window(GtkWidget *widget, gpointer data)
   {
     gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void change_pango_label(GtkWidget *widget, gpointer data)
+  {
+    g_print("Change Pango\n");
+    if(gtk_combo_box_get_active(GTK_COMBO_BOX(widget))==0) gtk_label_set_markup(GTK_LABEL(data), "<span foreground='yellow' weight='bold' font='20'>Saved Settings</span>");
+    else if(gtk_combo_box_get_active(GTK_COMBO_BOX(widget))==1) gtk_label_set_markup(GTK_LABEL(data), "<span foreground='purple' weight='bold' font='20'>Saved Settings</span>");
+    else gtk_label_set_markup(GTK_LABEL(data), "<span foreground='cyan' weight='bold' font='20'>Saved Settings</span>");
   }
 static void about_dialog(GSimpleAction *action, GVariant *parameter, gpointer data)
   {
