@@ -17,6 +17,7 @@ drawing to the current working directory.
 static cairo_surface_t *surface = NULL;
 static gdouble prev_x = 0;
 static gdouble prev_y = 0;
+static gdouble pen_color[] = {0.0, 0.0, 1.0};
 
 static void clear_surface (void);
 static gboolean configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer data);
@@ -28,6 +29,8 @@ static gboolean motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event
 static void close_window (void);
 static void clear_cairo_surface(GtkWidget *widget, gpointer data);
 static void write_to_png(GtkWidget *widget, gpointer data);
+static void set_pen_color(GtkWidget *widget, gpointer *data);
+static void error_message(const gchar *string);
 
 int
 main (int   argc,
@@ -37,7 +40,7 @@ main (int   argc,
 
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title (GTK_WINDOW (window), "Speedy Scribble");
-  gtk_window_set_default_size(GTK_WINDOW (window), 500, 500);
+  gtk_window_set_default_size(GTK_WINDOW (window), 700, 500);
   gtk_window_set_position(GTK_WINDOW (window), GTK_WIN_POS_CENTER);
 
   g_signal_connect (window, "destroy", G_CALLBACK (close_window), NULL);
@@ -84,24 +87,43 @@ main (int   argc,
   GtkWidget *button2 = gtk_button_new_with_label("Save Drawing");
   gtk_widget_set_hexpand(button2, TRUE);
 
+  GtkWidget *button3 = gtk_button_new_with_label("Set Pen Color(RGB)");
+  gtk_widget_set_hexpand(button3, TRUE);
+
   GtkWidget *entry1 = gtk_entry_new();
   gtk_widget_set_hexpand (entry1, TRUE);
   gtk_entry_set_text (GTK_ENTRY(entry1), "scribble1.png");
 
   g_signal_connect(button2, "clicked", G_CALLBACK(write_to_png), entry1);
 
+  GtkWidget *entry2 = gtk_entry_new();
+  gtk_entry_set_text (GTK_ENTRY(entry2), "0.0");
+
+  GtkWidget *entry3 = gtk_entry_new();
+  gtk_entry_set_text (GTK_ENTRY(entry3), "0.0");
+
+  GtkWidget *entry4 = gtk_entry_new();
+  gtk_entry_set_text (GTK_ENTRY(entry4), "1.0");
+
+  gpointer entries[] = {entry2, entry3, entry4};
+  g_signal_connect(button3, "clicked", G_CALLBACK(set_pen_color), entries);
+
   GtkWidget *grid = gtk_grid_new ();
   gtk_container_set_border_width (GTK_CONTAINER(grid), 10);
-  gtk_grid_attach (GTK_GRID(grid), frame, 0, 0, 3, 5);
+  gtk_grid_attach (GTK_GRID(grid), frame, 0, 0, 4, 5);
   gtk_grid_attach (GTK_GRID(grid), button1, 0, 6, 1, 1);
-  gtk_grid_attach (GTK_GRID(grid), button2, 1, 6, 1, 1);
-  gtk_grid_attach (GTK_GRID(grid), entry1, 2, 6, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), button2, 2, 6, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), entry1, 3, 6, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), button3, 0, 7, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), entry2, 1, 7, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), entry3, 2, 7, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), entry4, 3, 7, 1, 1);
 
   gtk_container_add (GTK_CONTAINER(window), grid);
 
   //Add CSS for some background color.
   GError *css_error = NULL;
-  gchar css_string[] = "GtkWindow{background: #7700ff;} GtkButton{background: #7700aa; color: #ffff00} GtkEntry{background: #0044aa; color: #ffff00}";
+  gchar css_string[] = "GtkWindow, GtkDialog{background: #7700ff; color: #ffff00} GtkButton{background: #7700aa; color: #ffff00} GtkEntry{background: #0044aa; color: #ffff00}";
   GtkCssProvider *provider = gtk_css_provider_new();
   GdkDisplay *display = gdk_display_get_default();
   GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -180,13 +202,13 @@ draw_brush (GtkWidget *widget,
   /* Paint to the surface, where we store our state */
   cr = cairo_create (surface);
 
-  cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+  cairo_set_source_rgb (cr, pen_color[0], pen_color[1], pen_color[2]);
   cairo_set_line_width (cr, 6);
   cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 
   if (prev_x != 0)
     {
-      g_print ("Move %f %f %f %f\n", prev_x, prev_y, x, y); 
+      //g_print ("Move %f %f %f %f\n", prev_x, prev_y, x, y); 
       cairo_move_to (cr, prev_x, prev_y);
       cairo_line_to (cr, x, y);
       cairo_stroke (cr);
@@ -298,4 +320,56 @@ write_to_png(GtkWidget *widget, gpointer data)
   if(status != CAIRO_STATUS_SUCCESS) cairo_status_to_string(status);
   g_free(file_name);
 }
+static void
+set_pen_color(GtkWidget *widget, gpointer *data)
+{
+  g_print("Set Pen Color\n");
+  const gchar *red_string = gtk_entry_get_text(GTK_ENTRY(data[0]));
+  const gchar *green_string = gtk_entry_get_text(GTK_ENTRY(data[1]));
+  const gchar *blue_string = gtk_entry_get_text(GTK_ENTRY(data[2]));
+  gchar *message = NULL;
+
+  gdouble red = g_ascii_strtod(red_string, NULL);
+  gdouble green = g_ascii_strtod(green_string, NULL);
+  gdouble blue = g_ascii_strtod(blue_string, NULL);
+  g_print("%f %f %f\n", red, green, blue);
+
+  //Should check for g_ascii_strtod returning 0 on error.
+  if(red >= 0.0 && red <= 1.0) pen_color[0] = red;
+  else
+    {
+      message = g_strdup ("Valid red values: 0.0 <= red <= 1.0");
+      error_message (message);
+      g_free (message);
+      message = NULL;
+    }
+  if(green >= 0.0 && green <= 1.0) pen_color[1] = green;
+  else
+    {
+      message = g_strdup ("Valid green values: 0.0 <= green <= 1.0");
+      error_message (message);
+      g_free (message);
+      message = NULL;
+    }
+  if(blue >= 0.0 && blue <= 1.0) pen_color[2] = blue;
+  else
+    {
+      message = g_strdup ("Valid blue values: 0.0 <= blue <= 1.0");
+      error_message (message);
+      g_free (message);
+      message = NULL;
+    }
+}
+static void error_message(const gchar *string)
+{
+  GtkWidget *dialog=gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", string);
+  gtk_dialog_run(GTK_DIALOG(dialog));
+  gtk_widget_destroy(dialog);
+}
+
+
+
+
+
+
 
