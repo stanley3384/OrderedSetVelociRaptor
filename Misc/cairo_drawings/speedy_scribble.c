@@ -5,7 +5,7 @@ in the drawing section.
 
     This version changes squares to lines to smooth out the drawing.
 
-    Tested with GTK3.10 and Ubuntu3.14
+    Tested with GTK3.10 and Ubuntu14.04
 
     gcc -Wall speedy_scribble.c -o speedy_scribble `pkg-config --cflags --libs gtk+-3.0`
 */
