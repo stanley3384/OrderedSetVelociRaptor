@@ -3,7 +3,8 @@
     Original code at: https://developer.gnome.org/gtk3/3.0/gtk-getting-started.html
 in the drawing section.
 
-    This version changes squares to lines to smooth out the drawing.
+    This version changes squares to lines to smooth out the drawing. You can also save the 
+drawing to the current working directory.
 
     Tested with GTK3.10 and Ubuntu14.04
 
@@ -17,6 +18,108 @@ static cairo_surface_t *surface = NULL;
 static gdouble prev_x = 0;
 static gdouble prev_y = 0;
 
+static void clear_surface (void);
+static gboolean configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer data);
+static gboolean draw_cb (GtkWidget *widget, cairo_t *cr, gpointer data);
+static void draw_brush (GtkWidget *widget, gdouble x, gdouble y);
+static gboolean button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer data);
+static gboolean button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer data);
+static gboolean motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer data);
+static void close_window (void);
+static void clear_cairo_surface(GtkWidget *widget, gpointer data);
+static void write_to_png(GtkWidget *widget, gpointer data);
+
+int
+main (int   argc,
+      char *argv[])
+{
+  gtk_init (&argc, &argv);
+
+  GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title (GTK_WINDOW (window), "Speedy Scribble");
+  gtk_window_set_default_size(GTK_WINDOW (window), 500, 500);
+  gtk_window_set_position(GTK_WINDOW (window), GTK_WIN_POS_CENTER);
+
+  g_signal_connect (window, "destroy", G_CALLBACK (close_window), NULL);
+
+  gtk_container_set_border_width (GTK_CONTAINER (window), 8);
+
+  GtkWidget *frame = gtk_frame_new (NULL);
+  gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
+
+  GtkWidget *da = gtk_drawing_area_new ();
+  gtk_widget_set_hexpand(da, TRUE);
+  gtk_widget_set_vexpand(da, TRUE);
+
+  gtk_container_add (GTK_CONTAINER (frame), da);
+
+  /* Signals used to handle the backing surface */
+  g_signal_connect (da, "draw",
+            G_CALLBACK (draw_cb), NULL);
+  g_signal_connect (da,"configure-event",
+            G_CALLBACK (configure_event_cb), NULL);
+
+  /* Event signals */
+  g_signal_connect (da, "motion-notify-event",
+            G_CALLBACK (motion_notify_event_cb), NULL);
+  g_signal_connect (da, "button-press-event",
+            G_CALLBACK (button_press_event_cb), NULL);
+  g_signal_connect (da, "button-release-event",
+            G_CALLBACK (button_release_event_cb), NULL);
+
+  /* Ask to receive events the drawing area doesn't normally
+   * subscribe to. In particular, we need to ask for the
+   * button press and motion notify events that want to handle.
+   */
+  gtk_widget_set_events (da, gtk_widget_get_events (da)
+                     | GDK_BUTTON_PRESS_MASK
+                     | GDK_BUTTON_RELEASE_MASK
+                     | GDK_POINTER_MOTION_MASK
+                     | GDK_POINTER_MOTION_HINT_MASK);
+
+  GtkWidget *button1 = gtk_button_new_with_label("Clear");
+  gtk_widget_set_hexpand(button1, TRUE);
+  g_signal_connect(button1, "clicked", G_CALLBACK(clear_cairo_surface), da);
+
+  GtkWidget *button2 = gtk_button_new_with_label("Save Drawing");
+  gtk_widget_set_hexpand(button2, TRUE);
+
+  GtkWidget *entry1 = gtk_entry_new();
+  gtk_widget_set_hexpand (entry1, TRUE);
+  gtk_entry_set_text (GTK_ENTRY(entry1), "scribble1.png");
+
+  g_signal_connect(button2, "clicked", G_CALLBACK(write_to_png), entry1);
+
+  GtkWidget *grid = gtk_grid_new ();
+  gtk_container_set_border_width (GTK_CONTAINER(grid), 10);
+  gtk_grid_attach (GTK_GRID(grid), frame, 0, 0, 3, 5);
+  gtk_grid_attach (GTK_GRID(grid), button1, 0, 6, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), button2, 1, 6, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), entry1, 2, 6, 1, 1);
+
+  gtk_container_add (GTK_CONTAINER(window), grid);
+
+  //Add CSS for some background color.
+  GError *css_error = NULL;
+  gchar css_string[] = "GtkWindow{background: #7700ff;} GtkButton{background: #7700aa; color: #ffff00} GtkEntry{background: #0044aa; color: #ffff00}";
+  GtkCssProvider *provider = gtk_css_provider_new();
+  GdkDisplay *display = gdk_display_get_default();
+  GdkScreen *screen = gdk_display_get_default_screen(display);
+  gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+  if(css_error!=NULL)
+    {
+      g_print("CSS loader error %s\n", css_error->message);
+      g_error_free(css_error);
+    }
+  g_object_unref(provider);
+
+  gtk_widget_show_all (window);
+
+  gtk_main ();
+
+  return 0;
+}
 static void
 clear_surface (void)
 {
@@ -169,7 +272,6 @@ motion_notify_event_cb (GtkWidget      *widget,
   /* We've handled it, stop processing */
   return TRUE;
 }
-
 static void
 close_window (void)
 {
@@ -178,63 +280,22 @@ close_window (void)
 
   gtk_main_quit ();
 }
-
-int
-main (int   argc,
-      char *argv[])
+static void
+clear_cairo_surface(GtkWidget *widget, gpointer data)
 {
-  GtkWidget *window;
-  GtkWidget *frame;
-  GtkWidget *da;
-
-  gtk_init (&argc, &argv);
-
-  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title (GTK_WINDOW (window), "Speedy Scribble");
-  gtk_window_set_default_size(GTK_WINDOW (window), 500, 500);
-  gtk_window_set_position(GTK_WINDOW (window), GTK_WIN_POS_CENTER);
-
-  g_signal_connect (window, "destroy", G_CALLBACK (close_window), NULL);
-
-  gtk_container_set_border_width (GTK_CONTAINER (window), 8);
-
-  frame = gtk_frame_new (NULL);
-  gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
-  gtk_container_add (GTK_CONTAINER (window), frame);
-
-  da = gtk_drawing_area_new ();
-  /* set a minimum size */
-  gtk_widget_set_size_request (da, 100, 100);
-
-  gtk_container_add (GTK_CONTAINER (frame), da);
-
-  /* Signals used to handle the backing surface */
-  g_signal_connect (da, "draw",
-            G_CALLBACK (draw_cb), NULL);
-  g_signal_connect (da,"configure-event",
-            G_CALLBACK (configure_event_cb), NULL);
-
-  /* Event signals */
-  g_signal_connect (da, "motion-notify-event",
-            G_CALLBACK (motion_notify_event_cb), NULL);
-  g_signal_connect (da, "button-press-event",
-            G_CALLBACK (button_press_event_cb), NULL);
-  g_signal_connect (da, "button-release-event",
-            G_CALLBACK (button_release_event_cb), NULL);
-
-  /* Ask to receive events the drawing area doesn't normally
-   * subscribe to. In particular, we need to ask for the
-   * button press and motion notify events that want to handle.
-   */
-  gtk_widget_set_events (da, gtk_widget_get_events (da)
-                     | GDK_BUTTON_PRESS_MASK
-                     | GDK_BUTTON_RELEASE_MASK
-                     | GDK_POINTER_MOTION_MASK
-                     | GDK_POINTER_MOTION_HINT_MASK);
-
-  gtk_widget_show_all (window);
-
-  gtk_main ();
-
-  return 0;
+  g_print("Clear Surface\n");
+  clear_surface();
+  gtk_widget_queue_draw (GTK_WIDGET(data));
 }
+static void
+write_to_png(GtkWidget *widget, gpointer data)
+{
+  g_print("Write Surface\n");
+  cairo_status_t status;
+  //Save to working directory.
+  gchar *file_name = g_strdup_printf ("./%s", gtk_entry_get_text(GTK_ENTRY(data)));
+  status = cairo_surface_write_to_png (surface, file_name);
+  if(status != CAIRO_STATUS_SUCCESS) cairo_status_to_string(status);
+  g_free(file_name);
+}
+
