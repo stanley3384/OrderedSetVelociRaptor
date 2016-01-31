@@ -9,6 +9,8 @@ drawing to the current working directory.
     Tested with GTK3.10 and Ubuntu14.04
 
     gcc -Wall speedy_scribble.c -o speedy_scribble `pkg-config --cflags --libs gtk+-3.0`
+
+    C. Eric Cashon
 */
 
 #include <gtk/gtk.h>
@@ -31,6 +33,8 @@ static void clear_cairo_surface(GtkWidget *widget, gpointer data);
 static void write_to_png(GtkWidget *widget, gpointer data);
 static void set_pen_color(GtkWidget *widget, gpointer *data);
 static void error_message(const gchar *string);
+static void about_dialog(GtkWidget *widget, gpointer data);
+static GdkPixbuf* draw_icon();
 
 int
 main (int   argc,
@@ -42,6 +46,8 @@ main (int   argc,
   gtk_window_set_title (GTK_WINDOW (window), "Speedy Scribble");
   gtk_window_set_default_size(GTK_WINDOW (window), 700, 500);
   gtk_window_set_position(GTK_WINDOW (window), GTK_WIN_POS_CENTER);
+  GdkPixbuf *icon=draw_icon();
+  gtk_window_set_default_icon(icon);
 
   g_signal_connect (window, "destroy", G_CALLBACK (close_window), NULL);
 
@@ -108,6 +114,15 @@ main (int   argc,
   gpointer entries[] = {entry2, entry3, entry4};
   g_signal_connect(button3, "clicked", G_CALLBACK(set_pen_color), entries);
 
+  GtkWidget *menu1=gtk_menu_new();
+  GtkWidget *menu1item1=gtk_menu_item_new_with_label("Speedy Scribble");
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+  GtkWidget *title1=gtk_menu_item_new_with_label("About");
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+  GtkWidget *menu_bar=gtk_menu_bar_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+  g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
+
   GtkWidget *grid = gtk_grid_new ();
   gtk_container_set_border_width (GTK_CONTAINER(grid), 10);
   gtk_grid_attach (GTK_GRID(grid), frame, 0, 0, 4, 5);
@@ -118,6 +133,7 @@ main (int   argc,
   gtk_grid_attach (GTK_GRID(grid), entry2, 1, 7, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry3, 2, 7, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry4, 3, 7, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 8, 1, 1);
 
   gtk_container_add (GTK_CONTAINER(window), grid);
 
@@ -254,7 +270,7 @@ button_release_event_cb (GtkWidget      *widget,
                GdkEventButton *event,
                gpointer        data)
 {
-  g_print("Button Release\n");
+  //g_print("Button Release\n");
   prev_x = 0;
   prev_y = 0;
   return TRUE;
@@ -366,6 +382,86 @@ static void error_message(const gchar *string)
   gtk_dialog_run(GTK_DIALOG(dialog));
   gtk_widget_destroy(dialog);
 }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Speedy Scribble");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A program for creating fine artwork.");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+//The diving and swimming pool notes.
+static GdkPixbuf* draw_icon()
+  {
+    gint i = 0;
+    gdouble current_x = 0;
+    gdouble current_y = 0;
+    gdouble rnd_prev_x = 50.0;
+    gdouble rnd_prev_y = 50.0;
+    
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface);
+    
+    //Paint the background.
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_paint(cr);
+   
+    //Draw red random lines.
+    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    cairo_set_line_width (cr, 4);
+    cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+    for(i = 0; i < 25; i++)
+      {
+        current_x = 256.0 * g_random_double();
+        current_y = 256.0 * g_random_double();
+        cairo_move_to (cr, rnd_prev_x, rnd_prev_y);
+        cairo_line_to (cr, current_x, current_y);
+        cairo_stroke (cr);
+        rnd_prev_x = current_x;
+        rnd_prev_y = current_y;
+      }
+    
+    //Draw green random lines.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);    
+    rnd_prev_x = 100.0;
+    rnd_prev_y = 100.0;
+    for(i = 0; i < 25; i++)
+      {
+        current_x = 256.0 * g_random_double();
+        current_y = 256.0 * g_random_double();
+        cairo_move_to (cr, rnd_prev_x, rnd_prev_y);
+        cairo_line_to (cr, current_x, current_y);
+        cairo_stroke (cr);
+        rnd_prev_x = current_x;
+        rnd_prev_y = current_y;
+      }
+
+    //Draw blue random lines.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);    
+    rnd_prev_x = 150.0;
+    rnd_prev_y = 150.0;
+    for(i = 0; i < 25; i++)
+      {
+        current_x = 256.0 * g_random_double();
+        current_y = 256.0 * g_random_double();
+        cairo_move_to (cr, rnd_prev_x, rnd_prev_y);
+        cairo_line_to (cr, current_x, current_y);
+        cairo_stroke (cr);
+        rnd_prev_x = current_x;
+        rnd_prev_y = current_y;
+      }
+    
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    return icon;
+  }
 
 
 
