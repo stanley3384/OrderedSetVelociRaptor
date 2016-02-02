@@ -4,7 +4,8 @@
 in the drawing section.
 
     This version changes squares to lines to smooth out the drawing. You can also save the 
-drawing to the current working directory.
+drawing to the current working directory along with changing the pen drawing area cursor
+to the selected color. The program icon is a rgb random walk. 
 
     Tested with GTK3.10 and Ubuntu14.04
 
@@ -20,6 +21,7 @@ static cairo_surface_t *surface = NULL;
 static gdouble prev_x = 0;
 static gdouble prev_y = 0;
 static gdouble pen_color[] = {0.0, 0.0, 1.0};
+GdkPixbuf *pen = NULL;
 
 static void clear_surface (void);
 static gboolean configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer data);
@@ -35,6 +37,7 @@ static void set_pen_color(GtkWidget *widget, gpointer *data);
 static void error_message(const gchar *string);
 static void about_dialog(GtkWidget *widget, gpointer data);
 static GdkPixbuf* draw_icon();
+static GdkPixbuf* draw_pen_cursor();
 
 int
 main (int   argc,
@@ -44,10 +47,10 @@ main (int   argc,
 
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title (GTK_WINDOW (window), "Speedy Scribble");
-  gtk_window_set_default_size(GTK_WINDOW (window), 700, 500);
-  gtk_window_set_position(GTK_WINDOW (window), GTK_WIN_POS_CENTER);
-  GdkPixbuf *icon=draw_icon();
-  gtk_window_set_default_icon(icon);
+  gtk_window_set_default_size (GTK_WINDOW (window), 700, 500);
+  gtk_window_set_position (GTK_WINDOW (window), GTK_WIN_POS_CENTER);
+  GdkPixbuf *icon = draw_icon();
+  gtk_window_set_default_icon (icon);
 
   g_signal_connect (window, "destroy", G_CALLBACK (close_window), NULL);
 
@@ -111,7 +114,7 @@ main (int   argc,
   GtkWidget *entry4 = gtk_entry_new();
   gtk_entry_set_text (GTK_ENTRY(entry4), "1.0");
 
-  gpointer entries[] = {entry2, entry3, entry4};
+  gpointer entries[] = {entry2, entry3, entry4, da};
   g_signal_connect(button3, "clicked", G_CALLBACK(set_pen_color), entries);
 
   GtkWidget *menu1=gtk_menu_new();
@@ -187,6 +190,14 @@ configure_event_cb (GtkWidget         *widget,
 
   /* Initialize the surface to white */
   clear_surface ();
+
+  //The pen cursor is also changed in set_pen_color.
+  if(pen == NULL) pen = draw_pen_cursor ();
+  GdkWindow *win = gtk_widget_get_window (widget);
+  GdkDisplay *display = gdk_window_get_display (win);
+  GdkCursor *cursor = gdk_cursor_new_from_pixbuf (display, pen, 2, 58);
+  gdk_window_set_cursor(win, cursor);
+  g_object_unref(cursor); 
 
   /* We've handled the configure event, no need for further processing. */
   return TRUE;
@@ -375,6 +386,19 @@ set_pen_color(GtkWidget *widget, gpointer *data)
       g_free (message);
       message = NULL;
     }
+
+  //Reset pen tip color. This is changed in the configure event also.
+  if(pen != NULL)
+    {
+      g_object_unref(pen);
+      pen = NULL;
+    }
+  pen = draw_pen_cursor ();
+  GdkWindow *win = gtk_widget_get_window (GTK_WIDGET(data[3]));
+  GdkDisplay *display = gdk_window_get_display (win);
+  GdkCursor *cursor = gdk_cursor_new_from_pixbuf (display, pen, 1, 60);
+  gdk_window_set_cursor(win, cursor);
+  g_object_unref(cursor); 
 }
 static void error_message(const gchar *string)
 {
@@ -404,15 +428,15 @@ static GdkPixbuf* draw_icon()
     gdouble rnd_prev_y = 50.0;
     
     //Create a surface to draw a 256x256 icon. 
-    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
-    cairo_t *cr=cairo_create(surface);
+    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr = cairo_create (surface);
     
     //Paint the background.
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_paint(cr);
    
     //Draw red random lines.
-    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
     cairo_set_line_width (cr, 4);
     cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
     for(i = 0; i < 25; i++)
@@ -456,12 +480,41 @@ static GdkPixbuf* draw_icon()
         rnd_prev_y = current_y;
       }
     
-    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+    GdkPixbuf *icon = gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy (cr);
+    cairo_surface_destroy (surface); 
+    return icon;
+  }
+//The diving and swimming pool notes.
+static GdkPixbuf* draw_pen_cursor()
+  { 
+    //Create a surface to draw on. 
+    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 64, 64);
+    cairo_t *cr = cairo_create (surface);
+    
+    //Paint the background transparent.
+    cairo_set_source_rgba (cr, 1.0, 1.0, 1.0, 0.0);
+    cairo_paint (cr);
+
+    //y=mx+b, y=3/1x
+    cairo_set_source_rgb (cr, 0.0, 0.0, 0.0);
+    cairo_set_line_width (cr, 5.0);
+    cairo_move_to (cr, 14.0, 22.0);
+    cairo_line_to (cr, 4.0, 52.0);
+    cairo_stroke (cr);
+    cairo_set_source_rgb (cr, pen_color[0], pen_color[1], pen_color[2]);
+    cairo_move_to (cr, 4.0, 52.0);
+    cairo_line_to (cr, 2.0, 58.0);
+    cairo_stroke (cr);
+    
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 64, 64);
 
     cairo_destroy(cr);
     cairo_surface_destroy(surface); 
     return icon;
   }
+
 
 
 
