@@ -57,14 +57,16 @@ main (int   argc,
 
   gtk_container_set_border_width (GTK_CONTAINER (window), 8);
 
-  GtkWidget *frame = gtk_frame_new (NULL);
-  gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
-
   GtkWidget *da = gtk_drawing_area_new ();
   gtk_widget_set_hexpand(da, TRUE);
   gtk_widget_set_vexpand(da, TRUE);
 
-  gtk_container_add (GTK_CONTAINER (frame), da);
+  GtkWidget *view = gtk_viewport_new(NULL, NULL);
+  gtk_widget_set_hexpand(view, TRUE);
+  gtk_widget_set_vexpand(view, TRUE);
+  gtk_container_add(GTK_CONTAINER(view), da);
+  GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(scroll), view);
 
   /* Signals used to handle the backing surface */
   g_signal_connect (da, "draw",
@@ -129,7 +131,7 @@ main (int   argc,
 
   GtkWidget *grid = gtk_grid_new ();
   gtk_container_set_border_width (GTK_CONTAINER(grid), 10);
-  gtk_grid_attach (GTK_GRID(grid), frame, 0, 0, 4, 5);
+  gtk_grid_attach (GTK_GRID(grid), scroll, 0, 0, 4, 5);
   gtk_grid_attach (GTK_GRID(grid), button1, 0, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), button2, 2, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry1, 3, 6, 1, 1);
@@ -185,8 +187,11 @@ configure_event_cb (GtkWidget         *widget,
   gint widget_height = gtk_widget_get_allocated_height (widget);
   static gint prev_width = 0;
   static gint prev_height = 0;
+  static gint max_width = 0;
+  static gint max_height = 0;
 
-  if (surface)
+  //If drawing area size increases redraw to new size. If the size decreases, leave it alone.
+  if (surface && (max_width < widget_width || max_height < widget_height))
     {
       cairo_surface_t *old_surface = NULL;
 
@@ -206,7 +211,8 @@ configure_event_cb (GtkWidget         *widget,
       cairo_destroy(cr);
       cairo_surface_destroy (old_surface);                            
     }
-  else
+
+  if (!surface)
     {
       surface = gdk_window_create_similar_surface (gtk_widget_get_window (widget),
                                                    CAIRO_CONTENT_COLOR,
@@ -215,6 +221,9 @@ configure_event_cb (GtkWidget         *widget,
       clear_surface();
     }
 
+  if(widget_width > max_width) max_width = widget_width;
+  if(widget_height > max_height) max_height = widget_height;
+  gtk_widget_set_size_request(widget, max_width, max_height);
   prev_width = widget_width;
   prev_height = widget_height;
 
