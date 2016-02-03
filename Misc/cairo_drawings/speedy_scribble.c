@@ -21,7 +21,8 @@ static cairo_surface_t *surface = NULL;
 static gdouble prev_x = 0;
 static gdouble prev_y = 0;
 static gdouble pen_color[] = {0.0, 0.0, 1.0};
-GdkPixbuf *pen = NULL;
+//Drawing pen icon.
+static GdkPixbuf *pen = NULL;
 
 static void clear_surface (void);
 static gboolean configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer data);
@@ -180,16 +181,42 @@ configure_event_cb (GtkWidget         *widget,
             GdkEventConfigure *event,
             gpointer           data)
 {
+  gint widget_width = gtk_widget_get_allocated_width (widget);
+  gint widget_height = gtk_widget_get_allocated_height (widget);
+  static gint prev_width = 0;
+  static gint prev_height = 0;
+
   if (surface)
-    cairo_surface_destroy (surface);
+    {
+      cairo_surface_t *old_surface = NULL;
 
-  surface = gdk_window_create_similar_surface (gtk_widget_get_window (widget),
-                                       CAIRO_CONTENT_COLOR,
-                                       gtk_widget_get_allocated_width (widget),
-                                       gtk_widget_get_allocated_height (widget));
+      old_surface = cairo_surface_create_for_rectangle (surface, 0, 0, prev_width, prev_height);
 
-  /* Initialize the surface to white */
-  clear_surface ();
+      cairo_surface_destroy (surface);  
+      surface = gdk_window_create_similar_surface (gtk_widget_get_window (widget),
+                                                   CAIRO_CONTENT_COLOR,
+                                                   widget_width,
+                                                   widget_height);
+      clear_surface();
+      
+      cairo_t *cr = cairo_create (surface);
+      cairo_set_source_surface (cr, old_surface, 0, 0);
+      cairo_rectangle (cr, 0, 0, prev_width, prev_height);
+      cairo_fill (cr);
+      cairo_destroy(cr);
+      cairo_surface_destroy (old_surface);                            
+    }
+  else
+    {
+      surface = gdk_window_create_similar_surface (gtk_widget_get_window (widget),
+                                                   CAIRO_CONTENT_COLOR,
+                                                   widget_width,
+                                                   widget_height);
+      clear_surface();
+    }
+
+  prev_width = widget_width;
+  prev_height = widget_height;
 
   //The pen cursor is also changed in set_pen_color.
   if(pen == NULL) pen = draw_pen_cursor ();
@@ -428,8 +455,8 @@ static GdkPixbuf* draw_icon()
     gdouble rnd_prev_y = 50.0;
     
     //Create a surface to draw a 256x256 icon. 
-    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 256, 256);
-    cairo_t *cr = cairo_create (surface);
+    cairo_surface_t *surface_icon = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr = cairo_create (surface_icon);
     
     //Paint the background.
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
@@ -480,18 +507,18 @@ static GdkPixbuf* draw_icon()
         rnd_prev_y = current_y;
       }
     
-    GdkPixbuf *icon = gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+    GdkPixbuf *icon = gdk_pixbuf_get_from_surface(surface_icon, 0, 0, 256, 256);
 
     cairo_destroy (cr);
-    cairo_surface_destroy (surface); 
+    cairo_surface_destroy (surface_icon); 
     return icon;
   }
 //The diving and swimming pool notes.
 static GdkPixbuf* draw_pen_cursor()
   { 
     //Create a surface to draw on. 
-    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 64, 64);
-    cairo_t *cr = cairo_create (surface);
+    cairo_surface_t *surface_pen = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 64, 64);
+    cairo_t *cr = cairo_create (surface_pen);
     
     //Paint the background transparent.
     cairo_set_source_rgba (cr, 1.0, 1.0, 1.0, 0.0);
@@ -508,10 +535,10 @@ static GdkPixbuf* draw_pen_cursor()
     cairo_line_to (cr, 2.0, 58.0);
     cairo_stroke (cr);
     
-    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 64, 64);
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface_pen, 0, 0, 64, 64);
 
     cairo_destroy(cr);
-    cairo_surface_destroy(surface); 
+    cairo_surface_destroy(surface_pen); 
     return icon;
   }
 
