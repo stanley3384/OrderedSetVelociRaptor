@@ -21,6 +21,7 @@ static cairo_surface_t *surface = NULL;
 static gdouble prev_x = 0;
 static gdouble prev_y = 0;
 static gdouble pen_color[] = {0.0, 0.0, 1.0};
+static gint pen_width = 6;
 //Drawing pen icon.
 static GdkPixbuf *pen = NULL;
 
@@ -39,6 +40,7 @@ static void error_message(const gchar *string);
 static void about_dialog(GtkWidget *widget, gpointer data);
 static GdkPixbuf* draw_icon();
 static GdkPixbuf* draw_pen_cursor();
+static void change_pen_width(GtkComboBox *combo, gpointer data);
 
 int
 main (int   argc,
@@ -102,6 +104,16 @@ main (int   argc,
   GtkWidget *button3 = gtk_button_new_with_label("Set Pen Color(RGB)");
   gtk_widget_set_hexpand(button3, TRUE);
 
+  GtkWidget *combo1 = gtk_combo_box_text_new();
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Pen Width 2");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Pen Width 4");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Pen Width 6");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Pen Width 8");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Pen Width 10");
+  gtk_widget_set_hexpand(combo1, TRUE);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 2);
+  g_signal_connect(combo1, "changed", G_CALLBACK(change_pen_width), NULL);
+
   GtkWidget *entry1 = gtk_entry_new();
   gtk_widget_set_hexpand (entry1, TRUE);
   gtk_entry_set_text (GTK_ENTRY(entry1), "scribble1.png");
@@ -133,6 +145,7 @@ main (int   argc,
   gtk_container_set_border_width (GTK_CONTAINER(grid), 10);
   gtk_grid_attach (GTK_GRID(grid), scroll, 0, 0, 4, 5);
   gtk_grid_attach (GTK_GRID(grid), button1, 0, 6, 1, 1);
+  gtk_grid_attach (GTK_GRID(grid), combo1, 1, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), button2, 2, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry1, 3, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), button3, 0, 7, 1, 1);
@@ -254,7 +267,7 @@ draw_cb (GtkWidget *widget,
   return FALSE;
 }
 
-/* Draw a rectangle on the surface at the given position */
+/* Draw a line on the surface at the given position */
 static void
 draw_brush (GtkWidget *widget,
     gdouble    x,
@@ -266,7 +279,7 @@ draw_brush (GtkWidget *widget,
   cr = cairo_create (surface);
 
   cairo_set_source_rgb (cr, pen_color[0], pen_color[1], pen_color[2]);
-  cairo_set_line_width (cr, 6);
+  cairo_set_line_width (cr, pen_width);
   cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 
   if (prev_x != 0)
@@ -549,6 +562,16 @@ static GdkPixbuf* draw_pen_cursor()
     cairo_destroy(cr);
     cairo_surface_destroy(surface_pen); 
     return icon;
+  }
+static void change_pen_width(GtkComboBox *combo, gpointer data)
+  {
+    gint record = gtk_combo_box_get_active(combo);
+
+    if(record == 0) pen_width = 2;
+    else if(record == 1) pen_width = 4;
+    else if(record == 2) pen_width = 6;
+    else if(record == 3) pen_width = 8;
+    else pen_width = 10;
   }
 
 
