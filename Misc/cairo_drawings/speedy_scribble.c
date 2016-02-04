@@ -50,7 +50,7 @@ main (int   argc,
 
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title (GTK_WINDOW (window), "Speedy Scribble");
-  gtk_window_set_default_size (GTK_WINDOW (window), 700, 500);
+  gtk_window_set_default_size (GTK_WINDOW (window), 700, 550);
   gtk_window_set_position (GTK_WINDOW (window), GTK_WIN_POS_CENTER);
   GdkPixbuf *icon = draw_icon();
   gtk_window_set_default_icon (icon);
@@ -94,7 +94,7 @@ main (int   argc,
                      | GDK_POINTER_MOTION_MASK
                      | GDK_POINTER_MOTION_HINT_MASK);
 
-  GtkWidget *button1 = gtk_button_new_with_label("Clear");
+  GtkWidget *button1 = gtk_button_new_with_label("Clear Drawing");
   gtk_widget_set_hexpand(button1, TRUE);
   g_signal_connect(button1, "clicked", G_CALLBACK(clear_cairo_surface), da);
 
@@ -144,21 +144,24 @@ main (int   argc,
   GtkWidget *grid = gtk_grid_new ();
   gtk_container_set_border_width (GTK_CONTAINER(grid), 10);
   gtk_grid_attach (GTK_GRID(grid), scroll, 0, 0, 4, 5);
+  //1st row
   gtk_grid_attach (GTK_GRID(grid), button1, 0, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), combo1, 1, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), button2, 2, 6, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry1, 3, 6, 1, 1);
+  //2rd row
   gtk_grid_attach (GTK_GRID(grid), button3, 0, 7, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry2, 1, 7, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry3, 2, 7, 1, 1);
   gtk_grid_attach (GTK_GRID(grid), entry4, 3, 7, 1, 1);
+
   gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 8, 1, 1);
 
   gtk_container_add (GTK_CONTAINER(window), grid);
 
   //Add CSS for some background color.
   GError *css_error = NULL;
-  gchar css_string[] = "GtkWindow, GtkDialog{background: #7700ff; color: #ffff00} GtkButton{background: #7700aa; color: #ffff00} GtkEntry{background: #0044aa; color: #ffff00}";
+  gchar css_string[] = "GtkWindow, GtkDialog{background: #7700ff; color: #ffff00} GtkButton{background: #7700aa; color: #ffff00} GtkEntry{background: #0044aa; color: #ffff00} GtkComboBox .button{background: #0044ee; color: #ffff00}";
   GtkCssProvider *provider = gtk_css_provider_new();
   GdkDisplay *display = gdk_display_get_default();
   GdkScreen *screen = gdk_display_get_default_screen(display);
