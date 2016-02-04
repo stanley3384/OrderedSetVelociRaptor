@@ -190,7 +190,7 @@ configure_event_cb (GtkWidget         *widget,
   static gint max_width = 0;
   static gint max_height = 0;
 
-  //If drawing area size increases redraw to new size. If the size decreases, leave it alone.
+  //If drawing area size increases redraw to new size. If the size decreases, have it scroll.
   if (surface && (max_width < widget_width || max_height < widget_height))
     {
       cairo_surface_t *old_surface = NULL;
@@ -205,10 +205,10 @@ configure_event_cb (GtkWidget         *widget,
       clear_surface();
       
       cairo_t *cr = cairo_create (surface);
-      cairo_set_source_surface (cr, old_surface, 0, 0);
-      cairo_rectangle (cr, 0, 0, prev_width, prev_height);
+      cairo_set_source_surface (cr, old_surface, (widget_width - prev_width) / 2, (widget_height - prev_height) / 2);
+      cairo_rectangle (cr, (widget_width - prev_width) / 2, (widget_height - prev_height) / 2, prev_width, prev_height);
       cairo_fill (cr);
-      cairo_destroy(cr);
+      cairo_destroy (cr);
       cairo_surface_destroy (old_surface);                            
     }
 
