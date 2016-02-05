@@ -1,6 +1,6 @@
 
 /*
-    A simple GTK+ test app that has desktop settings, icon and gsettings all combined into one file.
+    A simple GTK+ test app that has desktop settings, icon, menu and gsettings all combined into one file.
 It installs with current user permissions so there is no need for sudo. This is a combination of the gsettings2.c test program with the hello_world_app2.c test program. There is a lot here. Not really
 trivial. It does put together some ideas on how to integrate with the GNOME desktop and save settings
 for multiple instances of an application along with saving settings when an application is closed.
@@ -25,8 +25,6 @@ gchar *xml_file_name="gsettings1.gschema.xml";
 
 //Setup the GUI.
 static void app_activate(GtkApplication *app, gpointer data);
-//Setup the menu.
-static void app_startup(GtkApplication *app, gpointer data);
 //Draw an icon with cairo.
 static GdkPixbuf* draw_icon();
 //Draw window color. Change it with combo box.
@@ -45,8 +43,7 @@ static void compile_default_schema(gchar *xml_file_path, gchar *current_path);
 int main(int argc, char *argv[])
   {
     gint status=0;
-    GtkApplication *app = gtk_application_new("app.example", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect(app, "startup", G_CALLBACK(app_startup), NULL);
+    GtkApplication *app=gtk_application_new("app.example", G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(app_activate), NULL);
     status=g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
@@ -150,13 +147,9 @@ static void app_activate(GtkApplication *app, gpointer data)
 
     gtk_container_add(GTK_CONTAINER(window), grid);
 
-    gtk_widget_show_all(window);
-  }
-static void app_startup(GtkApplication *app, gpointer data)
- {
-    //Setup menu callback.
+    //Setup menu callback. Put the menu in "activate" instead of "startup" to access combo2 pointer.
     GSimpleAction *about = g_simple_action_new("about", NULL);
-    g_signal_connect(about, "activate", G_CALLBACK(about_dialog), app);
+    g_signal_connect(about, "activate", G_CALLBACK(about_dialog), combo2);
     g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(about));
     g_object_unref(about);
 
@@ -172,6 +165,8 @@ static void app_startup(GtkApplication *app, gpointer data)
 
     gtk_application_set_menubar(GTK_APPLICATION(app), G_MENU_MODEL(menu));
     g_object_unref(menu);
+
+    gtk_widget_show_all(window);
   }
 static GdkPixbuf* draw_icon()
   {
@@ -230,6 +225,8 @@ static void about_dialog(GSimpleAction *action, GVariant *parameter, gpointer da
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Trivial GTK+ App");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Setup a basic application.");
+    gtk_widget_set_app_paintable(dialog, TRUE);
+    g_signal_connect(dialog, "draw", G_CALLBACK(draw_window_background), data);
    
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
