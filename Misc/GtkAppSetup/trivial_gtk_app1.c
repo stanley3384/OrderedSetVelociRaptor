@@ -1,6 +1,6 @@
 
 /*
-    A simple GTK+ test app that has desktop settings, icon, menu and gsettings all combined into one file.
+    A simple GTK+ test app that has desktop settings, icon, menu, and gsettings all combined into one file.
 It installs with current user permissions so there is no need for sudo. This is a combination of the gsettings2.c test program with the hello_world_app2.c test program. There is a lot here. Not really
 trivial. It does put together some ideas on how to integrate with the GNOME desktop and save settings
 for multiple instances of an application along with saving settings when an application is closed.
@@ -166,6 +166,21 @@ static void app_activate(GtkApplication *app, gpointer data)
     gtk_application_set_menubar(GTK_APPLICATION(app), G_MENU_MODEL(menu));
     g_object_unref(menu);
 
+    //Add CSS. The "draw" callbacks will overide the CSS for the dialog background.
+    GError *css_error = NULL;
+    gchar css_string[] = "GtkDialog{background: #00ff00; color: #ffff00; font: Arial 20} GtkButton{background: #00ffff; color: #ff00ff; font: Sans 12} GtkComboBoxText{background: #00ffff; color: #ff00ff; font: Sans 12}";
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GdkDisplay *display = gdk_display_get_default();
+    GdkScreen *screen = gdk_display_get_default_screen(display);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+    if(css_error!=NULL)
+      {
+        g_print("CSS loader error %s\n", css_error->message);
+        g_error_free(css_error);
+      }
+    g_object_unref(provider);
+
     gtk_widget_show_all(window);
   }
 static GdkPixbuf* draw_icon()
@@ -224,7 +239,7 @@ static void about_dialog(GSimpleAction *action, GVariant *parameter, gpointer da
     gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Trivial GTK+ App");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
-    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Setup a basic application.");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Setup a simple application.");
     gtk_widget_set_app_paintable(dialog, TRUE);
     g_signal_connect(dialog, "draw", G_CALLBACK(draw_window_background), data);
    
