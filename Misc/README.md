@@ -28,6 +28,10 @@ Thread Pool
 
 ![ScreenShot](/Misc/threads.png)
 
+Gaussian Scribble
+
+![ScreenShot](/Misc/gaussian_scribble1.png)
+
 Bit Calc
 
 ![ScreenShot](/Misc/bit_calc.png)
