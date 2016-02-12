@@ -13,7 +13,7 @@ class MainWindow(gtk.Window):
     def __init__(self):
         gtk.Window.__init__(self)
         self.set_title("Music Buttons")
-        self.set_default_size(400, 50);
+        self.set_default_size(400, 50)
         self.set_position(gtk.WIN_POS_CENTER)
 
         self.toggle1 = gtk.ToggleButton(label="Change Scale", use_underline=False)
@@ -64,9 +64,9 @@ class MainWindow(gtk.Window):
       
         if(self.toggle1.get_active()):
             #The pause drawing.
-            cr.set_source_rgb(0.25, 0.25, 0.25);
+            cr.set_source_rgb(0.25, 0.25, 0.25)
             cr.paint()
-            cr.set_source_rgb(1.0, 1.0, 1.0);
+            cr.set_source_rgb(1.0, 1.0, 1.0)
             cr.set_line_width(6)
             cr.move_to(center_x - 6, center_y - 15)
             cr.line_to(center_x - 6, center_y + 15)
@@ -76,9 +76,9 @@ class MainWindow(gtk.Window):
             cr.stroke()
         else:
             #The play drawing
-            cr.set_source_rgb(0.25, 0.25, 0.25);
+            cr.set_source_rgb(0.25, 0.25, 0.25)
             cr.paint()
-            cr.set_source_rgb(0.0, 1.0, 1.0);
+            cr.set_source_rgb(0.0, 1.0, 1.0)
             cr.set_line_width(6)
             cr.move_to(center_x - 10, center_y - 15)
             cr.line_to(center_x - 10, center_y + 15)
@@ -103,9 +103,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(0.0, 1.0, 1.0);
+        cr.set_source_rgb(0.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x - 10, center_y - 10)
         cr.rectangle(center_x - 10, center_y - 10, 40, 20)
@@ -128,9 +128,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(1.0, 1.0, 1.0);
+        cr.set_source_rgb(1.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x - 10, center_y - 10)
         cr.rectangle(center_x - 10, center_y - 10, 40, 20)
@@ -153,9 +153,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(0.0, 1.0, 1.0);
+        cr.set_source_rgb(0.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x - 10, center_y - 10)
         cr.rectangle(center_x - 10, center_y - 10, 40, 20)
@@ -178,9 +178,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(0.0, 1.0, 1.0);
+        cr.set_source_rgb(0.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x - 30, center_y - 15)
         cr.line_to(center_x - 30, center_y + 15)
@@ -216,9 +216,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(1.0, 1.0, 1.0);
+        cr.set_source_rgb(1.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x - 30, center_y - 15)
         cr.line_to(center_x - 30, center_y + 15)
@@ -254,9 +254,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(0.0, 1.0, 1.0);
+        cr.set_source_rgb(0.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x - 30, center_y - 15)
         cr.line_to(center_x - 30, center_y + 15)
@@ -292,9 +292,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(0.0, 1.0, 1.0);
+        cr.set_source_rgb(0.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x, center_y - 15)
         cr.line_to(center_x, center_y + 15)
@@ -330,9 +330,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(1.0, 1.0, 1.0);
+        cr.set_source_rgb(1.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x, center_y - 15)
         cr.line_to(center_x, center_y + 15)
@@ -368,9 +368,9 @@ class MainWindow(gtk.Window):
         center_y = (height / 2.0) / scale_y  
         cr.scale(scale_x, scale_y)
       
-        cr.set_source_rgb(0.25, 0.25, 0.25);
+        cr.set_source_rgb(0.25, 0.25, 0.25)
         cr.paint()
-        cr.set_source_rgb(0.0, 1.0, 1.0);
+        cr.set_source_rgb(0.0, 1.0, 1.0)
         cr.set_line_width(6)
         cr.move_to(center_x, center_y - 15)
         cr.line_to(center_x, center_y + 15)
