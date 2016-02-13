@@ -14,30 +14,31 @@ music_buttons.py. Check out the motion of the stars.
 #include <gtk/gtk.h>
 
 static gboolean set_grid_width_height(GtkOverlay *overlay, GtkWidget *widget, GdkRectangle *allocation, gpointer data);
-
+//Draw the animated stars.
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord);
 static gboolean start_drawing(gpointer drawing);
-
+//Draw the widgets for putting in the overlay.
 static gboolean draw_play(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean draw_stop(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean draw_forward(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean draw_backward(GtkWidget *widget, cairo_t *cr, gpointer data);
-
+//Start and pause animation.
 static void play_clicked(GtkWidget *widget, gpointer data);
-
+//Draw the widgets white when pressed.
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_release(GtkWidget *widget, GdkEvent *event, gpointer data);
 gboolean stop_pressed=FALSE;  
-
 static gboolean forward_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean forward_release(GtkWidget *widget, GdkEvent *event, gpointer data);
 gboolean forward_pressed=FALSE;  
-
 static gboolean backward_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean backward_release(GtkWidget *widget, GdkEvent *event, gpointer data);
 gboolean backward_pressed=FALSE; 
+//Show and hide the overlay widgets.
+static void show_widget(GtkWidget *widget, gpointer data);
 
+//The speed of moving stars.
 gdouble speed=4.0;
 
 int main(int argc, char *argv[])
@@ -138,13 +139,23 @@ int main(int argc, char *argv[])
 
     gtk_overlay_add_overlay(GTK_OVERLAY(overlay), grid1);
 
-    gtk_container_add(GTK_CONTAINER(window), overlay);
+    GtkWidget *toggle2=gtk_toggle_button_new_with_label("Hide Widget");
+    gtk_widget_set_hexpand(toggle2, TRUE);
+    g_signal_connect(toggle2, "clicked", G_CALLBACK(show_widget), grid1);
+
+    GtkWidget *grid2=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid2), overlay, 0, 0, 4, 4);
+    gtk_grid_attach(GTK_GRID(grid2), toggle2, 0, 4, 4, 1);
+
+    gtk_container_add(GTK_CONTAINER(window), grid2);
 
     g_timeout_add(100, start_drawing, da); 
 
     gtk_widget_show_all(window);
 
     gtk_main();
+
+    g_free(coord);
 
     return 0;
   }
@@ -259,8 +270,8 @@ static gboolean draw_stop(GtkWidget *widget, cairo_t *cr, gpointer data)
     if(stop_pressed) cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     else cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
     cairo_set_line_width(cr, 6);
-    cairo_move_to(cr, center_x - 10, center_y - 10);
-    cairo_rectangle(cr, center_x - 10, center_y - 10, 40, 20);
+    cairo_move_to(cr, center_x-10, center_y-10);
+    cairo_rectangle(cr, center_x-10, center_y-10, 30, 20);
     cairo_fill(cr);
     cairo_stroke(cr);
 
@@ -281,22 +292,22 @@ static gboolean draw_forward(GtkWidget *widget, cairo_t *cr, gpointer data)
     if(forward_pressed) cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     else cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
     cairo_set_line_width(cr, 6);
-    cairo_move_to(cr, center_x - 30, center_y - 15);
-    cairo_line_to(cr, center_x - 30, center_y + 15);
-    cairo_line_to(cr, center_x + 0, center_y);
-    cairo_line_to(cr, center_x - 30 , center_y - 15);
+    cairo_move_to(cr, center_x-30, center_y-15);
+    cairo_line_to(cr, center_x-30, center_y+15);
+    cairo_line_to(cr, center_x+0, center_y);
+    cairo_line_to(cr, center_x-30 , center_y-15);
     cairo_fill(cr);
     cairo_stroke(cr);
 
-    cairo_move_to(cr, center_x + 5, center_y - 15);
-    cairo_line_to(cr, center_x + 5, center_y + 15);
-    cairo_line_to(cr, center_x + 35, center_y);
-    cairo_line_to(cr, center_x + 5 , center_y - 15);
+    cairo_move_to(cr, center_x+5, center_y-15);
+    cairo_line_to(cr, center_x+5, center_y+15);
+    cairo_line_to(cr, center_x+35, center_y);
+    cairo_line_to(cr, center_x+5 , center_y-15);
     cairo_fill(cr);
     cairo_stroke(cr);
 
-    cairo_move_to(cr, center_x + 40, center_y - 15);
-    cairo_line_to(cr, center_x + 40, center_y + 15);
+    cairo_move_to(cr, center_x+40, center_y-15);
+    cairo_line_to(cr, center_x+40, center_y+15);
     cairo_stroke(cr);
 
     return TRUE;
@@ -316,22 +327,22 @@ static gboolean draw_backward(GtkWidget *widget, cairo_t *cr, gpointer data)
     if(backward_pressed) cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     else cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
     cairo_set_line_width(cr, 6);
-    cairo_move_to(cr, center_x, center_y - 15);
-    cairo_line_to(cr, center_x, center_y + 15);
-    cairo_line_to(cr, center_x - 30, center_y);
-    cairo_line_to(cr, center_x, center_y - 15);
+    cairo_move_to(cr, center_x, center_y-15);
+    cairo_line_to(cr, center_x, center_y+15);
+    cairo_line_to(cr, center_x-30, center_y);
+    cairo_line_to(cr, center_x, center_y-15);
     cairo_fill(cr);
     cairo_stroke(cr);
 
-    cairo_move_to(cr, center_x + 35, center_y - 15);
-    cairo_line_to(cr, center_x + 35, center_y + 15);
-    cairo_line_to(cr, center_x + 5, center_y);
-    cairo_line_to(cr, center_x + 35 , center_y - 15);
+    cairo_move_to(cr, center_x+35, center_y-15);
+    cairo_line_to(cr, center_x+35, center_y+15);
+    cairo_line_to(cr, center_x+5, center_y);
+    cairo_line_to(cr, center_x+35 , center_y-15);
     cairo_fill(cr);
     cairo_stroke(cr);
 
-    cairo_move_to(cr, center_x - 40, center_y - 15);
-    cairo_line_to(cr, center_x - 40, center_y + 15);
+    cairo_move_to(cr, center_x-40, center_y-15);
+    cairo_line_to(cr, center_x-40, center_y+15);
     cairo_stroke(cr);
 
     return TRUE;
@@ -364,7 +375,7 @@ static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data)
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_set_line_width(cr, 6);
     cairo_move_to(cr, center_x-10, center_y-10);
-    cairo_rectangle(cr, center_x-10, center_y-10, 40, 20);
+    cairo_rectangle(cr, center_x-10, center_y-10, 40, 30);
     cairo_fill(cr);
     cairo_stroke(cr);
 
@@ -390,7 +401,7 @@ static gboolean stop_release(GtkWidget *widget, GdkEvent *event, gpointer data)
     cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
     cairo_set_line_width(cr, 6);
     cairo_move_to(cr, center_x-10, center_y-10);
-    cairo_rectangle(cr, center_x-10, center_y-10, 40, 20);
+    cairo_rectangle(cr, center_x-10, center_y-10, 40, 30);
     cairo_fill(cr);
     cairo_stroke(cr);
 
@@ -560,8 +571,20 @@ static gboolean backward_release(GtkWidget *widget, GdkEvent *event, gpointer da
 
     cairo_destroy(cr);
 
-
     return TRUE;
+  }
+static void show_widget(GtkWidget *widget, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+      {
+        gtk_widget_hide(GTK_WIDGET(data));
+        gtk_button_set_label(GTK_BUTTON(widget), "Show Widget");
+      }
+    else
+      {
+        gtk_widget_show(GTK_WIDGET(data));
+        gtk_button_set_label(GTK_BUTTON(widget), "Hide Widget");
+      }
   }
 
 
