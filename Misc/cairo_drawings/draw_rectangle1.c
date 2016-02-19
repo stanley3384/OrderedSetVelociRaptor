@@ -1,8 +1,9 @@
 
 /*
 
-    Layer two drawing areas with an overlay. Draw rectangles and circles on the top layer
-and add them to the bottom layer. This way you can add shapes to a cairo surface and clear them.
+    Layer two drawing areas with an overlay. Draw rectangles, circles and lines on the top layer
+and add them to the bottom layer. This way you can add shapes and line art to a cairo surface
+and be able to clear them.
 
     gcc -Wall draw_rectangle1.c -o draw_rectangle1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -30,11 +31,11 @@ static void combo2_changed(GtkComboBox *combo2, gpointer data);
 
 
 //For blocking motion signal. Block when not drawing top rectangle
-gint motion_id=0;
+static gint motion_id=0;
 //Coordinates for the drawing rectangle. Fifth number is color of rectangle.
-gdouble rect[]={0.0, 0.0, 0.0, 0.0, 0.0};
-gdouble shape_combo1=0.0;
-gdouble color_combo2=0.0;
+static gdouble rect[]={0.0, 0.0, 0.0, 0.0, 0.0};
+static gdouble shape_combo1=0.0;
+static gdouble color_combo2=0.0;
 
 int main(int argc, char *argv[])
   {
@@ -50,7 +51,8 @@ int main(int argc, char *argv[])
     //Save some rectangles and circles for drawing in da1.
     GArray *rectangles=g_array_new(FALSE, FALSE, sizeof(gdouble));
     GArray *circles=g_array_new(FALSE, FALSE, sizeof(gdouble));
-    gpointer shapes[]={rectangles, circles};
+    GArray *lines=g_array_new(FALSE, FALSE, sizeof(gdouble));
+    gpointer shapes[]={rectangles, circles, lines};
 
     //Bottom drawing area.
     GtkWidget *da1 = gtk_drawing_area_new();
@@ -81,6 +83,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(combo1, TRUE);
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Rectangle");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Circle");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Line");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), NULL);
 
@@ -96,7 +99,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(button1, TRUE);
     g_signal_connect(button1, "clicked", G_CALLBACK(add_rectangle), shapes);
 
-    gpointer clear[]={rectangles, circles, da1};
+    gpointer clear[]={rectangles, circles, lines, da1};
     GtkWidget *button2=gtk_button_new_with_label("Clear Shapes");
     gtk_widget_set_hexpand(button2, TRUE);
     g_signal_connect(button2, "clicked", G_CALLBACK(clear_rectangles), clear);
@@ -116,6 +119,7 @@ int main(int argc, char *argv[])
 
     g_array_free(rectangles, TRUE);
     g_array_free(circles, TRUE);
+    g_array_free(lines, TRUE);
 
     return 0;
   }
@@ -135,7 +139,7 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer *data)
     cairo_rectangle(cr, 20, 20, width-40, height-40);
     cairo_stroke(cr);
 
-    //Draw the stored rectangles
+    //Draw the stored shapes.
     gint i=0;
     gdouble x1=0;
     gdouble y1=0;
@@ -145,6 +149,8 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer *data)
     
     gint len1=((GArray*)data[0])->len/5;
     gint len2=((GArray*)data[1])->len/5;
+    gint len3=((GArray*)data[2])->len/5;
+
     //Draw saved rectangles.
     for(i=0;i<len1;i++)
       {
@@ -176,20 +182,38 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer *data)
         else if(color==1) cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
         else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
 
-        cairo_save(cr);
         gdouble axis_x=(x2-x1)/2.0;
         gdouble axis_y=(y2-y1)/2.0;
         gdouble radius=0.5*(x2-x1);
         if(axis_x>0.0&&axis_y>0)
           {
+            cairo_save(cr);
             cairo_translate(cr, x1+axis_x, y1+axis_y);
             cairo_scale(cr, axis_x/axis_y, axis_y/axis_x);
             cairo_arc(cr, 0.0, 0.0, radius, 0, 2*G_PI);
+            cairo_restore(cr);
             cairo_stroke(cr);
           }
-        cairo_restore(cr);
       }
-    
+
+    //Draw saved lines.
+    for(i=0;i<len3;i++)
+      {
+        x1=g_array_index((GArray*)data[2], gdouble, 5*i);
+        y1=g_array_index((GArray*)data[2], gdouble, 5*i+1);
+        x2=g_array_index((GArray*)data[2], gdouble, 5*i+2);
+        y2=g_array_index((GArray*)data[2], gdouble, 5*i+3);
+        color=g_array_index((GArray*)data[2], gdouble, 5*i+4);
+     
+        if(color==0) cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+        else if(color==1) cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+        else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+
+        cairo_move_to(cr, x1, y1);
+        cairo_line_to(cr, x2, y2);
+        cairo_stroke(cr);
+      }
+
     return TRUE;
   }
 static gboolean draw_foreground(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -209,18 +233,26 @@ static gboolean draw_foreground(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_rectangle(cr, rect[0], rect[1], rect[2]-rect[0], rect[3]-rect[1]);
         cairo_stroke(cr);
       }
-    else
+    else if(shape_combo1==1)
       {
         gdouble axis_x=(rect[2]-rect[0])/2.0;
         gdouble axis_y=(rect[3]-rect[1])/2.0;
         gdouble radius=0.5*(rect[2]-rect[0]);
         if(axis_x>0.0&&axis_y>0)
           {
+            cairo_save(cr);
             cairo_translate(cr, rect[0]+axis_x, rect[1]+axis_y);
             cairo_scale(cr, axis_x/axis_y, axis_y/axis_x);
             cairo_arc(cr, 0.0, 0.0, radius, 0, 2*G_PI);
+            cairo_restore(cr);
             cairo_stroke(cr);
           }
+      }
+    else
+      {
+        cairo_move_to(cr, rect[0], rect[1]);
+        cairo_line_to(cr, rect[2], rect[3]);
+        cairo_stroke(cr);
       }
 
     return TRUE;
@@ -262,7 +294,7 @@ static void add_rectangle(GtkWidget *widget, gpointer *data)
         g_array_append_val((GArray*)data[0], rect[3]);
         g_array_append_val((GArray*)data[0], color_combo2);
       }
-    else
+    else if(shape_combo1==1)
       {
         g_array_append_val((GArray*)data[1], rect[0]);
         g_array_append_val((GArray*)data[1], rect[1]);
@@ -270,7 +302,15 @@ static void add_rectangle(GtkWidget *widget, gpointer *data)
         g_array_append_val((GArray*)data[1], rect[3]);
         g_array_append_val((GArray*)data[1], color_combo2);
       }
-    g_print("%f %f %f %f %f\n", rect[0], rect[1], rect[2], rect[3], color_combo2);
+    else
+      {
+        g_array_append_val((GArray*)data[2], rect[0]);
+        g_array_append_val((GArray*)data[2], rect[1]);
+        g_array_append_val((GArray*)data[2], rect[2]);
+        g_array_append_val((GArray*)data[2], rect[3]);
+        g_array_append_val((GArray*)data[2], color_combo2);
+      }
+    //g_print("%f %f %f %f %f\n", rect[0], rect[1], rect[2], rect[3], color_combo2);
   }
 static void clear_rectangles(GtkWidget *widget, gpointer *data)
   {
@@ -281,12 +321,14 @@ static void clear_rectangles(GtkWidget *widget, gpointer *data)
     rect[4]=0.0;
 
     gint len1=((GArray*)data[0])->len; 
-    gint len2=((GArray*)data[1])->len; 
+    gint len2=((GArray*)data[1])->len;
+    gint len3=((GArray*)data[2])->len;  
 
     if(len1>0) g_array_remove_range((GArray*)data[0], 0, len1);
     if(len2>0) g_array_remove_range((GArray*)data[1], 0, len2);
+    if(len3>0) g_array_remove_range((GArray*)data[2], 0, len3);
 
-    gtk_widget_queue_draw(GTK_WIDGET(data[2]));
+    gtk_widget_queue_draw(GTK_WIDGET(data[3]));
   }
 static void combo1_changed(GtkComboBox *combo1, gpointer data)
   {
