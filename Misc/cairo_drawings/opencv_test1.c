@@ -5,8 +5,6 @@
 
      sudo apt-get install libopencv-dev
 
-     http://www.codeincodeblock.com/2012/12/using-opencv-in-gtk-sample-program.html
-
      gcc -Wall opencv_test1.c -o opencv_test1 `pkg-config gtk+-2.0 opencv --cflags --libs` -lm
 
      Tested on Ubuntu14.04
@@ -84,8 +82,11 @@ int main(int argc, char *argv[])
         for(j=0;j<width;j+=channels)
           {
             //Zero out the green channel.
-            data[i*width+j+1]=data[i*width+j+1]&0; 
-            //data[i*width+j+2]=data[i*width+j+2]|0b11111111;     
+            data[i*width+j+1]=data[i*width+j+1]&0;
+            //Try some other combos. 
+            //data[i*width+j+0]=data[i*width+j+0]|0b11111111;
+            //data[i*width+j+0]=data[i*width+j+0]&0x00;
+            //data[i*width+j+0]=data[i*width+j+0]>>1;       
           }
       }
     
