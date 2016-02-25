@@ -32,9 +32,11 @@ gboolean draw_image(GtkWidget *widget, cairo_t *cr, gpointer data)
   }
 */
 //Draw some circles over the image.
-gboolean draw_image(GtkWidget *widget, GdkEventExpose *event, gpointer *data)
+gboolean draw_image(GtkWidget *widget, GdkEventExpose *event, gpointer data)
   {  
-    gdk_draw_pixbuf(widget->window, widget->style->fg_gc[GTK_WIDGET_STATE(widget)], (GdkPixbuf*)(data[1]), 0, 0, 0, 0, ((IplImage*)data[0])->width, ((IplImage*)data[0])->height, GDK_RGB_DITHER_NONE, 0, 0);
+    gint width=gdk_pixbuf_get_width((GdkPixbuf*)data);
+    gint height=gdk_pixbuf_get_height((GdkPixbuf*)data);
+    gdk_draw_pixbuf(widget->window, widget->style->fg_gc[GTK_WIDGET_STATE(widget)], (GdkPixbuf*)(data), 0, 0, 0, 0, width, height, GDK_RGB_DITHER_NONE, 0, 0);
 
     //Draw over image with Cairo.
     cairo_t *cr=gdk_cairo_create(widget->window);
@@ -58,8 +60,17 @@ int main(int argc, char *argv[])
  
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); 
     gtk_window_set_title(GTK_WINDOW(window), "Remove Color");
-    gtk_window_set_default_size (GTK_WINDOW(window), 400, 400);
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+    gtk_window_set_default_size (GTK_WINDOW(window), 800, 200);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    //Reference image.
+    GtkWidget *image=gtk_image_new_from_file(image_file);
+
+    GtkWidget *view1=gtk_viewport_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(view1), image);
+    GtkWidget *scroll1 = gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(scroll1), view1);
 
     //Get an OpenCV image.
     IplImage *opencv_image=cvLoadImage(image_file, CV_LOAD_IMAGE_COLOR);
@@ -73,49 +84,70 @@ int main(int argc, char *argv[])
     guchar *data=(guchar*)opencv_image->imageData;
     g_print("width %i height %i step %i channels %i order %i\n", width, height, step, channels, order);
     
-    //Test changing some pixels.
+    //Test changing some pixels in the open_cv image.
     gint i=0;
     gint j=0;
-    width=width*channels;
+    gint width1=width*channels;
     for(i=0;i<height;i++)
       {
-        for(j=0;j<width;j+=channels)
+        for(j=0;j<width1;j+=channels)
           {
             //Zero out the green channel.
-            data[i*width+j+1]=data[i*width+j+1]&0;
+            data[i*width1+j+1]=data[i*width1+j+1]&0;
             //Try some other combos. 
-            //data[i*width+j+0]=data[i*width+j+0]|0b11111111;
-            //data[i*width+j+0]=data[i*width+j+0]&0x00;
-            //data[i*width+j+0]=data[i*width+j+0]>>1;       
+            //data[i*width1+j+0]=data[i*width1+j+0]|0b11111111;
+            //data[i*width1+j+0]=data[i*width1+j+0]&0x00;
+            //data[i*width1+j+0]=data[i*width1+j+0]>>1;       
           }
       }
     
     cvCvtColor(opencv_image, opencv_image, CV_BGR2RGB); 
 
-    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_data((guchar*)opencv_image->imageData, GDK_COLORSPACE_RGB, FALSE, opencv_image->depth, width, height, step, NULL, NULL);
-
-    gpointer pix_image[]={opencv_image, pixbuf};
+    //Change opencv image to a pixbuf.
+    GdkPixbuf *pixbuf1=gdk_pixbuf_new_from_data((guchar*)opencv_image->imageData, GDK_COLORSPACE_RGB, FALSE, opencv_image->depth, width, height, step, NULL, NULL);
  
+    //Put the opencv image in a drawing area.
     GtkWidget *drawing_area=gtk_drawing_area_new();
     gtk_widget_set_size_request(drawing_area, 2000, 2000);
     //g_signal_connect(G_OBJECT(drawing_area), "draw", G_CALLBACK(draw_image), pixbuf);
-    g_signal_connect(G_OBJECT(drawing_area), "expose_event", G_CALLBACK(draw_image), pix_image);
-
-    GtkWidget *view1=gtk_viewport_new(NULL, NULL);
-    gtk_container_add(GTK_CONTAINER(view1), drawing_area);
-    GtkWidget *scroll1 = gtk_scrolled_window_new(NULL, NULL);
-    gtk_container_add(GTK_CONTAINER(scroll1), view1);
-   
-    GtkWidget *image=gtk_image_new_from_file(image_file);
+    g_signal_connect(G_OBJECT(drawing_area), "expose_event", G_CALLBACK(draw_image), pixbuf1);
 
     GtkWidget *view2=gtk_viewport_new(NULL, NULL);
-    gtk_container_add(GTK_CONTAINER(view2), image);
+    gtk_container_add(GTK_CONTAINER(view2), drawing_area);
     GtkWidget *scroll2 = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll2), view2);
 
-    GtkWidget *table=gtk_table_new(2, 1, TRUE);
-    gtk_table_attach_defaults(GTK_TABLE(table), scroll2, 0, 1, 0, 1);
-    gtk_table_attach_defaults(GTK_TABLE(table), scroll1, 0, 1, 1, 2);
+    //Just use a pixbuf to edit out colors.
+    GdkPixbuf *pixbuf2=gdk_pixbuf_new_from_file(image_file, NULL);
+    width=gdk_pixbuf_get_width(pixbuf2);
+    height=gdk_pixbuf_get_height(pixbuf2);
+    step=gdk_pixbuf_get_rowstride(pixbuf2);
+    channels=gdk_pixbuf_get_n_channels(pixbuf2);
+    guchar *pixels, *p;
+    pixels=gdk_pixbuf_get_pixels(pixbuf2);
+
+    width1=width*channels;
+    for(i=0;i<width1;i++)
+      {
+        for(j=0;j<height;j++)
+          {
+            p=pixels+j*step+i*channels;
+            //Remove blue.
+            p[2]=0;
+          }
+      }
+
+    GtkWidget *image2=gtk_image_new_from_pixbuf(pixbuf2);
+
+    GtkWidget *view3=gtk_viewport_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(view3), image2);
+    GtkWidget *scroll3 = gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(scroll3), view3);
+
+    GtkWidget *table=gtk_table_new(1, 3, TRUE);
+    gtk_table_attach_defaults(GTK_TABLE(table), scroll1, 0, 1, 0, 1);
+    gtk_table_attach_defaults(GTK_TABLE(table), scroll2, 1, 2, 0, 1);
+    gtk_table_attach_defaults(GTK_TABLE(table), scroll3, 2, 3, 0, 1);
 
     gtk_container_add(GTK_CONTAINER(window), table);
  
@@ -123,6 +155,7 @@ int main(int argc, char *argv[])
     gtk_main();
 
     cvReleaseImage(&opencv_image);
-    g_object_unref(pixbuf);
+    g_object_unref(pixbuf1);
+    g_object_unref(pixbuf2);
     return 0;
 }
