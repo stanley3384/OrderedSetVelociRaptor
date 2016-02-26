@@ -17,7 +17,7 @@
 #include<highgui.h>
 
 static gboolean draw_image(GtkWidget *widget, GdkEventExpose *event, gpointer data);
-static GdkPixbuf* get_opencv_image(IplImage *opencv_image, const gchar *image_file);
+static GdkPixbuf* get_opencv_image(IplImage **opencv_image, const gchar *image_file);
 static GdkPixbuf* get_pixbuf_image(const gchar *image_file);
 static GdkPixbuf* get_pixbuf_image_rgb(gint width, gint height);
 static GdkPixbuf* get_pixbuf_remove_rgb(GdkPixbuf *pixbuf, gint color);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(scroll1), view1);
 
     IplImage *opencv_image=NULL;
-    GdkPixbuf *pixbuf1=get_opencv_image(opencv_image, image_file);
+    GdkPixbuf *pixbuf1=get_opencv_image(&opencv_image, image_file);
  
     //Put the pixbuf from opencv in a drawing area with green edited out and draw circles with cairo.
     GtkWidget *drawing_area=gtk_drawing_area_new();
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(window);
     gtk_main();
 
-    if(opencv_image!=NULL) cvReleaseImage(&opencv_image);
+    cvReleaseImage(&opencv_image);
     g_object_unref(pixbuf1);
     g_object_unref(pixbuf2);
     g_object_unref(pixbuf3);
@@ -144,18 +144,18 @@ gboolean draw_image(GtkWidget *widget, GdkEventExpose *event, gpointer data)
  
     return TRUE;
   } 
-static GdkPixbuf* get_opencv_image(IplImage *opencv_image, const gchar *image_file)
+static GdkPixbuf* get_opencv_image(IplImage **opencv_image, const gchar *image_file)
   {
     //Get an OpenCV image.
-    opencv_image=cvLoadImage(image_file, CV_LOAD_IMAGE_COLOR);
+    *opencv_image=cvLoadImage(image_file, CV_LOAD_IMAGE_COLOR);
  
     //Some data about the image.
-    gint width=opencv_image->width;
-    gint height=opencv_image->height;
-    gint step=opencv_image->widthStep;
-    gint channels=opencv_image->nChannels;
-    gint order=opencv_image->dataOrder;
-    guchar *data=(guchar*)opencv_image->imageData;
+    gint width=(*opencv_image)->width;
+    gint height=(*opencv_image)->height;
+    gint step=(*opencv_image)->widthStep;
+    gint channels=(*opencv_image)->nChannels;
+    gint order=(*opencv_image)->dataOrder;
+    guchar *data=(guchar*)((*opencv_image)->imageData);
     g_print("width %i height %i step %i channels %i order %i\n", width, height, step, channels, order);
     
     //Test changing some pixels in the open_cv image.
@@ -171,10 +171,10 @@ static GdkPixbuf* get_opencv_image(IplImage *opencv_image, const gchar *image_fi
           }
       }
     
-    cvCvtColor(opencv_image, opencv_image, CV_BGR2RGB); 
-
+    cvCvtColor(*opencv_image, *opencv_image, CV_BGR2RGB); 
+ 
     //Change opencv image to a pixbuf.
-    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_data((guchar*)opencv_image->imageData, GDK_COLORSPACE_RGB, FALSE, opencv_image->depth, width, height, step, NULL, NULL);
+    GdkPixbuf *pixbuf=gdk_pixbuf_new_from_data((guchar*)((*opencv_image)->imageData), GDK_COLORSPACE_RGB, FALSE, (*opencv_image)->depth, width, height, step, NULL, NULL);
 
     return pixbuf;
   }
