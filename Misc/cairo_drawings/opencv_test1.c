@@ -1,11 +1,12 @@
 /*
-     Test opencv drawing with GTK+.
+     Test opencv drawing with GTK+. Process one pixbuf image with OpenMP to see if it will speed it up
+a little.
     
      This apt-get for OpenCV works with GTK version 2 not version 3.
 
      sudo apt-get install libopencv-dev
 
-     gcc -Wall opencv_test1.c -o opencv_test1 `pkg-config gtk+-2.0 opencv --cflags --libs` -lm
+     gcc -Wall -fopenmp opencv_test1.c -o opencv_test1 `pkg-config gtk+-2.0 opencv --cflags --libs` -lm
 
      Tested on Ubuntu14.04
 
@@ -63,8 +64,11 @@ int main(int argc, char *argv[])
     GtkWidget *scroll3 = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll3), view3);
 
-    //Make a rgb pixbuf to compare with above images.
-    GdkPixbuf *pixbuf3=get_pixbuf_image_rgb(200, 200);
+    /*
+      Make a rgb pixbuf to compare with above images. Change image size to compare
+      openmp times.
+    */
+    GdkPixbuf *pixbuf3=get_pixbuf_image_rgb(1000, 200);
     GtkWidget *image3=gtk_image_new_from_pixbuf(pixbuf3);
     GtkWidget *view4=gtk_viewport_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(view4), image3);
@@ -261,6 +265,8 @@ static GdkPixbuf* get_pixbuf_remove_rgb(GdkPixbuf *pixbuf, gint color)
     gint channels=gdk_pixbuf_get_n_channels(pixbuf2);
     guchar *pixels, *p;
     pixels=gdk_pixbuf_get_pixels(pixbuf2);
+
+    GTimer *timer=g_timer_new();
     
     if(color==0)
       {
@@ -286,15 +292,21 @@ static GdkPixbuf* get_pixbuf_remove_rgb(GdkPixbuf *pixbuf, gint color)
       }
     else
       {
+        #pragma omp parallel for collapse(2)
         for(i=0;i<width;i++)
           {
             for(j=0;j<height;j++)
               {
-                p=pixels+j*step+i*channels;
-                p[2]=0;
+                //Use index to parallelize.
+                pixels[j*step+i*channels+2]=0;
               }
           }
       }
+
+    gdouble elapsed_time=g_timer_elapsed(timer, NULL);
+    if(color==2) g_print("OpenMP Time %f\n", elapsed_time);
+    else g_print("No OpenMP Time %f\n", elapsed_time);
+    g_timer_destroy(timer);
 
     return pixbuf2;
    
