@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
     GstElement *png=gst_element_factory_make("pngenc", NULL);
     GstElement *app_sink=gst_element_factory_make("appsink", NULL);
 
-    GstCaps *caps1=gst_caps_new_simple("video/x-raw-rgb", "format", G_TYPE_STRING, "RGB", "framerate", GST_TYPE_FRACTION, 30, 1, "width", G_TYPE_INT, 320, "height", G_TYPE_INT, 240, NULL);
-    GstCaps *caps2=gst_caps_new_simple("video/x-raw-rgb", "format", G_TYPE_STRING, "RGB", "framerate", GST_TYPE_FRACTION, 30, 1, "width", G_TYPE_INT, 320, "height", G_TYPE_INT, 240, NULL); 
+    //Set the capabilities for the video stream.
+    GstCaps *caps1=gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "YUV", "framerate", GST_TYPE_FRACTION, 30, 1, "width", G_TYPE_INT, 320, "height", G_TYPE_INT, 240, NULL);
 
     gst_app_sink_set_max_buffers(GST_APP_SINK(app_sink), 1);
     gst_app_sink_set_drop(GST_APP_SINK(app_sink), TRUE);
@@ -74,9 +74,6 @@ int main(int argc, char *argv[])
     g_print("Add Filters\n");
     if(!gst_element_link_filtered(video_scale1, caps_filter1, caps1)) g_print("filter1 linked\n");
     else g_print("Warning: filter1 not linked\n");
-    if(!gst_element_link_filtered(video_convert2, caps_filter2, caps2)) g_print("filter2 linked\n");
-    else g_print("Warning: filter2 not linked\n");
-    //gst_app_sink_set_caps(GST_APP_SINK(app_sink), caps2);
 
     g_print("Link Elements\n");
     if(gst_element_link_many(src, tee, NULL)) g_print("tee linked\n");
@@ -96,6 +93,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_vexpand(da1, TRUE);
     g_signal_connect(da1, "realize", G_CALLBACK(get_xid), sink);
     g_signal_connect(da1, "draw", G_CALLBACK(refresh_background), pipeline);
+    gtk_widget_show(da1);
 
     GtkWidget *image = gtk_image_new();
     gtk_widget_set_size_request(image, 320, 240);
