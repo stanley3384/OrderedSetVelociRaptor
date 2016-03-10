@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
     g_print("Add Filters\n");
     if(!gst_element_link_filtered(video_scale1, caps_filter1, caps1)) g_print("filter1 linked\n");
     else g_print("Warning: filter1 not linked\n");
+    if(!gst_element_link_filtered(video_convert2, caps_filter2, caps1)) g_print("filter2 linked\n");
+    else g_print("Warning: filter2 not linked\n");
 
     g_print("Link Elements\n");
     if(gst_element_link_many(src, tee, NULL)) g_print("tee linked\n");
