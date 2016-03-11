@@ -95,7 +95,6 @@ int main(int argc, char *argv[])
     gtk_widget_set_vexpand(da1, TRUE);
     g_signal_connect(da1, "realize", G_CALLBACK(get_xid), sink);
     g_signal_connect(da1, "draw", G_CALLBACK(refresh_background), pipeline);
-    gtk_widget_show(da1);
 
     GtkWidget *image = gtk_image_new();
     gtk_widget_set_size_request(image, 320, 240);
@@ -131,7 +130,7 @@ int main(int argc, char *argv[])
   }
 static void get_xid(GtkWidget *widget, gpointer data)
   {
-    GdkWindow *window = gtk_widget_get_window(widget);
+    GdkWindow *window=gtk_widget_get_window(widget);
     guintptr window_handle;
  
     if(!gdk_window_ensure_native(window))
@@ -187,6 +186,7 @@ static void on_sync_message(GstBus *bus, GstMessage *message, gpointer data)
   }
 static gboolean get_pixbuf(gpointer *data)
   {
+    GTimer *timer=g_timer_new();
     GstSample *sample=NULL;
     sample=gst_app_sink_pull_sample(GST_APP_SINK(data[1]));
     if(sample==NULL) g_print("Sample==NULL\n");
@@ -234,6 +234,10 @@ static gboolean get_pixbuf(gpointer *data)
     if(sample!=NULL) gst_sample_unref(sample);
     if(pixbuf!=NULL) g_object_unref(pixbuf);
     if(scale!=NULL) g_object_unref(scale);  
+
+    gdouble elapsed_time=g_timer_elapsed(timer, NULL);
+    g_print("Get Pixbuf Time %f\n", elapsed_time);
+    g_timer_destroy(timer);
 
     return TRUE;
   }
