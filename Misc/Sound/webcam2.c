@@ -91,8 +91,6 @@ int main(int argc, char *argv[])
     if(gst_element_link_many(tee, q2, video_convert2, caps_filter2, png, app_sink, NULL)) g_print("group2 linked\n");
     else g_print("Warning: group2 not linked.\n");
 
-    gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_PLAYING);
-
     GtkWidget *da1 = gtk_drawing_area_new();
     gtk_widget_set_size_request(da1, 320, 240);
     gtk_widget_set_hexpand(da1, TRUE);
@@ -134,6 +132,7 @@ int main(int argc, char *argv[])
     g_signal_connect(G_OBJECT(bus), "message", G_CALLBACK(on_message), pipeline);
     g_signal_connect(G_OBJECT(bus), "sync-message::element", G_CALLBACK(on_sync_message), da1);
     gst_object_unref(bus);
+    gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_PLAYING);
 
     gtk_main();
 
