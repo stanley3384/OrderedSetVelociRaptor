@@ -1,9 +1,9 @@
 
 /*
     Test a gstreamer webcam video split to the output window and to a single image rendered to an 
-image widget. Remove the green color channel before rendering.
+image widget. Remove a color channel before rendering.
 
-    gcc -Wall webcam2.c -o webcam2 `pkg-config gstreamer-1.0 gtk+-3.0 gstreamer-video-1.0 gstreamer-app-1.0 --cflags --libs`
+    gcc -Wall -fopenmp webcam2.c -o webcam2 `pkg-config gstreamer-1.0 gtk+-3.0 gstreamer-video-1.0 gstreamer-app-1.0 --cflags --libs`
 
     First, put together a gst-launch-1.0 to get a workable pipeline. Get an idea of how it might work.
 
@@ -30,6 +30,10 @@ static gboolean refresh_background(GtkWidget *widget, cairo_t *cr, gpointer data
 static void on_message(GstBus *bus, GstMessage *message, gpointer *data);
 static void on_sync_message(GstBus *bus, GstMessage *message, gpointer data);
 static gboolean get_pixbuf(gpointer *data);
+static void set_color(GtkComboBox *widget, gpointer data);
+static void remove_color(GdkPixbuf *pixbuf, gint width, gint height);
+
+static gint combo_color=0;
 
 int main(int argc, char *argv[])
   {
@@ -101,9 +105,19 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(image, TRUE);
     gtk_widget_set_vexpand(image, TRUE);
 
+    GtkWidget *combo1 = gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "remove red");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "remove green");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "remove blue");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "no remove");
+    gtk_widget_set_hexpand(combo1, TRUE);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
+    g_signal_connect(combo1, "changed", G_CALLBACK(set_color), NULL);
+
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 4, 4);
     gtk_grid_attach(GTK_GRID(grid), image, 0, 4, 4, 4);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 8, 4, 1);
     
     gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -209,24 +223,7 @@ static gboolean get_pixbuf(gpointer *data)
       }
     else g_print("Map Failed\n");
 
-    gint step=gdk_pixbuf_get_rowstride(pixbuf);
-    gint channels=gdk_pixbuf_get_n_channels(pixbuf);
-    guchar *pixels, *p;
-    guint length=0;
-    pixels=gdk_pixbuf_get_pixels_with_length(pixbuf, &length);
-    //g_print("Width %i Height %i Step %i Channels %i Length %i\n", width, height, step, channels, (int)length);
-    
-    //Remove green from image.
-    gint i=0;
-    gint j=0;
-    for(i=0;i<width;i++)
-      {
-        for(j=0;j<height;j++)
-          {
-            p=pixels+j*step+i*channels;
-            p[1]=0;
-          }
-      }
+    if(combo_color!=3) remove_color(pixbuf, width, height);
 
     GdkPixbuf *scale=gdk_pixbuf_scale_simple(pixbuf, 320, 240, GDK_INTERP_BILINEAR);
     gtk_image_set_from_pixbuf(GTK_IMAGE(data[0]), scale);
@@ -240,6 +237,55 @@ static gboolean get_pixbuf(gpointer *data)
     g_timer_destroy(timer);
 
     return TRUE;
+  }
+static void set_color(GtkComboBox *widget, gpointer data)
+  {
+    gint color=gtk_combo_box_get_active(widget);
+    combo_color=color;
+  }
+static void remove_color(GdkPixbuf *pixbuf, gint width, gint height)
+  {
+    gint i=0;
+    gint j=0;
+    gint step=gdk_pixbuf_get_rowstride(pixbuf);
+    gint channels=gdk_pixbuf_get_n_channels(pixbuf);
+    guchar *pixels;
+    guint length=0;
+    pixels=gdk_pixbuf_get_pixels_with_length(pixbuf, &length);
+
+    if(combo_color==0)
+      {
+        #pragma omp parallel for collapse(2)
+        for(i=0;i<width;i++)
+          {
+            for(j=0;j<height;j++)
+              {
+                pixels[j*step+i*channels]=0;
+              }
+          }
+      }
+    else if(combo_color==1)
+      {
+        #pragma omp parallel for collapse(2)
+        for(i=0;i<width;i++)
+          {
+            for(j=0;j<height;j++)
+              {
+                pixels[j*step+i*channels+1]=0;
+              }
+          }
+      }
+    else
+      {
+        #pragma omp parallel for collapse(2)
+        for(i=0;i<width;i++)
+          {
+            for(j=0;j<height;j++)
+              {
+                pixels[j*step+i*channels+2]=0;
+              }
+          }
+      }
   }
 
 
