@@ -3,17 +3,19 @@
     Test a gstreamer webcam video split to the output window and to a single image rendered to an 
 image widget. Remove a color channel before rendering.
 
-    gcc -Wall -fopenmp webcam2.c -o webcam2 `pkg-config gstreamer-1.0 gtk+-3.0 gstreamer-video-1.0 gstreamer-app-1.0 --cflags --libs`
-
     First, put together a gst-launch-1.0 to get a workable pipeline. Get an idea of how it might work.
+Output frames to a folder.
 
     gst-launch-1.0 -e v4l2src ! tee name=t t. ! queue ! videoconvert ! videoscale ! video/x-raw, width=320, height=240 ! xvimagesink t. ! queue ! videoconvert ! videorate ! video/x-raw, framerate=1/1 ! pngenc ! multifilesink location="/home/owner/eric/Rectangle4/pictures/frame%d.png"
 
-    Test outputting to appsink.
+    Test outputting to appsink since that is what the program needs to do.
 
     gst-launch-1.0 -e v4l2src ! tee name=t t. ! queue ! videoconvert ! videoscale ! video/x-raw, width=320, height=240 ! xvimagesink t. ! queue ! videoconvert ! videorate ! video/x-raw, framerate=1/1 ! pngenc ! appsink
 
-    Tested on Ubuntu14.04 GTK3.10
+    compile with:
+    gcc -Wall -fopenmp webcam2.c -o webcam2 `pkg-config gstreamer-1.0 gtk+-3.0 gstreamer-video-1.0 gstreamer-app-1.0 --cflags --libs`
+
+    Tested on Ubuntu 14.04, GTK 3.10, GCC 4.8.4 and GStreamer 1.2.4
 
     C. Eric Cashon 
 */
