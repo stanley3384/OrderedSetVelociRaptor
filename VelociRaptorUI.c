@@ -273,6 +273,8 @@ int main(int argc, char *argv[])
     gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem6);
        
     textview=gtk_text_view_new();
+    gtk_widget_set_hexpand(textview, TRUE);
+    gtk_widget_set_vexpand(textview, TRUE);
     //Set initial font.
     pfd=pango_font_description_from_string("Monospace 9"); 
     gtk_widget_override_font(GTK_WIDGET(textview), pfd);
@@ -302,7 +304,7 @@ int main(int argc, char *argv[])
     w=g_slice_new(Widgets);
     w->window=GTK_WIDGET(window);
     w->textview=GTK_WIDGET(textview);
-    g_signal_connect(PrintItem, "activate", G_CALLBACK(print_textview), (gpointer) w);
+    g_signal_connect(PrintItem, "activate", G_CALLBACK(print_textview), (gpointer)w);
         
     scrolled_win=gtk_scrolled_window_new(NULL, NULL);
      
