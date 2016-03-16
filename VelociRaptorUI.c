@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     
     RaptorFeet=gtk_drawing_area_new();
     gtk_widget_set_size_request(RaptorFeet, 1024,35);
-    g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), NULL);
+    g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), window);
 
     button=gtk_button_new_with_label("Get Test Data");
     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
@@ -310,8 +310,11 @@ int main(int argc, char *argv[])
      
     gtk_container_add(GTK_CONTAINER(scrolled_win), textview);
 
-    PlateParametersLabel=gtk_label_new("Parameters");
-    TextLabel=gtk_label_new("White Board");
+    PlateParametersLabel=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(PlateParametersLabel), "<span weight='bold' underline='single'>Parameters</span>");
+    TextLabel=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(TextLabel), "<span weight='bold' underline='single'>White Board</span>");
+    gtk_widget_set_halign(TextLabel, GTK_ALIGN_CENTER);
     PlateNumberLabel=gtk_label_new("Number of Plates");
     PlateSizeLabel=gtk_label_new("Size of Plate");
     PlateStatsLabel=gtk_label_new("Set Size for Stats");
@@ -377,7 +380,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), MenuBar, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), RaptorFeet, 0, 1, 8, 1);
     gtk_grid_attach(GTK_GRID(grid), PlateParametersLabel, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), TextLabel, 2, 2, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid), TextLabel, 2, 2, 5, 1);
 
     gtk_grid_attach(GTK_GRID(grid), PlateNumberLabel, 0, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), PlateSizeLabel, 0, 4, 1, 1);
@@ -2236,11 +2239,11 @@ static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer
   {   
     int i=0;
     int j=0;
-    int width=0;
     int ScaleWidthCount=0;
     int FootCount=0;
+    int window_width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   
-    ScaleWidthCount=width-1024;
+    ScaleWidthCount=window_width-1024;
 
     if(ScaleWidthCount<=0)
       {
@@ -2248,7 +2251,7 @@ static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer
       }
     if(ScaleWidthCount>0)
       {
-        FootCount=22+ScaleWidthCount%50;
+        FootCount=22+ScaleWidthCount%45;
       } 
 
     int points[9][2] = { 
