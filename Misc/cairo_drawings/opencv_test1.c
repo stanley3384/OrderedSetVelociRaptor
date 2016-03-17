@@ -113,18 +113,6 @@ int main(int argc, char *argv[])
 
     return 0;
   }
-/*
-//GTK3 doesn't work with this.
-gboolean draw_image(GtkWidget *widget, cairo_t *cr, gpointer data)
-  { 
-    GdkWindow *win=gtk_widget_get_window(widget);
-    cairo_surface_t *surface=gdk_cairo_surface_create_from_pixbuf(GDK_PIXBUF(data), 1, win);
-    gdk_cairo_set_source_window(cr, win, 0, 0);
-    cairo_surface_destroy(surface); 
- 
-    return TRUE;
-  }
-*/
 //Draw some circles over the image.
 gboolean draw_image(GtkWidget *widget, GdkEventExpose *event, gpointer data)
   {  
