@@ -13,7 +13,7 @@ Output frames to a folder.
     gst-launch-1.0 -e v4l2src ! tee name=t t. ! queue ! videoconvert ! videoscale ! video/x-raw, width=320, height=240 ! xvimagesink t. ! queue ! videoconvert ! videorate ! video/x-raw, framerate=1/1 ! pngenc ! appsink
 
     compile with:
-    gcc -Wall -fopenmp webcam3.c -o webcam3 `pkg-config gstreamer-1.0 gtk+-3.0 gstreamer-video-1.0 gstreamer-app-1.0 --cflags --libs` -lm
+    gcc -Wall -fopenmp webcam3.c -o webcam3 `pkg-config gstreamer-1.0 gtk+-3.0 gstreamer-video-1.0 gstreamer-app-1.0 --cflags --libs`
 
     Tested on Ubuntu 14.04, GTK 3.10, GCC 4.8.4 and GStreamer 1.2.4
 
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
     //Setup a timer to get the frames.
     gpointer update[]={image, app_sink, progress};
-    g_timeout_add(1000, (GSourceFunc)get_pixbuf, update);
+    g_timeout_add(500, (GSourceFunc)get_pixbuf, update);
 
     gtk_widget_show_all(window);
 
@@ -251,6 +251,12 @@ static gboolean get_pixbuf(gpointer *data)
     g_print("Get Pixbuf Time %f\n", elapsed_time);
     g_timer_destroy(timer);
 
+    //If timer speed is less than the timer callback, flush pending events to redraw widgets.
+    while(gtk_events_pending())
+      {
+        gtk_main_iteration();
+      } 
+
     return TRUE;
   }
 static void set_color(GtkComboBox *widget, gpointer data)
@@ -331,6 +337,7 @@ static gint compare_images(const GdkPixbuf *current_image, const GdkPixbuf *prev
 
     return counter;
   }
+
 
 
 
