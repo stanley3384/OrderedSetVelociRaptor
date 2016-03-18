@@ -2,6 +2,7 @@
 /*
     Test a gstreamer webcam video split to the output window and to a single image rendered to an 
 image widget. Remove a color channel before rendering. Try a little motion detecting with this one.
+Critter detection.
 
     First, put together a gst-launch-1.0 to get a workable pipeline. Get an idea of how it might work.
 Output frames to a folder.
@@ -34,11 +35,13 @@ static void on_message(GstBus *bus, GstMessage *message, gpointer *data);
 static void on_sync_message(GstBus *bus, GstMessage *message, gpointer data);
 static gboolean get_pixbuf(gpointer *data);
 static void set_color(GtkComboBox *widget, gpointer data);
+static void set_motion_sensitivity(GtkComboBox *widget, gpointer data);
 static void remove_color(GdkPixbuf *pixbuf, gint width, gint height);
 static gint compare_images(const GdkPixbuf *current_image, const GdkPixbuf *prev_image, const gint width, const gint height);
 
 static GdkPixbuf *prev_image=NULL;
 static gint combo_color=0;
+static gint motion_sensitivity=80;
 
 int main(int argc, char *argv[])
   {
@@ -46,9 +49,9 @@ int main(int argc, char *argv[])
     gst_init(&argc, &argv);
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "View");
+    gtk_window_set_title(GTK_WINDOW(window), "Critter Webcam View");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 350, 600);
+    gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     //The pipeline and source.
@@ -57,14 +60,14 @@ int main(int argc, char *argv[])
     GstElement *tee=gst_element_factory_make("tee", NULL);
 
     //First branch in pipeline.
-    GstElement *q1 = gst_element_factory_make("queue", NULL);
+    GstElement *q1=gst_element_factory_make("queue", NULL);
     GstElement *video_convert1=gst_element_factory_make("videoconvert", NULL);
     GstElement *video_scale1=gst_element_factory_make("videoscale", NULL);
     GstElement *caps_filter1=gst_element_factory_make ("capsfilter", NULL); 
     GstElement *sink=gst_element_factory_make("xvimagesink", NULL);
 
     //Second branch in pipeline.
-    GstElement *q2 = gst_element_factory_make ("queue", NULL);
+    GstElement *q2=gst_element_factory_make ("queue", NULL);
     GstElement *video_convert2=gst_element_factory_make("videoconvert", NULL); 
     GstElement *caps_filter2=gst_element_factory_make ("capsfilter", NULL);    
     GstElement *png=gst_element_factory_make("pngenc", NULL);
@@ -96,19 +99,19 @@ int main(int argc, char *argv[])
     if(gst_element_link_many(tee, q2, video_convert2, caps_filter2, png, app_sink, NULL)) g_print("group2 linked\n");
     else g_print("Warning: group2 not linked.\n");
 
-    GtkWidget *da1 = gtk_drawing_area_new();
+    GtkWidget *da1=gtk_drawing_area_new();
     gtk_widget_set_size_request(da1, 320, 240);
     gtk_widget_set_hexpand(da1, TRUE);
     gtk_widget_set_vexpand(da1, TRUE);
     g_signal_connect(da1, "realize", G_CALLBACK(get_xid), sink);
     g_signal_connect(da1, "draw", G_CALLBACK(refresh_background), pipeline);
 
-    GtkWidget *image = gtk_image_new();
+    GtkWidget *image=gtk_image_new();
     gtk_widget_set_size_request(image, 320, 240);
     gtk_widget_set_hexpand(image, TRUE);
     gtk_widget_set_vexpand(image, TRUE);
 
-    GtkWidget *combo1 = gtk_combo_box_text_new();
+    GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "remove red");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "remove green");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "remove blue");
@@ -117,19 +120,30 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(set_color), NULL);
 
+    GtkWidget *combo2=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "high");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "medium high");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "medium motion sensitivity");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "medium low");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "low");
+    gtk_widget_set_hexpand(combo2, TRUE);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 2);
+    g_signal_connect(combo2, "changed", G_CALLBACK(set_motion_sensitivity), NULL);
+
     GtkWidget *progress=gtk_progress_bar_new();
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 4, 4);
-    gtk_grid_attach(GTK_GRID(grid), image, 0, 4, 4, 4);
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 8, 4, 1);
-    gtk_grid_attach(GTK_GRID(grid), progress, 0, 9, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid), image, 4, 0, 4, 4);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo2, 4, 4, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid), progress, 0, 5, 8, 1);
     
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     //Setup a timer to get the frames.
     gpointer update[]={image, app_sink, progress};
-    g_timeout_add(500, (GSourceFunc)get_pixbuf, update);
+    g_timeout_add(300, (GSourceFunc)get_pixbuf, update);
 
     gtk_widget_show_all(window);
 
@@ -264,6 +278,15 @@ static void set_color(GtkComboBox *widget, gpointer data)
     gint color=gtk_combo_box_get_active(widget);
     combo_color=color;
   }
+static void set_motion_sensitivity(GtkComboBox *widget, gpointer data)
+  {
+    gint motion=gtk_combo_box_get_active(widget);
+    if(motion==0) motion_sensitivity=5;
+    else if(motion==1) motion_sensitivity=40;
+    else if(motion==2) motion_sensitivity=80;
+    else if(motion==3) motion_sensitivity=120;
+    else motion_sensitivity=160;
+  }
 static void remove_color(GdkPixbuf *pixbuf, gint width, gint height)
   {
     gint i=0;
@@ -331,7 +354,7 @@ static gint compare_images(const GdkPixbuf *current_image, const GdkPixbuf *prev
             count1=pixels1[j*step+i*channels+0]+pixels1[j*step+i*channels+1]+pixels1[j*step+i*channels+2];
             count2=pixels2[j*step+i*channels+0]+pixels2[j*step+i*channels+1]+pixels2[j*step+i*channels+2];
             diff=abs(count1-count2);
-            if(diff>50) counter++;
+            if(diff>motion_sensitivity) counter++;
           }
       }
 
