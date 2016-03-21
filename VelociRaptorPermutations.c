@@ -144,7 +144,7 @@ void unadjusted_p_sql(int permutations, int iRadioButton, int iControlValue, int
           }
       }
 
-    if(mTestGroups->matrix!=NULL)gsl_matrix_free(mTestGroups->matrix);
+    if(mTestGroups!=NULL) apop_data_free(mTestGroups);
     if(vTestData!=NULL)gsl_vector_free(vTestData);
     if(vControlGroups!=NULL)gsl_vector_free(vControlGroups);
     if(vControlData!=NULL)gsl_vector_free(vControlData);
@@ -594,11 +594,11 @@ void minP_sql(int permutations, int iRadioButton, int iControlValue, int iTail, 
         minP_data(permutations, iControlValue, iTail, iTest, iFunction, mTestGroups, vTestData, vControlGroups, vControlData, mPvaluesSorted, textview, progress, pBreakLoop, iSeedValue, iRandomButton, PlateCount);
       }
 
-    if(mTestGroups->matrix!=NULL)gsl_matrix_free(mTestGroups->matrix);
+    if(mTestGroups!=NULL) apop_data_free(mTestGroups);
     if(vTestData!=NULL)gsl_vector_free(vTestData);
     if(vControlGroups!=NULL)gsl_vector_free(vControlGroups);
     if(vControlData!=NULL)gsl_vector_free(vControlData);
-    if(mPvaluesSorted->matrix!=NULL)gsl_matrix_free(mPvaluesSorted->matrix);
+    if(mPvaluesSorted!=NULL) apop_data_free(mPvaluesSorted);
     g_string_free(order, TRUE);
     g_string_free(maxTsort, TRUE);
 
