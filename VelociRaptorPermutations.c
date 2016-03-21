@@ -219,7 +219,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
              }            
                 
              control_count=gsl_vector_get(vControlGroups,step_plate_count-1);
-             double *data_control=(double *)malloc(sizeof(double)*control_count);
+             double *data_control=(double *)calloc(control_count, sizeof(double));
              if(step_plate_count!=plate)
                {
                  step_plate_count++;
@@ -234,7 +234,7 @@ static void unadjusted_p_data(int permutations, int iControlValue, int iTail, in
                    iCounter1++;
                   }
               iCounter1=iCounter1-control_count;
-              double *data_test=(double *)malloc(sizeof(double)*test_count);
+              double *data_test=(double *)calloc(test_count, sizeof(double));
               //Loop the group count number down the test data vector.
               for(k=0;k<test_count;k++)
                  {
@@ -431,7 +431,7 @@ static void send_tvalues_to_database(int iControlValue, int iTest, apop_data *mT
              }            
                 
              control_count=gsl_vector_get(vControlGroups,step_plate_count-1);
-             double *data_control=(double *)malloc(sizeof(double)*control_count);
+             double *data_control=(double *)calloc(control_count, sizeof(double));
              if(step_plate_count!=plate)
                {
                  step_plate_count++;
@@ -446,7 +446,7 @@ static void send_tvalues_to_database(int iControlValue, int iTest, apop_data *mT
                    iCounter1++;
                   }
               iCounter1=iCounter1-control_count;
-              double *data_test=(double *)malloc(sizeof(double)*test_count);
+              double *data_test=(double *)calloc(test_count, sizeof(double));
               //Loop the group count number down the test data vector.
               for(k=0;k<test_count;k++)
                  {
@@ -627,8 +627,8 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
     GString *PrintOutput=g_string_new(NULL);
     GPtrArray *sArray = g_ptr_array_sized_new(mPvaluesSorted->matrix->size1);
     
-    double *monotonicity=(double *)malloc(sizeof(double)*(mPvaluesSorted->matrix->size1));
-    double *prob_prev_row=(double *)malloc(sizeof(double)*permutations);
+    double *monotonicity=(double *)calloc(mPvaluesSorted->matrix->size1, sizeof(double));
+    double *prob_prev_row=(double *)calloc(permutations, sizeof(double));
     if(prob_prev_row==NULL) malloc_error=1;
 
     //Initialize prob_prev_row to 1 for minP.
@@ -683,7 +683,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
              }            
                 
              control_count=gsl_vector_get(vControlGroups,step_plate_count-1);
-             double *data_control=(double *)malloc(sizeof(double)*control_count);
+             double *data_control=(double *)calloc(control_count, sizeof(double));
              if(step_plate_count!=plate)
                {
                  step_plate_count++;
@@ -699,7 +699,7 @@ static void minP_data(int permutations, int iControlValue, int iTail, int iTest,
                   }
               iCounter1=iCounter1-control_count;
                     
-              double *data_test=(double *)malloc(sizeof(double)*test_count);
+              double *data_test=(double *)calloc(test_count, sizeof(double));
               //Loop the group count number down the test data vector.
               for(k=0;k<test_count;k++)
                  {
@@ -914,7 +914,7 @@ static void generate_permutations_test_statistics(int comparison, int plate, int
        }
       
     //Array for permutation test statistics.
-    double *means=(double *)malloc(sizeof(double)*permutations);
+    double *means=(double *)calloc(permutations, sizeof(double));
     if(means==NULL) malloc_error=1;
     
     if(malloc_error==1)
@@ -1113,16 +1113,16 @@ static void generate_permutations_test_statistics_minP(int comparison, int plate
        }
 
     //Index for sorted test statistics.
-    size_t *index=(size_t *)malloc(sizeof(size_t)*permutations);
+    size_t *index=(size_t *)calloc(permutations, sizeof(size_t));
     if(index==NULL) malloc_error=1;
     //Array for probabilities.
-    double *prob=(double *)malloc(sizeof(double)*permutations);
+    double *prob=(double *)calloc(permutations, sizeof(double));
     if(prob==NULL) malloc_error=1;
     //Array for minP values.
-    double *minP=(double *)malloc(sizeof(double)*permutations);
+    double *minP=(double *)calloc(permutations, sizeof(double));
     if(minP==NULL) malloc_error=1;    
     //Array for permutation test statistics.
-    double *perm_test_stat=(double *)malloc(sizeof(double)*permutations);
+    double *perm_test_stat=(double *)calloc(permutations, sizeof(double));
     if(perm_test_stat==NULL) malloc_error=1;
 
     if(malloc_error==1)
@@ -1400,7 +1400,7 @@ static void generate_permutations_without_hashing(int ***perm1, int permutations
     if(r==NULL) malloc_error=1;
 
     int check_permutation_count=(int)gsl_sf_gamma(permutation_length+1);
-    int *permutation_shuffled_index=(int *)malloc(sizeof(int)*check_permutation_count);
+    int *permutation_shuffled_index=(int *)calloc(check_permutation_count, sizeof(int));
     if(permutation_shuffled_index==NULL) malloc_error=1;
 
     int **AllPermutations=malloc(check_permutation_count*sizeof(int*));
@@ -1471,7 +1471,7 @@ static void generate_permutations_with_hashing(int ***perm1, int permutations, i
     int temp2=0;
     int counter=0;
     int malloc_error=0;
-    int *temp_perm=(int *)malloc(sizeof(int)*permutation_length);
+    int *temp_perm=(int *)calloc(permutation_length, sizeof(int));
     if(temp_perm==NULL) malloc_error=1;
     GHashTable* hash = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)hash_key_destroyed, NULL);
     if(hash==NULL) malloc_error=1;
