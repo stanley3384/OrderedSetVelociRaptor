@@ -128,7 +128,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 
 int main(int argc, char *argv[])
   {
-    GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *grid, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
+    GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *grid1, *grid2, *pane, *grid3, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
       
     //For printing
     Widgets *w;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     gtk_window_set_default_icon(dino);
     
     RaptorFeet=gtk_drawing_area_new();
-    gtk_widget_set_size_request(RaptorFeet, 1024,35);
+    gtk_widget_set_size_request(RaptorFeet, 1024, 35);
     g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), window);
 
     button=gtk_button_new_with_label("Get Test Data");
@@ -376,38 +376,47 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(MarginCombo), 0);
     g_signal_connect(MarginCombo, "changed", G_CALLBACK(change_margin), textview);
 
-    grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), MenuBar, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), RaptorFeet, 0, 1, 8, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateParametersLabel, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), TextLabel, 2, 2, 5, 1);
+    grid1=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid1), PlateParametersLabel, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateNumberLabel, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateSizeLabel, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateStatsLabel, 0, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), ControlCheck, 0, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlatePosControlLabel, 0, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateNegControlLabel, 0, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateNumberEntry, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateSizeEntry, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateStatsEntry, 1, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlatePosControlEntry, 1, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), PlateNegControlEntry, 1, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), button, 0, 9, 2, 1);
+    gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
+    gtk_grid_set_column_spacing(GTK_GRID(grid1), 10);
+    gtk_container_set_border_width(GTK_CONTAINER(grid1), 10);
 
-    gtk_grid_attach(GTK_GRID(grid), PlateNumberLabel, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateSizeLabel, 0, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateStatsLabel, 0, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), ControlCheck, 0, 6, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlatePosControlLabel, 0, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateNegControlLabel, 0, 8, 1, 1);
+    grid2=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid2), TextLabel, 0, 0, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid2), scrolled_win, 0, 1, 4, 7);
+    gtk_grid_attach(GTK_GRID(grid2), textbutton, 0, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), ClearFormat, 1, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), FontChooser, 2, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), MarginCombo, 5, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), SelectionButton, 5, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), UnderlineButton, 5, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), GlobalButton, 5, 7, 1, 1);
+    gtk_grid_set_row_spacing(GTK_GRID(grid2), 10);
+    gtk_grid_set_column_spacing(GTK_GRID(grid2), 10);
+    gtk_container_set_border_width(GTK_CONTAINER(grid2), 10);
 
-    gtk_grid_attach(GTK_GRID(grid), PlateNumberEntry, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateSizeEntry, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateStatsEntry, 1, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlatePosControlEntry, 1, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), PlateNegControlEntry, 1, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button, 0, 9, 2, 1);
+    pane=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_paned_add1(GTK_PANED(pane), grid1);
+    gtk_paned_add2(GTK_PANED(pane), grid2);
+    gtk_widget_set_name(pane, "pane");
 
-    gtk_grid_attach(GTK_GRID(grid), scrolled_win, 2, 3, 5, 7);
-
-    gtk_grid_attach(GTK_GRID(grid), textbutton, 2, 10, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), ClearFormat, 3, 10, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), FontChooser, 5, 10, 1, 1);
-
-    gtk_grid_attach(GTK_GRID(grid), MarginCombo, 7, 6, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), SelectionButton, 7, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), UnderlineButton, 7, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), GlobalButton, 7, 9, 1, 1);
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
-    gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+    grid3=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid3), MenuBar, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), RaptorFeet, 0, 1, 8, 1);
+    gtk_grid_attach(GTK_GRID(grid3), pane, 0, 2, 8, 7);
      
     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(distributions_dialog), NULL);
     g_signal_connect(G_OBJECT(textbutton), "clicked", G_CALLBACK(text_button_clicked), (gpointer) textview);
@@ -429,10 +438,10 @@ int main(int argc, char *argv[])
     g_signal_connect_after(G_OBJECT(PlatePosControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);
     g_signal_connect(G_OBJECT(PlateNegControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);  
     
-    gtk_container_add(GTK_CONTAINER(window), grid);
+    gtk_container_add(GTK_CONTAINER(window), grid3);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));}";
+    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkPaned{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -2279,7 +2288,7 @@ static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer
     };
   
     cairo_set_line_width(cr, 4);   
-    cairo_translate(cr, 0, 25);
+    cairo_translate(cr, 0, 15);
     cairo_rotate(cr, G_PI/2);
     cairo_scale(cr, 0.15, 0.15);
     cairo_set_source_rgb(cr, 0, 1, 0);
@@ -4771,6 +4780,8 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
     sqlite3_free(sql1);
     if(database!=NULL) g_free(database);
   }
+
+
 
 
 
