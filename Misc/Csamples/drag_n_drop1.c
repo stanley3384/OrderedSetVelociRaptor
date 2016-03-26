@@ -2,8 +2,10 @@
 /*
 
     Test some drag and drop out. Drag a desktop icon to the top button widget. If there is
-a desktop file associated with the item them look in it and find the name of the icon. Then 
-locate the icon and put it in the image widget. 
+a desktop file associated with the item then look in it and find the name of the icon. Then 
+locate the icon and put it in the image widget.
+
+    Tested on Ubuntu14.04 and GTK3.10 
 
     gcc -Wall drag_n_drop1.c -o drag_n_drop1 `pkg-config --cflags --libs gtk+-3.0`
 
