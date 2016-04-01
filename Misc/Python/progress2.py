@@ -8,7 +8,7 @@ to be adjusted for testing with faster processors.
     C. Eric Cashon
 
 '''
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, GLib
 import thread
 
 class MainWindow(Gtk.Window):
@@ -17,7 +17,7 @@ class MainWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(400, 200)
 
-        self.idle_id = 0
+        #The counter variable is shared between threads.
         self.mutex = GLib.Mutex()
         GLib.Mutex.init(self.mutex)
         self.counter = 0.0  
@@ -50,7 +50,7 @@ class MainWindow(Gtk.Window):
 
         if(self.radio1.get_active()):
             #Lazy load.
-            idle_id = GLib.idle_add(self.lazy_load_items, None, priority=GLib.PRIORITY_DEFAULT_IDLE)
+            GLib.idle_add(self.lazy_load_items, None, priority=GLib.PRIORITY_DEFAULT_IDLE)
         else:
             #Thread load.
             self.counter = .001
@@ -58,11 +58,11 @@ class MainWindow(Gtk.Window):
             #Need a timer to check the progress of the thread.
             self.timout_id = GLib.timeout_add(200, self.check_progress, None)
  
+    #Single thread so no need for a mutex.
     def lazy_load_items(self, widget):
         print("Lazy Load " + str(self.counter))
         for i in range(1000):
             for j in range(1000):
-                #10% each time?
                 if(i == 999 and j == 999):
                     self.counter += 1.0
         
@@ -75,6 +75,7 @@ class MainWindow(Gtk.Window):
             self.progress.set_fraction(self.counter)
             return False
 
+    #Use a mutex to protect against shared access.
     def thread_load_items(self, args):
         print("Thread Load")
         for i in range(10000):
@@ -85,9 +86,11 @@ class MainWindow(Gtk.Window):
                     self.counter += 1.0
                     self.mutex.unlock()
 
+        self.mutex.lock()
         self.counter = -0.001
+        self.mutex.unlock()
 
-    #Check the progress of the working thread.
+    #Check the progress of the working thread from the main thread.
     def check_progress(self, widget):
         print("Check Progress")
         temp = 0
