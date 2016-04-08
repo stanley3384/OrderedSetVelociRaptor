@@ -4,6 +4,7 @@
 to be adjusted for testing with faster processors. 
 
     Tested on Ubuntu14.04 and Python2.7
+    Change "import thread" to "import _thread" to use Python3
 
     C. Eric Cashon
 
