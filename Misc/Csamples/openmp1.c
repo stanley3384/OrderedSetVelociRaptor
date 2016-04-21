@@ -21,7 +21,7 @@ the random numbers. Very little time spent summing them.
 int main()
   {
     time_t t;
-    srand((unsigned) time(&t));
+    srand((unsigned)time(&t));
     int i=0;
     double sum=0;
     double offset=0;
@@ -32,11 +32,15 @@ int main()
     //Can test glib random numbers also.
     //GRand *g_rand=g_rand_new();
 
-    //Request a big array for 10 million numbers. 80mb here.
+    /*
+      Request a big array for ~10 million numbers. 80mb here. Make sure you have the space
+      memory so it doesn't start paging to disc.
+    */
     double *num1=(double*)malloc(10000000*sizeof(double));
 
     if(num1!=NULL)
       {
+        GTimer *time_it1=g_timer_new(); 
         //rand() isn't thread safe.
         for(i=0;i<10000000;i++)
           {
@@ -45,7 +49,7 @@ int main()
           }
 
         //Time parallel section.
-        GTimer *time_it=g_timer_new(); 
+        GTimer *time_it2=g_timer_new(); 
         //Get offset and sum of array. Offset is accumulation away from 0 or expected offset mean.   
         #pragma omp parallel for private(i) reduction(+:sum, offset)
         for(i=0;i<10000000;i++)
@@ -69,8 +73,10 @@ int main()
         //Get the StdDevS.
         std=sqrt(var);
 
-        printf("offset %f, mean %f, var %f, std %f time %f\n", offset, mean, var, std, g_timer_elapsed(time_it, NULL));
-        g_timer_destroy(time_it);
+        printf("offset %f, mean %f, var %f, std %f time1 %f time2 %f\n", offset, mean, var, std, g_timer_elapsed(time_it1, NULL), g_timer_elapsed(time_it2, NULL));
+
+        g_timer_destroy(time_it1);
+        g_timer_destroy(time_it2);
         free(num1);
       }
     else printf("Malloc Failed\n");
