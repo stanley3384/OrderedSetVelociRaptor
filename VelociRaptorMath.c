@@ -984,15 +984,15 @@ void plot_matrix_now(gsl_matrix *data, int graph, int lower_bound, int upper_bou
             {
               if(graph==1||graph==2)
                 {
-                  fprintf(gp, "set xrange[%i:%i]; plot '-'\n", lower_bound-1, upper_bound+1);
+                  fprintf(gp, "set terminal wxt title 'Quick Gnuplot Scatter'; set xrange[%i:%i]; plot '-' notitle\n", lower_bound-1, upper_bound+1);
                 }
               if(graph==3)
                 {
-                  fprintf(gp, "set xrange[%i:%i]; plot '-' with errorbars\n", lower_bound-1, upper_bound+1);
+                  fprintf(gp, "set terminal wxt title 'Quick Gnuplot Error'; set xrange[%i:%i]; plot '-' with errorbars notitle\n", lower_bound-1, upper_bound+1);
                 }
               if(graph==4)
                 {
-                  fprintf(gp, "set xrange[*:*]; set yrange [*:*]; set style fill solid 0.25 border -1; set style boxplot outliers pointtype 7; set style data boxplot; plot '-' using (1.0):($2):(0):1\n");
+                  fprintf(gp, "set terminal wxt title 'Quick Gnuplot Box'; set xrange[*:*]; set yrange [*:*]; set style fill solid 0.25 border -1; set style boxplot outliers pointtype 7; set style data boxplot; plot '-' using (1.0):($2):(0):1 notitle\n");
                   
                 }
                
