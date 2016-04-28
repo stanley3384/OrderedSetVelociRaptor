@@ -441,7 +441,7 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid3);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkPaned{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));}";
+    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkPaned{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));} GtkButton{background: rgba(210,210,210,1.0)}";
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -1808,7 +1808,7 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
   }
 static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
   {
-    GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *radio1, *radio2, *combo1, *content_area, *action_area;
     int result;
     
     g_print("Send Data from Database to Graph\n");
@@ -1832,6 +1832,12 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
     gtk_entry_set_text(GTK_ENTRY(entry2), "100");
+
+    combo1=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "wxt terminal");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "x11 terminal");
+    gtk_widget_set_hexpand(combo1, TRUE);  
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
      
     grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), radio1, 0, 0, 2, 1);
@@ -1840,6 +1846,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 2, 1);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
@@ -1855,6 +1862,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
       {
         int lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
         int upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        int iCombo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
         int iRadioButton=0;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
@@ -1870,7 +1878,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
           {
             if(groups_database_validation(NULL)==0)
               {
-                database_to_scatter_graph_sql(iRadioButton, lower_bound, upper_bound);
+                database_to_scatter_graph_sql(iRadioButton, iCombo, lower_bound, upper_bound);
               }
           }
         else
@@ -1883,7 +1891,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
   }
 static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
   {
-    GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *label3, *label4, *radio1, *radio2, *radio3, *radio4, *radio5, *radio6, *radio7, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *label3, *label4, *radio1, *radio2, *radio3, *radio4, *radio5, *radio6, *radio7, *combo1, *content_area, *action_area;
     int result;
     
     g_print("Send Data from Database to Graph\n");
@@ -1915,6 +1923,12 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_widget_set_halign(entry2, GTK_ALIGN_CENTER);
     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
     gtk_entry_set_text(GTK_ENTRY(entry2), "10");
+
+    combo1=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "wxt terminal");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "x11 terminal");
+    gtk_widget_set_hexpand(combo1, TRUE);  
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
      
     grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
@@ -1930,6 +1944,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 9, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), label4, 0, 10, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry2, 1, 10, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 11, 2, 1);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
@@ -1945,6 +1960,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
       {
         int lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
         int upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        int iCombo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
         int iRadioButton1=0;
         int iRadioButton2=0;
   
@@ -1982,7 +1998,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
           {
             if(groups_database_validation(NULL)==0)
               {
-                database_to_error_graph_sql(iRadioButton1, iRadioButton2, lower_bound, upper_bound);
+                database_to_error_graph_sql(iRadioButton1, iRadioButton2, iCombo, lower_bound, upper_bound);
               }
           }
         else
@@ -1996,7 +2012,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
   }
 static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
   {
-    GtkWidget *dialog, *grid, *entry1, *entry2, *label0, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
+    GtkWidget *dialog, *grid, *entry1, *entry2, *label0, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *combo1, *content_area, *action_area;
     int result;
     
     g_print("Send Data from Database to Graph\n");
@@ -2023,6 +2039,12 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 8);
     gtk_entry_set_text(GTK_ENTRY(entry2), "10");
+
+    combo1=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "wxt terminal");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "x11 terminal");
+    gtk_widget_set_hexpand(combo1, TRUE);  
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
      
     grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), label0, 0, 0, 2, 1);
@@ -2033,7 +2055,8 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 6, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry2, 1, 6, 1, 1);   
+    gtk_grid_attach(GTK_GRID(grid), entry2, 1, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 7, 2, 1);   
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
@@ -2049,6 +2072,7 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
       {
         int lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
         int upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        int iCombo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
         int iRadioButton=0;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
@@ -2072,7 +2096,7 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
           {
             if(groups_database_validation(NULL)==0)
               {
-                database_to_box_graph_sql(iRadioButton, lower_bound, upper_bound);
+                database_to_box_graph_sql(iRadioButton, iCombo, lower_bound, upper_bound);
               }
           }
         else

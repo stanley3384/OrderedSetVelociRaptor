@@ -10,10 +10,10 @@ void levenes_variance_test(GtkTextView *textview, int iRadioButton, double alpha
 void one_way_anova_sql(GtkTextView *textview, int iRadioButton, int check_box, double alpha);
 void anova_format(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithinDf,int iTotalDf, double one, double two, double three, double alpha);
 void anova_format_tabular(GtkTextView *textview, int iPlates, int iBetweenDf,int iWithinDf,int iTotalDf, double one, double two, double three, double alpha);
-void database_to_box_graph_sql(int iRadioButton, int lower_bound, int upper_bound);
-void database_to_error_graph_sql(int iRadioButton1, int iRadioButton2, int lower_bound, int upper_bound);
-void database_to_scatter_graph_sql(int iRadioButton, int lower_bound, int upper_bound);
-void plot_matrix_now(gsl_matrix *data, int graph, int lower_bound, int upper_bound);
+void database_to_box_graph_sql(int iRadioButton, int iCombo, int lower_bound, int upper_bound);
+void database_to_error_graph_sql(int iRadioButton1, int iRadioButton2, int iCombo, int lower_bound, int upper_bound);
+void database_to_scatter_graph_sql(int iRadioButton, int iCombo, int lower_bound, int upper_bound);
+void plot_matrix_now(gsl_matrix *data, int graph, int iCombo, int lower_bound, int upper_bound);
 void comparison_with_control_sql(int iRadioButton, int iControlValue, double alpha, int iRadioCritVal, GtkTextView *textview, GtkWidget *progress, int *pBreakLoop);
 void multiple_comparison_with_controls(char *sql1, char *sql2, char *sql3, char *sql4, char *sql5, char *sql6, int iControlValue, double alpha, int iRadioCritVal, GtkTextView *textview, GtkWidget*,int *pBreakLoop);
 double dunn_sidak_critical_value(double alpha, int Comparisons, int DF);
