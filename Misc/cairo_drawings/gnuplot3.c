@@ -3,7 +3,8 @@
 
     Use gnuplot to output directly to a drawing area widget. This works with the x11 terminal. The 
 drawing doesn't look as good as the pngcairo terminal but it is all done in memory.
-    Try using g_spawn_async_with_pipes() function instead of popen() in gnuplot3.   
+    Try using g_spawn_async_with_pipes() function instead of popen() in gnuplot3. Check for possible
+gnuplot errors.  
 
     gcc -Wall gnuplot3.c -o gnuplot3 `pkg-config gtk+-3.0 --cflags --libs`
 
@@ -23,6 +24,50 @@ drawing doesn't look as good as the pngcairo terminal but it is all done in memo
 
 static GRand *rand=NULL;
 
+static gboolean out_watch(GIOChannel *channel, GIOCondition cond, gpointer data)
+  {
+    g_print("Out Watch\n");
+    gchar *string;
+    gsize size;
+
+    if(cond==G_IO_HUP)
+      {
+        g_io_channel_unref(channel);
+        return FALSE;
+      }
+
+    g_io_channel_read_line(channel, &string, &size, NULL, NULL);
+    g_print("Out: %s", string);
+    g_free(string);
+
+    return TRUE;
+  }
+static gboolean err_watch(GIOChannel *channel, GIOCondition cond, gpointer data)
+  {
+    g_print("Err Watch\n");
+    gchar *string;
+    gsize size;
+
+    if(cond==G_IO_HUP)
+      {
+        g_io_channel_unref(channel);
+        return FALSE;
+      }
+
+    g_io_channel_read_line(channel, &string, &size, NULL, NULL);
+    g_print("Err: %s", string);
+    g_free(string);
+
+    return TRUE;
+  }
+static void child_watch(GPid  pid, gint status, gpointer data)
+{
+    //Close pipes and program
+    close(((gint*)data)[0]);
+    close(((gint*)data)[1]);
+    close(((gint*)data)[2]);
+    g_spawn_close_pid(pid);
+}
 static gboolean plot_data(gpointer da)
   {
     static gint i=1;
@@ -38,10 +83,14 @@ static gboolean plot_data(gpointer da)
     g_print("%s\n", script);
     gchar **arg_v=NULL;
     GError *error=NULL;
+    GPid pid;
     gint std_in=0;
+    gint std_out=0;
+    gint std_error=0;
 
     g_shell_parse_argv(cmd, NULL, &arg_v, NULL);
-    g_spawn_async_with_pipes(NULL, arg_v, NULL, G_SPAWN_DEFAULT, NULL, NULL, NULL, &std_in, NULL, NULL, &error); 
+    g_spawn_async_with_pipes(NULL, arg_v, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &pid, &std_in, &std_out, &std_error, &error); 
+    
     if(error!=NULL)
       {
         g_print("%s\n", error->message);
@@ -49,8 +98,14 @@ static gboolean plot_data(gpointer da)
       }
     else
       {
+        GIOChannel *out_ch=g_io_channel_unix_new(std_out);
+        GIOChannel *err_ch=g_io_channel_unix_new(std_error);
+        g_io_add_watch(out_ch, G_IO_IN|G_IO_HUP, (GIOFunc)out_watch, NULL);
+        g_io_add_watch(err_ch, G_IO_IN|G_IO_HUP, (GIOFunc)err_watch, NULL);
+        gint fds[]={std_in, std_out, std_error};
+        g_child_watch_add(pid, (GChildWatchFunc)child_watch, fds);
+
         write(std_in, script, strlen(script));
-        close(std_in);
       }
 
     g_free(hex);
