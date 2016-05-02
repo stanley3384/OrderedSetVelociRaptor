@@ -4,7 +4,7 @@
     Use gnuplot to output directly to a drawing area widget. This works with the x11 terminal. The 
 drawing doesn't look as good as the pngcairo terminal but it is all done in memory.
     Try using g_spawn_async_with_pipes() function instead of popen() in gnuplot3. Check for possible
-gnuplot errors.  
+gnuplot errors. Check the program with "ps -x" in another terminal to see if it is closing gnuplot.
 
     gcc -Wall gnuplot3.c -o gnuplot3 `pkg-config gtk+-3.0 --cflags --libs`
 
@@ -26,12 +26,12 @@ static GRand *rand=NULL;
 
 static gboolean out_watch(GIOChannel *channel, GIOCondition cond, gpointer data)
   {
-    g_print("Out Watch\n");
     gchar *string;
     gsize size;
 
     if(cond==G_IO_HUP)
       {
+        g_print("Unref Out Channel\n");
         g_io_channel_unref(channel);
         return FALSE;
       }
@@ -44,12 +44,12 @@ static gboolean out_watch(GIOChannel *channel, GIOCondition cond, gpointer data)
   }
 static gboolean err_watch(GIOChannel *channel, GIOCondition cond, gpointer data)
   {
-    g_print("Err Watch\n");
     gchar *string;
     gsize size;
 
     if(cond==G_IO_HUP)
       {
+        g_print("Unref Error Channel\n");
         g_io_channel_unref(channel);
         return FALSE;
       }
@@ -61,17 +61,17 @@ static gboolean err_watch(GIOChannel *channel, GIOCondition cond, gpointer data)
     return TRUE;
   }
 static void child_watch(GPid  pid, gint status, gpointer data)
-{
-    //Close pipes and program
+  {
+    g_print("Close Pipes and Exit\n");
+    //Close std_out and std_error pipes and gnuplot.
     close(((gint*)data)[0]);
     close(((gint*)data)[1]);
-    close(((gint*)data)[2]);
     g_spawn_close_pid(pid);
-}
+  }
 static gboolean plot_data(gpointer da)
   {
     static gint i=1;
-    g_print("Plot %i\n", i++);
+    g_print("\nPlot %i\n", i++);
     gdouble rand_num=g_rand_double(rand);
 
     GdkWindow *win=gtk_widget_get_window(GTK_WIDGET(da));
@@ -102,10 +102,17 @@ static gboolean plot_data(gpointer da)
         GIOChannel *err_ch=g_io_channel_unix_new(std_error);
         g_io_add_watch(out_ch, G_IO_IN|G_IO_HUP, (GIOFunc)out_watch, NULL);
         g_io_add_watch(err_ch, G_IO_IN|G_IO_HUP, (GIOFunc)err_watch, NULL);
-        gint fds[]={std_in, std_out, std_error};
-        g_child_watch_add(pid, (GChildWatchFunc)child_watch, fds);
+        gint fds[]={std_out, std_error};
+        guint event_id=0;
+        event_id=g_child_watch_add(pid, (GChildWatchFunc)child_watch, fds);
+        g_print("Pipes %i %i %i %i\n", event_id, (int)pid, std_out, std_error);
 
         write(std_in, script, strlen(script));
+        /*
+          Close std_in first. Close other pipes in child_watch(). Otherwise problem with closing
+          gnuplot and unref channels. This also keeps the std_out and std_error messages.
+        */
+        close(std_in);
       }
 
     g_free(hex);
