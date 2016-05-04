@@ -56,17 +56,19 @@ static gboolean err_watch(GIOChannel *channel, GIOCondition cond, gpointer label
 
     return TRUE;
   }
-static void child_watch(GPid  pid, gint status, gpointer label)
+static void child_watch(GPid  pid, gint status, GtkWidget **widgets)
   {
     g_print("Close Pipes and Exit\n");
     //Close std_out and std_error pipes and gnuplot.
     close(fds[0]);
     close(fds[1]);
     g_spawn_close_pid(pid);
-    gtk_label_set_text(GTK_LABEL(label), "Analysis Idle");
+    gtk_label_set_text(GTK_LABEL(widgets[1]), "Analysis Idle");
+    gtk_widget_set_sensitive(widgets[0], TRUE);
   }
-static void start_analysis(GtkWidget *button, gpointer label)
+static void start_analysis(GtkWidget *button, GtkWidget **widgets)
   {
+    gtk_widget_set_sensitive(button, FALSE);
     gchar *cmd=g_strdup_printf(path);
     gchar **arg_v=NULL;
     GError *error=NULL;
@@ -88,10 +90,10 @@ static void start_analysis(GtkWidget *button, gpointer label)
         fds[1]=std_error;
         GIOChannel *out_ch=g_io_channel_unix_new(std_out);
         GIOChannel *err_ch=g_io_channel_unix_new(std_error);
-        g_io_add_watch(out_ch, G_IO_IN|G_IO_HUP, (GIOFunc)out_watch, label);
-        g_io_add_watch(err_ch, G_IO_IN|G_IO_HUP, (GIOFunc)err_watch, label);
+        g_io_add_watch(out_ch, G_IO_IN|G_IO_HUP, (GIOFunc)out_watch, widgets[1]);
+        g_io_add_watch(err_ch, G_IO_IN|G_IO_HUP, (GIOFunc)err_watch, widgets[1]);
         guint event_id=0;
-        event_id=g_child_watch_add(pid, (GChildWatchFunc)child_watch, label);
+        event_id=g_child_watch_add(pid, (GChildWatchFunc)child_watch, widgets);
         g_print("Pipes %i %i %i %i\n", event_id, (int)pid, std_out, std_error);
       }
 
@@ -115,7 +117,8 @@ int main(int argc, char *argv[])
     GtkWidget *button=gtk_button_new_with_label("Start Analysis");
     gtk_widget_set_vexpand(button, TRUE);
     gtk_widget_set_hexpand(button, TRUE);
-    g_signal_connect(button, "clicked", G_CALLBACK(start_analysis), label);
+    GtkWidget *widgets[]={button, label};
+    g_signal_connect(button, "clicked", G_CALLBACK(start_analysis), widgets);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
