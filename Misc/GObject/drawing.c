@@ -1,5 +1,5 @@
 
-//For use with drawing_main.c
+//For use with drawing_main.c. Look in drawing_main.c for more information.
 
 #include<gtk/gtk.h>
 #include "drawing.h"
@@ -48,9 +48,11 @@ static void smiley_drawing_class_init(SmileyDrawingClass *klass)
   gobject_class=(GObjectClass*)klass;
   widget_class=(GtkWidgetClass*)klass;
 
+  //Set the property funtions.
   gobject_class->set_property=smiley_drawing_set_property;
   gobject_class->get_property=smiley_drawing_get_property;
 
+  //Draw when first shown.
   widget_class->draw=smiley_drawing_draw;
 
   g_type_class_add_private(klass, sizeof(SmileyDrawingPrivate));
@@ -64,6 +66,7 @@ static void smiley_drawing_class_init(SmileyDrawingClass *klass)
   g_object_class_install_property(gobject_class, ALPHA, g_param_spec_double("Alpha", "Alpha Channel", "Channel 4", 0, 1, 0, G_PARAM_READWRITE));
 
 }
+//Needed for g_object_set().
 static void smiley_drawing_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
 {
   SmileyDrawing *da=SMILEY_DRAWING(object);
@@ -106,7 +109,8 @@ void smiley_drawing_set_color(SmileyDrawing *da, gdouble color_rgba[4])
   }
 
   gtk_widget_queue_draw(GTK_WIDGET(da));
-} 
+}
+//Needed for g_object_set(). 
 static void smiley_drawing_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   SmileyDrawing *da=SMILEY_DRAWING(object);
@@ -140,6 +144,7 @@ static void smiley_drawing_init(SmileyDrawing *da)
   SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
   gint i=0;
 
+  //Initialize color array.
   for(i=0;i<4;i++) priv->color_rgba[i]=0.0;
 }
 GtkWidget* smiley_drawing_new(void)
@@ -155,7 +160,7 @@ static gboolean smiley_drawing_draw(GtkWidget *widget, cairo_t *cr)
   SmileyDrawing *da=SMILEY_DRAWING(widget);
   SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
 
-  //Initialize to blue if no color is chosen at the start.
+  //Draw blue if no color is chosen at the start.
   if(priv->color_rgba[0]==0&&priv->color_rgba[1]==0&&priv->color_rgba[0]==0)
     {
       priv->color_rgba[0]=0.0;

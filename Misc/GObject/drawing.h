@@ -1,5 +1,5 @@
 
-//For use with drawing_main.c
+//For use with drawing_main.c. Look in drawing_main.c for more information.
 
 #ifndef __SMILEY_DRAWING_H__
 #define __SMILEY_DRAWING_H__

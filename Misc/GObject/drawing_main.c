@@ -7,12 +7,31 @@ and compile.
 
     gcc -Wall drawing.c drawing_main.c -o drawing_main `pkg-config gtk+-3.0 --cflags --libs`
 
+    Tested on Ubuntu14.04, GTK3.10.
+
     C. Eric Cashon
 
 */
+
 #include<gtk/gtk.h>
 #include "drawing.h"
 
+static void change_color(GtkWidget *button, gpointer *data)
+{
+  gint i=0;
+  gdouble color_rgba[4]={1.0, 0.0, 1.0, 1.0};
+  color_rgba[0]=g_ascii_strtod(gtk_entry_get_text(GTK_ENTRY(data[0])), NULL);
+  color_rgba[1]=g_ascii_strtod(gtk_entry_get_text(GTK_ENTRY(data[1])), NULL);
+  color_rgba[2]=g_ascii_strtod(gtk_entry_get_text(GTK_ENTRY(data[2])), NULL);
+  color_rgba[3]=g_ascii_strtod(gtk_entry_get_text(GTK_ENTRY(data[3])), NULL);
+  
+  for(i=0;i<4;i++) 
+    {
+      if(color_rgba[i]<0.0||color_rgba[i]>1.0) color_rgba[i]=0.0;
+    }
+  
+  smiley_drawing_set_color(SMILEY_DRAWING(data[4]), color_rgba);
+}
 int main(int argc, char *argv[])
 {
   gtk_init(&argc, &argv);
@@ -33,14 +52,55 @@ int main(int argc, char *argv[])
   g_object_get(smiley_drawing, "Red", &red, "Green", &green, "Blue", &blue, "Alpha", &alpha, NULL);
   g_print("Test Color1 %f, %f, %f, %f\n", red, green, blue, alpha);
 
-  //Test with set_color.
+  //Test with and draw with set_color.
   gdouble color_rgba[4]={1.0, 0.0, 1.0, 1.0};
   smiley_drawing_set_color(SMILEY_DRAWING(smiley_drawing), color_rgba);
   gchar *color=smiley_drawing_get_color(SMILEY_DRAWING(smiley_drawing));
   g_print("Test Color2 %s\n", color);
   g_free(color);
 
-  gtk_container_add(GTK_CONTAINER(window), smiley_drawing);
+  GtkWidget *red_label=gtk_label_new("Red");
+
+  GtkWidget *red_entry=gtk_entry_new();
+  gtk_entry_set_width_chars(GTK_ENTRY(red_entry), 4);
+  gtk_entry_set_text(GTK_ENTRY(red_entry), "1.0");
+
+  GtkWidget *green_label=gtk_label_new("Green");
+
+  GtkWidget *green_entry=gtk_entry_new();
+  gtk_entry_set_width_chars(GTK_ENTRY(green_entry), 4);
+  gtk_entry_set_text(GTK_ENTRY(green_entry), "0.0");
+
+  GtkWidget *blue_label=gtk_label_new("Blue");
+
+  GtkWidget *blue_entry=gtk_entry_new();
+  gtk_entry_set_width_chars(GTK_ENTRY(blue_entry), 4);
+  gtk_entry_set_text(GTK_ENTRY(blue_entry), "1.0");
+
+  GtkWidget *alpha_label=gtk_label_new("Alpha");
+
+  GtkWidget *alpha_entry=gtk_entry_new();
+  gtk_entry_set_width_chars(GTK_ENTRY(alpha_entry), 4);
+  gtk_entry_set_text(GTK_ENTRY(alpha_entry), "1.0");
+
+  GtkWidget *button=gtk_button_new_with_label("Change Color");
+
+  gpointer entries[]={red_entry, green_entry, blue_entry, alpha_entry, smiley_drawing};
+  g_signal_connect(button, "clicked", G_CALLBACK(change_color), entries);
+
+  GtkWidget *grid=gtk_grid_new();
+  gtk_grid_attach(GTK_GRID(grid), smiley_drawing, 0, 0, 8, 4);
+  gtk_grid_attach(GTK_GRID(grid), red_label, 0, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), red_entry, 1, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), green_label, 2, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), green_entry, 3, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), blue_label, 4, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), blue_entry, 5, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), alpha_label, 6, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), alpha_entry, 7, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), button, 2, 5, 4, 1);
+
+  gtk_container_add(GTK_CONTAINER(window), grid);
   gtk_widget_show_all(window);
 
   gtk_main();
