@@ -31,6 +31,7 @@ GType smiley_drawing_get_type(void) G_GNUC_CONST;
 GtkWidget* smiley_drawing_new(void);
 void smiley_drawing_set_color(SmileyDrawing *da, gdouble color_rgba[4]);
 gchar* smiley_drawing_get_color(SmileyDrawing *da);
+void smiley_drawing_set_name(SmileyDrawing *da, const gchar *smiley_name);
 const gchar* smiley_drawing_get_name(SmileyDrawing *da);
 
 G_END_DECLS

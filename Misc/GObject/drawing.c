@@ -17,6 +17,7 @@ struct _SmileyDrawingPrivate
 enum
 {
   PROP_0,
+  NAME,
   RED,
   GREEN,
   BLUE,
@@ -60,6 +61,8 @@ static void smiley_drawing_class_init(SmileyDrawingClass *klass)
 
   g_type_class_add_private(klass, sizeof(SmileyDrawingPrivate));
 
+  g_object_class_install_property(gobject_class, NAME, g_param_spec_string("SmileyName", "SmileyName", "Some Name", "Alfred", G_PARAM_READWRITE));
+
   g_object_class_install_property(gobject_class, RED, g_param_spec_double("Red", "Red Channel", "Channel 1", 0, 1, 0, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, GREEN, g_param_spec_double("Green", "Green Channel", "Channel 2", 0, 1, 0, G_PARAM_READWRITE));
@@ -77,6 +80,9 @@ static void smiley_drawing_set_property(GObject *object, guint prop_id, const GV
 
   switch(prop_id)
   {
+    case NAME:
+      smiley_drawing_set_name(da, g_value_get_string(value));
+      break;
     case RED:
       color_rgba[0]=g_value_get_double(value);
       smiley_drawing_set_color(da, color_rgba);
@@ -121,6 +127,9 @@ static void smiley_drawing_get_property(GObject *object, guint prop_id, GValue *
   
   switch(prop_id)
   {
+    case NAME:
+      g_value_set_string(value, priv->smiley_name);
+      break;
     case RED:
       g_value_set_double(value, priv->color_rgba[0]);
       break;
@@ -202,6 +211,13 @@ static void smiley_drawing_finalize(GObject *object)
   SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
   
   g_free(priv->smiley_name);
+}
+void smiley_drawing_set_name(SmileyDrawing *da, const gchar *smiley_name)
+{
+  SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
+
+  if(priv->smiley_name!=NULL) g_free(priv->smiley_name);
+  priv->smiley_name=g_strdup(smiley_name);  
 }
 const gchar* smiley_drawing_get_name(SmileyDrawing *da)
 {

@@ -61,6 +61,10 @@ int main(int argc, char *argv[])
 
   //Test the widget name.
   g_print("Widget Name: %s, Smiley Name: %s\n", gtk_widget_get_name(smiley_drawing), smiley_drawing_get_name(SMILEY_DRAWING(smiley_drawing)));
+  smiley_drawing_set_name(SMILEY_DRAWING(smiley_drawing), "Dave");
+  g_print("Widget Name: %s, Smiley Name: %s\n", gtk_widget_get_name(smiley_drawing), smiley_drawing_get_name(SMILEY_DRAWING(smiley_drawing)));
+  g_object_set(smiley_drawing, "SmileyName", "Good Drawing", NULL);
+  g_print("%s\n", smiley_drawing_get_name(SMILEY_DRAWING(smiley_drawing))); 
 
   GtkWidget *red_label=gtk_label_new("Red");
 
