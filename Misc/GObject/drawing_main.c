@@ -59,6 +59,9 @@ int main(int argc, char *argv[])
   g_print("Test Color2 %s\n", color);
   g_free(color);
 
+  //Test the widget name.
+  g_print("Widget Name: %s, Smiley Name: %s\n", gtk_widget_get_name(smiley_drawing), smiley_drawing_get_name(SMILEY_DRAWING(smiley_drawing)));
+
   GtkWidget *red_label=gtk_label_new("Red");
 
   GtkWidget *red_entry=gtk_entry_new();

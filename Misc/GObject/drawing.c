@@ -10,6 +10,7 @@ typedef struct _SmileyDrawingPrivate SmileyDrawingPrivate;
 
 struct _SmileyDrawingPrivate
 {
+  gchar *smiley_name;
   gdouble color_rgba[4];
 };
 
@@ -28,6 +29,7 @@ static void smiley_drawing_set_property(GObject *object, guint prop_id, const GV
 static void smiley_drawing_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void smiley_drawing_init(SmileyDrawing *da);
 static gboolean smiley_drawing_draw(GtkWidget *widget, cairo_t *cr);
+static void smiley_drawing_finalize(GObject *gobject);
 
 GType smiley_drawing_get_type(void)
 {
@@ -54,6 +56,7 @@ static void smiley_drawing_class_init(SmileyDrawingClass *klass)
 
   //Draw when first shown.
   widget_class->draw=smiley_drawing_draw;
+  gobject_class->finalize = smiley_drawing_finalize;
 
   g_type_class_add_private(klass, sizeof(SmileyDrawingPrivate));
 
@@ -144,6 +147,9 @@ static void smiley_drawing_init(SmileyDrawing *da)
   SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
   gint i=0;
 
+  //Initialize smiley name.
+  priv->smiley_name=g_strdup("Alfred");
+
   //Initialize color array.
   for(i=0;i<4;i++) priv->color_rgba[i]=0.0;
 }
@@ -189,4 +195,19 @@ static gboolean smiley_drawing_draw(GtkWidget *widget, cairo_t *cr)
 
   return FALSE;
 }
+static void smiley_drawing_finalize(GObject *object)
+{
+  g_print("Finalize\n");
+  SmileyDrawing *da=SMILEY_DRAWING(object);
+  SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
+  
+  g_free(priv->smiley_name);
+}
+const gchar* smiley_drawing_get_name(SmileyDrawing *da)
+{
+  SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
+
+  return priv->smiley_name;  
+}
+
 
