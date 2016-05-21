@@ -32,6 +32,10 @@ static void change_color(GtkWidget *button, gpointer *data)
   
   smiley_drawing_set_color(SMILEY_DRAWING(data[4]), color_rgba);
 }
+static void color_changed1(GtkWidget *widget, gpointer data)
+{
+  g_print("Color Changed\n");
+}
 int main(int argc, char *argv[])
 {
   gtk_init(&argc, &argv);
@@ -45,6 +49,7 @@ int main(int argc, char *argv[])
   GtkWidget *smiley_drawing=smiley_drawing_new();
   gtk_widget_set_hexpand(smiley_drawing, TRUE);
   gtk_widget_set_vexpand(smiley_drawing, TRUE);
+  g_signal_connect(smiley_drawing, "color-changed", G_CALLBACK(color_changed1), NULL);
 
   //Test with g_object_set and g_object_get.
   gdouble red=1.0, green=1.0, blue=1.0, alpha=1.0;

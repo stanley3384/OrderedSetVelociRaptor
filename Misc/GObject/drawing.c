@@ -2,6 +2,7 @@
 //For use with drawing_main.c. Look in drawing_main.c for more information.
 
 #include<gtk/gtk.h>
+#include<glib-object.h>
 #include "drawing.h"
 
 #define SMILEY_DRAWING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), SMILEY_DRAWING_TYPE, SmileyDrawingPrivate))
@@ -23,6 +24,14 @@ enum
   BLUE,
   ALPHA
 };
+
+enum
+{
+  CHANGED_SIGNAL,
+  LAST_SIGNAL
+};
+
+static guint smiley_drawing_signals[LAST_SIGNAL]={0};
 
 //Private functions.
 static void smiley_drawing_class_init(SmileyDrawingClass *klass);
@@ -60,6 +69,8 @@ static void smiley_drawing_class_init(SmileyDrawingClass *klass)
   gobject_class->finalize = smiley_drawing_finalize;
 
   g_type_class_add_private(klass, sizeof(SmileyDrawingPrivate));
+
+  smiley_drawing_signals[CHANGED_SIGNAL]=g_signal_new("color-changed", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_FIRST|G_SIGNAL_ACTION, G_STRUCT_OFFSET(SmileyDrawingClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   g_object_class_install_property(gobject_class, NAME, g_param_spec_string("SmileyName", "SmileyName", "Some Name", "Alfred", G_PARAM_READWRITE));
 
@@ -102,6 +113,7 @@ static void smiley_drawing_set_property(GObject *object, guint prop_id, const GV
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
       break;
+
   }
 }
 void smiley_drawing_set_color(SmileyDrawing *da, gdouble color_rgba[4])
@@ -117,6 +129,7 @@ void smiley_drawing_set_color(SmileyDrawing *da, gdouble color_rgba[4])
       }
   }
 
+  g_signal_emit_by_name((gpointer)da, "color-changed");
   gtk_widget_queue_draw(GTK_WIDGET(da));
 }
 //Needed for g_object_set(). 

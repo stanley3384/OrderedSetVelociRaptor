@@ -24,6 +24,7 @@ struct _SmileyDrawing
 struct _SmileyDrawingClass
 {
   GtkDrawingAreaClass parent_class;
+  void (*color_changed) (SmileyDrawing *da);
 };
 
 //Public functions.
