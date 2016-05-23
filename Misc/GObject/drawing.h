@@ -1,5 +1,11 @@
 
-//For use with drawing_main.c. Look in drawing_main.c for more information.
+/*
+
+    For use with drawing_main.c. Look in drawing_main.c for more information.
+
+    C. Eric Cashon
+
+*/
 
 #ifndef __SMILEY_DRAWING_H__
 #define __SMILEY_DRAWING_H__

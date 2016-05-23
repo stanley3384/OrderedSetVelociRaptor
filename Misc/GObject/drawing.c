@@ -1,8 +1,13 @@
 
-//For use with drawing_main.c. Look in drawing_main.c for more information.
+/*
+
+    For use with drawing_main.c. Look in drawing_main.c for more information.
+
+    C. Eric Cashon
+
+*/
 
 #include<gtk/gtk.h>
-#include<glib-object.h>
 #include "drawing.h"
 
 #define SMILEY_DRAWING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), SMILEY_DRAWING_TYPE, SmileyDrawingPrivate))
@@ -185,6 +190,8 @@ static gboolean smiley_drawing_draw(GtkWidget *widget, cairo_t *cr)
   gint height=gtk_widget_get_allocated_height(widget);
   gint center_x=width/2;
   gint center_y=height/2;
+  //Just scale on the y-axis
+  gdouble scale_y=(double)height/342.0;
   SmileyDrawing *da=SMILEY_DRAWING(widget);
   SmileyDrawingPrivate *priv=SMILEY_DRAWING_GET_PRIVATE(da);
 
@@ -198,21 +205,24 @@ static gboolean smiley_drawing_draw(GtkWidget *widget, cairo_t *cr)
     }
 
   //Smiley
+  cairo_translate(cr, center_x, center_y);
+  //Keep the drawing square with the y-scale.
+  cairo_scale(cr, scale_y, scale_y);
   cairo_set_source_rgba(cr, priv->color_rgba[0], priv->color_rgba[1], priv->color_rgba[2], priv->color_rgba[3]);
   cairo_set_line_width(cr, 10);
   //Circle
-  cairo_arc(cr, center_x, center_y, 100, 0, 2*G_PI);
+  cairo_arc(cr, 0, 0, 100, 0, 2*G_PI);
   cairo_stroke(cr);
   //Left eye.
-  cairo_arc(cr, center_x-35, center_y-38, 7, 0, 2*G_PI);
+  cairo_arc(cr, -35, -38, 7, 0, 2*G_PI);
   cairo_fill(cr);
   cairo_stroke(cr);
   //Right eye.
-  cairo_arc(cr, center_x+35, center_y-38, 7, 0, 2*G_PI);
+  cairo_arc(cr, 35, -38, 7, 0, 2*G_PI);
   cairo_fill(cr);
   cairo_stroke(cr);
   //Smile
-  cairo_arc(cr, center_x, center_y+4, 60, 0, G_PI);
+  cairo_arc(cr, 0, 4, 60, 0, G_PI);
   cairo_stroke(cr);
 
   return FALSE;
