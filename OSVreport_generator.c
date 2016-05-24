@@ -2185,6 +2185,7 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     gboolean check1_active=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ws[18]));
     //shift_index getting heatmap color values.
     gint shift_index=(table)*(rows*columns);
+    gint table_number=table;
     gint shift_below_text2=0;
     gint markup_difference=0;
     gint table_title_shift=1;
@@ -2313,9 +2314,9 @@ static void draw_tables(PangoLayout *pango_layout, cairo_t *cr, GtkWidget *ws[],
     gdouble red=0;
     gdouble green=0;
     gdouble blue=0;
-    gdouble min=g_array_index(g_min_max, gdouble, 2*table);
-    gdouble max=g_array_index(g_min_max, gdouble, (2*table)+1);
-    //g_print("%i min %f max %f\n", table, min, max);
+    gdouble min=g_array_index(g_min_max, gdouble, 2*table_number);
+    gdouble max=g_array_index(g_min_max, gdouble, (2*table_number)+1);
+    //g_print("table %i min %f max %f\n", table_number, min, max);
     gdouble data_value=0;
     gint counter=0;
 
@@ -2488,7 +2489,7 @@ static void get_test_data1(gint rows, gint columns, gint tables, gint column_wid
     gchar buffer2[buffer_len+1];
     gdouble min=G_MAXDOUBLE;
     gdouble max=-G_MAXDOUBLE;
-    GRand *rand1=g_rand_new();
+    GRand *rand1=g_rand_new_with_seed(1);
     gint length=0;
     gchar *fill_end=NULL;
     if(shift_number_left>0) fill_end=g_strnfill(shift_number_left, ' ');
@@ -3317,9 +3318,6 @@ static GdkPixbuf* draw_velociraptor()
     cairo_pattern_destroy(pattern);
     return crop_dino;
   }
-
-
-
 
 
 
