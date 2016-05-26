@@ -89,7 +89,6 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
 static void end_print(GtkPrintOperation *operation, GtkPrintContext *context, gpointer data);
 static GdkPixbuf* draw_velociraptor();
 
-//Need to package some of these globals.
 //Globals for blocking signals when inserting rows into combo boxes.
 static gint row_combo_block=0;
 static gint column_combo_block=0;
@@ -3023,6 +3022,7 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
     gint i=0;
     gdouble page_width=gtk_print_context_get_width(context);
     gdouble page_height=gtk_print_context_get_height(context);
+    //gtk_page_setup_get_paper_width((GtkPageSetup*)i_page_setup, GTK_UNIT_POINTS);
     PangoContext *pango_context=gtk_widget_get_pango_context(ws[20]);
     PangoFontDescription *description=pango_context_get_font_description(pango_context);
     pango_layout_print=gtk_print_context_create_pango_layout(context);
@@ -3055,11 +3055,14 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
     PangoRectangle rectangle_log;
     pango_layout_get_extents(pango_layout_print, &rectangle_ink, &rectangle_log);
 
-    lines_per_page=(int)(text_height/rectangle_log.height);
+    //combo6_index is "nudge" in UI.
+    lines_per_page=(int)(text_height/rectangle_log.height)-combo6_index;
     g_print("Lines per page %i\n", lines_per_page);
-    total_lines=count_lines+((shift_below_text-1)*tables)+(tables*rows)+label_lines+combo6_index;
+    total_lines=count_lines+((shift_below_text-1)*tables)+(tables*rows)+label_lines;
     g_print("Total Lines %i Lines per Page %i\n", total_lines, lines_per_page);
-    gint pages=(int)(ceil((double)total_lines/(double)lines_per_page));
+
+    gint tables_next_page=(int)(lines_per_page/(rows+shift_below_text));
+    gint pages=(int)(ceil((double)total_lines/(double)((rows+shift_below_text)*tables_next_page)));
     g_print("Pages %i\n", pages);
 
     gtk_print_operation_set_n_pages(operation, pages);
@@ -3111,9 +3114,9 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
     gint combo5_index = atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(ws[15])));
 
     //Account for first page with title and text.
-    gint tables_first_page = (int)floor((double)(lines_per_page)/(double)(rows+shift_below_text+count_lines));
+    gint tables_first_page=(int)floor((double)(lines_per_page)/(double)(rows+shift_below_text+count_lines));
     if(tables<tables_first_page) tables_first_page=tables;
-    gint tables_next_page=(int)(lines_per_page/(rows+shift_below_text-1));
+    gint tables_next_page=(int)(lines_per_page/(rows+shift_below_text));
     if(page_nr==0)
       {
         tables_left_to_print=tables;
@@ -3124,7 +3127,7 @@ static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gi
         tables_left_to_print=(int)(tables-(index*tables_next_page)-tables_first_page);
       }
     g_print("Tables Left to Print %i\n", tables_left_to_print);
-    gint pages=(int)ceil((double)total_lines/(double)lines_per_page);
+    gint pages=(int)(ceil((double)total_lines/(double)((rows+shift_below_text)*tables_next_page)));
     if(page_nr==0) tables_on_page=tables_first_page;
     else if(page_nr==pages-1) tables_on_page=tables_left_to_print;
     else tables_on_page=tables_next_page;
