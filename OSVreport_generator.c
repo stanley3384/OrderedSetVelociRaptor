@@ -3057,46 +3057,62 @@ static void begin_print(GtkPrintOperation *operation, GtkPrintContext *context, 
 
     //combo6_index is "nudge" in UI.
     lines_per_page=(int)(text_height/rectangle_log.height)-combo6_index;
-    g_print("Lines per page %i\n", lines_per_page);
-    total_lines=count_lines+((shift_below_text-1)*tables)+(tables*rows)+label_lines;
-    g_print("Total Lines %i Lines per Page %i\n", total_lines, lines_per_page);
+    g_print("Lines per page %i, Row lines and space %i\n", lines_per_page, rows+shift_below_text);
 
-    gint tables_next_page=(int)(lines_per_page/(rows+shift_below_text));
-    gint pages=(int)(ceil((double)total_lines/(double)((rows+shift_below_text)*tables_next_page)));
-    g_print("Pages %i\n", pages);
-
-    gtk_print_operation_set_n_pages(operation, pages);
-    //Turn off wrapping.
-    pango_layout_set_width(pango_layout_print, -1);
-
-    //Clear data arrays for test data.
-    gint array_length1=g_data_values->len;
-    for(i=0;i<array_length1; i++) g_ptr_array_remove_index_fast(g_data_values, 0);
-    gint array_length2=g_min_max->len;
-    for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0);       
-    //Get the data.
-    if(combo4_index==1)
+    /*
+    If the table size is too big to fit on a single page, exit printing. Need an 
+    option to split tables between pages also. Currently only full tables are printed
+    on the pages. 
+    */ 
+    if(lines_per_page<rows+shift_below_text)
       {
-        get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
-      }
-    if(combo4_index==2)
-      {
-        get_test_data2(rows, columns, tables, column_width, shift_number_left, 1);
-      }
-    if(combo4_index==3)
-      {
-        get_test_data2(rows, columns, tables, column_width, shift_number_left, 2);
-      }
-    if(combo4_index==4)
-      {
-        get_test_data2(rows, columns, tables, column_width, shift_number_left, 3);
-      }
+        gtk_print_operation_cancel(operation);
+        gchar *string=g_strdup_printf("The print operation was cancelled.\nThe full table size and spacing %i,\nwon't fit on a page with size %i", rows+shift_below_text, lines_per_page);
+        message_dialog(string);
+        g_free(string);
+      } 
     else
-      {
-        get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+      {   
+        total_lines=count_lines+((shift_below_text-1)*tables)+(tables*rows)+label_lines;
+        g_print("Total Lines %i Lines per Page %i\n", total_lines, lines_per_page);
+
+        gint tables_next_page=(int)(lines_per_page/(rows+shift_below_text));
+        gint pages=(int)(ceil((double)total_lines/(double)((rows+shift_below_text)*tables_next_page)));
+        g_print("Pages %i\n", pages);
+
+        gtk_print_operation_set_n_pages(operation, pages);
+        //Turn off wrapping.
+        pango_layout_set_width(pango_layout_print, -1);
+
+        //Clear data arrays for test data.
+        gint array_length1=g_data_values->len;
+        for(i=0;i<array_length1; i++) g_ptr_array_remove_index_fast(g_data_values, 0);
+        gint array_length2=g_min_max->len;
+        for(i=0;i<array_length2;i++) g_array_remove_index_fast(g_min_max, 0);       
+        //Get the data.
+        if(combo4_index==1)
+          {
+            get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+          }
+        if(combo4_index==2)
+          {
+            get_test_data2(rows, columns, tables, column_width, shift_number_left, 1);
+          }
+        if(combo4_index==3)
+          {
+            get_test_data2(rows, columns, tables, column_width, shift_number_left, 2);
+          }
+        if(combo4_index==4)
+          {
+            get_test_data2(rows, columns, tables, column_width, shift_number_left, 3);
+          }
+        else
+          {
+            get_test_data1(rows, columns, tables, column_width, shift_number_left, round_float);
+          }
+        //Get the labels. Shift them or truncate them to fit in the rectangles.
+        get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
       }
-    //Get the labels. Shift them or truncate them to fit in the rectangles.
-    get_labels_for_drawing(tables, rows, columns, column_width, shift_column_left);
     
   }
 static void draw_page(GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, GtkWidget *ws[])
