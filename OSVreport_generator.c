@@ -34,6 +34,7 @@ static void set_font_tags(GtkWidget *widget, gpointer data);
 static void clear_tags(GtkWidget *widget, gpointer data);
 //General program functions.
 static void about_dialog(GtkWidget *widget, gpointer data);
+static void description_dialog(GtkWidget *widget, gpointer data);
 static void message_dialog(gchar *string);
 static void change_sql_entry(GtkWidget *widget, gpointer data);
 static gint validate_entries(GtkWidget *ws[]);
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "OSV Report Generator");
     gtk_container_set_border_width(GTK_CONTAINER(window), 15);
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 750, 550);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -149,9 +151,12 @@ int main(int argc, char *argv[])
     GtkWidget *menu2=gtk_menu_new();
     GtkWidget *menu2item1=gtk_menu_item_new_with_label("OSV Report Generator");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu2), menu2item1);
+    GtkWidget *menu2item2=gtk_menu_item_new_with_label("Quick Description");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu2), menu2item2);
     GtkWidget *title2=gtk_menu_item_new_with_label("About");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title2), menu2);
     g_signal_connect(menu2item1, "activate", G_CALLBACK(about_dialog), window);
+    g_signal_connect(menu2item2, "activate", G_CALLBACK(description_dialog), window);
 
     GtkWidget *menu_bar=gtk_menu_bar_new();
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
@@ -318,11 +323,11 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo5), "2");
 
     GtkWidget *combo6=gtk_combo_box_text_new();
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 0, "1", "Nudge 1");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 1, "2", "Nudge 2");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 2, "3", "Nudge 3");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 3, "4", "Nudge 4");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 4, "5", "Nudge 5");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 0, "1", "Print Nudge 1");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 1, "2", "Print Nudge 2");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 2, "3", "Print Nudge 3");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 3, "4", "Print Nudge 4");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 4, "5", "Print Nudge 5");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo6), "2");
 
     GtkWidget *combo7=gtk_combo_box_text_new();
@@ -498,6 +503,31 @@ static void about_dialog(GtkWidget *widget, gpointer data)
     gtk_widget_show_all(dialog);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+  }
+static void description_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=dialog = gtk_dialog_new_with_buttons("Quick Description", GTK_WINDOW(data), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_ACCEPT, NULL);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 400);
+    gtk_container_set_border_width(GTK_CONTAINER(dialog), 15);
+
+    GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    GtkWidget *textview=gtk_text_view_new();
+    gtk_widget_set_vexpand(textview, TRUE);
+    gtk_widget_set_hexpand(textview, TRUE);
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview), FALSE);
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+    gchar *string="\n        The OSVreport_generator draws data into several different formats. It can draw a standard grid, a tabular format and a crosstab or assay plate format. Along with formatting there are several options to heatmap the data. The drawings can be sent to a printer for a standard 8.5 x 11 page size. The program will try to place only full grids on a page. If a grid goes outside the bottom of the printing area, try increasing the \"nudge\" value to get them to fit on the pages.\n\n        There are several standard data patterns that you can test with. These are Random, RCsequence, CRsequence and MiddleSequence. They will pull in a stream of data that you can test with. If you want to get data from a SQLite database with a query there are a couple of options for looking at experimental data.";
+    gtk_text_buffer_set_text(buffer, string, -1);
+
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(textview), FALSE);
+
+    gtk_container_add(GTK_CONTAINER(content_area), textview);
+    
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);                                  
   }
 static void message_dialog(gchar *string)
   {
