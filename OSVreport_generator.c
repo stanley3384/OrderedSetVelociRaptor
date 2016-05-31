@@ -507,7 +507,7 @@ static void about_dialog(GtkWidget *widget, gpointer data)
 static void description_dialog(GtkWidget *widget, gpointer data)
   {
     GtkWidget *dialog=dialog = gtk_dialog_new_with_buttons("Quick Description", GTK_WINDOW(data), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_ACCEPT, NULL);
-    gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 400);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 475, 400);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 15);
 
     GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
@@ -518,7 +518,7 @@ static void description_dialog(GtkWidget *widget, gpointer data)
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview), FALSE);
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-    gchar *string="\n        The OSVreport_generator draws data into several different formats. It can draw a standard grid, a tabular format and a crosstab or assay plate format. Along with formatting there are several options to heatmap the data. The drawings can be sent to a printer for a standard 8.5 x 11 page size. The program will try to place only full grids on a page. If a grid goes outside the bottom of the printing area, try increasing the \"nudge\" value to get them to fit on the pages.\n\n        There are several standard data patterns that you can test with. These are Random, RCsequence, CRsequence and MiddleSequence. They will pull in a stream of data that you can test with. If you want to get data from a SQLite database with a query there are a couple of options for looking at experimental data.";
+    gchar *string="\n        The OSVreport_generator draws data into several different formats. It can draw a standard grid, a tabular format and a crosstab or assay plate format. Along with formatting there are several options to heatmap the data.\n\n        The drawings can be sent to a printer for a standard 8.5 x 11 page size. The program will try to place only full grids on a page. If a grid goes outside the bottom of the printing area, try increasing the \"Print Nudge\" value to get them to fit on the pages.\n\n        There are several standard data source patterns that you can test with. These are Random, RCsequence, CRsequence and MiddleSequence. They will pull in a stream of data that you can test formatting and heatmapping with.\n\n        If you want to get data from a SQLite database with a query there are a couple of options for looking at experimental data.";
     gtk_text_buffer_set_text(buffer, string, -1);
 
     gtk_text_view_set_editable(GTK_TEXT_VIEW(textview), FALSE);
