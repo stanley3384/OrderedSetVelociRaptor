@@ -422,13 +422,26 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), notebook);
     
     GError *css_error=NULL;
-    gchar css_string[]="GtkWindow, GtkNotebook{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}";
+    gint minor_version=gtk_get_minor_version();
+    gchar *css_string=NULL;
+
+    //GTK CSS changed in 3.18. The CSS for after 3.18 may need to be modified to have it work.
+    if(minor_version>=18)
+      {
+        css_string=g_strdup("window, notebook {background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));} button {background: rgba(220,220,220,0.5);}");
+      }
+    else
+      {
+        css_string=g_strdup("GtkWindow, GtkNotebook{background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));}GtkButton{background: rgba(220,220,220,0.5);}");
+      }
+
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
     if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    if(css_string!=NULL) g_free(css_string);
     g_object_unref(provider);
 
     gtk_widget_show_all(window);

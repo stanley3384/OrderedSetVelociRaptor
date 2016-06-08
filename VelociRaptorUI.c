@@ -1,15 +1,15 @@
 
 /*
-Some ideas for analysis.
+    Some ideas for analysis.
 
-This file has int main() along with the UI code.
+    This file has int main() along with the UI code.
 
-Copyright (c) 2015 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
+    Copyright (c) 2015 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
 
-Compile with make and makefile.
+    Compile with make and makefile.
 
-Compiled on Ubuntu version 14.04 LTS using a netbook as the test computer. Gedit was the text editor used.
+    GTK 3.10 on Ubuntu 14.04.
 
 */
 
@@ -441,13 +441,26 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid3);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkPaned{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));} GtkButton{background: rgba(210,210,210,1.0)}";
+    gint minor_version=gtk_get_minor_version();
+    gchar *css_string=NULL;
+
+    //GTK CSS changed in 3.18. The CSS for after 3.18 may need to be modified to have it work.
+    if(minor_version>=18)
+      {
+        css_string=g_strdup("window {background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} paned {background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));} button{background: rgba(210,210,210,1.0)}");
+      }
+    else
+      {
+        css_string=g_strdup("GtkWindow{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkPaned{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));} GtkButton{background: rgba(210,210,210,1.0)}");
+      }
+
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
     if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    if(css_string!=NULL) g_free(css_string);
     g_object_unref(provider);
      
     gtk_widget_show_all(window);

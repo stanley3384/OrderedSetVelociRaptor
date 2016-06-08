@@ -119,13 +119,26 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(window), grid);
 
     GError *css_error=NULL;
-    gchar css_string[]="GtkButton, GtkDialog{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkTreeView#r_tree row:nth-child(even){background-color:rgba(160,160,160,0.6);} GtkLabel{background:rgba(0,0,0,0.0);}";
+    gint minor_version=gtk_get_minor_version();
+    gchar *css_string=NULL;
+
+    //GTK CSS changed in 3.18. The CSS for after 3.18 may need to be modified to have it work.
+    if(minor_version>=18)
+      {
+        css_string=g_strdup("button, dialog {background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} treeview {background:rgba(160,160,160,0.3);} treeview#r_tree row:nth-child(even){background-color:rgba(160,160,160,0.6);} label {background:rgba(0,0,0,0.0);}");
+      }
+    else
+      {
+        css_string=g_strdup("GtkButton, GtkDialog{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} GtkTreeView{background:rgba(160,160,160,0.3);} GtkTreeView#r_tree row:nth-child(even){background-color:rgba(160,160,160,0.6);} GtkLabel{background:rgba(0,0,0,0.0);}");
+      }
+
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
     GdkScreen *screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
     if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    if(css_string!=NULL) g_free(css_string);
     g_object_unref(provider);
    
     gtk_widget_show_all(window);
