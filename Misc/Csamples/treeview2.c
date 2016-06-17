@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Tree View");
+    gtk_window_set_title(GTK_WINDOW(window), "Tree View Fade");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 300, 300);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
     gtk_list_store_set(store, &iter, ID, 3, PROGRAM, "Firefox", IMAGE, "Image4", -1);
 
     GtkTreeModel *sortmodel=gtk_tree_model_sort_new_with_model(GTK_TREE_MODEL(store));
+    g_object_unref(G_OBJECT(store));
 
     GtkWidget *tree = gtk_tree_view_new_with_model(sortmodel);
     gtk_tree_view_set_hover_selection(GTK_TREE_VIEW(tree), TRUE);
@@ -117,3 +118,4 @@ int main(int argc, char *argv[])
     gtk_main();
     return 0;   
   }
+
