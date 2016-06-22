@@ -52,7 +52,7 @@ static void open_dialog(GtkWidget *widget, gpointer data)
     GtkWidget *label=gtk_label_new(dialog_label);
     gtk_box_pack_start(GTK_BOX(box), label, TRUE, TRUE, 0);
     
-    g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
+    g_signal_connect(dialog, "response", G_CALLBACK(gtk_widget_destroy), NULL);
     gtk_widget_show_all(dialog);
 
     //Move the windows.
