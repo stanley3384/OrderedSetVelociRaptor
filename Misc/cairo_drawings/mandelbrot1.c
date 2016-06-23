@@ -48,10 +48,11 @@ static void draw_mandelbrot(GdkPixbuf *pixbuf)
     gdouble x2=0.0;
     gdouble y2=0.0;
     gint iteration;
-    gint max_iteration=255;
+    gint max_iteration=25;
     gdouble scale=1.0;
     gdouble temp1=0;
     gdouble temp2=0;
+    gdouble max_value=0;
     gint i=0;
     gint j=0;
     gint width=gdk_pixbuf_get_width(pixbuf);
@@ -66,43 +67,43 @@ static void draw_mandelbrot(GdkPixbuf *pixbuf)
         for(j=0;j<height;j++)
           {
             //Get some mandelbrot values. Change things around.
-            x1 = 0.0;
-            y1 = 0.0;
+            x1=0.0;
+            y1=0.0;
             //Scale
-            x2 = (((gdouble)i)/((gdouble)width)-0.5)/scale*3.0-0.7;
-            y2 = (((gdouble)j)/((gdouble)height)-0.5)/scale*3.0;
+            x2=(((gdouble)i)/((gdouble)width)-0.5)/scale*3.0-0.7;
+            y2=(((gdouble)j)/((gdouble)height)-0.5)/scale*3.0;
             //Test different starting points.
-            for(iteration=3;iteration<max_iteration;iteration++)
+            for(iteration=2;iteration<max_iteration;iteration++)
               {
                 temp1=x1*x1-y1*y1+x2;
                 y1=2.0*x1*y1+y2;
-                x1 = temp1;
-                if(x1*x1+y1*y1>255.0) iteration=999999;
+                x1=temp1;                
               }
 
             //Fill in the pixbuf.
             temp2=x1*x1+y1*y1;
+            if(temp2>max_value) max_value=temp2;
             p=pixels+j*step+i*channels;
-            if(iteration<99999)
+            if(temp2<100.0)
               {
-                if(temp2<0.02)
+                if(temp2<0.2)
                   {
-                    p[0]=255;
+                    p[0]=(gint)(255.0-(255.0*temp2/0.2));
                     p[1]=0;
-                    p[2]=255;
+                    p[2]=(gint)(0+(255.0*temp2/0.2));
                   }
                 else
                   {
-                    p[0]=(gint)(255.0-(255.0*temp2/0.02));
+                    p[0]=0;
                     p[1]=0;
-                    p[2]=(gint)(0+(255.0*temp2/0.02));
+                    p[2]=255;
                   }
               }
             else
               {
                 p[0]=0;
-                p[1]=200;
-                p[2]=255;
+                p[1]=(gint)(255.0-(255.0*temp2/max_value));
+                p[2]=0;
               }
           }
       }
