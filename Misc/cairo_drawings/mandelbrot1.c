@@ -13,7 +13,11 @@
   
 #include <gtk/gtk.h>
 
-static void draw_mandelbrot(GdkPixbuf *pixbuf);
+static gint status=0;
+
+static gpointer draw_mandelbrot(GdkPixbuf *pixbuf);
+static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf);
+static gboolean check_pixbuf_status(GtkWidget *widgets[]);
 
 int main(int argc, char **argv)
   {      
@@ -22,17 +26,28 @@ int main(int argc, char **argv)
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
-    gtk_window_set_title(GTK_WINDOW(window), "Mandelbrot");
+    gtk_window_set_title(GTK_WINDOW(window), "Mandelbrot Bug");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
+    
     GdkPixbuf *pixbuf=gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 500, 500);
-    draw_mandelbrot(pixbuf);
-    GtkWidget *image=gtk_image_new_from_pixbuf(pixbuf);
+
+    g_thread_new("thread1", (GThreadFunc)draw_mandelbrot, pixbuf);
+
+    GtkWidget *da=gtk_drawing_area_new();
+    gtk_widget_set_size_request(da, 500, 500);
+    g_signal_connect(da, "draw", G_CALLBACK(draw_mandelbrot_bug), pixbuf);
+
+    GtkWidget *statusbar=gtk_statusbar_new();
+    gtk_statusbar_push(GTK_STATUSBAR(statusbar), 0, "Drawing Mandelbrot Bug");
       
     GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), statusbar, 0, 1, 1, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
+    
+    GtkWidget *widgets[]={da, statusbar};
+    g_timeout_add(500, (GSourceFunc)check_pixbuf_status, widgets);
 
     gtk_widget_show_all(window);                  
     gtk_main();
@@ -41,7 +56,7 @@ int main(int argc, char **argv)
 
     return 0;
   }
-static void draw_mandelbrot(GdkPixbuf *pixbuf)
+static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
   {
     gdouble x1=0.0;
     gdouble y1=0.0;
@@ -107,5 +122,42 @@ static void draw_mandelbrot(GdkPixbuf *pixbuf)
               }
           }
       }
+    g_atomic_int_set(&status, 1);
+    return NULL;
   }
-
+static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf)
+  {
+    if(g_atomic_int_get(&status)==1)
+      {
+        gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
+        cairo_paint(cr);
+        cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+        cairo_arc(cr, 185, 235, 8, 0, 2*G_PI);
+        cairo_fill(cr);
+        cairo_stroke(cr);
+        cairo_arc(cr, 185, 265, 8, 0, 2*G_PI);
+        cairo_fill(cr);
+        cairo_stroke(cr);
+      }
+    return FALSE;
+  }
+static gboolean check_pixbuf_status(GtkWidget *widgets[])
+  {
+    gint i=0;
+    static gint j=1;
+    if(g_atomic_int_get(&status)==1)
+      {
+        gtk_statusbar_push(GTK_STATUSBAR(widgets[1]), j, "Drawing Done");
+        gtk_widget_queue_draw(widgets[0]);
+        return FALSE;
+      }
+    else 
+      {
+        GString *string=g_string_new("Drawing Mandelbrot Bug");
+        for(i=0;i<j;i++) g_string_append_c(string, '.');
+        gtk_statusbar_push(GTK_STATUSBAR(widgets[1]), j, string->str);
+        g_string_free(string, TRUE);
+        j++;
+        return TRUE;
+      }
+  }
