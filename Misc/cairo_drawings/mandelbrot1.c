@@ -3,10 +3,11 @@
 
     Draw a mandelbrot set onto a GDK pixbuf then use cairo to draw a couple of bug eyes.
  
-    Try both of the following to see a difference.
+    Try both of the following to see if there is a difference in the drawing. There is more green
+with the -O2 flag on my test computer.
 
-    gcc -Wall mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
-    gcc -Wall -O2 mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall -Werror mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall -Werror -O2 mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
 
     Tested on Ubuntu14.04 and GTK3.10
 
