@@ -66,6 +66,7 @@ int main(int argc, char **argv)
   }
 static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
   {
+    GTimer *timer=g_timer_new();
     gdouble x1=0.0;
     gdouble y1=0.0;
     gdouble x2=0.0;
@@ -131,6 +132,8 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
           }
       }
     g_atomic_int_set(&status, 1);
+    g_print("Mandelbrot Drawing Time %f\n", g_timer_elapsed(timer, NULL));
+    g_timer_destroy(timer);
     return NULL;
   }
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf)
