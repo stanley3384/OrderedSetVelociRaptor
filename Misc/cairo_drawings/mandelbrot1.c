@@ -1,9 +1,12 @@
 
 /*
 
-    Draw a mandelbrot set onto a GDK pixbuf.
+    Draw a mandelbrot set onto a GDK pixbuf then use cairo to draw a couple of bug eyes.
  
+    Try both of the following to see a difference.
+
     gcc -Wall mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall -O2 mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
 
     Tested on Ubuntu14.04 and GTK3.10
 
@@ -13,10 +16,14 @@
   
 #include <gtk/gtk.h>
 
+//The status of the mandelbrot drawing. It can take some time.
 static gint status=0;
 
+//Draw the mandelbrot set on the pixbuf on a seperate thread.
 static gpointer draw_mandelbrot(GdkPixbuf *pixbuf);
+//Use cairo to draw a couple of bug eyes.
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf);
+//Check to see if the drawing is done. If it is, put it in the drawing area.
 static gboolean check_pixbuf_status(GtkWidget *widgets[]);
 
 int main(int argc, char **argv)
@@ -65,9 +72,9 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
     gint iteration;
     gint max_iteration=25;
     gdouble scale=1.0;
-    gdouble temp1=0;
-    gdouble temp2=0;
-    gdouble max_value=0;
+    gdouble temp1=0.0;
+    gdouble temp2=0.0;
+    gdouble max_value=0.0;
     gint i=0;
     gint j=0;
     gint width=gdk_pixbuf_get_width(pixbuf);
@@ -105,7 +112,7 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
                   {
                     p[0]=(gint)(255.0-(255.0*temp2/0.2));
                     p[1]=0;
-                    p[2]=(gint)(0+(255.0*temp2/0.2));
+                    p[2]=(gint)(0.0+(255.0*temp2/0.2));
                   }
                 else
                   {
