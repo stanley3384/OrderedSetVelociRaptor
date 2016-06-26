@@ -25,7 +25,7 @@ with the -O2 flag on my test computer.
 static gint status=0;
 //For the progress bar.
 static gint columns_done=0;
-//For the combo box.
+//Iterations for the mandelbrot drawing.
 static gint max_iteration=25;
 
 static void start_drawing_thread(gpointer widgets_pixbuf[]);
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
     gtk_window_set_title(GTK_WINDOW(window), "Mandelbrot Bug");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
@@ -67,7 +67,8 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "MaxIteration=15");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 3, "4", "MaxIteration=20");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 4, "5", "MaxIteration=25");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 5, "6", "MaxIteration=30");  
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 5, "6", "MaxIteration=30");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 6, "7", "MaxIteration=35");    
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 4);
     g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), NULL);
     gtk_widget_set_sensitive(combo, FALSE);
@@ -194,6 +195,18 @@ static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbu
         cairo_fill(cr);
         cairo_stroke(cr);
       }
+    else
+      {
+        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_paint(cr);
+        cairo_text_extents_t extents;
+        cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+        cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_set_font_size(cr, 30.0);
+        cairo_text_extents(cr, "Drawing...", &extents); 
+        cairo_move_to(cr, PICTURE_ROWS/2-extents.width/2, PICTURE_COLUMNS/2-extents.height/2);  
+        cairo_show_text(cr, "Drawing...");
+      }
     return FALSE;
   }
 static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
@@ -202,7 +215,7 @@ static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
     static gint j=1;
     if(g_atomic_int_get(&status)==1)
       {
-        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(widgets_pixbuf[1]), (gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS);
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(widgets_pixbuf[1]), (gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_ROWS);
         gtk_progress_bar_set_text(GTK_PROGRESS_BAR(widgets_pixbuf[1]), "Drawing Done");
         gtk_statusbar_pop(GTK_STATUSBAR(widgets_pixbuf[2]), 0);
         gtk_statusbar_push(GTK_STATUSBAR(widgets_pixbuf[2]), 0, "Drawing Done");
@@ -247,6 +260,9 @@ static void combo_changed(GtkComboBox *combo_box, gpointer data)
           break;
         case 5:
           max_iteration=30;
+          break;
+        case 6:
+          max_iteration=35;
           break;
         default:
           max_iteration=25;
