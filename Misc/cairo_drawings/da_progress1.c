@@ -43,21 +43,30 @@ static gboolean draw_progress(GtkWidget *da, cairo_t *cr, gpointer data)
     gint height=gtk_widget_get_allocated_height(da);
     gint i=0;
     
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.7);  
-    cairo_paint(cr);
-
     cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0,  width, 0.0);
     for(i=0;i<=200;i+=20)
       { 
-        cairo_pattern_add_color_stop_rgb(pattern1, (double)(i/200.0), 1.0, 1.0, 0.0); 
-        cairo_pattern_add_color_stop_rgb(pattern1, (double)(i+10.0)/200.0, 1.0, 0.0, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/200.0), 0.0, 1.0, 1.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/200.0, 0.0, 0.0, 1.0); 
       }
     cairo_set_source(cr, pattern1);
+     
+    cairo_rectangle(cr, 0, 0, width, height);
+    cairo_fill(cr);
+
+    cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0,  width, 0.0);
+    for(i=0;i<=200;i+=20)
+      { 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/200.0), 1.0, 1.0, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/200.0, 1.0, 0.0, 0.0); 
+      }
+    cairo_set_source(cr, pattern2);
      
     cairo_rectangle(cr, 0, 0, (p_width/10.0)*width, height);
     cairo_fill(cr);
 
     cairo_pattern_destroy(pattern1);
+    cairo_pattern_destroy(pattern2);
     return FALSE;
   }
 int main(int argc, char **argv)
