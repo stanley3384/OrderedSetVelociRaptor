@@ -93,6 +93,26 @@ int main(int argc, char **argv)
     gtk_grid_attach(GTK_GRID(grid), button, 0, 12, 10, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
+
+    //Set up CSS colors for the background window and the button.
+    gchar *css_string=NULL;
+    gint minor_version=gtk_get_minor_version();
+    g_print("Minor Version %i\n", minor_version);    
+    if(minor_version>=18) css_string=g_strdup("button{background: #0088FF; font: Arial 16; color: red} window{background: #000000;}");
+    else css_string=g_strdup("GtkButton{background: #0088FF; font: Arial 16; color: red} GtkWindow{background: #000000;}");
+    GError *css_error=NULL;
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GdkDisplay *display = gdk_display_get_default();
+    GdkScreen *screen = gdk_display_get_default_screen(display);
+    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
+    if(css_error!=NULL)
+      {
+        g_print("CSS error %s\n", css_error->message);
+        g_error_free(css_error);
+      }
+    g_object_unref(provider);
+    if(css_string!=NULL) g_free(css_string);
     
     gtk_widget_show_all(window);                  
     gtk_main();
