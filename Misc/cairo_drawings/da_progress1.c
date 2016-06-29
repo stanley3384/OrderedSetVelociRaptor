@@ -14,7 +14,7 @@ and vertical progress bars along with the standard GTK progress bar.
 
 #include <gtk/gtk.h>
 
-//The progress of the bars.
+//The progress of the bars. Test a count of 10. Increment in the timer function.
 static gint p_width=0;
 
 static gboolean time_draw(GtkWidget *widgets[]);
@@ -152,13 +152,15 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     gint width=gtk_widget_get_allocated_width(da);
     gint height=gtk_widget_get_allocated_height(da);
     gint i=0;
+    gint steps=10;
+    gint total_steps=20*steps;
     
     //The cyan blue gradient.
     cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
-    for(i=0;i<=200;i+=20)
+    for(i=0;i<=total_steps;i+=20)
       { 
-        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/200.0), 0.0, 1.0, 1.0); 
-        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/200.0, 0.0, 0.0, 1.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)total_steps), 0.0, 1.0, 1.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/(gdouble)total_steps, 0.0, 0.0, 1.0); 
       }
     cairo_set_source(cr, pattern1);
      
@@ -167,10 +169,10 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
 
     //The yellow red gradient.
     cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
-    for(i=0;i<=200;i+=20)
+    for(i=0;i<=total_steps;i+=20)
       { 
-        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/200.0), 1.0, 1.0, 0.0); 
-        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/200.0, 1.0, 0.0, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)total_steps), 1.0, 1.0, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/(gdouble)total_steps, 1.0, 0.0, 0.0); 
       }
     cairo_set_source(cr, pattern2);
      
@@ -191,41 +193,64 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     gint width=gtk_widget_get_allocated_width(da)*10;
     gint height=gtk_widget_get_allocated_height(da);
     gint i=0;
-    gint bars=0;
+    //Set up how many steps to draw.
+    gint steps=20;
+    gint total_steps=20*steps;
     
-    //Test some offset counters.
-    if(g_strcmp0(gtk_widget_get_name(da), "da2")==0&&p_width>1) bars=2;
-    else if(g_strcmp0(gtk_widget_get_name(da), "da3")==0&&p_width>3) bars=4;
-    else if(g_strcmp0(gtk_widget_get_name(da), "da4")==0&&p_width>5) bars=6;
-    else if(g_strcmp0(gtk_widget_get_name(da), "da5")==0&&p_width>7) bars=8;
-    else bars=p_width;
+    //Test some offset counters and colors. Eventually move this code to calling functions.
+    gint step_stop=0;
+    gdouble background_rgb1[]={0.0, 1.0, 1.0};
+    gdouble background_rgb2[]={0.0, 0.0, 1.0};
+    gdouble forground_rgb1[]={1.0, 1.0, 0.0};
+    gdouble forground_rgb2[]={1.0, 0.0, 0.0};
+    if(g_strcmp0(gtk_widget_get_name(da), "da2")==0)
+      {
+        background_rgb1[0]=1.0;
+        background_rgb1[1]=0.0;
+      }
+    if(g_strcmp0(gtk_widget_get_name(da), "da3")==0)
+      {
+        forground_rgb1[1]=0.0;
+        forground_rgb1[2]=1.0;
+      }
+    if(g_strcmp0(gtk_widget_get_name(da), "da5")==0)
+      {
+        forground_rgb1[0]=0.0;
+      }   
+    if(g_strcmp0(gtk_widget_get_name(da), "da2")==0&&p_width>1) step_stop=2;
+    else if(g_strcmp0(gtk_widget_get_name(da), "da3")==0&&p_width>3) step_stop=4;
+    else if(g_strcmp0(gtk_widget_get_name(da), "da4")==0&&p_width>5) step_stop=6;
+    else if(g_strcmp0(gtk_widget_get_name(da), "da5")==0&&p_width>7) step_stop=8;
+    else step_stop=p_width;
+    //
 
+    //Transforms for drawing.
     cairo_save(cr);
     cairo_rotate(cr, G_PI/2.0);
     cairo_translate(cr, 0.0, -height);
 
-    //The cyan blue gradient.
+    //The background pattern.
     cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, height, 0.0);
-    for(i=0;i<=200;i+=20)
+    for(i=0;i<=total_steps;i+=20)
       { 
-        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/200.0), 0.0, 1.0, 1.0); 
-        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/200.0, 0.0, 0.0, 1.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)total_steps), background_rgb1[0], background_rgb1[1], background_rgb1[2]); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/(gdouble)total_steps, background_rgb2[0], background_rgb2[1], background_rgb2[2]); 
       }
     cairo_set_source(cr, pattern1);
      
     cairo_rectangle(cr, 0, 0, width, height);
     cairo_fill(cr);
 
-    //The yellow red gradient.
+    //The foreground pattern.
     cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0, height, 0.0);
-    for(i=0;i<=200;i+=20)
+    for(i=0;i<=total_steps;i+=20)
       { 
-        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/200.0), 1.0, 1.0, 0.0); 
-        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/200.0, 1.0, 0.0, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)total_steps), forground_rgb1[0], forground_rgb1[1], forground_rgb1[2]); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/(gdouble)total_steps, forground_rgb2[0], forground_rgb2[1], forground_rgb2[2]); 
       }
     cairo_set_source(cr, pattern2);
      
-    cairo_rectangle(cr, (1.0-(bars/10.0))*height, 0, (bars/10.0)*height, height);
+    cairo_rectangle(cr, (1.0-(step_stop/(gdouble)steps))*height, 0, (step_stop/(gdouble)steps)*height, height);
     cairo_fill(cr);
 
     cairo_restore(cr);
