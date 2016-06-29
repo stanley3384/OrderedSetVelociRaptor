@@ -2,7 +2,8 @@
 /*
 
     Draw progress bars with a cairo linear pattern on a GTK drawing area. Draw custom horizontal
-and vertical progress bars along with the standard GTK progress bar.
+and vertical progress bars along with the standard GTK progress bar. Eventually build a LED type
+of progress bar widget.
 
     gcc -Wall -Werror da_progress1.c -o da_progress1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -14,8 +15,11 @@ and vertical progress bars along with the standard GTK progress bar.
 
 #include <gtk/gtk.h>
 
-//The progress of the bars. Test a count of 10. Increment in the timer function.
-static gint p_width=0;
+/*
+    The progress of the bars. Test a count of 10 in the program. Increment in the timer function.
+    the horizontal progress bar has 10 steps and the vertical bars have 20 steps.
+*/
+static gint progress_step=0;
 
 static gboolean time_draw(GtkWidget *widgets[]);
 static void start_drawing(GtkWidget *button, GtkWidget *widgets[]);
@@ -121,17 +125,17 @@ int main(int argc, char **argv)
   }
 static gboolean time_draw(GtkWidget *widgets[])
   {
-    g_print("Timer %i\n", p_width);
-    if(p_width<10)
+    g_print("Timer %i\n", progress_step);
+    if(progress_step<10)
       {
-        p_width++;
+        progress_step++;
         gtk_widget_queue_draw(widgets[2]);
         gtk_widget_queue_draw(widgets[3]);
         gtk_widget_queue_draw(widgets[4]);
         gtk_widget_queue_draw(widgets[5]);
         gtk_widget_queue_draw(widgets[6]);
         gtk_widget_queue_draw(widgets[7]);
-        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(widgets[1]), (gdouble)p_width/10.0);
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(widgets[1]), (gdouble)progress_step/10.0);
         return TRUE;
       }
     else  
@@ -143,7 +147,7 @@ static gboolean time_draw(GtkWidget *widgets[])
 static void start_drawing(GtkWidget *button, GtkWidget *widgets[])
   {
     g_print("Click\n");
-    p_width=0;
+    progress_step=0;
     gtk_widget_set_sensitive(button, FALSE);
     g_timeout_add(300, (GSourceFunc)time_draw, widgets);
   }
@@ -176,7 +180,7 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
       }
     cairo_set_source(cr, pattern2);
      
-    cairo_rectangle(cr, 0, 0, (p_width/10.0)*width, height);
+    cairo_rectangle(cr, 0, 0, (progress_step/10.0)*width, height);
     cairo_fill(cr);
 
     cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
@@ -217,11 +221,11 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
       {
         forground_rgb1[0]=0.0;
       }   
-    if(g_strcmp0(gtk_widget_get_name(da), "da2")==0&&p_width>1) step_stop=2;
-    else if(g_strcmp0(gtk_widget_get_name(da), "da3")==0&&p_width>3) step_stop=4;
-    else if(g_strcmp0(gtk_widget_get_name(da), "da4")==0&&p_width>5) step_stop=6;
-    else if(g_strcmp0(gtk_widget_get_name(da), "da5")==0&&p_width>7) step_stop=8;
-    else step_stop=p_width;
+    if(g_strcmp0(gtk_widget_get_name(da), "da2")==0&&progress_step>1) step_stop=2;
+    else if(g_strcmp0(gtk_widget_get_name(da), "da3")==0&&progress_step>3) step_stop=4;
+    else if(g_strcmp0(gtk_widget_get_name(da), "da4")==0&&progress_step>5) step_stop=6;
+    else if(g_strcmp0(gtk_widget_get_name(da), "da5")==0&&progress_step>7) step_stop=8;
+    else step_stop=progress_step;
     //
 
     //Transforms for drawing.
