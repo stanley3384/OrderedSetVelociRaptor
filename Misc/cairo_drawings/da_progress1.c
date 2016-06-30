@@ -156,15 +156,18 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     gint width=gtk_widget_get_allocated_width(da);
     gint height=gtk_widget_get_allocated_height(da);
     gint i=0;
+    //Set up how many steps to draw.
     gint steps=10;
     gint total_steps=20*steps;
+    //gradient_end_end value < 20. The end color for the gradient.
+    gdouble gradient_end=19.0;
     
     //The cyan blue gradient.
     cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
     for(i=0;i<=total_steps;i+=20)
       { 
         cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)total_steps), 0.0, 1.0, 1.0); 
-        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/(gdouble)total_steps, 0.0, 0.0, 1.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+gradient_end)/(gdouble)total_steps, 0.0, 0.0, 1.0); 
       }
     cairo_set_source(cr, pattern1);
      
@@ -176,7 +179,7 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     for(i=0;i<=total_steps;i+=20)
       { 
         cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)total_steps), 1.0, 1.0, 0.0); 
-        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/(gdouble)total_steps, 1.0, 0.0, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+gradient_end)/(gdouble)total_steps, 1.0, 0.0, 0.0); 
       }
     cairo_set_source(cr, pattern2);
      
@@ -200,6 +203,8 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     //Set up how many steps to draw.
     gint steps=20;
     gint total_steps=20*steps;
+    //gradient_end_end value < 20. The end color for the gradient.
+    gdouble gradient_end=19.0;
     
     //Test some offset counters and colors. Eventually move this code to calling functions.
     gint step_stop=0;
@@ -209,17 +214,19 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     gdouble forground_rgb2[]={1.0, 0.0, 0.0};
     if(g_strcmp0(gtk_widget_get_name(da), "da2")==0)
       {
-        background_rgb1[0]=1.0;
-        background_rgb1[1]=0.0;
+        background_rgb2[1]=1.0;
+        background_rgb2[1]=0.6;
       }
     if(g_strcmp0(gtk_widget_get_name(da), "da3")==0)
       {
+        forground_rgb1[0]=0.6;
         forground_rgb1[1]=0.0;
-        forground_rgb1[2]=1.0;
       }
     if(g_strcmp0(gtk_widget_get_name(da), "da5")==0)
       {
         forground_rgb1[0]=0.0;
+        forground_rgb2[0]=0.0;
+        forground_rgb2[1]=0.6;
       }   
     if(g_strcmp0(gtk_widget_get_name(da), "da2")==0&&progress_step>1) step_stop=2;
     else if(g_strcmp0(gtk_widget_get_name(da), "da3")==0&&progress_step>3) step_stop=4;
@@ -238,7 +245,7 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     for(i=0;i<=total_steps;i+=20)
       { 
         cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)total_steps), background_rgb1[0], background_rgb1[1], background_rgb1[2]); 
-        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+10.0)/(gdouble)total_steps, background_rgb2[0], background_rgb2[1], background_rgb2[2]); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+gradient_end)/(gdouble)total_steps, background_rgb2[0], background_rgb2[1], background_rgb2[2]); 
       }
     cairo_set_source(cr, pattern1);
      
@@ -250,7 +257,7 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     for(i=0;i<=total_steps;i+=20)
       { 
         cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)total_steps), forground_rgb1[0], forground_rgb1[1], forground_rgb1[2]); 
-        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+10.0)/(gdouble)total_steps, forground_rgb2[0], forground_rgb2[1], forground_rgb2[2]); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+gradient_end)/(gdouble)total_steps, forground_rgb2[0], forground_rgb2[1], forground_rgb2[2]); 
       }
     cairo_set_source(cr, pattern2);
      
