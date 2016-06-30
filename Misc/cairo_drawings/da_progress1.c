@@ -15,16 +15,21 @@ of progress bar widget.
 
 #include <gtk/gtk.h>
 
-/*
-    The progress of the bars. Test a count of 10 in the program. Increment in the timer function.
-    the horizontal progress bar has 10 steps and the vertical bars have 20 steps.
-*/
+//The progress of the bars. Test a count of 10 in the program. Increment in the timer function.
 static gint progress_step=0;
+//The number of steps to draw at start. Can be changed with the combo box.
+#define start_steps 20
+static gint steps=start_steps;
+//For the pattern size.
+static gint total_steps=20*start_steps;
+//gradient_end_end value < 20. The end color for the gradient.
+static gdouble gradient_end=19.0;
 
 static gboolean time_draw(GtkWidget *widgets[]);
 static void start_drawing(GtkWidget *button, GtkWidget *widgets[]);
 static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpointer data);
+static void combo_changed(GtkComboBox *combo, GtkWidget *widgets[]);
 
 int main(int argc, char **argv)
   {      
@@ -32,7 +37,7 @@ int main(int argc, char **argv)
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 400);
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 500);
     gtk_window_set_title(GTK_WINDOW(window), "Progress Bars");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
@@ -80,11 +85,20 @@ int main(int argc, char **argv)
 
     //Standard progress bar.
     GtkWidget *progress=gtk_progress_bar_new();
+
+    GtkWidget *combo=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "10 steps");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "20 steps");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "30 steps");
+    gtk_widget_set_hexpand(combo, TRUE);  
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 1);
    
-    GtkWidget *button=gtk_button_new_with_label("progress");
+    GtkWidget *button=gtk_button_new_with_label("Test Progress Bars");
     gtk_widget_set_hexpand(button, TRUE);
-    GtkWidget *widgets[]={button, progress, da1, da2, da3, da4, da5, da6};
+    GtkWidget *widgets[]={button, progress, da1, da2, da3, da4, da5, da6, combo};
     g_signal_connect(button, "clicked", G_CALLBACK(start_drawing), widgets);
+
+    g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), widgets);
       
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 10, 1);
@@ -94,7 +108,8 @@ int main(int argc, char **argv)
     gtk_grid_attach(GTK_GRID(grid), da5, 6, 1, 1, 10);
     gtk_grid_attach(GTK_GRID(grid), da6, 8, 1, 1, 10);
     gtk_grid_attach(GTK_GRID(grid), progress, 0, 11, 10, 1);
-    gtk_grid_attach(GTK_GRID(grid), button, 0, 12, 10, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo, 0, 12, 10, 1);
+    gtk_grid_attach(GTK_GRID(grid), button, 0, 13, 10, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -102,8 +117,8 @@ int main(int argc, char **argv)
     gchar *css_string=NULL;
     gint minor_version=gtk_get_minor_version();
     g_print("Minor Version %i\n", minor_version);    
-    if(minor_version>=18) css_string=g_strdup("button{background: #0088FF; font: Arial 16; color: red} window{background: #000000;}");
-    else css_string=g_strdup("GtkButton{background: #0088FF; font: Arial 16; color: red} GtkWindow{background: #000000;}");
+    if(minor_version>=18) css_string=g_strdup("button, combobox{background: #0088FF; font: Arial 16; color: cyan} window{background: #000000;}");
+    else css_string=g_strdup("GtkButton, GtkComboBox{background: #0088FF; font: Arial 16; color: cyan} GtkWindow{background: #000000;}");
     GError *css_error=NULL;
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
@@ -141,6 +156,7 @@ static gboolean time_draw(GtkWidget *widgets[])
     else  
       {
         gtk_widget_set_sensitive(widgets[0], TRUE);
+        gtk_widget_set_sensitive(widgets[8], TRUE);
         return FALSE;
       }   
   }
@@ -149,6 +165,7 @@ static void start_drawing(GtkWidget *button, GtkWidget *widgets[])
     g_print("Click\n");
     progress_step=0;
     gtk_widget_set_sensitive(button, FALSE);
+    gtk_widget_set_sensitive(widgets[8], FALSE);
     g_timeout_add(300, (GSourceFunc)time_draw, widgets);
   }
 static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpointer data)
@@ -156,13 +173,8 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     gint width=gtk_widget_get_allocated_width(da);
     gint height=gtk_widget_get_allocated_height(da);
     gint i=0;
-    //Set up how many steps to draw.
-    gint steps=10;
-    gint total_steps=20*steps;
-    //gradient_end_end value < 20. The end color for the gradient.
-    gdouble gradient_end=19.0;
     
-    //The cyan blue gradient.
+    //The background gradient.
     cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
     for(i=0;i<=total_steps;i+=20)
       { 
@@ -174,7 +186,7 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     cairo_rectangle(cr, 0, 0, width, height);
     cairo_fill(cr);
 
-    //The yellow red gradient.
+    //The foreground gradient.
     cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
     for(i=0;i<=total_steps;i+=20)
       { 
@@ -183,7 +195,7 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
       }
     cairo_set_source(cr, pattern2);
      
-    cairo_rectangle(cr, 0, 0, (progress_step/10.0)*width, height);
+    cairo_rectangle(cr, 0, 0, ((gdouble)progress_step/(gdouble)steps)*(gdouble)width, height);
     cairo_fill(cr);
 
     cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
@@ -200,11 +212,6 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     gint width=gtk_widget_get_allocated_width(da)*10;
     gint height=gtk_widget_get_allocated_height(da);
     gint i=0;
-    //Set up how many steps to draw.
-    gint steps=20;
-    gint total_steps=20*steps;
-    //gradient_end_end value < 20. The end color for the gradient.
-    gdouble gradient_end=19.0;
     
     //Test some offset counters and colors. Eventually move this code to calling functions.
     gint step_stop=0;
@@ -273,5 +280,36 @@ static gboolean draw_custom_progress_vertical(GtkWidget *da, cairo_t *cr, gpoint
     cairo_pattern_destroy(pattern1);
     cairo_pattern_destroy(pattern2);
     return FALSE;
+  }
+static void combo_changed(GtkComboBox *combo, GtkWidget *widgets[])
+  {
+    gint combo_id=gtk_combo_box_get_active(combo);
+    g_print("ComboId Changed %i\n", combo_id);
+    if(combo_id==0)
+      {
+        steps=10;
+        total_steps=20*steps;
+      }
+    else if(combo_id==1)
+      {
+        steps=20;
+        total_steps=20*steps;
+      }
+    else if(combo_id==2)
+      {
+        steps=30;
+        total_steps=20*steps;
+      }
+    else
+      {
+        steps=10;
+        total_steps=10*steps;
+      }
+    gtk_widget_queue_draw(widgets[2]);
+    gtk_widget_queue_draw(widgets[3]);
+    gtk_widget_queue_draw(widgets[4]);
+    gtk_widget_queue_draw(widgets[5]);
+    gtk_widget_queue_draw(widgets[6]);
+    gtk_widget_queue_draw(widgets[7]);
   }
 
