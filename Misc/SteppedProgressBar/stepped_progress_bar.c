@@ -16,29 +16,34 @@ typedef struct _SteppedProgressBarPrivate SteppedProgressBarPrivate;
 
 struct _SteppedProgressBarPrivate
 {
-  //Just some test variables that need to be removed.
-  gchar *progress_name;
-  gdouble color_rgba[4];
+  //Colors for gradients as strings.
+  gchar *background_string_rgba1;
+  gchar *background_string_rgba2;
+  gchar *foreground_string_rgba1;
+  gchar *foreground_string_rgba2;
+  //Arrays for gradient colors.
+  gdouble background_rgba1[4];
+  gdouble background_rgba2[4];
+  gdouble foreground_rgba1[4];
+  gdouble foreground_rgba2[4];
   //Variables for the stepped progress bar.
   guint progress_direction;
   gint steps;
   gint total_steps;
   gint step_stop;
   gdouble gradient_end;
-  gdouble background_rgba1[4];
-  gdouble background_rgba2[4];
-  gdouble foreground_rgba1[4];
-  gdouble foreground_rgba2[4];
 };
 
 enum
 {
   PROP_0,
-  NAME,
-  RED,
-  GREEN,
-  BLUE,
-  ALPHA
+  BACKGROUND_RGBA1,
+  BACKGROUND_RGBA2,
+  FOREGROUND_RGBA1,
+  FOREGROUND_RGBA2,
+  PROGRESS_DIRECTION,
+  STEPS,
+  STEP_STOP
 };
 
 enum
@@ -90,67 +95,80 @@ static void stepped_progress_bar_class_init(SteppedProgressBarClass *klass)
 
   stepped_progress_bar_signals[CHANGED_SIGNAL]=g_signal_new("color-changed", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_FIRST|G_SIGNAL_ACTION, G_STRUCT_OFFSET(SteppedProgressBarClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-  g_object_class_install_property(gobject_class, NAME, g_param_spec_string("ProgressName", "ProgressName", "Some Progress Name", "Progress", G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, BACKGROUND_RGBA1, g_param_spec_string("background_rgba1", "background_rgba1", "background_rgba1", "background_rgba1", G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, RED, g_param_spec_double("Red", "Red Channel", "Channel 1", 0, 1, 0, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, BACKGROUND_RGBA2, g_param_spec_string("background_rgba2", "background_rgba2", "background_rgba2", "background_rgba2", G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, GREEN, g_param_spec_double("Green", "Green Channel", "Channel 2", 0, 1, 0, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, FOREGROUND_RGBA1, g_param_spec_string("foreground_rgba1", "foreground_rgba1", "foreground_rgba1", "foreground_rgba1", G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, BLUE, g_param_spec_double("Blue", "Blue Channel", "Channel 3", 0, 1, 0, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, FOREGROUND_RGBA2, g_param_spec_string("foreground_rgba2", "foreground_rgba2", "foreground_rgba2", "foreground_rgba2", G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, ALPHA, g_param_spec_double("Alpha", "Alpha Channel", "Channel 4", 0, 1, 0, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROGRESS_DIRECTION, g_param_spec_int("progress_direction", "progress_direction", "progress_direction", 0, 1, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, STEPS, g_param_spec_int("steps", "steps", "steps", 0, 1, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, STEP_STOP, g_param_spec_int("step_stop", "step_stop", "step_stop", 0, 1, 0, G_PARAM_READWRITE));
 
 }
 //Needed for g_object_set().
 static void stepped_progress_bar_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
 {
   SteppedProgressBar *da=STEPPED_PROGRESS_BAR(object);
-  gdouble color_rgba[4]={-1.0, -1.0, -1.0, -1.0};
 
   switch(prop_id)
   {
-    case NAME:
-      stepped_progress_bar_set_name(da, g_value_get_string(value));
+    case BACKGROUND_RGBA1:
+      stepped_progress_bar_set_background_rgba1(da, g_value_get_string(value));
       break;
-    case RED:
-      color_rgba[0]=g_value_get_double(value);
-      stepped_progress_bar_set_color(da, color_rgba);
+    case BACKGROUND_RGBA2:
+      stepped_progress_bar_set_background_rgba2(da, g_value_get_string(value));
       break;
-    case GREEN:
-      color_rgba[1]=g_value_get_double(value);
-      stepped_progress_bar_set_color(da, color_rgba);
+    case FOREGROUND_RGBA1:
+      stepped_progress_bar_set_foreground_rgba1(da, g_value_get_string(value));
       break;
-    case BLUE:
-      color_rgba[2]=g_value_get_double(value);
-      stepped_progress_bar_set_color(da, color_rgba);
+    case FOREGROUND_RGBA2:
+      stepped_progress_bar_set_foreground_rgba2(da, g_value_get_string(value));
+      break;
+    case PROGRESS_DIRECTION:
+      stepped_progress_bar_set_progress_direction(da, g_value_get_int(value));
+      break;
+    case STEPS:
+      stepped_progress_bar_set_steps(da, g_value_get_int(value));
+      break;
+    case STEP_STOP:
+      stepped_progress_bar_set_step_stop(da, g_value_get_int(value));
       break;  
-    case ALPHA:
-      color_rgba[3]=g_value_get_double(value);
-      stepped_progress_bar_set_color(da, color_rgba);
-      break; 
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
       break;
-
   }
 }
-void stepped_progress_bar_set_color(SteppedProgressBar *da, gdouble color_rgba[4])
+void stepped_progress_bar_set_progress_direction(SteppedProgressBar *da, gint progress_direction)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
-  gint i=0;
-  
-  for(i=0;i<4;i++)
-  {
-    if(color_rgba[i]>=0.0&&color_rgba[i]<=1.0)
-      {
-        priv->color_rgba[i]=color_rgba[i];
-      }
-  }
-
+ 
+  priv->progress_direction=progress_direction;
+ 
   g_signal_emit_by_name((gpointer)da, "color-changed");
   gtk_widget_queue_draw(GTK_WIDGET(da));
 }
-//Needed for g_object_set(). 
+void stepped_progress_bar_set_steps(SteppedProgressBar *da, gint steps)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+ 
+  priv->steps=steps;
+  priv->total_steps=20*priv->steps;
+ 
+  gtk_widget_queue_draw(GTK_WIDGET(da));
+}
+void stepped_progress_bar_set_step_stop(SteppedProgressBar *da, gint step_stop)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+ 
+  priv->step_stop=step_stop;
+ 
+  gtk_widget_queue_draw(GTK_WIDGET(da));
+} 
 static void stepped_progress_bar_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   SteppedProgressBar *da=STEPPED_PROGRESS_BAR(object);
@@ -158,40 +176,55 @@ static void stepped_progress_bar_get_property(GObject *object, guint prop_id, GV
   
   switch(prop_id)
   {
-    case NAME:
-      g_value_set_string(value, priv->progress_name);
+    case BACKGROUND_RGBA1:
+      g_value_set_string(value, priv->background_string_rgba1);
       break;
-    case RED:
-      g_value_set_double(value, priv->color_rgba[0]);
+    case BACKGROUND_RGBA2:
+      g_value_set_string(value, priv->background_string_rgba2);
       break;
-    case GREEN:
-      g_value_set_double(value, priv->color_rgba[1]);
+    case FOREGROUND_RGBA1:
+      g_value_set_string(value, priv->foreground_string_rgba1);
       break;
-    case BLUE:
-      g_value_set_double(value, priv->color_rgba[2]);
+    case FOREGROUND_RGBA2:
+      g_value_set_string(value, priv->foreground_string_rgba2);
       break;
-    case ALPHA:
-      g_value_set_double(value, priv->color_rgba[3]);
+    case PROGRESS_DIRECTION:
+      g_value_set_int(value, priv->progress_direction);
+      break;
+    case STEPS:
+      g_value_set_int(value, priv->steps);
+      break;
+    case STEP_STOP:
+      g_value_set_int(value, priv->step_stop);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
   }
 }
-gchar* stepped_progress_bar_get_color(SteppedProgressBar *da)
+int stepped_progress_bar_get_progress_direction(SteppedProgressBar *da)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
-  return g_strdup_printf("%f, %f, %f, %f", priv->color_rgba[0], priv->color_rgba[1], priv->color_rgba[2], priv->color_rgba[3]);
+  return priv->progress_direction;
+}
+int stepped_progress_bar_get_steps(SteppedProgressBar *da)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+  return priv->steps;
+}
+int stepped_progress_bar_get_step_stop(SteppedProgressBar *da)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+  return priv->step_stop;
 }
 static void stepped_progress_bar_init(SteppedProgressBar *da)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
-  gint i=0;
 
   //Initialize progress name.
-  priv->progress_name=g_strdup("Progress");
-
-  //Initialize color array.
-  for(i=0;i<4;i++) priv->color_rgba[i]=0.0;
+  priv->background_string_rgba1=g_strdup("rgba(0, 255, 255, 255)");
+  priv->background_string_rgba2=g_strdup("rgba(0, 0, 255, 255)");
+  priv->foreground_string_rgba1=g_strdup("rgba(255, 255, 0, 255)");
+  priv->foreground_string_rgba2=g_strdup("rgba(255, 0, 0, 255)");
 
   //Set some test variables.
   priv->progress_direction=1;
@@ -240,8 +273,8 @@ static void stepped_progress_bar_horizontal_right_draw(GtkWidget *da, cairo_t *c
   cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
   for(i=0;i<=priv->total_steps;i+=20)
     { 
-      cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)priv->total_steps), 0.0, 1.0, 1.0); 
-      cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, 0.0, 0.0, 1.0); 
+      cairo_pattern_add_color_stop_rgba(pattern1, (gdouble)(i/(gdouble)priv->total_steps), priv->background_rgba1[0], priv->background_rgba1[1], priv->background_rgba1[2], priv->background_rgba1[3]); 
+      cairo_pattern_add_color_stop_rgba(pattern1, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, priv->background_rgba2[0], priv->background_rgba2[1], priv->background_rgba2[2], priv->background_rgba2[3]); 
     }
   cairo_set_source(cr, pattern1);
      
@@ -252,8 +285,8 @@ static void stepped_progress_bar_horizontal_right_draw(GtkWidget *da, cairo_t *c
   cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
   for(i=0;i<=priv->total_steps;i+=20)
     { 
-      cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)priv->total_steps), 1.0, 1.0, 0.0); 
-      cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, 1.0, 0.0, 0.0); 
+      cairo_pattern_add_color_stop_rgba(pattern2, (gdouble)(i/(gdouble)priv->total_steps), priv->foreground_rgba1[0], priv->foreground_rgba1[1], priv->foreground_rgba1[2], priv->foreground_rgba1[3]); 
+      cairo_pattern_add_color_stop_rgba(pattern2, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, priv->foreground_rgba2[0], priv->foreground_rgba2[1], priv->foreground_rgba1[2], priv->foreground_rgba1[3]); 
     }
   cairo_set_source(cr, pattern2);
      
@@ -320,19 +353,129 @@ static void stepped_progress_bar_finalize(GObject *object)
   SteppedProgressBar *da=STEPPED_PROGRESS_BAR(object);
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
   
-  g_free(priv->progress_name);
+  g_free(priv->background_string_rgba1);
+  g_free(priv->background_string_rgba2);
+  g_free(priv->foreground_string_rgba1);
+  g_free(priv->foreground_string_rgba2);
 }
-void stepped_progress_bar_set_name(SteppedProgressBar *da, const gchar *progress_name)
+void stepped_progress_bar_set_background_rgba1(SteppedProgressBar *da, const gchar *background_string_rgba1)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
 
-  if(priv->progress_name!=NULL) g_free(priv->progress_name);
-  priv->progress_name=g_strdup(progress_name);  
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, background_string_rgba1))
+    {
+      g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->background_rgba1[0]=rgba.red;
+      priv->background_rgba1[1]=rgba.green;
+      priv->background_rgba1[2]=rgba.blue;
+      priv->background_rgba1[3]=rgba.alpha;
+      if(priv->background_string_rgba1!=NULL) g_free(priv->background_string_rgba1);
+      priv->background_string_rgba1=g_strdup(background_string_rgba1); 
+    }
+  else
+    {
+      g_print("background_string_rgba1 error\n");
+    } 
 }
-const gchar* stepped_progress_bar_get_name(SteppedProgressBar *da)
+const gchar* stepped_progress_bar_get_background_rgba1(SteppedProgressBar *da)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
-  return priv->progress_name;  
+  return priv->background_string_rgba1;  
 }
+
+void stepped_progress_bar_set_background_rgba2(SteppedProgressBar *da, const gchar *background_string_rgba2)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, background_string_rgba2))
+    {
+      g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->background_rgba2[0]=rgba.red;
+      priv->background_rgba2[1]=rgba.green;
+      priv->background_rgba2[2]=rgba.blue;
+      priv->background_rgba2[3]=rgba.alpha;
+      if(priv->background_string_rgba2!=NULL) g_free(priv->background_string_rgba2);
+      priv->background_string_rgba2=g_strdup(background_string_rgba2); 
+    }
+  else
+    {
+      g_print("background_string_rgba2 error\n");
+    } 
+}
+const gchar* stepped_progress_bar_get_background_rgba2(SteppedProgressBar *da)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+  return priv->background_string_rgba2;
+} 
+
+void stepped_progress_bar_set_foreground_rgba1(SteppedProgressBar *da, const gchar *foreground_string_rgba1)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, foreground_string_rgba1))
+    {
+      g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->foreground_rgba1[0]=rgba.red;
+      priv->foreground_rgba1[1]=rgba.green;
+      priv->foreground_rgba1[2]=rgba.blue;
+      priv->foreground_rgba1[3]=rgba.alpha;
+      if(priv->foreground_string_rgba1!=NULL) g_free(priv->foreground_string_rgba1);
+      priv->foreground_string_rgba1=g_strdup(foreground_string_rgba1); 
+    }
+  else
+    {
+      g_print("foreground_string_rgba1 error\n");
+    }   
+}
+const gchar* stepped_progress_bar_get_foreground_rgba1(SteppedProgressBar *da)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+  return priv->foreground_string_rgba1;
+} 
+ 
+void stepped_progress_bar_set_foreground_rgba2(SteppedProgressBar *da, const gchar *foreground_string_rgba2)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, foreground_string_rgba2))
+    {
+      g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->foreground_rgba2[0]=rgba.red;
+      priv->foreground_rgba2[1]=rgba.green;
+      priv->foreground_rgba2[2]=rgba.blue;
+      priv->foreground_rgba2[3]=rgba.alpha;
+      if(priv->foreground_string_rgba2!=NULL) g_free(priv->foreground_string_rgba2);
+      priv->foreground_string_rgba2=g_strdup(foreground_string_rgba2); 
+    }
+  else
+    {
+      g_print("foreground_string_rgba2 error\n");
+    }   
+}
+const gchar* stepped_progress_bar_get_foreground_rgba2(SteppedProgressBar *da)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+  return priv->foreground_string_rgba2;
+}   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

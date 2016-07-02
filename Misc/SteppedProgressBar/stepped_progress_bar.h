@@ -36,10 +36,22 @@ struct _SteppedProgressBarClass
 //Public functions.
 GType stepped_progress_bar_get_type(void) G_GNUC_CONST;
 GtkWidget* stepped_progress_bar_new();
-void stepped_progress_bar_set_color(SteppedProgressBar *da, gdouble color_rgba[4]);
-gchar* stepped_progress_bar_get_color(SteppedProgressBar *da);
-void stepped_progress_bar_set_name(SteppedProgressBar *da, const gchar *progress_name);
-const gchar* stepped_progress_bar_get_name(SteppedProgressBar *da);
+
+void stepped_progress_bar_set_progress_direction(SteppedProgressBar *da, gint progress_direction);
+int stepped_progress_bar_get_progress_direction(SteppedProgressBar *da);
+void stepped_progress_bar_set_steps(SteppedProgressBar *da, gint steps);
+int stepped_progress_bar_get_steps(SteppedProgressBar *da);
+void stepped_progress_bar_set_step_stop(SteppedProgressBar *da, gint total_steps);
+int stepped_progress_bar_get_step_stop(SteppedProgressBar *da);
+//Set and get the color gradients.
+void stepped_progress_bar_set_background_rgba1(SteppedProgressBar *da, const gchar *background_string_rgba1);
+const gchar* stepped_progress_bar_get_background_rgba1(SteppedProgressBar *da);
+void stepped_progress_bar_set_background_rgba2(SteppedProgressBar *da, const gchar *background_string_rgba2);
+const gchar* stepped_progress_bar_get_background_rgba2(SteppedProgressBar *da);
+void stepped_progress_bar_set_foreground_rgba1(SteppedProgressBar *da, const gchar *foreground_string_rgba1);
+const gchar* stepped_progress_bar_get_foreground_rgba1(SteppedProgressBar *da);
+void stepped_progress_bar_set_foreground_rgba2(SteppedProgressBar *da, const gchar *foreground_string_rgba2);
+const gchar* stepped_progress_bar_get_foreground_rgba2(SteppedProgressBar *da);
 
 G_END_DECLS
 
