@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-  GtkWidget *stepped_progress_bar=stepped_progress_bar_new();
+  GtkWidget *stepped_progress_bar=stepped_progress_bar_new(0);
   gtk_widget_set_hexpand(stepped_progress_bar, TRUE);
   gtk_widget_set_vexpand(stepped_progress_bar, TRUE);
   g_signal_connect(stepped_progress_bar, "color-changed", G_CALLBACK(color_changed1), NULL);

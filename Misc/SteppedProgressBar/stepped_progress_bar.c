@@ -20,6 +20,7 @@ struct _SteppedProgressBarPrivate
   gchar *progress_name;
   gdouble color_rgba[4];
   //Variables for the stepped progress bar.
+  guint progress_direction;
   gint steps;
   gint total_steps;
   gint step_stop;
@@ -54,6 +55,8 @@ static void stepped_progress_bar_set_property(GObject *object, guint prop_id, co
 static void stepped_progress_bar_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void stepped_progress_bar_init(SteppedProgressBar *da);
 static gboolean stepped_progress_bar_draw(GtkWidget *widget, cairo_t *cr);
+static void stepped_progress_bar_horizontal_right_draw(GtkWidget *da, cairo_t *cr);
+static void stepped_progress_bar_vertical_up_draw(GtkWidget *da, cairo_t *cr);
 static void stepped_progress_bar_finalize(GObject *gobject);
 
 GType stepped_progress_bar_get_type(void)
@@ -190,7 +193,8 @@ static void stepped_progress_bar_init(SteppedProgressBar *da)
   //Initialize color array.
   for(i=0;i<4;i++) priv->color_rgba[i]=0.0;
 
-  //Test some colors
+  //Set some test variables.
+  priv->progress_direction=1;
   priv->steps=20;
   priv->total_steps=20*priv->steps;
   priv->step_stop=10;
@@ -213,11 +217,58 @@ static void stepped_progress_bar_init(SteppedProgressBar *da)
   priv->foreground_rgba2[2]=0.0;
   priv->foreground_rgba2[3]=1.0;
 }
-GtkWidget* stepped_progress_bar_new(void)
+GtkWidget* stepped_progress_bar_new()
 {
   return GTK_WIDGET(g_object_new(stepped_progress_bar_get_type(), NULL));
 }
 static gboolean stepped_progress_bar_draw(GtkWidget *da, cairo_t *cr)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+
+  if(priv->progress_direction==0) stepped_progress_bar_horizontal_right_draw(da, cr);
+  else stepped_progress_bar_vertical_up_draw(da, cr);
+  return FALSE;
+}
+static void stepped_progress_bar_horizontal_right_draw(GtkWidget *da, cairo_t *cr)
+{
+  SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
+  gint width=gtk_widget_get_allocated_width(da);
+  gint height=gtk_widget_get_allocated_height(da);
+  gint i=0;
+    
+  //The background gradient.
+  cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
+  for(i=0;i<=priv->total_steps;i+=20)
+    { 
+      cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)priv->total_steps), 0.0, 1.0, 1.0); 
+      cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, 0.0, 0.0, 1.0); 
+    }
+  cairo_set_source(cr, pattern1);
+     
+  cairo_rectangle(cr, 0, 0, width, height);
+  cairo_fill(cr);
+
+  //The foreground gradient.
+  cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
+  for(i=0;i<=priv->total_steps;i+=20)
+    { 
+      cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)priv->total_steps), 1.0, 1.0, 0.0); 
+      cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, 1.0, 0.0, 0.0); 
+    }
+  cairo_set_source(cr, pattern2);
+     
+  cairo_rectangle(cr, 0, 0, ((gdouble)priv->step_stop/(gdouble)priv->steps)*(gdouble)width, height);
+  cairo_fill(cr);
+
+  cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+  cairo_set_line_width(cr, 6);
+  cairo_rectangle(cr, 0, 0, width, height);
+  cairo_stroke(cr);
+
+  cairo_pattern_destroy(pattern1);
+  cairo_pattern_destroy(pattern2);
+}
+static void stepped_progress_bar_vertical_up_draw(GtkWidget *da, cairo_t *cr)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
   gint width=gtk_widget_get_allocated_width(da)*10;
@@ -262,7 +313,6 @@ static gboolean stepped_progress_bar_draw(GtkWidget *da, cairo_t *cr)
 
   cairo_pattern_destroy(pattern1);
   cairo_pattern_destroy(pattern2);
-  return FALSE;
 }
 static void stepped_progress_bar_finalize(GObject *object)
 {
@@ -282,7 +332,6 @@ void stepped_progress_bar_set_name(SteppedProgressBar *da, const gchar *progress
 const gchar* stepped_progress_bar_get_name(SteppedProgressBar *da)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
-
   return priv->progress_name;  
 }
 

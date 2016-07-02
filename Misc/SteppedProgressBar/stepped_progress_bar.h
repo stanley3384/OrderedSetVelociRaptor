@@ -35,7 +35,7 @@ struct _SteppedProgressBarClass
 
 //Public functions.
 GType stepped_progress_bar_get_type(void) G_GNUC_CONST;
-GtkWidget* stepped_progress_bar_new(void);
+GtkWidget* stepped_progress_bar_new();
 void stepped_progress_bar_set_color(SteppedProgressBar *da, gdouble color_rgba[4]);
 gchar* stepped_progress_bar_get_color(SteppedProgressBar *da);
 void stepped_progress_bar_set_name(SteppedProgressBar *da, const gchar *progress_name);
