@@ -33,6 +33,13 @@ struct _SteppedProgressBarClass
   void (*color_changed) (SteppedProgressBar *da);
 };
 
+//Progress bar direction.
+enum
+{
+  HORIZONTAL_RIGHT,
+  VERTICAL_UP
+};
+
 //Public functions.
 GType stepped_progress_bar_get_type(void) G_GNUC_CONST;
 GtkWidget* stepped_progress_bar_new();

@@ -93,7 +93,7 @@ static void stepped_progress_bar_class_init(SteppedProgressBarClass *klass)
 
   g_type_class_add_private(klass, sizeof(SteppedProgressBarPrivate));
 
-  stepped_progress_bar_signals[CHANGED_SIGNAL]=g_signal_new("color-changed", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_FIRST|G_SIGNAL_ACTION, G_STRUCT_OFFSET(SteppedProgressBarClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+  stepped_progress_bar_signals[CHANGED_SIGNAL]=g_signal_new("step-changed", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_FIRST|G_SIGNAL_ACTION, G_STRUCT_OFFSET(SteppedProgressBarClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   g_object_class_install_property(gobject_class, BACKGROUND_RGBA1, g_param_spec_string("background_rgba1", "background_rgba1", "background_rgba1", "background_rgba1", G_PARAM_READWRITE));
 
@@ -147,27 +147,47 @@ void stepped_progress_bar_set_progress_direction(SteppedProgressBar *da, gint pr
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
  
-  priv->progress_direction=progress_direction;
- 
-  g_signal_emit_by_name((gpointer)da, "color-changed");
-  gtk_widget_queue_draw(GTK_WIDGET(da));
+  if(progress_direction==0||progress_direction==1)
+    {
+      priv->progress_direction=progress_direction; 
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("Progress direction can be HORIZONTAL_RIGHT or VERTICAL_UP only.");
+    }
 }
 void stepped_progress_bar_set_steps(SteppedProgressBar *da, gint steps)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
  
-  priv->steps=steps;
-  priv->total_steps=20*priv->steps;
- 
-  gtk_widget_queue_draw(GTK_WIDGET(da));
+  //Steps range is 5 to 100.
+  if(steps>4&&steps<101)
+    { 
+      priv->steps=steps;
+      priv->total_steps=20*priv->steps;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("The steps range is 4 < x < 101.");
+    }
 }
 void stepped_progress_bar_set_step_stop(SteppedProgressBar *da, gint step_stop)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
- 
-  priv->step_stop=step_stop;
- 
-  gtk_widget_queue_draw(GTK_WIDGET(da));
+  gint total_steps=priv->steps;
+
+  if(step_stop>=0&&step_stop<=total_steps)
+    {
+      priv->step_stop=step_stop;
+      g_signal_emit_by_name((gpointer)da, "step-changed");
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+   else
+    {
+      g_warning("The step_stop range is 0 <= x<= steps.");
+    }
 } 
 static void stepped_progress_bar_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
@@ -220,19 +240,20 @@ static void stepped_progress_bar_init(SteppedProgressBar *da)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
 
-  //Initialize progress name.
+  //Initialize default color strings.
   priv->background_string_rgba1=g_strdup("rgba(0, 255, 255, 255)");
   priv->background_string_rgba2=g_strdup("rgba(0, 0, 255, 255)");
   priv->foreground_string_rgba1=g_strdup("rgba(255, 255, 0, 255)");
   priv->foreground_string_rgba2=g_strdup("rgba(255, 0, 0, 255)");
 
-  //Set some test variables.
-  priv->progress_direction=1;
+  //Initailize default progress bar properties.
+  priv->progress_direction=VERTICAL_UP;
   priv->steps=20;
   priv->total_steps=20*priv->steps;
   priv->step_stop=10;
   priv->gradient_end=19.0;
-  //Setup default gradient colors.
+
+  //Initailize default gradient colors.
   priv->background_rgba1[0]=0.0;
   priv->background_rgba1[1]=1.0;
   priv->background_rgba1[2]=1.0;
@@ -258,7 +279,7 @@ static gboolean stepped_progress_bar_draw(GtkWidget *da, cairo_t *cr)
 {
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
 
-  if(priv->progress_direction==0) stepped_progress_bar_horizontal_right_draw(da, cr);
+  if(priv->progress_direction==HORIZONTAL_RIGHT) stepped_progress_bar_horizontal_right_draw(da, cr);
   else stepped_progress_bar_vertical_up_draw(da, cr);
   return FALSE;
 }

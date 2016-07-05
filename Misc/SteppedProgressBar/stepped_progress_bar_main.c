@@ -1,8 +1,8 @@
 
 /*
 
-    Work on making a stepped progress bar widget. It is currently under construction. This is
-moving the da_progress1.c progress bar drawings into a widget.
+    A basic stepped progress bar widget. This is the result of moving the da_progress1.c progress
+bar drawings into a widget.
 
     gcc -Wall -Werror stepped_progress_bar.c stepped_progress_bar_main.c -o stepped_progress `pkg-config gtk+-3.0 --cflags --libs`
 
@@ -19,38 +19,14 @@ moving the da_progress1.c progress bar drawings into a widget.
 static void change_settings(GtkWidget *button, GtkWidget *widgets[])
 {
   //Test some functions and properties of the SteppedProgressBar widget.
-  gint direction=atoi(gtk_entry_get_text(GTK_ENTRY(widgets[0])));
+  gint direction=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[0]));
   gint steps=atoi(gtk_entry_get_text(GTK_ENTRY(widgets[1])));
   gint step_stop=atoi(gtk_entry_get_text(GTK_ENTRY(widgets[2])));
 
   g_print("Change Settings %i %i\n", direction, steps);
-  if(direction==0)
-    {
-      stepped_progress_bar_set_progress_direction(STEPPED_PROGRESS_BAR(widgets[3]), 0);
-    }
-  else
-    {
-      stepped_progress_bar_set_progress_direction(STEPPED_PROGRESS_BAR(widgets[3]), 1);
-    }
-
-  if(steps>4&&steps<101)
-    {
-      stepped_progress_bar_set_steps(STEPPED_PROGRESS_BAR(widgets[3]), steps);
-    }
-  else
-    {
-      stepped_progress_bar_set_steps(STEPPED_PROGRESS_BAR(widgets[3]), 20);
-    }
-
-  if(step_stop>=0&&step_stop<=steps)
-    {
-      stepped_progress_bar_set_step_stop(STEPPED_PROGRESS_BAR(widgets[3]), step_stop);
-    }
-  else
-    {
-      stepped_progress_bar_set_step_stop(STEPPED_PROGRESS_BAR(widgets[3]), 1);
-    }
-  
+  stepped_progress_bar_set_progress_direction(STEPPED_PROGRESS_BAR(widgets[3]), direction);
+  stepped_progress_bar_set_steps(STEPPED_PROGRESS_BAR(widgets[3]), steps);  
+  stepped_progress_bar_set_step_stop(STEPPED_PROGRESS_BAR(widgets[3]), step_stop);
 
   gint a1=stepped_progress_bar_get_progress_direction(STEPPED_PROGRESS_BAR(widgets[3]));
   gint a2=stepped_progress_bar_get_steps(STEPPED_PROGRESS_BAR(widgets[3]));
@@ -68,9 +44,9 @@ static void change_settings(GtkWidget *button, GtkWidget *widgets[])
   const gchar *foreground_rgba2=stepped_progress_bar_get_foreground_rgba2(STEPPED_PROGRESS_BAR(widgets[3]));
   g_print("Colors %s %s %s %s\n", background_rgba1, background_rgba2, foreground_rgba1, foreground_rgba2);
 }
-static void color_changed(GtkWidget *widget, gpointer data)
+static void step_changed(GtkWidget *widget, gpointer data)
 {
-  g_print("Color Changed\n");
+  g_print("Step Changed\n");
 }
 int main(int argc, char *argv[])
 {
@@ -86,14 +62,13 @@ int main(int argc, char *argv[])
   GtkWidget *stepped_progress_bar=stepped_progress_bar_new(0);
   gtk_widget_set_hexpand(stepped_progress_bar, TRUE);
   gtk_widget_set_vexpand(stepped_progress_bar, TRUE);
-  g_signal_connect(stepped_progress_bar, "color-changed", G_CALLBACK(color_changed), NULL);
+  g_signal_connect(stepped_progress_bar, "step-changed", G_CALLBACK(step_changed), NULL);
 
-  GtkWidget *direction_label=gtk_label_new("Direction");
-  gtk_widget_set_hexpand(direction_label, TRUE);
-
-  GtkWidget *direction_entry=gtk_entry_new();
-  gtk_entry_set_width_chars(GTK_ENTRY(direction_entry), 4);
-  gtk_entry_set_text(GTK_ENTRY(direction_entry), "1");
+  GtkWidget *direction_combo=gtk_combo_box_text_new();
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(direction_combo), 0, "1", "HORIZONTAL_RIGHT");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(direction_combo), 1, "2", "VERTICAL_UP");
+  gtk_widget_set_hexpand(direction_combo, TRUE);  
+  gtk_combo_box_set_active(GTK_COMBO_BOX(direction_combo), 1);
 
   GtkWidget *steps_label=gtk_label_new("Steps");
   gtk_widget_set_hexpand(steps_label, TRUE);
@@ -112,13 +87,12 @@ int main(int argc, char *argv[])
   GtkWidget *button=gtk_button_new_with_label("Change Settings");
   gtk_widget_set_hexpand(button, TRUE);
 
-  GtkWidget *widgets[]={direction_entry, steps_entry, step_stop_entry, stepped_progress_bar};
+  GtkWidget *widgets[]={direction_combo, steps_entry, step_stop_entry, stepped_progress_bar};
   g_signal_connect(button, "clicked", G_CALLBACK(change_settings), widgets);
 
   GtkWidget *grid=gtk_grid_new();
   gtk_grid_attach(GTK_GRID(grid), stepped_progress_bar, 0, 0, 6, 4);
-  gtk_grid_attach(GTK_GRID(grid), direction_label, 0, 4, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), direction_entry, 1, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), direction_combo, 0, 4, 2, 1);
   gtk_grid_attach(GTK_GRID(grid), steps_label, 2, 4, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), steps_entry, 3, 4, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), step_stop_label, 4, 4, 1, 1);
