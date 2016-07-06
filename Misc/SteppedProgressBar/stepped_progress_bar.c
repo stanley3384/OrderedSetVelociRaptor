@@ -344,7 +344,7 @@ static void stepped_progress_bar_vertical_up_draw(GtkWidget *da, cairo_t *cr)
     }
   cairo_set_source(cr, pattern1);
      
-  cairo_rectangle(cr, 0, 0, height, width);
+  cairo_rectangle(cr, 0, 0, height, height);
   cairo_fill(cr);
 
   //The foreground pattern.
