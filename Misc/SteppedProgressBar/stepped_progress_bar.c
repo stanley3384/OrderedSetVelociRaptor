@@ -370,7 +370,6 @@ static void stepped_progress_bar_vertical_up_draw(GtkWidget *da, cairo_t *cr)
 }
 static void stepped_progress_bar_finalize(GObject *object)
 {
-  g_print("Finalize\n");
   SteppedProgressBar *da=STEPPED_PROGRESS_BAR(object);
   SteppedProgressBarPrivate *priv=STEPPED_PROGRESS_BAR_GET_PRIVATE(da);
   
