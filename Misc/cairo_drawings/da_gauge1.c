@@ -14,9 +14,7 @@
 #include<gtk/gtk.h>
 #include<math.h>
 
-
 //Yellow and red cutoff between 13 and 23. Eleven lines from 11*pi/12 to pi/12. A scale of 11.
-//Should set combos to these values also. Testing.
 static gdouble yellow_cutoff1=17.0;
 static gdouble red_cutoff1=20.0;
 //Needle line between 1 and 11.
@@ -59,6 +57,7 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 10, "11", "y11");  
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(change_yellow), NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 5);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "r1");
@@ -74,6 +73,7 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 10, "11", "r11");  
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(change_red), NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 7);
 
     GtkWidget *combo3=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "n1");
@@ -122,7 +122,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
 
     //transforms
     cairo_translate(cr, center_x, center_y+(50*scale_y));
-    cairo_scale(cr, scale_y, scale_y);
+    cairo_scale(cr, 1.2*scale_y, 1.2*scale_y);
 
     //Green underneath 
     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
@@ -155,6 +155,16 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     cairo_move_to(cr, 0, 0);
     cairo_line_to(cr, -(cos(needle*G_PI/12.0)*150), -sin(needle*G_PI/12.0)*150);
     cairo_stroke(cr);
+
+    //Text for needle value.
+    cairo_text_extents_t extents;
+    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 28);
+    gchar *string=g_strdup_printf("%3.2f", needle);
+    cairo_text_extents(cr, string, &extents); 
+    cairo_move_to(cr, -extents.width/2, 30.0+extents.height/2);  
+    cairo_show_text(cr, string);
+    g_free(string);
 
     return FALSE;
   }
