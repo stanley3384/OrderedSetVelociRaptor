@@ -134,12 +134,12 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     //Original drawing 400x400.
     gdouble scale_y=(gdouble)height/400.0;
     
-    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_paint(cr);
 
     //transforms
     cairo_translate(cr, center_x, center_y+(50*scale_y));
-    cairo_scale(cr, 1.2*scale_y, 1.2*scale_y);
+    cairo_scale(cr, 1.30*scale_y, 1.30*scale_y);
 
     //Green underneath 
     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
@@ -181,7 +181,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
         g_print("Gauge underload %f!\n", needle);
         standard_needle=1.0;
       }
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     cairo_move_to(cr, 0, 0);
     cairo_line_to(cr, -(cos(standard_needle*G_PI/12.0)*150), -sin(standard_needle*G_PI/12.0)*150);
     cairo_stroke(cr);
@@ -189,17 +189,17 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     //Text for needle value.
     cairo_text_extents_t extents1;
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 28);
+    cairo_set_font_size(cr, 46);
     gchar *string1=g_strdup_printf("%3.2f", needle);
     cairo_text_extents(cr, string1, &extents1); 
-    cairo_move_to(cr, -extents1.width/2, 30.0+extents1.height/2-10);  
+    cairo_move_to(cr, -extents1.width/2, 40.0+extents1.height/2);  
     cairo_show_text(cr, string1);
     g_free(string1);
 
     //Text for bottom end scale value.
     cairo_text_extents_t extents2;
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 16);
+    cairo_set_font_size(cr, 22);
     gchar *string2=g_strdup_printf("%3.2f", scale_bottom);
     cairo_text_extents(cr, string2, &extents2); 
     cairo_move_to(cr, -extents2.width/2-125, extents2.height/2-10);  
@@ -209,7 +209,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     //Text for top end scale value.
     cairo_text_extents_t extents3;
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 16);
+    cairo_set_font_size(cr, 22);
     gchar *string3=g_strdup_printf("%3.2f", scale_top);
     cairo_text_extents(cr, string3, &extents3); 
     cairo_move_to(cr, -extents3.width/2+125, extents3.height/2-10);  
