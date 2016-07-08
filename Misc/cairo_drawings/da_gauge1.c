@@ -21,10 +21,9 @@ static gdouble red_cutoff1=20.0;
 static gdouble needle=1.0;
 
 static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data);
-static void change_yellow(GtkComboBox *combo, gpointer data);
-static void change_red(GtkComboBox *combo, gpointer data);
-static void change_needle(GtkComboBox *combo, gpointer data);
-static void draw_gauge(GtkWidget *button, GtkWidget *da);
+static void change_yellow(GtkComboBox *combo, GtkWidget *da);
+static void change_red(GtkComboBox *combo, GtkWidget *da);
+static void change_needle(GtkComboBox *combo, GtkWidget *da);
 
 int main(int argc, char **argv)
   {      
@@ -32,7 +31,7 @@ int main(int argc, char **argv)
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 400, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
     gtk_window_set_title(GTK_WINDOW(window), "Gauge");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
@@ -56,7 +55,7 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 9, "10", "y10");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 10, "11", "y11");  
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
-    g_signal_connect(combo1, "changed", G_CALLBACK(change_yellow), NULL);
+    g_signal_connect(combo1, "changed", G_CALLBACK(change_yellow), da1);
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 5);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
@@ -72,7 +71,7 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 9, "10", "r10");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 10, "11", "r11");  
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
-    g_signal_connect(combo2, "changed", G_CALLBACK(change_red), NULL);
+    g_signal_connect(combo2, "changed", G_CALLBACK(change_red), da1);
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 7);
 
     GtkWidget *combo3=gtk_combo_box_text_new();
@@ -88,18 +87,13 @@ int main(int argc, char **argv)
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 9, "10", "n10");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 10, "11", "n11");  
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
-    g_signal_connect(combo3, "changed", G_CALLBACK(change_needle), NULL);
+    g_signal_connect(combo3, "changed", G_CALLBACK(change_needle), da1);
    
-    GtkWidget *button=gtk_button_new_with_label("Test Gauge");
-    gtk_widget_set_hexpand(button, TRUE);
-    g_signal_connect(button, "clicked", G_CALLBACK(draw_gauge), da1);
-      
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 3, 1);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo2, 1, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo3, 2, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button, 0, 2, 3, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
    
@@ -168,27 +162,25 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
 
     return FALSE;
   }
-static void change_yellow(GtkComboBox *combo, gpointer data)
+static void change_yellow(GtkComboBox *combo, GtkWidget *da)
   {
     gint cutoff=gtk_combo_box_get_active(combo);
     //g_print("Yellow %f\n", 13.0+(gdouble)cutoff-0.001);
     yellow_cutoff1=13.0+(gdouble)cutoff-0.001;
+    gtk_widget_queue_draw(da);
   }
-static void change_red(GtkComboBox *combo, gpointer data)
+static void change_red(GtkComboBox *combo, GtkWidget *da)
   {
     gint cutoff=gtk_combo_box_get_active(combo);
     //g_print("Red %f\n", 13.0+(gdouble)cutoff-0.001);
     red_cutoff1=13.0+(gdouble)cutoff-0.001;
-  }
-static void change_needle(GtkComboBox *combo, gpointer data)
-  {
-    needle=(gdouble)(gtk_combo_box_get_active(combo)+1);
-  }
-static void draw_gauge(GtkWidget *button, GtkWidget *da)
-  {
     gtk_widget_queue_draw(da);
   }
-
+static void change_needle(GtkComboBox *combo, GtkWidget *da)
+  {
+    needle=(gdouble)(gtk_combo_box_get_active(combo)+1);
+    gtk_widget_queue_draw(da);
+  }
 
 
 
