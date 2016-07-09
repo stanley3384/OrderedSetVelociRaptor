@@ -1,7 +1,7 @@
 
 /*
 
-    Test drawing for a gauge. 
+    Test drawing for a gauge. This was the starting point for the AdjustableGauge widget.
 
     gcc -Wall -Werror da_gauge1.c -o da_gauge1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -19,8 +19,8 @@ static gdouble yellow_cutoff1=17.0;
 static gdouble red_cutoff1=20.0;
 //Needle line between 1 and 11.
 static gdouble needle=13.0;
-static gdouble scale_bottom=13;
-static gdouble scale_top=23;
+static gdouble scale_bottom=13.0;
+static gdouble scale_top=23.0;
 
 static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data);
 static void change_yellow(GtkComboBox *combo, GtkWidget *da);

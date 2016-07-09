@@ -4,6 +4,7 @@
     An adjustable gauge widget. There are two cutoff points that can be set along with the 
 range of the scale. No colors are set with funcitons but you can change them in the code
 easy enough. This needs some more work and testing but the basic functionality is working.
+    The start for this widget can be found in da_gauge.c in the cairo_drawings folder.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 
