@@ -112,7 +112,7 @@ void adjustable_gauge_set_first_cutoff(AdjustableGauge *da, gdouble first_cutoff
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
  
   //Steps first_cutoff >= 0.
-  if(first_cutoff<priv->second_cutoff&&first_cutoff>=priv->scale_bottom&&first_cutoff<=priv->scale_top)
+  if(first_cutoff>=priv->scale_bottom&&first_cutoff<=priv->scale_top)
     { 
       priv->first_cutoff=first_cutoff;
       gtk_widget_queue_draw(GTK_WIDGET(da));
@@ -127,7 +127,7 @@ void adjustable_gauge_set_second_cutoff(AdjustableGauge *da, gdouble second_cuto
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
  
   //Steps second_cutoff >= 0.
-  if(second_cutoff>priv->first_cutoff&&second_cutoff>=priv->scale_bottom&&second_cutoff<=priv->scale_top)
+  if(second_cutoff>=priv->scale_bottom&&second_cutoff<=priv->scale_top)
     { 
       priv->second_cutoff=second_cutoff;
       gtk_widget_queue_draw(GTK_WIDGET(da));
@@ -158,6 +158,7 @@ void adjustable_gauge_set_scale_bottom(AdjustableGauge *da, gdouble scale_bottom
   if(scale_bottom>=0.0)
     {
       priv->scale_bottom=scale_bottom;
+      priv->needle=scale_bottom;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
    else
