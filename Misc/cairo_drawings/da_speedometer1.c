@@ -99,6 +99,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     //Set large tick marks.
     gint i=0;
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+    gdouble tenth_scale=diff/10.0;
     gdouble tick_mark=(5.0*G_PI/3.0)/10.0;
     gdouble temp=0;
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
@@ -112,7 +113,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
         cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*150, -sin((4.0*G_PI/3.0)-temp)*150);
         cairo_stroke(cr);
         //String values at bit tick marks.
-        gchar *tick_string=g_strdup_printf("%i", i*10);
+        gchar *tick_string=g_strdup_printf("%i", (int)((gdouble)i*tenth_scale));
         cairo_text_extents(cr, tick_string, &tick_extents);
         cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*125)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*125)+tick_extents.height/2.0);
         cairo_show_text(cr, tick_string);
