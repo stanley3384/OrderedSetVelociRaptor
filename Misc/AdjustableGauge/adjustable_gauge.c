@@ -123,7 +123,8 @@ void adjustable_gauge_set_first_cutoff(AdjustableGauge *da, gdouble first_cutoff
   //Steps first_cutoff >= 0.
   if(first_cutoff>=priv->scale_bottom&&first_cutoff<=priv->scale_top)
     { 
-      priv->first_cutoff=first_cutoff;
+      //Subtract a small amount for rounding errors. Need a better way to do this.
+      priv->first_cutoff=first_cutoff-0.000001;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
   else
@@ -138,7 +139,8 @@ void adjustable_gauge_set_second_cutoff(AdjustableGauge *da, gdouble second_cuto
   //Steps second_cutoff >= 0.
   if(second_cutoff>=priv->scale_bottom&&second_cutoff<=priv->scale_top)
     { 
-      priv->second_cutoff=second_cutoff;
+      //Subtract a small amount for rounding errors. Need a better way to do this.
+      priv->second_cutoff=second_cutoff-0.000001;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
   else
