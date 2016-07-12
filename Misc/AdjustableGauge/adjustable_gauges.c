@@ -32,14 +32,16 @@ int main(int argc, char **argv)
    
     //Default gauge.
     GtkWidget *gauge1=adjustable_gauge_new();
+    adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge1), SPEEDOMETER_GAUGE);
     gtk_widget_set_name(gauge1, "g1");
     gtk_widget_set_hexpand(gauge1, TRUE);
     gtk_widget_set_vexpand(gauge1, TRUE); 
 
     GtkWidget *gauge2=adjustable_gauge_new();
+    adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge2), SPEEDOMETER_GAUGE);
     gtk_widget_set_hexpand(gauge2, TRUE);
     gtk_widget_set_vexpand(gauge2, TRUE);
-    //Set scale before cutoff values.
+    //Set scale values before cutoff values.
     adjustable_gauge_set_scale_bottom(ADJUSTABLE_GAUGE(gauge2), 0.0);
     adjustable_gauge_set_scale_top(ADJUSTABLE_GAUGE(gauge2), 200.0);
     adjustable_gauge_set_first_cutoff(ADJUSTABLE_GAUGE(gauge2), 150.0);

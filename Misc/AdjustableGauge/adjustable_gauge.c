@@ -22,6 +22,7 @@ struct _AdjustableGaugePrivate
   gdouble needle;
   gdouble scale_bottom;
   gdouble scale_top;
+  gint gauge_drawing_name;
 };
 
 enum
@@ -31,7 +32,8 @@ enum
   SECOND_CUTOFF,
   NEEDLE,
   SCALE_BOTTOM,
-  SCALE_TOP
+  SCALE_TOP,
+  GAUGE_DRAWING_NAME
 };
 
 //Private functions.
@@ -40,6 +42,8 @@ static void adjustable_gauge_set_property(GObject *object, guint prop_id, const 
 static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void adjustable_gauge_init(AdjustableGauge *da);
 static gboolean adjustable_gauge_draw(GtkWidget *widget, cairo_t *cr);
+static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr);
+static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr);
 
 GType adjustable_gauge_get_type(void)
 {
@@ -79,6 +83,8 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
 
   g_object_class_install_property(gobject_class, SCALE_TOP, g_param_spec_double("scale_top", "scale_top", "scale_top", 0, 1, 0, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, SCALE_TOP, g_param_spec_int("gauge_drawing_name", "gauge_drawing_name", "gauge_drawing_name", 0, 1, 0, G_PARAM_READWRITE));
+
 }
 //Needed for g_object_set().
 static void adjustable_gauge_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
@@ -101,6 +107,9 @@ static void adjustable_gauge_set_property(GObject *object, guint prop_id, const 
       break;
     case SCALE_TOP:
       adjustable_gauge_set_scale_top(da, g_value_get_double(value));
+      break; 
+    case GAUGE_DRAWING_NAME:
+      adjustable_gauge_set_drawing(da, g_value_get_int(value));
       break; 
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -180,6 +189,21 @@ void adjustable_gauge_set_scale_top(AdjustableGauge *da, gdouble scale_top)
       g_warning("The top of the scale is out of range.");
     }
 } 
+void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  if(drawing_name==1)
+    {
+      priv->gauge_drawing_name=drawing_name;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+   else
+    {
+      priv->gauge_drawing_name=0;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+} 
 static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   AdjustableGauge *da=ADJUSTABLE_GAUGE(object);
@@ -201,6 +225,9 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
       break;
     case SCALE_TOP:
       g_value_set_double(value, priv->scale_top);
+      break;
+    case GAUGE_DRAWING_NAME:
+      g_value_set_int(value, priv->gauge_drawing_name);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -231,6 +258,11 @@ gdouble adjustable_gauge_get_scale_top(AdjustableGauge *da)
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   return priv->scale_top;
 }
+gint adjustable_gauge_get_drawing(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->gauge_drawing_name;
+}
 static void adjustable_gauge_init(AdjustableGauge *da)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -241,13 +273,21 @@ static void adjustable_gauge_init(AdjustableGauge *da)
   priv->needle=0.0;
   priv->scale_bottom=0.0;
   priv->scale_top=100.0;
+  priv->gauge_drawing_name=0;
 }
 GtkWidget* adjustable_gauge_new()
 {
   return GTK_WIDGET(g_object_new(adjustable_gauge_get_type(), NULL));
 }
-
 static gboolean adjustable_gauge_draw(GtkWidget *da, cairo_t *cr)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  if(priv->gauge_drawing_name==VOLTAGE_GAUGE) adjustable_voltage_gauge_draw(da, cr);
+  else adjustable_speedometer_gauge_draw(da, cr);
+  return FALSE;
+}
+static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
 
@@ -344,7 +384,110 @@ static gboolean adjustable_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_show_text(cr, string3);
   g_free(string3);
 
-  return FALSE;
+}
+static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  gint width=gtk_widget_get_allocated_width(da);
+  gint height=gtk_widget_get_allocated_height(da);
+  gint center_x=width/2;
+  gint center_y=height/2;
+  gdouble scale_y=(gdouble)height/400.0;
+    
+  cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+  cairo_paint(cr);
+
+  //transforms
+  cairo_translate(cr, center_x, center_y+(scale_y));
+  cairo_scale(cr, 1.10*scale_y, 1.10*scale_y);
+
+  //Green underneath 
+  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+  cairo_set_line_width(cr, 3.0);
+  cairo_arc_negative(cr, 0, 0, 100, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
+  cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*150), sin(-4.0*G_PI/3.0)*150);
+  cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0, -5.0*G_PI/3.0);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_stroke(cr);
+
+  gdouble diff=priv->scale_top-priv->scale_bottom;
+
+  //Yellow next.
+  gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
+  cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+  cairo_arc_negative(cr, 0, 0, 100, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
+  cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_first_cutoff, -5.0*G_PI/3.0);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_stroke(cr);
+
+  //Red top.
+  gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
+  cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
+  cairo_arc_negative(cr, 0, 0, 100, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
+  cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_second_cutoff, -5.0*G_PI/3.0);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_stroke(cr);
+
+  //Set large tick marks.
+  gint i=0;
+  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+  gdouble tenth_scale=diff/10.0;
+  gdouble tick_mark=(5.0*G_PI/3.0)/10.0;
+  gdouble temp=0;
+  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+  cairo_text_extents_t tick_extents;
+  cairo_set_font_size(cr, 20);
+  cairo_move_to(cr, 0, 0);
+  for(i=0;i<11;i++)
+    {
+      temp=(gdouble)i*tick_mark;
+      cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*140, -sin((4.0*G_PI/3.0)-temp)*140);
+      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*150, -sin((4.0*G_PI/3.0)-temp)*150);
+      cairo_stroke(cr);
+      //String values at bit tick marks.
+      gchar *tick_string=g_strdup_printf("%i", (int)((gdouble)i*tenth_scale));
+      cairo_text_extents(cr, tick_string, &tick_extents);
+      cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*125)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*125)+tick_extents.height/2.0);
+      cairo_show_text(cr, tick_string);
+      g_free(tick_string);
+      //Reset position to the center.
+      cairo_move_to(cr, 0, 0);
+    }
+
+  //Set small tick marks.
+  cairo_set_line_width(cr, 3.0);
+  gdouble half_tick=tick_mark/2.0;
+  cairo_move_to(cr, 0, 0);
+  for(i=0;i<10;i++)
+    {
+      temp=(gdouble)i*tick_mark+half_tick;
+      cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*145, -sin((4.0*G_PI/3.0)-temp)*145);
+      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*150, -sin((4.0*G_PI/3.0)-temp)*150);
+      cairo_stroke(cr);
+      cairo_move_to(cr, 0, 0);
+    }
+
+  //The needle line.
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
+  cairo_move_to(cr, 0, 0);
+  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*110, -sin((4.0*G_PI/3.0)-standard_needle)*110);
+  cairo_stroke(cr);
+    
+  //Text for needle value.
+  cairo_text_extents_t extents1;
+  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+  cairo_set_font_size(cr, 30);
+  gchar *string1=g_strdup_printf("%3.2f", priv->needle);
+  cairo_text_extents(cr, string1, &extents1); 
+  cairo_move_to(cr, -extents1.width/2, 140.0+extents1.height/2);  
+  cairo_show_text(cr, string1);
+  g_free(string1);
+
 }
 
 

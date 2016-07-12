@@ -2,9 +2,13 @@
 /*
 
     An adjustable gauge widget. There are two cutoff points that can be set along with the 
-range of the scale. No colors are set with funcitons but you can change them in the code
+range of the scale. No colors are set with functons but you can change them in the code
 easy enough. This needs some more work and testing but the basic functionality is working.
-    The start for this widget can be found in da_gauge.c in the cairo_drawings folder.
+    There are two types of gauges. One called a voltage gauge and one called a speedometer 
+gauge. 
+    The start for this widget can be found in da_gauge1.c and da_speedometer1.c in the
+cairo_drawings folder. When setting properties, make sure to set the range or top and
+bottom values first. The range is greater than 0 for now.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -29,11 +33,23 @@ static void change_settings(GtkWidget *button, GtkWidget *widgets[])
 
   g_print("%f %f %f %f %f\n", cutoff1, cutoff2, needle, bottom, top);
 
+  //Set the gauge to draw.
+  if(gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[6]))==0)
+    {
+      adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(widgets[0]), VOLTAGE_GAUGE);
+    }
+  else
+    {
+      adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(widgets[0]), SPEEDOMETER_GAUGE);
+    }
+  //Then set scale.
+  adjustable_gauge_set_scale_bottom(ADJUSTABLE_GAUGE(widgets[0]), bottom);
+  adjustable_gauge_set_scale_top(ADJUSTABLE_GAUGE(widgets[0]), top);
+  //Then set needle and cutoffs.  
   adjustable_gauge_set_first_cutoff(ADJUSTABLE_GAUGE(widgets[0]), cutoff1);
   adjustable_gauge_set_second_cutoff(ADJUSTABLE_GAUGE(widgets[0]), cutoff2);
   adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[0]), needle);
-  adjustable_gauge_set_scale_bottom(ADJUSTABLE_GAUGE(widgets[0]), bottom);
-  adjustable_gauge_set_scale_top(ADJUSTABLE_GAUGE(widgets[0]), top);  
+  
 }
 int main(int argc, char *argv[])
 {
@@ -46,9 +62,9 @@ int main(int argc, char *argv[])
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-  GtkWidget *adjustable_gauge=adjustable_gauge_new();
-  gtk_widget_set_hexpand(adjustable_gauge, TRUE);
-  gtk_widget_set_vexpand(adjustable_gauge, TRUE);
+  GtkWidget *gauge=adjustable_gauge_new();
+  gtk_widget_set_hexpand(gauge, TRUE);
+  gtk_widget_set_vexpand(gauge, TRUE);
 
   GtkWidget *cutoff1_label=gtk_label_new("First Cutoff");
   gtk_widget_set_hexpand(cutoff1_label, TRUE);
@@ -85,14 +101,20 @@ int main(int argc, char *argv[])
   gtk_entry_set_width_chars(GTK_ENTRY(top_entry), 4);
   gtk_entry_set_text(GTK_ENTRY(top_entry), "100");
 
+  GtkWidget *combo=gtk_combo_box_text_new();
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "VOLTAGE_GAUGE");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "SPEEDOMETER_GAUGE");
+  gtk_widget_set_hexpand(combo, TRUE);  
+  gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+
   GtkWidget *button=gtk_button_new_with_label("Change Settings");
   gtk_widget_set_hexpand(button, TRUE);
 
-  GtkWidget *widgets[]={adjustable_gauge, cutoff1_entry, cutoff2_entry, needle_entry, bottom_entry, top_entry};
+  GtkWidget *widgets[]={gauge, cutoff1_entry, cutoff2_entry, needle_entry, bottom_entry, top_entry, combo};
   g_signal_connect(button, "clicked", G_CALLBACK(change_settings), widgets);
 
   GtkWidget *grid=gtk_grid_new();
-  gtk_grid_attach(GTK_GRID(grid), adjustable_gauge, 0, 0, 4, 4);
+  gtk_grid_attach(GTK_GRID(grid), gauge, 0, 0, 4, 4);
   gtk_grid_attach(GTK_GRID(grid), cutoff1_label, 0, 4, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), cutoff1_entry, 1, 4, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), cutoff2_label, 2, 4, 1, 1);
@@ -103,7 +125,8 @@ int main(int argc, char *argv[])
   gtk_grid_attach(GTK_GRID(grid), bottom_entry, 1, 6, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), top_label, 2, 6, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), top_entry, 3, 6, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), button, 0, 7, 6, 1);
+  gtk_grid_attach(GTK_GRID(grid), combo, 1, 7, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), button, 0, 8, 6, 1);
 
   gtk_container_add(GTK_CONTAINER(window), grid);
   gtk_widget_show_all(window);

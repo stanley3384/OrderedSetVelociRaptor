@@ -32,6 +32,13 @@ struct _AdjustableGaugeClass
   GtkDrawingAreaClass parent_class;
 };
 
+//Adjustable gauge names are just how they were thought of while doing the drawing.
+enum
+{
+  VOLTAGE_GAUGE,
+  SPEEDOMETER_GAUGE
+};
+
 //Public functions.
 GType adjustable_gauge_get_type(void) G_GNUC_CONST;
 GtkWidget* adjustable_gauge_new();
@@ -46,6 +53,8 @@ void adjustable_gauge_set_scale_bottom(AdjustableGauge *da, gdouble scale_bottom
 gdouble adjustable_gauge_get_scale_bottom(AdjustableGauge *da);
 void adjustable_gauge_set_scale_top(AdjustableGauge *da, gdouble scale_top);
 gdouble adjustable_gauge_get_scale_top(AdjustableGauge *da);
+void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name);
+gint adjustable_gauge_get_drawing(AdjustableGauge *da);
 
 G_END_DECLS
 
