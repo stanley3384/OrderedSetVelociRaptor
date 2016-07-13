@@ -407,7 +407,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Green underneath 
   cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
   cairo_set_line_width(cr, 3.0);
-  cairo_arc_negative(cr, 0, 0, 100, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
+  cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
   cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*150), sin(-4.0*G_PI/3.0)*150);
   cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0, -5.0*G_PI/3.0);
   cairo_close_path(cr);
@@ -419,7 +419,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Yellow next.
   gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
   cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-  cairo_arc_negative(cr, 0, 0, 100, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
+  cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
   cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_first_cutoff, -5.0*G_PI/3.0);
   cairo_close_path(cr);
   cairo_fill(cr);
@@ -428,7 +428,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Red top.
   gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
   cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
-  cairo_arc_negative(cr, 0, 0, 100, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
+  cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
   cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_second_cutoff, -5.0*G_PI/3.0);
   cairo_close_path(cr);
   cairo_fill(cr);
@@ -453,7 +453,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
       //String values at bit tick marks.
       gchar *tick_string=g_strdup_printf("%i", (int)((gdouble)i*tenth_scale));
       cairo_text_extents(cr, tick_string, &tick_extents);
-      cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*125)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*125)+tick_extents.height/2.0);
+      cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*115)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*115)+tick_extents.height/2.0);
       cairo_show_text(cr, tick_string);
       g_free(tick_string);
       //Reset position to the center.
@@ -477,7 +477,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
   gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
   cairo_move_to(cr, 0, 0);
-  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*110, -sin((4.0*G_PI/3.0)-standard_needle)*110);
+  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*90, -sin((4.0*G_PI/3.0)-standard_needle)*90);
   cairo_stroke(cr);
     
   //Text for needle value.
