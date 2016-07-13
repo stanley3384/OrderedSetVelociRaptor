@@ -484,7 +484,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_text_extents_t extents1;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size(cr, 30);
-  gchar *string1=g_strdup_printf("%3.2f", priv->needle);
+  gchar *string1=g_strdup_printf("%i", (gint)priv->needle);
   cairo_text_extents(cr, string1, &extents1); 
   cairo_move_to(cr, -extents1.width/2, 140.0+extents1.height/2);  
   cairo_show_text(cr, string1);

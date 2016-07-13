@@ -3,10 +3,11 @@
 
     An adjustable gauge widget. There are two cutoff points that can be set along with the 
 range of the scale. No colors are set with functons but you can change them in the code
-easy enough. This needs some more work and testing but the basic functionality is working.
-    There are two types of gauges. One called a voltage gauge and one called a speedometer 
+easy enough.
+    There are two types of gauges. One is called a voltage gauge and the other is a speedometer 
 gauge. Both gauges go from 0 to 10,000. They can go above 10,000 but the number formatting
-in the speedometer gets out of place.
+in the speedometer gets out of place. Also the speedometer numbers are displayed as ints and
+the voltage gauge is displayed as a float with two decimal places. 
     The start for this widget can be found in da_gauge1.c and da_speedometer1.c in the
 cairo_drawings folder. When setting properties, make sure to set the range or top and
 bottom values first. The range is greater than 0 for now.
