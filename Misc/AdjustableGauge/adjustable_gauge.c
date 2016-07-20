@@ -166,10 +166,21 @@ void adjustable_gauge_set_scale_bottom(AdjustableGauge *da, gdouble scale_bottom
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
 
-  if(scale_bottom>=0.0)
+  if(scale_bottom<priv->scale_top)
     {
       priv->scale_bottom=scale_bottom;
       priv->needle=scale_bottom;
+      //Check if the cutoffs are in range. If they aren't reset them to the top of the scale.
+      if(priv->first_cutoff<priv->scale_bottom||priv->first_cutoff>priv->scale_top)
+        {
+          priv->first_cutoff=priv->scale_bottom+0.000001;
+          g_warning("The first cutoff was reset to the bottom of scale.");
+        }
+      if(priv->second_cutoff<priv->scale_bottom||priv->second_cutoff>priv->scale_top)
+        {
+          priv->second_cutoff=priv->scale_bottom+0.000001;
+          g_warning("The second cutoff was reset to the bottom of scale.");
+        }
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
    else
@@ -184,6 +195,17 @@ void adjustable_gauge_set_scale_top(AdjustableGauge *da, gdouble scale_top)
   if(scale_top>priv->scale_bottom)
     {
       priv->scale_top=scale_top;
+      //Check if the cutoffs are in range. If they aren't reset them to the top of the scale.
+      if(priv->first_cutoff<priv->scale_bottom||priv->first_cutoff>priv->scale_top)
+        {
+          priv->first_cutoff=priv->scale_top-0.000001;
+          g_warning("The first cutoff was reset to the top of scale.");
+        }
+      if(priv->second_cutoff<priv->scale_bottom||priv->second_cutoff>priv->scale_top)
+        {
+          priv->second_cutoff=priv->scale_top-0.000001;;
+          g_warning("The second cutoff was reset to the top of scale.");
+        }
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
    else
@@ -450,8 +472,8 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
       cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*140, -sin((4.0*G_PI/3.0)-temp)*140);
       cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*150, -sin((4.0*G_PI/3.0)-temp)*150);
       cairo_stroke(cr);
-      //String values at bit tick marks.
-      gchar *tick_string=g_strdup_printf("%i", (int)((gdouble)i*tenth_scale));
+      //String values at large tick marks.
+      gchar *tick_string=g_strdup_printf("%i", (gint)(priv->scale_bottom+(gdouble)i*tenth_scale));
       cairo_text_extents(cr, tick_string, &tick_extents);
       cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*115)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*115)+tick_extents.height/2.0);
       cairo_show_text(cr, tick_string);
