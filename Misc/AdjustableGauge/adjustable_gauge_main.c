@@ -5,12 +5,13 @@
 range of the scale. No colors are set with functons but you can change them in the code
 easy enough.
     There are two types of gauges. One is called a voltage gauge and the other is a speedometer 
-gauge. Both gauges go from 0 to 10,000. They can go above 10,000 but the number formatting
+gauge. The range is not enforced.  They can go above 10,000 or below -10,000 but the number formatting
 in the speedometer gets out of place. Also the speedometer numbers are displayed as ints and
-the voltage gauge is displayed as a float with two decimal places. 
+the voltage gauge is displayed as a float with two decimal places. These things can easily be 
+changed if need be. 
     The start for this widget can be found in da_gauge1.c and da_speedometer1.c in the
 cairo_drawings folder. When setting properties, make sure to set the range or top and
-bottom values first. The range is greater than 0 for now.
+bottom values first.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 

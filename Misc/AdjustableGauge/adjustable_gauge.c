@@ -120,7 +120,6 @@ void adjustable_gauge_set_first_cutoff(AdjustableGauge *da, gdouble first_cutoff
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
  
-  //Steps first_cutoff >= 0.
   if(first_cutoff>=priv->scale_bottom&&first_cutoff<=priv->scale_top)
     { 
       //Subtract a small amount for rounding errors. Need a better way to do this.
@@ -136,7 +135,6 @@ void adjustable_gauge_set_second_cutoff(AdjustableGauge *da, gdouble second_cuto
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
  
-  //Steps second_cutoff >= 0.
   if(second_cutoff>=priv->scale_bottom&&second_cutoff<=priv->scale_top)
     { 
       //Subtract a small amount for rounding errors. Need a better way to do this.
@@ -170,7 +168,7 @@ void adjustable_gauge_set_scale_bottom(AdjustableGauge *da, gdouble scale_bottom
     {
       priv->scale_bottom=scale_bottom;
       priv->needle=scale_bottom;
-      //Check if the cutoffs are in range. If they aren't reset them to the top of the scale.
+      //Check if the cutoffs are in range. If they aren't reset them to the bottom of the scale.
       if(priv->first_cutoff<priv->scale_bottom||priv->first_cutoff>priv->scale_top)
         {
           priv->first_cutoff=priv->scale_bottom+0.000001;
