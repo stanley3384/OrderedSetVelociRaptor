@@ -6,7 +6,7 @@ bar drawings into a widget.
 
     gcc -Wall -Werror stepped_progress_bar.c stepped_progress_bar_main.c -o stepped_progress `pkg-config gtk+-3.0 --cflags --libs`
 
-    Tested on Ubuntu14.04, GTK3.10.
+    Tested on Ubuntu16.04, GTK3.18.
 
     C. Eric Cashon
 

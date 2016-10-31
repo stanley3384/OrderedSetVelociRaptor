@@ -5,7 +5,7 @@
 
     gcc -Wall -Werror stepped_progress_bar.c stepped_progress_bars.c -o stepped_progress_bars `pkg-config --cflags --libs gtk+-3.0`
 
-    Tested on Ubuntu14.04 and GTK3.10.
+    Tested on Ubuntu16.04 with GTK3.18.
 
     By C. Eric Cashon
 
@@ -69,8 +69,9 @@ int main(int argc, char **argv)
 
     //Set up CSS colors for the background window and the button.
     gchar *css_string=NULL;
-    gint minor_version=gtk_get_minor_version();
-    g_print("Minor Version %i\n", minor_version);    
+    guint major_version=gtk_get_major_version();
+    guint minor_version=gtk_get_minor_version();
+    g_print("Major Version %d Minor Version %d\n", major_version, minor_version);    
     if(minor_version>=18) css_string=g_strdup("window{background: #000000;}");
     else css_string=g_strdup("GtkWindow{background: #000000;}");
     GError *css_error=NULL;
