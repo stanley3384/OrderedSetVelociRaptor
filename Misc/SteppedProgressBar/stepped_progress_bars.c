@@ -1,7 +1,7 @@
 
 /*
 
-    Another test program for the stepped progress bar. Connect a timer and change the step stop variable.
+    Another test program for the stepped progress bar. Connect a timer and and animate a couple of bars.
 
     gcc -Wall -Werror stepped_progress_bar.c stepped_progress_bars.c -o stepped_progress_bars `pkg-config --cflags --libs gtk+-3.0`
 
