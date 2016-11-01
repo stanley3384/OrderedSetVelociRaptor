@@ -26,7 +26,7 @@ Magic Square
 ![Screenshot4](/wave1.png)
 
 
---The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu 14.04 with GTK+ 3.10.
+--The VelociRaptor program requires a number of dependencies to compile. The following is how to get the required dependencies for the program on a computer running Ubuntu 14.04 with GTK+ 3.10. The program will compile on Ubuntu 16.04 and GTK+ 3.18 but it will show some deprecated warnings. Still working on updating the program to a newer version of GTK+.
 
 --Start with making a new folder or directory. Then get the needed files for building the program. 
 
@@ -52,9 +52,10 @@ make
 
 sudo make install
 
---After Apophenia is installed, install GTK+, gfortran and gnuplot.
+--After Apophenia is installed, install GTK+, gfortran, gnuplot and json.
 
 sudo apt-get install libgtk-3-dev gnuplot gfortran
+sudo apt-get install libjson-glib-dev
 
 --Hint, you might want to build gnuplot with wxWidgets and Gd dev libraries installed if you can't get the wxt terminal to work. 
 
