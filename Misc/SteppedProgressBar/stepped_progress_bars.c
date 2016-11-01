@@ -1,7 +1,7 @@
 
 /*
 
-    Another test program for the stepped progress bar. Connect a timer and and animate a couple of bars.
+    Another test program for the stepped progress bar. Connect a timer and change the step stop variable.
 
     gcc -Wall -Werror stepped_progress_bar.c stepped_progress_bars.c -o stepped_progress_bars `pkg-config --cflags --libs gtk+-3.0`
 
@@ -57,6 +57,8 @@ int main(int argc, char **argv)
     gtk_widget_set_vexpand(bar5, TRUE);
     stepped_progress_bar_set_foreground_rgba1(STEPPED_PROGRESS_BAR(bar5), "rgba(255, 255, 0, 255)");
     stepped_progress_bar_set_foreground_rgba2(STEPPED_PROGRESS_BAR(bar5), "rgba(255, 200, 0, 255)");
+
+    GtkWidget *label1=gtk_label_new("Window Background Color");
       
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), bar1, 0, 0, 1, 10);
@@ -64,16 +66,17 @@ int main(int argc, char **argv)
     gtk_grid_attach(GTK_GRID(grid), bar3, 2, 0, 1, 10);
     gtk_grid_attach(GTK_GRID(grid), bar4, 3, 0, 1, 10);
     gtk_grid_attach(GTK_GRID(grid), bar5, 4, 0, 1, 10);
+    gtk_grid_attach(GTK_GRID(grid), label1, 0, 11, 5, 1);
     
     gtk_container_add(GTK_CONTAINER(window), grid);
 
-    //Set up CSS colors for the background window and the button.
+    //Set up CSS colors.
     gchar *css_string=NULL;
     guint major_version=gtk_get_major_version();
     guint minor_version=gtk_get_minor_version();
-    g_print("Major Version %d Minor Version %d\n", major_version, minor_version);    
-    if(minor_version>=18) css_string=g_strdup("window{background: #000000;}");
-    else css_string=g_strdup("GtkWindow{background: #000000;}");
+    g_print("GTK Major Version %d Minor Version %d\n", major_version, minor_version);    
+    if(minor_version>18) css_string=g_strdup("window{background: #ffff00;}");
+    else css_string=g_strdup("GtkWindow{background: #ffff00;}");
     GError *css_error=NULL;
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkDisplay *display = gdk_display_get_default();
