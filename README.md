@@ -55,6 +55,7 @@ sudo make install
 --After Apophenia is installed, install GTK+, gfortran, gnuplot and json.
 
 sudo apt-get install libgtk-3-dev gnuplot gfortran
+
 sudo apt-get install libjson-glib-dev
 
 --Hint, you might want to build gnuplot with wxWidgets and Gd dev libraries installed if you can't get the wxt terminal to work. 
