@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
     gchar *css_string=NULL;
 
     //GTK CSS changed in 3.18. The CSS for after 3.18 may need to be modified to have it work.
-    if(minor_version>=18)
+    if(minor_version>18)
       {
         css_string=g_strdup("window, notebook {background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));} button {background: rgba(220,220,220,0.5);}");
       }
