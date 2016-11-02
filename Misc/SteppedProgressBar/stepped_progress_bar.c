@@ -64,17 +64,8 @@ static void stepped_progress_bar_horizontal_right_draw(GtkWidget *da, cairo_t *c
 static void stepped_progress_bar_vertical_up_draw(GtkWidget *da, cairo_t *cr);
 static void stepped_progress_bar_finalize(GObject *gobject);
 
-GType stepped_progress_bar_get_type(void)
-{
-  static GType entry_type=0;
-  if(!entry_type)
-    {
-      static const GTypeInfo entry_info={sizeof(SteppedProgressBarClass), NULL, NULL, (GClassInitFunc) stepped_progress_bar_class_init, NULL, NULL, sizeof(SteppedProgressBar), 0, (GInstanceInitFunc)stepped_progress_bar_init};
-      entry_type=g_type_register_static(GTK_TYPE_DRAWING_AREA, "SteppedProgressBar", &entry_info, 0);
-    }
+G_DEFINE_TYPE(SteppedProgressBar, stepped_progress_bar, GTK_TYPE_DRAWING_AREA)
 
-  return entry_type;
-}
 static void stepped_progress_bar_class_init(SteppedProgressBarClass *klass)
 { 
   GObjectClass *gobject_class;
@@ -377,6 +368,8 @@ static void stepped_progress_bar_finalize(GObject *object)
   g_free(priv->background_string_rgba2);
   g_free(priv->foreground_string_rgba1);
   g_free(priv->foreground_string_rgba2);
+
+  G_OBJECT_CLASS(stepped_progress_bar_parent_class)->finalize(object);
 }
 void stepped_progress_bar_set_background_rgba1(SteppedProgressBar *da, const gchar *background_string_rgba1)
 {
