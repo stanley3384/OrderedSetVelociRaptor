@@ -44,18 +44,10 @@ static void adjustable_gauge_init(AdjustableGauge *da);
 static gboolean adjustable_gauge_draw(GtkWidget *widget, cairo_t *cr);
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr);
 static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr);
+static void adjustable_gauge_finalize(GObject *gobject);
 
-GType adjustable_gauge_get_type(void)
-{
-  static GType entry_type=0;
-  if(!entry_type)
-    {
-      static const GTypeInfo entry_info={sizeof(AdjustableGaugeClass), NULL, NULL, (GClassInitFunc) adjustable_gauge_class_init, NULL, NULL, sizeof(AdjustableGauge), 0, (GInstanceInitFunc)adjustable_gauge_init};
-      entry_type=g_type_register_static(GTK_TYPE_DRAWING_AREA, "AdjustableGauge", &entry_info, 0);
-    }
+G_DEFINE_TYPE(AdjustableGauge, adjustable_gauge, GTK_TYPE_DRAWING_AREA)
 
-  return entry_type;
-}
 static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
 { 
   GObjectClass *gobject_class;
@@ -70,6 +62,7 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
 
   //Draw when first shown.
   widget_class->draw=adjustable_gauge_draw;
+  gobject_class->finalize=adjustable_gauge_finalize;
 
   g_type_class_add_private(klass, sizeof(AdjustableGaugePrivate));
 
@@ -510,6 +503,10 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_show_text(cr, string1);
   g_free(string1);
 
+}
+static void adjustable_gauge_finalize(GObject *object)
+{ 
+  G_OBJECT_CLASS(adjustable_gauge_parent_class)->finalize(object);
 }
 
 
