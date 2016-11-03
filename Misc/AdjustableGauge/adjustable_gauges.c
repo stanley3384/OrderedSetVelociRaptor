@@ -5,7 +5,7 @@
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauges.c -o gauges `pkg-config --cflags --libs gtk+-3.0` -lm
 
-    Tested on Ubuntu14.04 and GTK3.10.
+    Tested on Ubuntu16.04 and GTK3.18.
 
     By C. Eric Cashon
 

@@ -15,7 +15,7 @@ bottom values first.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 
-    Tested on Ubuntu14.04, GTK3.10.
+    Tested on Ubuntu16.04, GTK3.18.
 
     C. Eric Cashon
 
