@@ -298,7 +298,7 @@ static void stepped_progress_bar_horizontal_right_draw(GtkWidget *da, cairo_t *c
   for(i=0;i<=priv->total_steps;i+=20)
     { 
       cairo_pattern_add_color_stop_rgba(pattern2, (gdouble)(i/(gdouble)priv->total_steps), priv->foreground_rgba1[0], priv->foreground_rgba1[1], priv->foreground_rgba1[2], priv->foreground_rgba1[3]); 
-      cairo_pattern_add_color_stop_rgba(pattern2, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, priv->foreground_rgba2[0], priv->foreground_rgba2[1], priv->foreground_rgba1[2], priv->foreground_rgba1[3]); 
+      cairo_pattern_add_color_stop_rgba(pattern2, (gdouble)(i+priv->gradient_end)/(gdouble)priv->total_steps, priv->foreground_rgba2[0], priv->foreground_rgba2[1], priv->foreground_rgba2[2], priv->foreground_rgba2[3]); 
     }
   cairo_set_source(cr, pattern2);
      
