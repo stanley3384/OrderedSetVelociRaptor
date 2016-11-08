@@ -14,9 +14,10 @@
 #include <gtk/gtk.h>
 
 static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpointer data);
+static void click_drawing(GtkWidget *widget, gpointer data);
 static void combo_changed(GtkComboBox *combo, gpointer data);
 
-gint state=0;
+static gint state=0;
 
 int main(int argc, char **argv)
   {      
@@ -31,12 +32,13 @@ int main(int argc, char **argv)
     GtkWidget *da1=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da1, TRUE);
     gtk_widget_set_vexpand(da1, TRUE);
+    gtk_widget_set_events(da1, GDK_BUTTON_PRESS_MASK);
+    g_signal_connect(da1, "button_press_event", G_CALLBACK(click_drawing), NULL); 
     g_signal_connect(da1, "draw", G_CALLBACK(draw_custom_progress_horizontal), NULL);
     
     GtkWidget *combo=gtk_combo_box_text_new();
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "ON");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "OFF");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "BREAK");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "STARTING");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "BREAK");
     gtk_widget_set_hexpand(combo, TRUE);  
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
     g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), da1);
@@ -62,14 +64,14 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     gint button_mid2=button_start+2.0*button_start/3.0;
     gint button_end=width;
 
-    if(state==1)
+    if(state==2)
       {
         button_mid1=button_mid1-button_start;
         button_mid2=button_mid2-button_start;
         button_end=button_end-button_start;
         button_start=0;
       }
-    if(state==2)
+    if(state==3)
       {
         button_mid1=button_mid1-button_start/2.0;
         button_mid2=button_mid2-button_start/2.0;
@@ -80,15 +82,20 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     //Paint background.
     if(state==0)
       {
-        cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
+        cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
         cairo_paint(cr);
       }
     if(state==1)
       {
-        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
         cairo_paint(cr);
       }
     if(state==2)
+      {
+        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        cairo_paint(cr);
+      }
+    if(state==3)
       {
         cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
         cairo_paint(cr);
@@ -118,9 +125,10 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
 
     cairo_text_extents_t extents1;
     cairo_text_extents_t extents2;
+    gint font_size=(gint)(16.0*height/50.0);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 16);
+    cairo_set_font_size(cr, font_size);
     if(state==0)
       {
         cairo_text_extents(cr, "ON", &extents1);
@@ -129,12 +137,18 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
       }
     if(state==1)
       {
+        cairo_text_extents(cr, "STARTING", &extents1);
+        cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+        cairo_show_text(cr, "STARTING");
+      }
+    if(state==2)
+      {
         cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
         cairo_text_extents(cr, "OFF", &extents1);
         cairo_move_to(cr, 3.0*width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
         cairo_show_text(cr, "OFF");
       }
-    if(state==2)
+    if(state==3)
       {
         cairo_text_extents(cr, "CIRCUIT", &extents1);
         cairo_move_to(cr, width/8.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
@@ -149,9 +163,28 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
 
     return FALSE;
   }
+static void click_drawing(GtkWidget *widget, gpointer data)
+  {
+    if(state==0||state==3)
+      {
+        state=2;
+        gtk_widget_queue_draw(widget); 
+      }
+    else if(state==1||state==2)
+      {
+        state=0;
+        gtk_widget_queue_draw(widget); 
+      }
+    else
+      {
+        state=0;
+        gtk_widget_queue_draw(widget); 
+      }
+  }
 static void combo_changed(GtkComboBox *combo, gpointer data)
   {
-    state=gtk_combo_box_get_active(combo);
+    if(gtk_combo_box_get_active(combo)==0) state=1;
+    else state=3;
     gtk_widget_queue_draw(GTK_WIDGET(data));    
   }
 
