@@ -1,7 +1,10 @@
 
 /*
 
-    Draw a circuit breaker switch.
+    Draw a circuit breaker switch. Just test turning the switch on, off, starting and breaking
+with random numbers and a timer. 
+
+    There is also a GTK switch(switch1.py) in the python folder for a comparison.
 
     gcc -Wall da_circuit_breaker1.c -o da_circuit_breaker1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -15,17 +18,23 @@
 
 static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpointer data);
 static void click_drawing(GtkWidget *widget, gpointer data);
-static void combo_changed(GtkComboBox *combo, gpointer data);
+static gboolean start_process(gpointer user_data);
+static gboolean service_killed(gpointer user_data);
 
-static gint state=0;
+//States ON=0, STARTING=1 OFF=2 and BREAK=3. Start in the OFF position.
+static gint state=2;
+static GRand *rand;
+static guint timeout_id=0;
 
 int main(int argc, char **argv)
   {      
-    gtk_init(&argc, &argv);   
+    gtk_init(&argc, &argv); 
+
+    rand=g_rand_new();  
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 400, 100);
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 50);
     gtk_window_set_title(GTK_WINDOW(window), "Circuit Breaker Switch");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
         
@@ -35,22 +44,16 @@ int main(int argc, char **argv)
     gtk_widget_set_events(da1, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(da1, "button_press_event", G_CALLBACK(click_drawing), NULL); 
     g_signal_connect(da1, "draw", G_CALLBACK(draw_custom_progress_horizontal), NULL);
-    
-    GtkWidget *combo=gtk_combo_box_text_new();
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "STARTING");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "BREAK");
-    gtk_widget_set_hexpand(combo, TRUE);  
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
-    g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), da1);
       
     GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 10, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo, 0, 12, 10, 1);
+    gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 1, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
     
     gtk_widget_show_all(window);                  
     gtk_main();
+
+    g_rand_free(rand);
 
     return 0;
   }
@@ -125,6 +128,7 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
 
     cairo_text_extents_t extents1;
     cairo_text_extents_t extents2;
+    //Adjust the font size. Needs work. 
     gint font_size=(gint)(16.0*height/50.0);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -165,14 +169,37 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
   }
 static void click_drawing(GtkWidget *widget, gpointer data)
   {
-    if(state==0||state==3)
+    g_print("Drawing Clicked\n");
+    //ON to OFF.
+    if(state==0)
       {
+        if(timeout_id>0)
+          {
+            //Remove the service checking timer if it is active.
+            g_source_remove(timeout_id);
+            timeout_id=0;
+          }
         state=2;
         gtk_widget_queue_draw(widget); 
       }
-    else if(state==1||state==2)
+    //Starting to ON.
+    else if(state==1)
       {
         state=0;
+        gtk_widget_queue_draw(widget); 
+      }
+    //Off to Starting.
+    else if(state==2)
+      {
+        state=1;
+        gtk_widget_queue_draw(widget);
+        gtk_widget_set_sensitive(GTK_WIDGET(widget), FALSE);
+        g_timeout_add(1000, (GSourceFunc)start_process, widget); 
+      }
+    //Circuit Break to OFF.
+    else if(state==3)
+      {
+        state=2;
         gtk_widget_queue_draw(widget); 
       }
     else
@@ -181,10 +208,51 @@ static void click_drawing(GtkWidget *widget, gpointer data)
         gtk_widget_queue_draw(widget); 
       }
   }
-static void combo_changed(GtkComboBox *combo, gpointer data)
+static gboolean start_process(gpointer user_data)
   {
-    if(gtk_combo_box_get_active(combo)==0) state=1;
-    else state=3;
-    gtk_widget_queue_draw(GTK_WIDGET(data));    
+    gdouble num=g_rand_double(rand);
+    //Start or stop the process but delay it a little.
+    g_print("Starting Service...\n");
+    if(num<0.1||num>.90)
+      {
+        //Start the service more than failing to test.
+        num=g_rand_double(rand);
+        if(num<0.3)
+          {
+            gtk_widget_set_sensitive(GTK_WIDGET(user_data), TRUE);
+            //Failed to start service. Switch to OFF
+            state=2;
+            gtk_widget_queue_draw(GTK_WIDGET(user_data)); 
+            g_print("Service didn't Start! Number %f Return FALSE\n", num);
+          }
+        else
+          {
+            state=0;
+            gtk_widget_queue_draw(GTK_WIDGET(user_data)); 
+            g_print("Service Started! %f Return TRUE\n", num);
+            //Start new timer to check if service continues to run.
+            timeout_id=g_timeout_add(1000, (GSourceFunc)service_killed, GTK_WIDGET(user_data)); 
+          }
+        return FALSE;
+     } 
+    return TRUE;   
+  }
+static gboolean service_killed(gpointer user_data)
+  {
+    gdouble num=g_rand_double(rand);
+    //Randomly kill the service.
+    if(num<0.15)
+      {
+        g_print("Service Randomly Killed After Starting\n");
+        state=3;
+        gtk_widget_queue_draw(GTK_WIDGET(user_data));
+        gtk_widget_set_sensitive(GTK_WIDGET(user_data), TRUE); 
+        return FALSE;
+      }
+    else
+      {
+        g_print("Service Running\n");
+        return TRUE;
+      }
   }
 
