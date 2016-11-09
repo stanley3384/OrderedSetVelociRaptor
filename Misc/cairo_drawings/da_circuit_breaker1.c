@@ -180,7 +180,7 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
   }
 static void click_drawing(GtkWidget *widget, gpointer data)
   {
-    g_print("Drawing Clicked\n");
+    g_print("Drawing Clicked State %i\n", state);
     //ON to OFF.
     if(state==0)
       {
@@ -194,7 +194,7 @@ static void click_drawing(GtkWidget *widget, gpointer data)
         gtk_widget_queue_draw(widget);
       }
     //Can't click on state 1. The service is starting and the widget is insensitive.
-    if(state==1) {}
+    else if(state==1) {}
     //Off to Starting.
     else if(state==2)
       {
