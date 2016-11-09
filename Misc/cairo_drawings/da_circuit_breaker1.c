@@ -62,11 +62,11 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     gint width=gtk_widget_get_allocated_width(da);
     gint height=gtk_widget_get_allocated_height(da);
 
+    //Position slider button.
     gint button_start=width/2.0;
     gint button_mid1=button_start+button_start/3.0;
     gint button_mid2=button_start+2.0*button_start/3.0;
     gint button_end=width;
-
     if(state==2)
       {
         button_mid1=button_mid1-button_start;
@@ -103,6 +103,53 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
         cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
         cairo_paint(cr);
       }
+
+    //Adjust the font size. 
+    gint font_size=14;
+    if(state==1||state==3)
+      {
+        if(height>width) font_size=(gint)(font_size*width/100.0);
+        else font_size=(gint)(font_size*height/100.0);
+      }
+    else
+      {
+        if(height>width) font_size=(gint)(font_size*width/50.0);
+        else font_size=(gint)(font_size*height/50.0);
+      }
+  
+    //Draw the text.
+    cairo_text_extents_t extents1;
+    cairo_text_extents_t extents2;
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, font_size);
+    if(state==0)
+      {
+        cairo_text_extents(cr, "ON", &extents1);
+        cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+        cairo_show_text(cr, "ON");
+      }
+    else if(state==1)
+      {
+        cairo_text_extents(cr, "STARTING", &extents1);
+        cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+        cairo_show_text(cr, "STARTING");
+      }
+    else if(state==2)
+      {
+        cairo_text_extents(cr, "OFF", &extents1);
+        cairo_move_to(cr, 3.0*width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);   
+        cairo_show_text(cr, "OFF");
+      }
+    else
+      {
+        cairo_text_extents(cr, "BREAK", &extents1);
+        cairo_move_to(cr, width/8.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+        cairo_show_text(cr, "BREAK");
+        cairo_text_extents(cr, "CONTACT", &extents2);
+        cairo_move_to(cr, 7.0*width/8.0 - extents2.width/2.0, height/2.0 + extents2.height/2.0);
+        cairo_show_text(cr, "CONTACT");  
+      }  
     
     //The left button gradient and rectangle.
     cairo_pattern_t *pattern1=cairo_pattern_create_linear(button_start, 0.0, button_mid1, 0.0);  
@@ -126,42 +173,6 @@ static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     cairo_rectangle(cr, button_mid2, 0, button_end-button_mid2, height);
     cairo_fill(cr);
 
-    cairo_text_extents_t extents1;
-    cairo_text_extents_t extents2;
-    //Adjust the font size. Needs work. 
-    gint font_size=(gint)(16.0*height/50.0);
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, font_size);
-    if(state==0)
-      {
-        cairo_text_extents(cr, "ON", &extents1);
-        cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
-        cairo_show_text(cr, "ON");
-      }
-    if(state==1)
-      {
-        cairo_text_extents(cr, "STARTING", &extents1);
-        cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
-        cairo_show_text(cr, "STARTING");
-      }
-    if(state==2)
-      {
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-        cairo_text_extents(cr, "OFF", &extents1);
-        cairo_move_to(cr, 3.0*width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
-        cairo_show_text(cr, "OFF");
-      }
-    if(state==3)
-      {
-        cairo_text_extents(cr, "CIRCUIT", &extents1);
-        cairo_move_to(cr, width/8.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
-        cairo_show_text(cr, "CIRCUIT");
-        cairo_text_extents(cr, "BREAK", &extents2);
-        cairo_move_to(cr, 7.0*width/8.0 - extents1.width/2.0, height/2.0 + extents2.height/2.0);
-        cairo_show_text(cr, "BREAK");  
-      }    
-
     cairo_pattern_destroy(pattern1);
     cairo_pattern_destroy(pattern2);
 
@@ -180,14 +191,10 @@ static void click_drawing(GtkWidget *widget, gpointer data)
             timeout_id=0;
           }
         state=2;
-        gtk_widget_queue_draw(widget); 
+        gtk_widget_queue_draw(widget);
       }
-    //Starting to ON.
-    else if(state==1)
-      {
-        state=0;
-        gtk_widget_queue_draw(widget); 
-      }
+    //Can't click on state 1. The service is starting and the widget is insensitive.
+    if(state==1) {}
     //Off to Starting.
     else if(state==2)
       {
@@ -197,16 +204,12 @@ static void click_drawing(GtkWidget *widget, gpointer data)
         g_timeout_add(1000, (GSourceFunc)start_process, widget); 
       }
     //Circuit Break to OFF.
-    else if(state==3)
+    else
       {
         state=2;
         gtk_widget_queue_draw(widget); 
       }
-    else
-      {
-        state=0;
-        gtk_widget_queue_draw(widget); 
-      }
+
   }
 static gboolean start_process(gpointer user_data)
   {
@@ -228,7 +231,8 @@ static gboolean start_process(gpointer user_data)
         else
           {
             state=0;
-            gtk_widget_queue_draw(GTK_WIDGET(user_data)); 
+            gtk_widget_queue_draw(GTK_WIDGET(user_data));
+            gtk_widget_set_sensitive(GTK_WIDGET(user_data), TRUE);   
             g_print("Service Started! %f Return TRUE\n", num);
             //Start new timer to check if service continues to run.
             timeout_id=g_timeout_add(1000, (GSourceFunc)service_killed, GTK_WIDGET(user_data)); 
