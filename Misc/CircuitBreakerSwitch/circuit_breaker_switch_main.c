@@ -19,11 +19,11 @@ static void click_drawing(GtkWidget *widget, gpointer data)
 {
   //Just change between states.
   gint state=circuit_breaker_switch_get_state(CIRCUIT_BREAKER_SWITCH(widget));
-  if(state==0) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), 3);
-  else if(state==1) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), 0);
-  else if(state==2) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), 1);
-  else if(state==3) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), 2);
-  else circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), 2);
+  if(state==BREAKER_ON) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_BREAK);
+  else if(state==BREAKER_STARTING) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_ON);
+  else if(state==BREAKER_OFF) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_STARTING);
+  else if(state==BREAKER_BREAK) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_OFF);
+  else circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_OFF);
 }
 int main(int argc, char *argv[])
 {

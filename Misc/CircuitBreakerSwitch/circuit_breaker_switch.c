@@ -104,7 +104,7 @@ void circuit_breaker_switch_set_state(CircuitBreakerSwitch *da, gint breaker_sta
     }
   else
     {
-      g_warning("The circuit state can be ON=0, STARTING=1, OFF=2 or CIRCUIT_BREAK=3.");
+      g_warning("The circuit state can be BREAKER_ON=0, BREAKER_STARTING=1, BREAKER_OFF=2 or BREAKER_BREAK=3.");
     }
 }
 static void circuit_breaker_switch_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
@@ -138,10 +138,10 @@ static void circuit_breaker_switch_init(CircuitBreakerSwitch *da)
 {
   CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
 
-  //Initailize default progress bar properties.
+  //Initailize default circuit breaker properties.
   priv->breaker_direction=BREAKER_HORIZONTAL_RIGHT;
   //Start in the OFF position.
-  priv->breaker_state=2; 
+  priv->breaker_state=BREAKER_OFF; 
 }
 GtkWidget* circuit_breaker_switch_new()
 {

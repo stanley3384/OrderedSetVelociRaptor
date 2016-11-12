@@ -32,11 +32,20 @@ struct _CircuitBreakerSwitchClass
   GtkDrawingAreaClass parent_class;
 };
 
-//Progress bar direction.
+//Circuit breaker direction.
 enum
 {
   BREAKER_HORIZONTAL_RIGHT,
   BREAKER_VERTICAL_UP
+};
+
+//Circuit breaker state
+enum
+{
+  BREAKER_ON,
+  BREAKER_STARTING,
+  BREAKER_OFF,
+  BREAKER_BREAK
 };
 
 //Public functions.
