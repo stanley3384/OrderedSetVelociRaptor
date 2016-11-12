@@ -75,7 +75,7 @@ int main(int argc, char **argv)
     guint major_version=gtk_get_major_version();
     guint minor_version=gtk_get_minor_version();
     g_print("GTK Major Version %d Minor Version %d\n", major_version, minor_version);    
-    if(minor_version>18) css_string=g_strdup("window{background: #ffff00;}");
+    if(minor_version>20) css_string=g_strdup("window{background: #ffff00;}");
     else css_string=g_strdup("GtkWindow{background: #ffff00;}");
     GError *css_error=NULL;
     GtkCssProvider *provider = gtk_css_provider_new();
