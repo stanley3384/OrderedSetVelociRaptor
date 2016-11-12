@@ -5,5 +5,5 @@
 
 Circuit Breaker Switches
 
-![ScreenShot](/Misc/CircuitBreaker/circuit_breaker.png)
+![ScreenShot](/Misc/CircuitBreakerSwitch/circuit_breaker.png)
 
