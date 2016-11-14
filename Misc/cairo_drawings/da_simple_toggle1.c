@@ -1,7 +1,7 @@
 
 /*
 
-    Draw a simple toggle switch. 
+    Draw a simple headlight toggle switch. 
 
     gcc -Wall da_simple_toggle1.c -o da_simple_toggle1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -56,8 +56,6 @@ static gboolean draw_circuit_breaker_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     gint button_middle=width/2;
     gint button_right=7*width/8;
 
-    g_print("width %i height %i b1 %i b2 %i b3 %i b4 %i state %i\n", width, height, button_start, button_left, button_middle, button_right, state);
-
     //Paint background.    
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_paint(cr);
@@ -77,8 +75,9 @@ static gboolean draw_circuit_breaker_horizontal(GtkWidget *da, cairo_t *cr, gpoi
     cairo_pattern_t *pattern2=cairo_pattern_create_linear(button_left, 0.0, button_middle, 0.0);
     if(state==1)
       {
-        cairo_pattern_add_color_stop_rgba(pattern2, 0.0, 0.0, 0.0, 0.0, 1.0); 
-        cairo_pattern_add_color_stop_rgba(pattern2, 1.0, 0.6, 0.6, 0.6, 1.0); 
+        cairo_pattern_add_color_stop_rgba(pattern2, 0.0, 0.0, 0.0, 0.0, 1.0);
+ 
+        cairo_pattern_add_color_stop_rgba(pattern2, 1.0, 0.4, 0.4, 0.4, 1.0); 
         cairo_set_source(cr, pattern2);     
         cairo_rectangle(cr, button_left, 0, button_middle-button_left, height);
         cairo_fill(cr);
@@ -109,6 +108,52 @@ static gboolean draw_circuit_breaker_horizontal(GtkWidget *da, cairo_t *cr, gpoi
         cairo_fill(cr);
       }
 
+    //The outside rectangle.
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 8.0);
+    cairo_rectangle(cr, 0.0, 0.0, width, height);
+    cairo_stroke(cr);
+
+    //The headlight drawing.
+    if(state==0)
+      {
+        cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+        cairo_scale(cr, 0.9, 1.0);
+        cairo_translate(cr, 0.05*width, 0.0); 
+      }
+    else
+      {
+        cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      }
+    cairo_set_line_width(cr, 3.0);
+    cairo_move_to(cr, 6.0*width/8.0, height/4.0);
+    cairo_curve_to(cr, width/2.0, 3.0*height/8.0, width/2.0, 5.0*height/8.0, 6.0*width/8.0, 3.0*height/4.0);
+    cairo_stroke(cr);
+    //The headlight ellipse.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6.0);
+    cairo_scale(cr, 0.2, 1.0);
+    cairo_translate(cr, 4.0*6.0*width/8.0, 0.0);
+    cairo_arc(cr, 6.0*width/8.0, height/2.0, height/4.0, 0.0, 2*G_PI);
+    cairo_restore(cr);
+    cairo_stroke(cr);
+    //The 5 headlight rays.
+    cairo_move_to(cr, 6.0*width/8.0, 5.0*height/16.0);
+    cairo_line_to(cr, 7.0*width/8.0, 3.0*height/16.0);
+    cairo_stroke(cr); 
+    cairo_move_to(cr, 6.0*width/8.0, 6.5*height/16.0);
+    cairo_line_to(cr, 7.0*width/8.0, 5.25*height/16.0);
+    cairo_stroke(cr); 
+    cairo_move_to(cr, 6.0*width/8.0, 8.0*height/16.0);
+    cairo_line_to(cr, 7.0*width/8.0, 8.0*height/16.0);
+    cairo_stroke(cr); 
+    cairo_move_to(cr, 6.0*width/8.0, 9.25*height/16.0);
+    cairo_line_to(cr, 7.0*width/8.0, 11.0*height/16.0);
+    cairo_stroke(cr); 
+    cairo_move_to(cr, 6.0*width/8.0, 11.0*height/16.0);
+    cairo_line_to(cr, 7.0*width/8.0, 13.0*height/16.0);
+    cairo_stroke(cr); 
+    
     cairo_pattern_destroy(pattern1);
     cairo_pattern_destroy(pattern2);
     cairo_pattern_destroy(pattern3);
@@ -117,7 +162,6 @@ static gboolean draw_circuit_breaker_horizontal(GtkWidget *da, cairo_t *cr, gpoi
   }
 static gboolean click_drawing(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
-    g_print("Draw Widget x %f y %f\n", event->button.x, event->button.y);
     gint width=gtk_widget_get_allocated_width(widget);
 
     if(state==0&&(event->button.x)>width/2) 
