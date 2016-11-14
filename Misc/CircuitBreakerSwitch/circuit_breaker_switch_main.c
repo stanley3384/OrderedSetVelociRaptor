@@ -15,7 +15,7 @@ folder was the start for this widget.
 #include<gtk/gtk.h>
 #include "circuit_breaker_switch.h"
 
-static void click_drawing(GtkWidget *widget, gpointer data)
+static gboolean click_drawing(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   //Just change between states.
   gint state=circuit_breaker_switch_get_state(CIRCUIT_BREAKER_SWITCH(widget));
@@ -24,6 +24,8 @@ static void click_drawing(GtkWidget *widget, gpointer data)
   else if(state==BREAKER_OFF) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_STARTING);
   else if(state==BREAKER_BREAK) circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_OFF);
   else circuit_breaker_switch_set_state(CIRCUIT_BREAKER_SWITCH(widget), BREAKER_OFF);
+
+  return FALSE;
 }
 int main(int argc, char *argv[])
 {
