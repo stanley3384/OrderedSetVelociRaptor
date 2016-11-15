@@ -19,6 +19,12 @@ struct _CircuitBreakerSwitchPrivate
   //Variables for the circuit breaker switch.
   guint breaker_direction;
   gint breaker_state;
+  //Variables for starting and using animation.
+  gdouble electrons[100];
+  guint timer_id;
+  GRand *rand;
+  guint width;
+  guint height;
 };
 
 enum
@@ -36,6 +42,7 @@ static void circuit_breaker_switch_init(CircuitBreakerSwitch *da);
 static gboolean circuit_breaker_switch_draw(GtkWidget *widget, cairo_t *cr);
 static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t *cr);
 static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr);
+static gboolean new_coords(gpointer da);
 static void circuit_breaker_switch_finalize(GObject *gobject);
 
 G_DEFINE_TYPE(CircuitBreakerSwitch, circuit_breaker_switch, GTK_TYPE_DRAWING_AREA)
@@ -141,7 +148,19 @@ static void circuit_breaker_switch_init(CircuitBreakerSwitch *da)
   //Initailize default circuit breaker properties.
   priv->breaker_direction=BREAKER_HORIZONTAL_RIGHT;
   //Start in the OFF position.
-  priv->breaker_state=BREAKER_OFF; 
+  priv->breaker_state=BREAKER_OFF;
+  //Initialize 25 coords for "starting" state animation.
+  gint i=0;
+  gdouble coord=0; 
+  priv->rand=g_rand_new();
+  for(i=0;i<25;i++)
+    {
+      coord=g_rand_double(priv->rand);
+      priv->electrons[i]=coord;
+    }
+  //Initialize the timer for animation to 0.
+  priv->timer_id=0;
+  
 }
 GtkWidget* circuit_breaker_switch_new()
 {
@@ -181,6 +200,25 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
       button_start=width/4.0;
     }
 
+  //check for animation in the "starting" state.
+  priv->width=width;
+  priv->height=height;
+  if(priv->timer_id==0)
+    {      
+      if(priv->breaker_state==1)
+        { 
+          priv->timer_id=g_timeout_add(100, new_coords, da);
+        } 
+    }
+  else
+    {
+      if(priv->breaker_state!=1)
+        {
+          g_source_remove(priv->timer_id);
+          priv->timer_id=0;
+        }
+    }
+
   //Paint background.
   if(priv->breaker_state==0)
     {
@@ -201,6 +239,21 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
       cairo_paint(cr);
+    }
+
+  //Draw electrons if in the "starting" state.
+  if(priv->breaker_state==1)
+    {
+      gint i=0;
+      cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+      cairo_set_line_width(cr, 5);
+      cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
+      for(i=0;i<50;i+=2)
+        {
+          cairo_move_to(cr, priv->electrons[i]*(gdouble)width, priv->electrons[i+1]*(gdouble)height);
+          cairo_line_to(cr, priv->electrons[i]*(gdouble)width+1.0, priv->electrons[i+1]*(gdouble)height+1);
+          cairo_stroke(cr);
+        }
     }
 
   //Adjust the font size. 
@@ -306,6 +359,25 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
       button_start=height/4.0;
     }
 
+  //check for animation in the "starting" state.
+  priv->width=width;
+  priv->height=height;
+  if(priv->timer_id==0)
+    {      
+      if(priv->breaker_state==1)
+        { 
+          priv->timer_id=g_timeout_add(100, new_coords, da);
+        } 
+    }
+  else
+    {
+      if(priv->breaker_state!=1)
+        {
+          g_source_remove(priv->timer_id);
+          priv->timer_id=0;
+        }
+    }
+
   //Paint background.
   if(priv->breaker_state==0)
     {
@@ -326,6 +398,21 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
       cairo_paint(cr);
+    }
+
+  //Draw electrons if in the "starting" state.
+  if(priv->breaker_state==1)
+    {
+      gint i=0;
+      cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+      cairo_set_line_width(cr, 5);
+      cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
+      for(i=0;i<50;i+=2)
+        {
+          cairo_move_to(cr, priv->electrons[i]*(gdouble)width, priv->electrons[i+1]*(gdouble)height);
+          cairo_line_to(cr, priv->electrons[i]*(gdouble)width+1.0, priv->electrons[i+1]*(gdouble)height+1);
+          cairo_stroke(cr);
+        }
     }
 
   //Adjust the font size. 
@@ -406,8 +493,36 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   cairo_pattern_destroy(pattern1);
   cairo_pattern_destroy(pattern2);
 }
+static gboolean new_coords(gpointer da)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+  
+  gint i=0;
+ 
+  if(priv->breaker_direction==1)
+    {
+      for(i=0;i<50;i+=2)
+        {
+          priv->electrons[i+1]=priv->electrons[i+1]-0.08;
+          if(priv->electrons[i+1]<0.0) priv->electrons[i+1]=1.0;
+        }
+    }
+  else
+    {
+      for(i=0;i<50;i+=2)
+        {
+          priv->electrons[i]=priv->electrons[i]-0.08;
+          if(priv->electrons[i]<0.0) priv->electrons[i]=1.0;
+        }
+    }
+
+  gtk_widget_queue_draw(GTK_WIDGET(da));
+  return TRUE;
+}
 static void circuit_breaker_switch_finalize(GObject *object)
 {
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(object);
+  g_rand_free(priv->rand);
   G_OBJECT_CLASS(circuit_breaker_switch_parent_class)->finalize(object);
 }
 
