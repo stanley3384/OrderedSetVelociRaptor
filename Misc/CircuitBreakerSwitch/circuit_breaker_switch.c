@@ -153,7 +153,7 @@ static void circuit_breaker_switch_init(CircuitBreakerSwitch *da)
   gint i=0;
   gdouble coord=0; 
   priv->rand=g_rand_new();
-  for(i=0;i<25;i++)
+  for(i=0;i<100;i++)
     {
       coord=g_rand_double(priv->rand);
       priv->electrons[i]=coord;
@@ -181,9 +181,9 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
   gint height=gtk_widget_get_allocated_height(da);
 
   //Position slider button.
-  gint button_start=width/2.0;
-  gint button_mid1=button_start+button_start/3.0;
-  gint button_mid2=button_start+2.0*button_start/3.0;
+  gint button_start=width/2;
+  gint button_mid1=button_start+button_start/3;
+  gint button_mid2=button_start+2*button_start/3;
   gint button_end=width;
   if(priv->breaker_state==2)
     {
@@ -194,10 +194,10 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
     }
   if(priv->breaker_state==3)
     {
-      button_mid1=button_mid1-button_start/2.0;
-      button_mid2=button_mid2-button_start/2.0;
-      button_end=button_end-button_start/2.0;
-      button_start=width/4.0;
+      button_mid1=button_mid1-button_start/2;
+      button_mid2=button_mid2-button_start/2;
+      button_end=button_end-button_start/2;
+      button_start=width/4;
     }
 
   //check for animation in the "starting" state.
@@ -248,10 +248,10 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
       cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
       cairo_set_line_width(cr, 5);
       cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
-      for(i=0;i<50;i+=2)
+      for(i=0;i<100;i+=2)
         {
-          cairo_move_to(cr, priv->electrons[i]*(gdouble)width, priv->electrons[i+1]*(gdouble)height);
-          cairo_line_to(cr, priv->electrons[i]*(gdouble)width+1.0, priv->electrons[i+1]*(gdouble)height+1);
+          cairo_move_to(cr, priv->electrons[i]*(gdouble)width/2.0, priv->electrons[i+1]*(gdouble)height);
+          cairo_line_to(cr, priv->electrons[i]*(gdouble)width/2.0+2.0, priv->electrons[i+1]*(gdouble)height);
           cairo_stroke(cr);
         }
     }
@@ -278,28 +278,28 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
   if(priv->breaker_state==0)
     {
       cairo_text_extents(cr, "ON", &extents1);
-      cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+      cairo_move_to(cr, width/4 - extents1.width/2, height/2 + extents1.height/2);  
       cairo_show_text(cr, "ON");
     }
   else if(priv->breaker_state==1)
     {
       cairo_text_extents(cr, "STARTING", &extents1);
-      cairo_move_to(cr, width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+      cairo_move_to(cr, width/4 - extents1.width/2, height/2 + extents1.height/2);  
       cairo_show_text(cr, "STARTING");
     }
   else if(priv->breaker_state==2)
     {
       cairo_text_extents(cr, "OFF", &extents1);
-      cairo_move_to(cr, 3.0*width/4.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);   
+      cairo_move_to(cr, 3.0*width/4 - extents1.width/2, height/2 + extents1.height/2);   
       cairo_show_text(cr, "OFF");
     }
   else
     {
       cairo_text_extents(cr, "BREAK", &extents1);
-      cairo_move_to(cr, width/8.0 - extents1.width/2.0, height/2.0 + extents1.height/2.0);  
+      cairo_move_to(cr, width/8 - extents1.width/2, height/2 + extents1.height/2);  
       cairo_show_text(cr, "BREAK");
       cairo_text_extents(cr, "CONTACT", &extents2);
-      cairo_move_to(cr, 7.0*width/8.0 - extents2.width/2.0, height/2.0 + extents2.height/2.0);
+      cairo_move_to(cr, 7*width/8 - extents2.width/2, height/2 + extents2.height/2);
       cairo_show_text(cr, "CONTACT");  
     }  
     
@@ -340,9 +340,9 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   gint height=gtk_widget_get_allocated_height(da);
     
   //Position slider button.
-  gint button_start=height/2.0;
-  gint button_mid1=button_start+button_start/3.0;
-  gint button_mid2=button_start+2.0*button_start/3.0;
+  gint button_start=height/2;
+  gint button_mid1=button_start+button_start/3;
+  gint button_mid2=button_start+2.0*button_start/3;
   gint button_end=height;
   if(priv->breaker_state==2)
     {
@@ -353,9 +353,9 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
     }
   if(priv->breaker_state==3)
     {
-      button_mid1=button_mid1-button_start/2.0;
-      button_mid2=button_mid2-button_start/2.0;
-      button_end=button_end-button_start/2.0;
+      button_mid1=button_mid1-button_start/2;
+      button_mid2=button_mid2-button_start/2;
+      button_end=button_end-button_start/2;
       button_start=height/4.0;
     }
 
@@ -407,10 +407,10 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
       cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
       cairo_set_line_width(cr, 5);
       cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
-      for(i=0;i<50;i+=2)
+      for(i=0;i<100;i+=2)
         {
-          cairo_move_to(cr, priv->electrons[i]*(gdouble)width, priv->electrons[i+1]*(gdouble)height);
-          cairo_line_to(cr, priv->electrons[i]*(gdouble)width+1.0, priv->electrons[i+1]*(gdouble)height+1);
+          cairo_move_to(cr, priv->electrons[i]*(gdouble)width, priv->electrons[i+1]*(gdouble)height/2.0);
+          cairo_line_to(cr, priv->electrons[i]*(gdouble)width, priv->electrons[i+1]*(gdouble)height/2.0+2.0);
           cairo_stroke(cr);
         }
     }
@@ -437,28 +437,28 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   if(priv->breaker_state==0)
     {
       cairo_text_extents(cr, "ON", &extents1);
-      cairo_move_to(cr, width/2.0 - extents1.width/2.0, height/4.0 + extents1.height/2.0);  
+      cairo_move_to(cr, width/2 - extents1.width/2, height/4 + extents1.height/2);  
       cairo_show_text(cr, "ON");
     }
   else if(priv->breaker_state==1)
     {
       cairo_text_extents(cr, "STARTING", &extents1);
-      cairo_move_to(cr, width/2.0 - extents1.width/2.0, height/4.0 + extents1.height/2.0);  
+      cairo_move_to(cr, width/2 - extents1.width/2, height/4 + extents1.height/2);  
       cairo_show_text(cr, "STARTING");
     }
   else if(priv->breaker_state==2)
     {
       cairo_text_extents(cr, "OFF", &extents1);
-      cairo_move_to(cr, width/2.0 - extents1.width/2.0, 3.0*height/4.0 + extents1.height/2.0);   
+      cairo_move_to(cr, width/2 - extents1.width/2, 3*height/4 + extents1.height/2);   
       cairo_show_text(cr, "OFF");
     }
   else
     {
       cairo_text_extents(cr, "BREAK", &extents1);
-      cairo_move_to(cr, width/2.0 - extents1.width/2.0, height/8.0 + extents1.height/2.0);  
+      cairo_move_to(cr, width/2 - extents1.width/2, height/8 + extents1.height/2);  
       cairo_show_text(cr, "BREAK");
       cairo_text_extents(cr, "CONTACT", &extents2);
-      cairo_move_to(cr, width/2.0 - extents2.width/2.0, 7.0*height/8.0 + extents2.height/2.0);
+      cairo_move_to(cr, width/2 - extents2.width/2, 7*height/8 + extents2.height/2);
       cairo_show_text(cr, "CONTACT");  
     }  
     
@@ -501,7 +501,7 @@ static gboolean new_coords(gpointer da)
  
   if(priv->breaker_direction==1)
     {
-      for(i=0;i<50;i+=2)
+      for(i=0;i<100;i+=2)
         {
           priv->electrons[i+1]=priv->electrons[i+1]-0.08;
           if(priv->electrons[i+1]<0.0) priv->electrons[i+1]=1.0;
@@ -509,7 +509,7 @@ static gboolean new_coords(gpointer da)
     }
   else
     {
-      for(i=0;i<50;i+=2)
+      for(i=0;i<100;i+=2)
         {
           priv->electrons[i]=priv->electrons[i]-0.08;
           if(priv->electrons[i]<0.0) priv->electrons[i]=1.0;
