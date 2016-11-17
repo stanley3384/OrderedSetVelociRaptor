@@ -2,7 +2,8 @@
 /*
 
     A headlight toggle widget for testing. The da_simple_toggle1.c in the cairo_drawings
-folder was the start for this widget.
+folder was the start for this widget. You can draw different icons for the toggle switch
+and add them to the code.
 
     gcc -Wall -Werror headlight_toggle.c headlight_toggle_main.c -o headlight_toggle `pkg-config gtk+-3.0 --cflags --libs`
 
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
   g_signal_connect(ht1, "button_press_event", G_CALLBACK(click_drawing), NULL);
 
   GtkWidget *ht2=headlight_toggle_new();
+  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht2), EMERGENCY_LIGHT_ICON);
   gtk_widget_set_hexpand(ht2, TRUE);
   gtk_widget_set_vexpand(ht2, TRUE);
   gtk_widget_set_events(ht2, GDK_BUTTON_PRESS_MASK);
@@ -64,6 +66,7 @@ int main(int argc, char *argv[])
   g_signal_connect(ht3, "button_press_event", G_CALLBACK(click_drawing), NULL); 
 
   GtkWidget *ht4=headlight_toggle_new();
+  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht4), EMERGENCY_LIGHT_ICON);
   gtk_widget_set_hexpand(ht4, TRUE);
   gtk_widget_set_vexpand(ht4, TRUE);
   gtk_widget_set_events(ht4, GDK_BUTTON_PRESS_MASK);

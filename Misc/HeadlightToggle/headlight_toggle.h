@@ -37,12 +37,21 @@ enum
   HEADLIGHT_TOGGLE_ON
 };
 
+//Toggle drawing icon.
+enum
+{
+  HEADLIGHT_ICON,
+  EMERGENCY_LIGHT_ICON
+};
+
 //Public functions.
 GType headlight_toggle_get_type(void) G_GNUC_CONST;
 GtkWidget* headlight_toggle_new();
 
 void headlight_toggle_set_state(HeadlightToggle *da, gint state);
 gint headlight_toggle_get_state(HeadlightToggle *da);
+void headlight_toggle_set_icon(HeadlightToggle *da, gint state);
+gint headlight_toggle_get_icon(HeadlightToggle *da);
 
 G_END_DECLS
 
