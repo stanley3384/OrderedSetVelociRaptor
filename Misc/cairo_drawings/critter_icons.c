@@ -98,21 +98,21 @@ static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *dat
 static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=2;
-  gtk_label_set_text(GTK_LABEL(data[1]), "This is a water dragon lizard, OK.");
+  gtk_label_set_text(GTK_LABEL(data[1]), "This is a water dragon lizard, not an alien, OK.");
   gtk_widget_queue_draw(GTK_WIDGET(data[0]));
   return FALSE;
 }
 static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=3;
-  gtk_label_set_text(GTK_LABEL(data[1]), "Getting a little faster at rabbit speed.");
+  gtk_label_set_text(GTK_LABEL(data[1]), "This is no turtle!");
   gtk_widget_queue_draw(GTK_WIDGET(data[0]));
   return FALSE;
 }
 static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=4;
-  gtk_label_set_text(GTK_LABEL(data[1]), "Maybe a cheetah in the works.");
+  gtk_label_set_text(GTK_LABEL(data[1]), "Cheetah speed. Hang on!");
   gtk_widget_queue_draw(GTK_WIDGET(data[0]));
   return FALSE;
 }
@@ -299,7 +299,7 @@ static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data)
   cairo_curve_to(cr, 13.0*width/16.0, 11.0*height/16.0, 13.0*width/16.0, 11.0*height/16.0, 10.0*width/16.0, 9.5*height/16.0);
   cairo_stroke_preserve(cr);
   //Belly
-  cairo_curve_to(cr, 7.0*width/16.0, 9.0*height/16.0, 7.0*width/16.0, 10.5*height/16.0, 6.0*width/16.0, 11.0*height/16.0);
+  cairo_curve_to(cr, 9.0*width/16.0, 10.0*height/16.0, 9.0*width/16.0, 10.0*height/16.0, 6.0*width/16.0, 11.0*height/16.0);
   cairo_stroke(cr);
 
   //The eye. Scale based on 400x400 drawing.
@@ -321,6 +321,58 @@ static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data)
   //Outside rectangle
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
+
+  //scale line width by height. Original drawing 400x400.
+  cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  //Head 
+  cairo_move_to(cr, 14.5*width/16.0, 7.5*height/16.0);
+  cairo_curve_to(cr, 14.75*width/16.0, 7.5*height/16.0, 14.5*width/16.0, 7.0*height/16.0, 14.25*width/16.0, 6.5*height/16.0);
+  cairo_stroke_preserve(cr); 
+  cairo_curve_to(cr, 14.0*width/16.0, 6.25*height/16.0, 13.5*width/16.0, 6.0*height/16.0, 12.5*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr); 
+  //Ear
+  cairo_curve_to(cr, 12.25*width/16.0, 5.5*height/16.0, 12.25*width/16.0, 5.5*height/16.0, 12.0*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back hump
+  cairo_curve_to(cr, 11.5*width/16.0, 7.5*height/16.0, 10.5*width/16.0, 6.0*height/16.0, 10.0*width/16.0, 7.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back
+  cairo_curve_to(cr, 9.0*width/16.0, 8.5*height/16.0, 7.5*width/16.0, 7.5*height/16.0, 6.0*width/16.0, 8.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Tail
+  cairo_curve_to(cr, -1.0*width/16.0, 8.0*height/16.0, -1.0*width/16.0, 9.0*height/16.0, 5.0*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back leg
+  cairo_curve_to(cr, 3.25*width/16.0, 9.5*height/16.0, 4.0*width/16.0, 11.0*height/16.0, 3.0*width/16.0, 12.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_curve_to(cr, 2*width/16.0, 13.0*height/16.0, 2.0*width/16.0, 13.0*height/16.0, 1.5*width/16.0, 13.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back foot
+  cairo_curve_to(cr, 1.50*width/16.0, 14.0*height/16.0, 1.50*width/16.0, 14.0*height/16.0, 2.0*width/16.0, 14.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back leg to stomach
+   cairo_curve_to(cr, 4.75*width/16.0, 10.0*height/16.0, 5.0*width/16.0, 13.0*height/16.0, 7.0*width/16.0, 10.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Belly
+  cairo_curve_to(cr, 9.0*width/16.0, 10.5*height/16.0, 9.0*width/16.0, 10.5*height/16.0, 11.0*width/16.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Front leg
+  cairo_curve_to(cr, 14.0*width/16.0, 11.0*height/16.0, 14.0*width/16.0, 10.0*height/16.0, 11.5*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Bottom neck
+  cairo_curve_to(cr, 12.0*width/16.0, 8.5*height/16.0, 12.0*width/16.0, 8.5*height/16.0, 12.5*width/16.0, 8.25*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_curve_to(cr, 13.0*width/16.0, 8.0*height/16.0, 13.0*width/16.0, 8.0*height/16.0, 14.15*width/16.0, 8.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back to the start
+  cairo_curve_to(cr, 14.5*width/16.0, 7.5*height/16.0, 14.5*width/16.0, 7.5*height/16.0, 14.5*width/16.0, 7.5*height/16.0);
+  cairo_stroke(cr);
+  
+  //The eye. Scale based on 400x400 drawing.
+  cairo_arc(cr, 13.75*width/16.0, 6.75*height/16.0, 5.0*(gdouble)height/400.0, 0.0, 2*G_PI);
+  cairo_fill(cr);
+  
   return FALSE;
 }
 
