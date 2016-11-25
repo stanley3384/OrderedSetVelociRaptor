@@ -24,6 +24,10 @@ static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data);
 
 //For drawing 1,2,3 or 4.
 static gint drawing=1;
+//Change color of background, line drawing and selection rectangle.
+static gdouble bgc[4]={0.0, 0.0, 1.0, 1.0};
+static gdouble fgc[4]={0.0, 1.0, 1.0, 1.0};
+static gdouble selection[4]={1.0, 0.0, 1.0, 1.0};
 
 int main(int argc, char *argv[])
 {
@@ -168,18 +172,24 @@ static gboolean draw_critter(GtkWidget *da, cairo_t *cr, gpointer data)
 }
 static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data)
 {
-  gint width=gtk_widget_get_allocated_width(da);
-  gint height=gtk_widget_get_allocated_height(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
-  cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0); 
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
   cairo_paint(cr);
 
-  if(drawing==1&&!g_strcmp0(gtk_widget_get_name(da), "da")==0) cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-  else cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  if(drawing==1&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+
+  //Move the turtle a little.
+  cairo_translate(cr, 0.7*width/16.0, 2.0*height/16.0);
  
   //Scale drawing line by 400x400 drawing.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
@@ -218,18 +228,24 @@ static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data)
 }
 static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data)
 {
-  gint width=gtk_widget_get_allocated_width(da);
-  gint height=gtk_widget_get_allocated_height(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
-  cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0); 
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
   cairo_paint(cr);
 
-  if(drawing==2&&!g_strcmp0(gtk_widget_get_name(da), "da")==0) cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-  else cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+  if(drawing==2&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
+
+  //Move the lizard a little.
+  cairo_translate(cr, 0.6*width/16.0, 1.0*height/16.0); 
  
   //scale line width by height. Original drawing 400x400.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
@@ -289,18 +305,21 @@ static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data)
 }
 static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data)
 {
-  gint width=gtk_widget_get_allocated_width(da);
-  gint height=gtk_widget_get_allocated_height(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
-  cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0); 
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
   cairo_paint(cr);
 
-  if(drawing==3&&!g_strcmp0(gtk_widget_get_name(da), "da")==0) cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-  else cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  if(drawing==3&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
  
   //scale line width by height. Original drawing 400x400.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
@@ -354,18 +373,24 @@ static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data)
 }
 static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data)
 {
-  gint width=gtk_widget_get_allocated_width(da);
-  gint height=gtk_widget_get_allocated_height(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
-  cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0); 
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
   cairo_paint(cr);
 
-  if(drawing==4&&!g_strcmp0(gtk_widget_get_name(da), "da")==0) cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-  else cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  if(drawing==4&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0); 
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
+
+  //Move the cheetah a little.
+  cairo_translate(cr, 0.5*width/16.0, 0.0); 
  
   //scale line width by height. Original drawing 400x400.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
