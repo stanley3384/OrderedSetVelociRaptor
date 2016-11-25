@@ -362,17 +362,18 @@ int main(int argc, char *argv[])
     gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
 
     MarginCombo=gtk_combo_box_text_new_with_entry();
+    gtk_widget_set_hexpand(MarginCombo, FALSE);
     gtk_widget_set_halign(MarginCombo, GTK_ALIGN_CENTER);
     gtk_widget_set_tooltip_text(MarginCombo, "Left Margin");
     GtkWidget *combo_entry=gtk_bin_get_child(GTK_BIN(MarginCombo));
     gtk_entry_set_width_chars(GTK_ENTRY(combo_entry), 3);
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "0");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "10");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "20");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "30");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "40");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "50");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "0", "60");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "1", "0");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "2", "10");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "3", "20");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "4", "30");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "5", "40");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "6", "50");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "7", "60");
     gtk_combo_box_set_active(GTK_COMBO_BOX(MarginCombo), 0);
     g_signal_connect(MarginCombo, "changed", G_CALLBACK(change_margin), textview);
 
@@ -404,6 +405,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid2), SelectionButton, 5, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), UnderlineButton, 5, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), GlobalButton, 5, 7, 1, 1);
+
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid2), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 10);
@@ -444,10 +446,7 @@ int main(int argc, char *argv[])
     gint minor_version=gtk_get_minor_version();
     gchar *css_string=NULL;
 
-    /*
-    GTK CSS changed in 3.20. The CSS for after 3.20 may need to be modified to have it work.
-    The CSS has been checked on GTK 3.10 and 3.18.
-    */
+    //GTK CSS changed in 3.20. The CSS for after 3.20 may need to be modified to have it work.
     if(minor_version>20)
       {
         css_string=g_strdup("window {background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} paned {background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(152,251,152,1)), color-stop(0.5,rgba(180,180,180,1)), color-stop(1.0,rgba(123,104,238,1)));} button{background: rgba(210,210,210,1.0)}");
