@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
   g_signal_connect(ht3, "button_press_event", G_CALLBACK(click_drawing), NULL); 
 
   GtkWidget *ht4=headlight_toggle_new();
-  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht4), EMERGENCY_LIGHT_ICON);
+  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht4), FAN_ICON);
   gtk_widget_set_hexpand(ht4, TRUE);
   gtk_widget_set_vexpand(ht4, TRUE);
   gtk_widget_set_events(ht4, GDK_BUTTON_PRESS_MASK);
