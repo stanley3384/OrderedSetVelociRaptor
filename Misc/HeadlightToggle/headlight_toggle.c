@@ -37,6 +37,7 @@ static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr);
 static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state);
 static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state);
 static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state);
+static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state);
 static void headlight_toggle_finalize(GObject *gobject);
 
 G_DEFINE_TYPE(HeadlightToggle, headlight_toggle, GTK_TYPE_DRAWING_AREA)
@@ -100,14 +101,14 @@ void headlight_toggle_set_icon(HeadlightToggle *da, gint headlight_toggle_icon)
 {
   HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
  
-  if(headlight_toggle_icon==0||headlight_toggle_icon==1||headlight_toggle_icon==2)
+  if(headlight_toggle_icon>=0&&headlight_toggle_icon<=3)
     { 
       priv->headlight_toggle_icon=headlight_toggle_icon;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
   else
     {
-      g_warning("The headlight icon can be HEADLIGHT_ICON=0, EMERGENCY_ICON=1 or FAN_ICON=2");
+      g_warning("The headlight icon can be HEADLIGHT_ICON=0, EMERGENCY_ICON=1, FAN_ICON=2 or HEATER_ICON=3.");
     }
 }
 static void headlight_toggle_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
@@ -235,9 +236,13 @@ static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr)
     {
       emergency_light_icon_drawing(cr, width, height, priv->headlight_toggle_state);
     }
-  else
+  else if(priv->headlight_toggle_icon==2)
     {
       fan_icon_drawing(cr, width, height, priv->headlight_toggle_state);
+    }
+  else
+    {
+      heater_icon_drawing(cr, width, height, priv->headlight_toggle_state);
     }
   
   cairo_pattern_destroy(pattern1);
@@ -256,7 +261,7 @@ static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, g
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
     }
-  cairo_set_line_width(cr, 3.0);
+  cairo_set_line_width(cr, 4.0);
   cairo_move_to(cr, 6.0*width/8.0, height/4.0);
   cairo_curve_to(cr, width/2.0, 3.0*height/8.0, width/2.0, 5.0*height/8.0, 6.0*width/8.0, 3.0*height/4.0);
   cairo_stroke(cr);
@@ -347,6 +352,70 @@ static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint he
   cairo_arc(cr, 6.0*width/8.0, height/2.0, height/16.0, 0.0, 2*G_PI);
   cairo_stroke(cr);
 
+}
+static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state)
+{
+  if(headlight_toggle_state==0)
+    {
+      cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+      cairo_scale(cr, 0.9, 1.0);
+      cairo_translate(cr, 0.05*width, 0.0); 
+    }
+  else
+    {
+      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+    }
+
+  //First line
+  cairo_set_line_width(cr, 4.0);
+  cairo_move_to(cr, 4.25*width/8.0, 2.25*height/8.0);
+  cairo_curve_to(cr, 5.75*width/8.0, 4.25*height/8.0, 5.75*width/8.0, 1.25*height/8.0, 6.75*width/8.0, 2.25*height/8.0);
+  cairo_stroke(cr);
+  //Arrow
+  cairo_set_line_width(cr, 1.0);
+  cairo_move_to(cr, 6.75*width/8.0, 2.25*height/8.0);
+  cairo_line_to(cr, 6.75*width/8.0, 1.75*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 7.25*width/8.0, 2.25*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 6.75*width/8.0, 2.75*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 6.75*width/8.0, 2.25*height/8.0);
+  cairo_fill(cr);
+
+  //Second line
+  cairo_set_line_width(cr, 4.0);
+  cairo_move_to(cr, 4.25*width/8.0, 4.0*height/8.0);
+  cairo_curve_to(cr, 5.75*width/8.0, 6.0*height/8.0, 5.75*width/8.0, 3.0*height/8.0, 6.75*width/8.0, 4.0*height/8.0);
+  cairo_stroke(cr);
+  //Arrow
+  cairo_set_line_width(cr, 1.0);
+  cairo_move_to(cr, 6.75*width/8.0, 4.0*height/8.0);
+  cairo_line_to(cr, 6.75*width/8.0, 3.5*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 7.25*width/8.0, 4.0*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 6.75*width/8.0, 4.5*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 6.75*width/8.0, 4.0*height/8.0);
+  cairo_fill(cr);
+
+  //Third line
+  cairo_set_line_width(cr, 4.0);
+  cairo_move_to(cr, 4.25*width/8.0, 5.75*height/8.0);
+  cairo_curve_to(cr, 5.75*width/8.0, 7.75*height/8.0, 5.75*width/8.0, 4.75*height/8.0, 6.75*width/8.0, 5.75*height/8.0);
+  cairo_stroke(cr);
+  //Arrow
+  cairo_set_line_width(cr, 1.0);
+  cairo_move_to(cr, 6.75*width/8.0, 5.75*height/8.0);
+  cairo_line_to(cr, 6.75*width/8.0, 5.25*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 7.25*width/8.0, 5.75*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 6.75*width/8.0, 6.25*height/8.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 6.75*width/8.0, 5.75*height/8.0);
+  cairo_fill(cr);
 }
 static void headlight_toggle_finalize(GObject *object)
 {

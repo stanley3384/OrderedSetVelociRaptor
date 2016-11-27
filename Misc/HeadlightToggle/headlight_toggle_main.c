@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
   gtk_init(&argc, &argv);
 
   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(window), "Headlight Toggles");
+  gtk_window_set_title(GTK_WINDOW(window), "Toggles");
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
   gtk_window_set_default_size(GTK_WINDOW(window), 400, 200);
 
@@ -60,13 +60,14 @@ int main(int argc, char *argv[])
   g_signal_connect(ht2, "button_press_event", G_CALLBACK(click_drawing), NULL); 
 
   GtkWidget *ht3=headlight_toggle_new();
+  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht3), FAN_ICON);
   gtk_widget_set_hexpand(ht3, TRUE);
   gtk_widget_set_vexpand(ht3, TRUE);
   gtk_widget_set_events(ht3, GDK_BUTTON_PRESS_MASK);
   g_signal_connect(ht3, "button_press_event", G_CALLBACK(click_drawing), NULL); 
 
   GtkWidget *ht4=headlight_toggle_new();
-  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht4), FAN_ICON);
+  headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht4), HEATER_ICON);
   gtk_widget_set_hexpand(ht4, TRUE);
   gtk_widget_set_vexpand(ht4, TRUE);
   gtk_widget_set_events(ht4, GDK_BUTTON_PRESS_MASK);

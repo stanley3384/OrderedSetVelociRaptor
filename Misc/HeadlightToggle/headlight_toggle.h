@@ -42,7 +42,8 @@ enum
 {
   HEADLIGHT_ICON,
   EMERGENCY_LIGHT_ICON,
-  FAN_ICON
+  FAN_ICON,
+  HEATER_ICON
 };
 
 //Public functions.
