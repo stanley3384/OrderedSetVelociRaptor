@@ -37,6 +37,13 @@ enum
   HEADLIGHT_TOGGLE_ON
 };
 
+//Toggle direction
+enum
+{
+  HORIZONTAL_RIGHT,
+  VERTICAL_UP
+};
+
 //Toggle drawing icon.
 enum
 {
@@ -52,6 +59,8 @@ GtkWidget* headlight_toggle_new();
 
 void headlight_toggle_set_state(HeadlightToggle *da, gint state);
 gint headlight_toggle_get_state(HeadlightToggle *da);
+void headlight_toggle_set_direction(HeadlightToggle *da, gint state);
+gint headlight_toggle_get_direction(HeadlightToggle *da);
 void headlight_toggle_set_icon(HeadlightToggle *da, gint state);
 gint headlight_toggle_get_icon(HeadlightToggle *da);
 
