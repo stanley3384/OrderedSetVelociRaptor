@@ -4,6 +4,8 @@
     A headlight toggle widget for testing. The da_simple_toggle1.c in the cairo_drawings
 folder was the start for this widget. You can draw different icons for the toggle switch
 and add them to the code.
+    This should probably be called the rocker switch widget. Might have to rename a few
+things or add some toggle drawings to it eventually. 
     The vertical toggle drawings are translated and scaled. This might not fit the drawing
 exactly where it needs to be on the toggle. Depending what the needs are you can add or
 delete drawings and draw with or without translating and scaling.
