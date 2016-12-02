@@ -1,11 +1,13 @@
 
 /*
     Put some transparent buttons over a drawing area in an overlay. The buttons are from
-music_buttons.py. Check out the motion of the stars.
+music_buttons.py. Check out the motion of the stars with the buttons.
+    There is also a GtkRevealer to fade in the buttons over the drawing area. Could only
+get the crossfade to work.
 
     gcc -Wall stars1.c -o stars1 `pkg-config --cflags --libs gtk+-3.0`
 
-    Tested on Ubuntu14.04 and GTK3.10
+    Tested on Ubuntu16.04 and GTK3.18
 
     C. Eric Cashon
 
@@ -17,7 +19,7 @@ static gboolean set_grid_width_height(GtkOverlay *overlay, GtkWidget *widget, Gd
 //Draw the animated stars.
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord);
-static gboolean start_drawing(gpointer drawing);
+static gboolean start_drawing(gpointer data);
 //Draw the widgets for putting in the overlay.
 static gboolean draw_play(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean draw_stop(GtkWidget *widget, cairo_t *cr, gpointer data);
@@ -37,9 +39,16 @@ static gboolean backward_release(GtkWidget *widget, GdkEvent *event, gpointer da
 gboolean backward_pressed=FALSE; 
 //Show and hide the overlay widgets.
 static void show_widget(GtkWidget *widget, gpointer data);
+static gboolean check_revealer_state(gpointer data);
 
+static guint timer_id=0;
+/*
+The overlay revealer will trigger a background drawing area re-draw. Don't update
+the star positions if the revealer triggers the redraw.
+*/ 
+static gboolean draw_background_da=FALSE;
 //The speed of moving stars.
-gdouble speed=4.0;
+static gdouble speed=4.0;
 
 int main(int argc, char *argv[])
   {
@@ -131,21 +140,30 @@ int main(int argc, char *argv[])
     g_signal_connect(button3, "button-press-event", G_CALLBACK(backward_press), NULL);
     g_signal_connect(button3, "button-release-event", G_CALLBACK(backward_release), NULL);
 
-    GtkWidget *grid1=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid1), button3, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), button2, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), toggle1, 2, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), button1, 3, 0, 1, 1);
+    GtkWidget *box=gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_set_spacing(GTK_BOX(box), 0);
+    gtk_box_pack_start(GTK_BOX(box), button3, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box), button2, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box), toggle1, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box), button1, TRUE, TRUE, 0);
 
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), grid1);
+    GtkWidget *revealer=gtk_revealer_new();
+    //Couldn't get GTK_REVEALER_TRANSITION_TYPE_SLIDE_UP or the others to work.
+    gtk_revealer_set_transition_type(GTK_REVEALER(revealer), GTK_REVEALER_TRANSITION_TYPE_CROSSFADE);
+    gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), FALSE);
+    //Slow it down a little.
+    gtk_revealer_set_transition_duration(GTK_REVEALER(revealer), 3000);
+    gtk_container_add(GTK_CONTAINER(revealer), box);
 
-    GtkWidget *toggle2=gtk_toggle_button_new_with_label("Hide Widget");
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), revealer);
+
+    GtkWidget *toggle2=gtk_toggle_button_new_with_label("Show Widget");
     gtk_widget_set_hexpand(toggle2, TRUE);
-    g_signal_connect(toggle2, "clicked", G_CALLBACK(show_widget), grid1);
+    g_signal_connect(toggle2, "clicked", G_CALLBACK(show_widget), revealer);
 
     GtkWidget *grid2=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid2), overlay, 0, 0, 4, 4);
-    gtk_grid_attach(GTK_GRID(grid2), toggle2, 0, 4, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid2), overlay, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), toggle2, 0, 5, 4, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid2);
 
@@ -176,7 +194,6 @@ static gboolean set_grid_width_height(GtkOverlay *overlay, GtkWidget *widget, Gd
   }
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
-    //Get drawing area size.
     gint width=gtk_widget_get_allocated_width(widget);
     gint height=gtk_widget_get_allocated_height(widget);
 
@@ -200,18 +217,25 @@ static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord)
         cairo_move_to(cr, coord[i]+((gdouble)width/2.0), coord[i+1]+((gdouble)height/2.0));
         cairo_line_to(cr, coord[i]+1.0+((gdouble)width/2.0), coord[i+1]+((gdouble)height/2.0));
         cairo_stroke(cr);
-        coord[i]+=(speed*coord[i+2]);
-        coord[i+1]+=(speed*coord[i+3]);
-        if(ABS(coord[i])>(gdouble)width/2.0||ABS(coord[i+1])>(gdouble)height/2.0)
+        //Update coordinates if the background da and not the revealer triggered the drawing.
+        if(draw_background_da)
           {
-            coord[i]=0;
-            coord[i+1]=0;
+            coord[i]+=(speed*coord[i+2]);
+            coord[i+1]+=(speed*coord[i+3]);
+            if(ABS(coord[i])>(gdouble)width/2.0||ABS(coord[i+1])>(gdouble)height/2.0)
+              {
+                coord[i]=0;
+                coord[i+1]=0;
+              }
           }
       }
+    if(draw_background_da) draw_background_da=FALSE;
   }
-static gboolean start_drawing(gpointer drawing)
-  {
-    gtk_widget_queue_draw(GTK_WIDGET(drawing));
+static gboolean start_drawing(gpointer data)
+  {  
+    draw_background_da=TRUE; 
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+ 
     return TRUE;
   }
 static gboolean draw_play(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -577,14 +601,33 @@ static void show_widget(GtkWidget *widget, gpointer data)
   {
     if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
       {
-        gtk_widget_hide(GTK_WIDGET(data));
-        gtk_button_set_label(GTK_BUTTON(widget), "Show Widget");
+        gtk_revealer_set_reveal_child(GTK_REVEALER(data), TRUE);
+        gtk_button_set_label(GTK_BUTTON(widget), "Hide Widget");
+        if(timer_id==0)
+          {
+            timer_id=g_timeout_add(100, check_revealer_state, GTK_REVEALER(data));
+          } 
       }
     else
       {
-        gtk_widget_show(GTK_WIDGET(data));
-        gtk_button_set_label(GTK_BUTTON(widget), "Hide Widget");
+        gtk_revealer_set_reveal_child(GTK_REVEALER(data), FALSE);
+        gtk_button_set_label(GTK_BUTTON(widget), "Show Widget");
+        if(timer_id==0)
+          {
+            timer_id=g_timeout_add(100, check_revealer_state, data);
+          } 
       }
+  }
+static gboolean check_revealer_state(gpointer data)
+  {
+    g_print("Revealer Active\n");
+    if(gtk_revealer_get_child_revealed(GTK_REVEALER(data)))
+      {
+        g_print("Revealer Done\n");
+        timer_id=0;
+        return FALSE;
+      }
+    else return TRUE;
   }
 
 
