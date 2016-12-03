@@ -366,9 +366,9 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   if(0.5*height<h2)
     {
        cairo_scale(cr, 0.5*height/h2, 0.5*height/h2);
-       cairo_translate(cr, -w2/2.0+(width/2.0)*width/height, (0.5*height/h2)*height/24.0);
+       cairo_translate(cr, -w2/2.0+(width/2.0)*width/height, (0.5*height/h2)*height/16.0);
     }
-  else cairo_translate(cr, -w2/2.0, (0.5*height/h2)*height/24.0);
+  else cairo_translate(cr, -w2/2.0, (0.5*height/h2)*height/16.0);
 
   if(priv->headlight_toggle_icon==HEADLIGHT_ICON)
     {
