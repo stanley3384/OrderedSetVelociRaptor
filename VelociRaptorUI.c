@@ -9,7 +9,7 @@ cecashon@aol.com
 
     Compile with make and makefile.
 
-    GTK 3.10 on Ubuntu 14.04.
+    GTK 3.18 on Ubuntu 16.04.
 
 */
 
@@ -18,9 +18,6 @@ cecashon@aol.com
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-#include <glib.h>
-#include <glib/gprintf.h>
-#include <cairo.h>
 #include <apop.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,31 +137,39 @@ int main(int argc, char *argv[])
     gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
     gtk_window_set_title(GTK_WINDOW(window), "Ordered Set VelociRaptor");
     gtk_container_set_border_width(GTK_CONTAINER(window), 8);
-    gtk_window_set_default_size(GTK_WINDOW(window), 1024, 300);
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+    gtk_window_set_default_size(GTK_WINDOW(window), 825, 300);
 
     //Set the icon for the launcher and about dialog.
     GdkPixbuf *dino=draw_velociraptor();
     gtk_window_set_default_icon(dino);
     
     RaptorFeet=gtk_drawing_area_new();
-    gtk_widget_set_size_request(RaptorFeet, 1024, 35);
+    gtk_widget_set_hexpand(RaptorFeet, TRUE);
+    gtk_widget_set_size_request(RaptorFeet, 825, 35);
     g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), window);
 
     button=gtk_button_new_with_label("Get Test Data");
     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
     gtk_widget_set_margin_left(button, 20);
     textbutton=gtk_button_new_with_label("Erase White Board");
+    gtk_widget_set_hexpand(textbutton, TRUE);
     ClearFormat=gtk_button_new_with_label("Clear Format");
+    gtk_widget_set_hexpand(ClearFormat, TRUE);
     UnderlineButton=gtk_toggle_button_new_with_label("Underline");
-    gtk_widget_set_halign(UnderlineButton, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(UnderlineButton, GTK_ALIGN_START);
+    gtk_widget_set_hexpand(UnderlineButton, FALSE);
     gtk_widget_set_tooltip_text(UnderlineButton, "Underline Selection Font");
     SelectionButton=gtk_button_new_with_label("Selection");
-    gtk_widget_set_halign(SelectionButton, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(SelectionButton, GTK_ALIGN_START);
+    gtk_widget_set_hexpand(SelectionButton, FALSE);
     gtk_widget_set_tooltip_text(SelectionButton, "Selection Font");
     GlobalButton=gtk_button_new_with_label("Global");
-    gtk_widget_set_halign(GlobalButton, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(GlobalButton, GTK_ALIGN_START);
+    gtk_widget_set_hexpand(GlobalButton, FALSE);
     gtk_widget_set_tooltip_text(GlobalButton, "Global Font");
     FontChooser=gtk_font_button_new_with_font("Monospace 9");
+    gtk_widget_set_hexpand(FontChooser, TRUE);
     gtk_widget_set_tooltip_text(FontChooser, "Font Chooser");
 
     FileMenu=gtk_menu_new(); 
@@ -307,6 +312,8 @@ int main(int argc, char *argv[])
     g_signal_connect(PrintItem, "activate", G_CALLBACK(print_textview), (gpointer)w);
         
     scrolled_win=gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_hexpand(scrolled_win, TRUE);
+    gtk_widget_set_vexpand(scrolled_win, TRUE);
      
     gtk_container_add(GTK_CONTAINER(scrolled_win), textview);
 
@@ -358,14 +365,27 @@ int main(int argc, char *argv[])
     gtk_entry_set_width_chars(GTK_ENTRY(PlateNumberEntry), 5);
     gtk_entry_set_width_chars(GTK_ENTRY(PlateSizeEntry), 5);
     gtk_entry_set_width_chars(GTK_ENTRY(PlateStatsEntry), 5);
+    /*
+      Put these entries in a fixed container so they don't expand in the grid.
+      This code was added because the grid in GTK3.18 will resize the entries.
+      Doesn't seem to be a problem in GTK3.10.
+    */
+    GtkWidget *fixed_plate_number_entry=gtk_fixed_new();
+    gtk_fixed_put(GTK_FIXED(fixed_plate_number_entry), PlateNumberEntry, 10, 10);
+    GtkWidget *fixed_plate_size_entry=gtk_fixed_new();
+    gtk_fixed_put(GTK_FIXED(fixed_plate_size_entry), PlateSizeEntry, 10, 10);
+    GtkWidget *fixed_plate_stats_entry=gtk_fixed_new();
+    gtk_fixed_put(GTK_FIXED(fixed_plate_stats_entry), PlateStatsEntry, 10, 10);
+
     gtk_entry_set_width_chars(GTK_ENTRY(PlatePosControlEntry), 10);
     gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
 
     MarginCombo=gtk_combo_box_text_new_with_entry();
     gtk_widget_set_hexpand(MarginCombo, FALSE);
-    gtk_widget_set_halign(MarginCombo, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(MarginCombo, GTK_ALIGN_START);
     gtk_widget_set_tooltip_text(MarginCombo, "Left Margin");
     GtkWidget *combo_entry=gtk_bin_get_child(GTK_BIN(MarginCombo));
+    gtk_widget_set_hexpand(combo_entry, FALSE);
     gtk_entry_set_width_chars(GTK_ENTRY(combo_entry), 3);
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "1", "0");
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "2", "10");
@@ -377,6 +397,14 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(MarginCombo), 0);
     g_signal_connect(MarginCombo, "changed", G_CALLBACK(change_margin), textview);
 
+    /*
+      Put this in a fixed container so they don't expand in the grid.
+      This code was added because the grid in GTK3.18 will resize the entries.
+      Doesn't seem to be a problem in GTK3.10.
+    */
+    GtkWidget *fixed_margin_combo=gtk_fixed_new();
+    gtk_fixed_put(GTK_FIXED(fixed_margin_combo), MarginCombo, 10, 10);
+
     grid1=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid1), PlateParametersLabel, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid1), PlateNumberLabel, 0, 3, 1, 1);
@@ -385,9 +413,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid1), ControlCheck, 0, 6, 2, 1);
     gtk_grid_attach(GTK_GRID(grid1), PlatePosControlLabel, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), PlateNegControlLabel, 0, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateNumberEntry, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateSizeEntry, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateStatsEntry, 1, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), fixed_plate_number_entry, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), fixed_plate_size_entry, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), fixed_plate_stats_entry, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), PlatePosControlEntry, 1, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), PlateNegControlEntry, 1, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), button, 0, 9, 2, 1);
@@ -401,11 +429,11 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid2), textbutton, 0, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), ClearFormat, 1, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), FontChooser, 2, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), MarginCombo, 5, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), fixed_margin_combo, 5, 4, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), SelectionButton, 5, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), UnderlineButton, 5, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), GlobalButton, 5, 7, 1, 1);
-
+    gtk_grid_set_column_homogeneous(GTK_GRID(grid2), FALSE);
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid2), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 10);
