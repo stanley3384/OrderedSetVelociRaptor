@@ -1,15 +1,17 @@
 
 /*
-    Some ideas for analysis.
 
-    This file has int main() along with the UI code.
+    This file has int main() along with the UI code for the VelociRaptor program.
+
+    Some ideas for microtiter plate analyses. If plate data is linearized into a column then it
+makes it easier to calculate different sets of statistical values. Give it a try.
 
     Copyright (c) 2015 by C. Eric Cashon. Licensed under the modified GNU GPL v2; see COPYING and COPYING2.
 cecashon@aol.com
 
     Compile with make and makefile.
 
-    GTK 3.18 on Ubuntu 16.04.
+    Tested on GTK 3.18 with Ubuntu 16.04.
 
 */
 
@@ -36,7 +38,8 @@ cecashon@aol.com
 #include "VelociRaptorPermutations.h"
 #include "VelociRaptorHtmlTable.h"
 
-//Global variables.   
+//Global variables.
+GtkWindow *pMainWindow=NULL;   
 const gchar *pPlateNumberText=NULL;
 const gchar *pPlateSizeText=NULL;
 const gchar *pPlateStatsText=NULL;
@@ -125,15 +128,11 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
 
 int main(int argc, char *argv[])
   {
-    GtkWidget *window, *button, *scrolled_win, *textview, *MarginCombo, *TextLabel, *PlateParametersLabel, *PlateNumberLabel, *PlateSizeLabel, *PlateStatsLabel, *ControlCheck, *PlatePosControlLabel, *PlateNegControlLabel, *PlateNumberEntry, *PlateSizeEntry, *PlateStatsEntry, *PlatePosControlEntry, *PlateNegControlEntry, *grid1, *grid2, *pane, *grid3, *textbutton, *FileMenu, *FileMenu2, *FileMenu3, *FileMenu4, *FileMenu5, *FileMenu6, *PrintItem, *SqliteItem, *ImportItem, *AppendItem, *QuitItem, *BasicStatsItem, *GaussianItem, *VarianceItem, *AnovaItem, *DunnSidakItem, *HotellingItem, *PermutationsItem, *ZFactorItem, *ContingencyItem, *HeatmapItem, *ConditionalItem, *RiseFallItem, *HtmlItem, *HtmlTableItem, *AboutItem, *BuildAuxItem, *BuildComboItem, *BuildPermutItem, *BuildBoardItem, *ScatterItem, *ErrorItem, *BoxItem, *MenuBar, *FileItem, *FileItem2, *FileItem3, *FileItem4, *FileItem5, *FileItem6, *ClearFormat, *RaptorFeet, *UnderlineButton, *SelectionButton, *GlobalButton, *FontChooser; 
-      
-    //For printing
-    Widgets *w;
-    PangoFontDescription *pfd;
-
     gtk_init(&argc, &argv);
     
-    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    //Quiet dialog messages about transient parent. Just add the global pMainWindow to the dialogs.
+    pMainWindow=GTK_WINDOW(window);
     gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
     gtk_window_set_title(GTK_WINDOW(window), "Ordered Set VelociRaptor");
     gtk_container_set_border_width(GTK_CONTAINER(window), 8);
@@ -144,258 +143,266 @@ int main(int argc, char *argv[])
     GdkPixbuf *dino=draw_velociraptor();
     gtk_window_set_default_icon(dino);
     
-    RaptorFeet=gtk_drawing_area_new();
-    gtk_widget_set_hexpand(RaptorFeet, TRUE);
-    gtk_widget_set_size_request(RaptorFeet, 825, 35);
-    g_signal_connect(G_OBJECT(RaptorFeet), "draw", G_CALLBACK(draw_veloci_raptor_feet), window);
+    GtkWidget *raptor_feet=gtk_drawing_area_new();
+    gtk_widget_set_hexpand(raptor_feet, TRUE);
+    gtk_widget_set_size_request(raptor_feet, 825, 35);
+    g_signal_connect(G_OBJECT(raptor_feet), "draw", G_CALLBACK(draw_veloci_raptor_feet), window);
 
-    button=gtk_button_new_with_label("Get Test Data");
+    GtkWidget *button=gtk_button_new_with_label("Get Test Data");
     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
     gtk_widget_set_margin_left(button, 20);
-    textbutton=gtk_button_new_with_label("Erase White Board");
+
+    GtkWidget *textbutton=gtk_button_new_with_label("Erase White Board");
     gtk_widget_set_hexpand(textbutton, TRUE);
-    ClearFormat=gtk_button_new_with_label("Clear Format");
-    gtk_widget_set_hexpand(ClearFormat, TRUE);
-    UnderlineButton=gtk_toggle_button_new_with_label("Underline");
-    gtk_widget_set_halign(UnderlineButton, GTK_ALIGN_START);
-    gtk_widget_set_hexpand(UnderlineButton, FALSE);
-    gtk_widget_set_tooltip_text(UnderlineButton, "Underline Selection Font");
-    SelectionButton=gtk_button_new_with_label("Selection");
-    gtk_widget_set_halign(SelectionButton, GTK_ALIGN_START);
-    gtk_widget_set_hexpand(SelectionButton, FALSE);
-    gtk_widget_set_tooltip_text(SelectionButton, "Selection Font");
-    GlobalButton=gtk_button_new_with_label("Global");
-    gtk_widget_set_halign(GlobalButton, GTK_ALIGN_START);
-    gtk_widget_set_hexpand(GlobalButton, FALSE);
-    gtk_widget_set_tooltip_text(GlobalButton, "Global Font");
-    FontChooser=gtk_font_button_new_with_font("Monospace 9");
-    gtk_widget_set_hexpand(FontChooser, TRUE);
-    gtk_widget_set_tooltip_text(FontChooser, "Font Chooser");
 
-    FileMenu=gtk_menu_new(); 
-    ImportItem=gtk_menu_item_new_with_label("Import Text File");
-    AppendItem=gtk_menu_item_new_with_label("Append Text Files");
-    SqliteItem=gtk_menu_item_new_with_label("Sqlite Connect");
-    PrintItem=gtk_menu_item_new_with_label("Print White Board");
-    QuitItem=gtk_menu_item_new_with_label("Quit");
+    GtkWidget *clear_format=gtk_button_new_with_label("Clear Format");
+    gtk_widget_set_hexpand(clear_format, TRUE);
 
-    FileMenu2=gtk_menu_new();
-    BuildAuxItem=gtk_menu_item_new_with_label("Auxiliary Table");
-    BuildComboItem=gtk_menu_item_new_with_label("Combination Table");
-    BuildPermutItem=gtk_menu_item_new_with_label("Permutation Table");
-    BuildBoardItem=gtk_menu_item_new_with_label("White Board Table");
+    GtkWidget *underline_button=gtk_toggle_button_new_with_label("Underline");
+    gtk_widget_set_halign(underline_button, GTK_ALIGN_START);
+    gtk_widget_set_hexpand(underline_button, FALSE);
+    gtk_widget_set_tooltip_text(underline_button, "Underline Selection Font");
 
-    FileMenu3=gtk_menu_new();
-    BasicStatsItem=gtk_menu_item_new_with_label("Descriptive Statistics");
-    GaussianItem=gtk_menu_item_new_with_label("Normality Test");
-    VarianceItem=gtk_menu_item_new_with_label("Homogeniety of Variance");
-    AnovaItem=gtk_menu_item_new_with_label("One-Way ANOVA");
-    DunnSidakItem=gtk_menu_item_new_with_label("Comparison with Control");
-    HotellingItem=gtk_menu_item_new_with_label("Comparison with Contrasts");
-    PermutationsItem=gtk_menu_item_new_with_label("Permutation Testing");
-    ZFactorItem=gtk_menu_item_new_with_label("Calculate Z-factor");
-    ContingencyItem=gtk_menu_item_new_with_label("Contingency Data");
+    GtkWidget *selection_button=gtk_button_new_with_label("Selection");
+    gtk_widget_set_halign(selection_button, GTK_ALIGN_START);
+    gtk_widget_set_hexpand(selection_button, FALSE);
+    gtk_widget_set_tooltip_text(selection_button, "Selection Font");
 
-    FileMenu4=gtk_menu_new();
-    ScatterItem=gtk_menu_item_new_with_label("Scatter Plot");
-    ErrorItem=gtk_menu_item_new_with_label("Error Plot");
-    BoxItem=gtk_menu_item_new_with_label("Box Plot");
+    GtkWidget *global_button=gtk_button_new_with_label("Global");
+    gtk_widget_set_halign(global_button, GTK_ALIGN_START);
+    gtk_widget_set_hexpand(global_button, FALSE);
+    gtk_widget_set_tooltip_text(global_button, "Global Font");
 
-    FileMenu5=gtk_menu_new();
-    HeatmapItem=gtk_menu_item_new_with_label("Heatmap Platemap");
-    ConditionalItem=gtk_menu_item_new_with_label("Conditional Format Platemap");
-    RiseFallItem=gtk_menu_item_new_with_label("Rise Fall Platemap");
-    HtmlItem=gtk_menu_item_new_with_label("Heatmap Platemap HTML");
-    HtmlTableItem=gtk_menu_item_new_with_label("SQL Query to HTML");
+    GtkWidget *font_chooser=gtk_font_button_new_with_font("Monospace 9");
+    gtk_widget_set_hexpand(font_chooser, TRUE);
+    gtk_widget_set_tooltip_text(font_chooser, "Font Chooser");
 
-    FileMenu6=gtk_menu_new();
-    AboutItem=gtk_menu_item_new_with_label("Ordered Set VelociRaptor");
+    GtkWidget *file_menu=gtk_menu_new(); 
+    GtkWidget *import_item=gtk_menu_item_new_with_label("Import Text File");
+    GtkWidget *append_item=gtk_menu_item_new_with_label("Append Text Files");
+    GtkWidget *sqlite_item=gtk_menu_item_new_with_label("Sqlite Connect");
+    GtkWidget *print_item=gtk_menu_item_new_with_label("Print White Board");
+    GtkWidget *quit_item=gtk_menu_item_new_with_label("Quit");
 
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), ImportItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), AppendItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), SqliteItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), PrintItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu), QuitItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildAuxItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildComboItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildPermutItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu2), BuildBoardItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), BasicStatsItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), GaussianItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), VarianceItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), AnovaItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), DunnSidakItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), HotellingItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), PermutationsItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), ZFactorItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu3), ContingencyItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), ScatterItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), ErrorItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu4), BoxItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), HeatmapItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), ConditionalItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), RiseFallItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), HtmlItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu5), HtmlTableItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(FileMenu6), AboutItem);
+    GtkWidget *file_menu2=gtk_menu_new();
+    GtkWidget *build_aux_item=gtk_menu_item_new_with_label("Auxiliary Table");
+    GtkWidget *build_combo_item=gtk_menu_item_new_with_label("Combination Table");
+    GtkWidget *build_permut_item=gtk_menu_item_new_with_label("Permutation Table");
+    GtkWidget *build_board_item=gtk_menu_item_new_with_label("White Board Table");
+
+    GtkWidget *file_menu3=gtk_menu_new();
+    GtkWidget *basic_stats_item=gtk_menu_item_new_with_label("Descriptive Statistics");
+    GtkWidget *gaussian_item=gtk_menu_item_new_with_label("Normality Test");
+    GtkWidget *variance_item=gtk_menu_item_new_with_label("Homogeniety of Variance");
+    GtkWidget *anova_item=gtk_menu_item_new_with_label("One-Way ANOVA");
+    GtkWidget *dunn_sidak_item=gtk_menu_item_new_with_label("Comparison with Control");
+    GtkWidget *hotelling_item=gtk_menu_item_new_with_label("Comparison with Contrasts");
+    GtkWidget *permutations_item=gtk_menu_item_new_with_label("Permutation Testing");
+    GtkWidget *z_factor_item=gtk_menu_item_new_with_label("Calculate Z-factor");
+    GtkWidget *contingency_item=gtk_menu_item_new_with_label("Contingency Data");
+
+    GtkWidget *file_menu4=gtk_menu_new();
+    GtkWidget *scatter_item=gtk_menu_item_new_with_label("Scatter Plot");
+    GtkWidget *error_item=gtk_menu_item_new_with_label("Error Plot");
+    GtkWidget *box_item=gtk_menu_item_new_with_label("Box Plot");
+
+    GtkWidget *file_menu5=gtk_menu_new();
+    GtkWidget *heatmap_item=gtk_menu_item_new_with_label("Heatmap Platemap");
+    GtkWidget *conditional_item=gtk_menu_item_new_with_label("Conditional Format Platemap");
+    GtkWidget *rise_fall_item=gtk_menu_item_new_with_label("Rise Fall Platemap");
+    GtkWidget *html_item=gtk_menu_item_new_with_label("Heatmap Platemap HTML");
+    GtkWidget *html_table_item=gtk_menu_item_new_with_label("SQL Query to HTML");
+
+    GtkWidget *file_menu6=gtk_menu_new();
+    GtkWidget *about_item=gtk_menu_item_new_with_label("Ordered Set VelociRaptor");
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), import_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), append_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), sqlite_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), print_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu2), build_aux_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu2), build_combo_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu2), build_permut_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu2), build_board_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), basic_stats_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), gaussian_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), variance_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), anova_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), dunn_sidak_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), hotelling_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), permutations_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), z_factor_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu3), contingency_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu4), scatter_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu4), error_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu4), box_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu5), heatmap_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu5), conditional_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu5), rise_fall_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu5), html_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu5), html_table_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu6), about_item);
 
 
-    g_signal_connect(QuitItem, "activate", G_CALLBACK(destroy_event), NULL);
-    //PrintItem signal connected after textview
-    g_signal_connect(ImportItem, "activate", G_CALLBACK(get_text_file), window);
-    g_signal_connect(AppendItem, "activate", G_CALLBACK(append_text_dialog), window);
-    g_signal_connect(SqliteItem, "activate", G_CALLBACK(sqlite_connect_dialog), window);
-    g_signal_connect(AboutItem, "activate", G_CALLBACK(about_dialog), window);
-    //AnovaItem signal connected after textview.
-    g_signal_connect(ScatterItem, "activate", G_CALLBACK(database_to_scatter_graph_dialog), NULL);
-    g_signal_connect(ErrorItem, "activate", G_CALLBACK(database_to_error_graph_dialog), NULL);
-    g_signal_connect(BoxItem, "activate", G_CALLBACK(database_to_box_graph_dialog), NULL);
-    g_signal_connect(BuildAuxItem, "activate", G_CALLBACK(build_aux_table_dialog), window);
-    g_signal_connect(BuildComboItem, "activate", G_CALLBACK(build_combo_table_dialog), window);
-    g_signal_connect(BuildPermutItem, "activate", G_CALLBACK(build_permutation_table_dialog), window);
+    g_signal_connect(quit_item, "activate", G_CALLBACK(destroy_event), NULL);
+    //print_item signal connected after textview
+    g_signal_connect(import_item, "activate", G_CALLBACK(get_text_file), window);
+    g_signal_connect(append_item, "activate", G_CALLBACK(append_text_dialog), window);
+    g_signal_connect(sqlite_item, "activate", G_CALLBACK(sqlite_connect_dialog), window);
+    g_signal_connect(about_item, "activate", G_CALLBACK(about_dialog), window);
+    //anova_item signal connected after textview.
+    g_signal_connect(scatter_item, "activate", G_CALLBACK(database_to_scatter_graph_dialog), NULL);
+    g_signal_connect(error_item, "activate", G_CALLBACK(database_to_error_graph_dialog), NULL);
+    g_signal_connect(box_item, "activate", G_CALLBACK(database_to_box_graph_dialog), NULL);
+    g_signal_connect(build_aux_item, "activate", G_CALLBACK(build_aux_table_dialog), window);
+    g_signal_connect(build_combo_item, "activate", G_CALLBACK(build_combo_table_dialog), window);
+    g_signal_connect(build_permut_item, "activate", G_CALLBACK(build_permutation_table_dialog), window);
      
-    MenuBar=gtk_menu_bar_new();
-    gtk_widget_show(MenuBar);
-    FileItem=gtk_menu_item_new_with_label("File");
-    FileItem2=gtk_menu_item_new_with_label("Data");
-    FileItem3=gtk_menu_item_new_with_label("Analysis");
-    FileItem4=gtk_menu_item_new_with_label("Graph");
-    FileItem5=gtk_menu_item_new_with_label("Format");
-    FileItem6=gtk_menu_item_new_with_label("About");
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    //gtk_widget_show(menu_bar);
+    GtkWidget *file_item=gtk_menu_item_new_with_label("File");
+    GtkWidget *file_item2=gtk_menu_item_new_with_label("Data");
+    GtkWidget *file_item3=gtk_menu_item_new_with_label("Analysis");
+    GtkWidget *file_item4=gtk_menu_item_new_with_label("Graph");
+    GtkWidget *file_item5=gtk_menu_item_new_with_label("Format");
+    GtkWidget *file_item6=gtk_menu_item_new_with_label("About");
 
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem), FileMenu);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem2), FileMenu2);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem3), FileMenu3);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem4), FileMenu4);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem5), FileMenu5);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(FileItem6), FileMenu6);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), file_menu);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item2), file_menu2);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item3), file_menu3);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item4), file_menu4);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item5), file_menu5);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item6), file_menu6);
 
-    gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem);
-    gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem2);
-    gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem3);
-    gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem4);
-    gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem5);
-    gtk_menu_shell_append(GTK_MENU_SHELL(MenuBar), FileItem6);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item3);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item4);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item5);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item6);
        
-    textview=gtk_text_view_new();
+    GtkWidget *textview=gtk_text_view_new();
     gtk_widget_set_hexpand(textview, TRUE);
     gtk_widget_set_vexpand(textview, TRUE);
     //Set initial font.
-    pfd=pango_font_description_from_string("Monospace 9"); 
+    PangoFontDescription *pfd=pango_font_description_from_string("Monospace 9"); 
     gtk_widget_override_font(GTK_WIDGET(textview), pfd);
-    g_signal_connect(UnderlineButton, "clicked", G_CALLBACK(change_underline), textview);
-    g_signal_connect(SelectionButton, "clicked", G_CALLBACK(change_selection_font), textview);
-    g_signal_connect(GlobalButton, "clicked", G_CALLBACK(change_global_font), textview);
-    g_signal_connect(FontChooser, "font-set", G_CALLBACK(font_chooser_dialog), textview);
+    g_signal_connect(underline_button, "clicked", G_CALLBACK(change_underline), textview);
+    g_signal_connect(selection_button, "clicked", G_CALLBACK(change_selection_font), textview);
+    g_signal_connect(global_button, "clicked", G_CALLBACK(change_global_font), textview);
+    g_signal_connect(font_chooser, "font-set", G_CALLBACK(font_chooser_dialog), textview);
 
-    g_signal_connect(BasicStatsItem, "activate", G_CALLBACK(basic_statistics_dialog), textview);
-    g_signal_connect(GaussianItem, "activate", G_CALLBACK(gaussian_dialog), textview);
-    g_signal_connect(VarianceItem, "activate", G_CALLBACK(homogeniety_of_variance_dialog), textview);
-    g_signal_connect(AnovaItem, "activate", G_CALLBACK(one_way_anova_dialog), textview);
-    g_signal_connect(DunnSidakItem, "activate", G_CALLBACK(comparison_with_control_dialog), textview);
-    g_signal_connect(HotellingItem, "activate", G_CALLBACK(hotelling_dialog), textview);
-    g_signal_connect(PermutationsItem, "activate", G_CALLBACK(permutations_dialog), textview);
-    g_signal_connect(ZFactorItem, "activate", G_CALLBACK(z_factor_dialog), textview);
-    g_signal_connect(ContingencyItem, "activate", G_CALLBACK(contingency_dialog), textview);
+    g_signal_connect(basic_stats_item, "activate", G_CALLBACK(basic_statistics_dialog), textview);
+    g_signal_connect(gaussian_item, "activate", G_CALLBACK(gaussian_dialog), textview);
+    g_signal_connect(variance_item, "activate", G_CALLBACK(homogeniety_of_variance_dialog), textview);
+    g_signal_connect(anova_item, "activate", G_CALLBACK(one_way_anova_dialog), textview);
+    g_signal_connect(dunn_sidak_item, "activate", G_CALLBACK(comparison_with_control_dialog), textview);
+    g_signal_connect(hotelling_item, "activate", G_CALLBACK(hotelling_dialog), textview);
+    g_signal_connect(permutations_item, "activate", G_CALLBACK(permutations_dialog), textview);
+    g_signal_connect(z_factor_item, "activate", G_CALLBACK(z_factor_dialog), textview);
+    g_signal_connect(contingency_item, "activate", G_CALLBACK(contingency_dialog), textview);
 
-    g_signal_connect(G_OBJECT(HeatmapItem), "activate", G_CALLBACK(heatmap_dialog), textview);
-    g_signal_connect(G_OBJECT(ConditionalItem), "activate", G_CALLBACK(format_text_dialog), textview);
-    g_signal_connect(G_OBJECT(RiseFallItem), "activate", G_CALLBACK(rise_fall_text_dialog), textview);
-    g_signal_connect(G_OBJECT(HtmlItem), "activate", G_CALLBACK(heatmap_html_dialog), NULL);
-    g_signal_connect(G_OBJECT(HtmlTableItem), "activate", G_CALLBACK(html_table_dialog), NULL);
-    g_signal_connect(G_OBJECT(BuildBoardItem), "activate", G_CALLBACK(send_text_to_database_dialog), textview);
+    g_signal_connect(G_OBJECT(heatmap_item), "activate", G_CALLBACK(heatmap_dialog), textview);
+    g_signal_connect(G_OBJECT(conditional_item), "activate", G_CALLBACK(format_text_dialog), textview);
+    g_signal_connect(G_OBJECT(rise_fall_item), "activate", G_CALLBACK(rise_fall_text_dialog), textview);
+    g_signal_connect(G_OBJECT(html_item), "activate", G_CALLBACK(heatmap_html_dialog), NULL);
+    g_signal_connect(G_OBJECT(html_table_item), "activate", G_CALLBACK(html_table_dialog), NULL);
+    g_signal_connect(G_OBJECT(build_board_item), "activate", G_CALLBACK(send_text_to_database_dialog), textview);
 
     //For printing.
-    w=g_slice_new(Widgets);
+    Widgets *w=g_slice_new(Widgets);
     w->window=GTK_WIDGET(window);
     w->textview=GTK_WIDGET(textview);
-    g_signal_connect(PrintItem, "activate", G_CALLBACK(print_textview), (gpointer)w);
+    g_signal_connect(print_item, "activate", G_CALLBACK(print_textview), (gpointer)w);
         
-    scrolled_win=gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget *scrolled_win=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_hexpand(scrolled_win, TRUE);
     gtk_widget_set_vexpand(scrolled_win, TRUE);
      
     gtk_container_add(GTK_CONTAINER(scrolled_win), textview);
 
-    PlateParametersLabel=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(PlateParametersLabel), "<span weight='bold' underline='single'>Parameters</span>");
-    TextLabel=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(TextLabel), "<span weight='bold' underline='single'>White Board</span>");
-    gtk_widget_set_halign(TextLabel, GTK_ALIGN_CENTER);
-    PlateNumberLabel=gtk_label_new("Number of Plates");
-    PlateSizeLabel=gtk_label_new("Size of Plate");
-    PlateStatsLabel=gtk_label_new("Set Size for Stats");
-    PlatePosControlLabel=gtk_label_new("Positive Controls");
-    PlateNegControlLabel=gtk_label_new("Negative Controls");
+    GtkWidget *plate_parameters_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(plate_parameters_label), "<span weight='bold' underline='single'>Parameters</span>");
 
-    ControlCheck=gtk_check_button_new_with_label("Optional Control Locations");
+    GtkWidget *text_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(text_label), "<span weight='bold' underline='single'>White Board</span>");
+    gtk_widget_set_halign(text_label, GTK_ALIGN_CENTER);
 
-    PlateNumberEntry=gtk_entry_new();
-    PlateSizeEntry=gtk_entry_new();
-    PlateStatsEntry=gtk_entry_new();
-    PlatePosControlEntry=gtk_entry_new();
-    PlateNegControlEntry=gtk_entry_new();
+    GtkWidget *plate_number_label=gtk_label_new("Number of Plates");
+    GtkWidget *plate_size_label=gtk_label_new("Size of Plate");
+    GtkWidget *plate_stats_label=gtk_label_new("Set Size for Stats");
+    GtkWidget *plate_pos_control_label=gtk_label_new("Positive Controls");
+    GtkWidget *plate_neg_control_label=gtk_label_new("Negative Controls");
 
-    gtk_widget_set_halign(PlateNumberEntry, GTK_ALIGN_CENTER);
-    gtk_widget_set_halign(PlateSizeEntry, GTK_ALIGN_CENTER);
-    gtk_widget_set_halign(PlateStatsEntry, GTK_ALIGN_CENTER);
-    gtk_widget_set_halign(PlatePosControlEntry, GTK_ALIGN_CENTER);
-    gtk_widget_set_halign(PlateNegControlEntry, GTK_ALIGN_CENTER);
+    GtkWidget *control_check=gtk_check_button_new_with_label("Optional Control Locations");
 
-    gtk_entry_set_text(GTK_ENTRY(PlateNumberEntry), "3");
-    gtk_entry_set_text(GTK_ENTRY(PlateSizeEntry), "96");
-    gtk_entry_set_text(GTK_ENTRY(PlateStatsEntry), "4");
-    gtk_entry_set_text(GTK_ENTRY(PlatePosControlEntry), "");
-    gtk_entry_set_text(GTK_ENTRY(PlateNegControlEntry), "");
+    GtkWidget *plate_number_entry=gtk_entry_new();
+    GtkWidget *plate_size_entry=gtk_entry_new();
+    GtkWidget *plate_stats_entry=gtk_entry_new();
+    GtkWidget *plate_pos_control_entry=gtk_entry_new();
+    GtkWidget *plate_neg_control_entry=gtk_entry_new();
 
-    gtk_widget_set_sensitive(GTK_WIDGET(PlatePosControlEntry),FALSE);
-    gtk_widget_set_sensitive(GTK_WIDGET(PlateNegControlEntry),FALSE);
+    gtk_widget_set_halign(plate_number_entry, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(plate_size_entry, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(plate_stats_entry, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(plate_pos_control_entry, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(plate_neg_control_entry, GTK_ALIGN_CENTER);
 
-    g_signal_connect(G_OBJECT(ControlCheck), "clicked", G_CALLBACK(activate_pos_control_event), PlatePosControlEntry);
-    g_signal_connect(G_OBJECT(ControlCheck), "clicked", G_CALLBACK(activate_neg_control_event), PlateNegControlEntry);
+    gtk_entry_set_text(GTK_ENTRY(plate_number_entry), "3");
+    gtk_entry_set_text(GTK_ENTRY(plate_size_entry), "96");
+    gtk_entry_set_text(GTK_ENTRY(plate_stats_entry), "4");
+    gtk_entry_set_text(GTK_ENTRY(plate_pos_control_entry), "");
+    gtk_entry_set_text(GTK_ENTRY(plate_neg_control_entry), "");
+
+    gtk_widget_set_sensitive(GTK_WIDGET(plate_pos_control_entry),FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(plate_neg_control_entry),FALSE);
+
+    g_signal_connect(G_OBJECT(control_check), "clicked", G_CALLBACK(activate_pos_control_event), plate_pos_control_entry);
+    g_signal_connect(G_OBJECT(control_check), "clicked", G_CALLBACK(activate_neg_control_event), plate_neg_control_entry);
 
     //Set global pointers to values.
-    pPlateNumberText=gtk_entry_get_text(GTK_ENTRY(PlateNumberEntry));
-    pPlateSizeText=gtk_entry_get_text(GTK_ENTRY(PlateSizeEntry));
-    pPlateStatsText=gtk_entry_get_text(GTK_ENTRY(PlateStatsEntry));
-    pPlatePosControlText=gtk_entry_get_text(GTK_ENTRY(PlatePosControlEntry));
-    pPlateNegControlText=gtk_entry_get_text(GTK_ENTRY(PlateNegControlEntry));
-    pCurrentFont=gtk_font_button_get_font_name(GTK_FONT_BUTTON(FontChooser));
+    pPlateNumberText=gtk_entry_get_text(GTK_ENTRY(plate_number_entry));
+    pPlateSizeText=gtk_entry_get_text(GTK_ENTRY(plate_size_entry));
+    pPlateStatsText=gtk_entry_get_text(GTK_ENTRY(plate_stats_entry));
+    pPlatePosControlText=gtk_entry_get_text(GTK_ENTRY(plate_pos_control_entry));
+    pPlateNegControlText=gtk_entry_get_text(GTK_ENTRY(plate_neg_control_entry));
+    pCurrentFont=gtk_font_button_get_font_name(GTK_FONT_BUTTON(font_chooser));
      
-    gtk_entry_set_width_chars(GTK_ENTRY(PlateNumberEntry), 5);
-    gtk_entry_set_width_chars(GTK_ENTRY(PlateSizeEntry), 5);
-    gtk_entry_set_width_chars(GTK_ENTRY(PlateStatsEntry), 5);
+    gtk_entry_set_width_chars(GTK_ENTRY(plate_number_entry), 5);
+    gtk_entry_set_width_chars(GTK_ENTRY(plate_size_entry), 5);
+    gtk_entry_set_width_chars(GTK_ENTRY(plate_stats_entry), 5);
     /*
       Put these entries in a fixed container so they don't expand in the grid.
       This code was added because the grid in GTK3.18 will resize the entries.
       Doesn't seem to be a problem in GTK3.10.
     */
     GtkWidget *fixed_plate_number_entry=gtk_fixed_new();
-    gtk_fixed_put(GTK_FIXED(fixed_plate_number_entry), PlateNumberEntry, 10, 10);
+    gtk_fixed_put(GTK_FIXED(fixed_plate_number_entry), plate_number_entry, 10, 10);
     GtkWidget *fixed_plate_size_entry=gtk_fixed_new();
-    gtk_fixed_put(GTK_FIXED(fixed_plate_size_entry), PlateSizeEntry, 10, 10);
+    gtk_fixed_put(GTK_FIXED(fixed_plate_size_entry), plate_size_entry, 10, 10);
     GtkWidget *fixed_plate_stats_entry=gtk_fixed_new();
-    gtk_fixed_put(GTK_FIXED(fixed_plate_stats_entry), PlateStatsEntry, 10, 10);
+    gtk_fixed_put(GTK_FIXED(fixed_plate_stats_entry), plate_stats_entry, 10, 10);
 
-    gtk_entry_set_width_chars(GTK_ENTRY(PlatePosControlEntry), 10);
-    gtk_entry_set_width_chars(GTK_ENTRY(PlateNegControlEntry), 10);
+    gtk_entry_set_width_chars(GTK_ENTRY(plate_pos_control_entry), 10);
+    gtk_entry_set_width_chars(GTK_ENTRY(plate_neg_control_entry), 10);
 
-    MarginCombo=gtk_combo_box_text_new_with_entry();
-    gtk_widget_set_hexpand(MarginCombo, FALSE);
-    gtk_widget_set_halign(MarginCombo, GTK_ALIGN_START);
-    gtk_widget_set_tooltip_text(MarginCombo, "Left Margin");
-    GtkWidget *combo_entry=gtk_bin_get_child(GTK_BIN(MarginCombo));
+    GtkWidget *margin_combo=gtk_combo_box_text_new_with_entry();
+    gtk_widget_set_hexpand(margin_combo, FALSE);
+    gtk_widget_set_halign(margin_combo, GTK_ALIGN_START);
+    gtk_widget_set_tooltip_text(margin_combo, "Left Margin");
+    GtkWidget *combo_entry=gtk_bin_get_child(GTK_BIN(margin_combo));
     gtk_widget_set_hexpand(combo_entry, FALSE);
     gtk_entry_set_width_chars(GTK_ENTRY(combo_entry), 3);
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "1", "0");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "2", "10");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "3", "20");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "4", "30");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "5", "40");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "6", "50");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(MarginCombo), "7", "60");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(MarginCombo), 0);
-    g_signal_connect(MarginCombo, "changed", G_CALLBACK(change_margin), textview);
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "1", "0");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "2", "10");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "3", "20");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "4", "30");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "5", "40");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "6", "50");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(margin_combo), "7", "60");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(margin_combo), 0);
+    g_signal_connect(margin_combo, "changed", G_CALLBACK(change_margin), textview);
 
     /*
       Put this in a fixed container so they don't expand in the grid.
@@ -403,70 +410,70 @@ int main(int argc, char *argv[])
       Doesn't seem to be a problem in GTK3.10.
     */
     GtkWidget *fixed_margin_combo=gtk_fixed_new();
-    gtk_fixed_put(GTK_FIXED(fixed_margin_combo), MarginCombo, 10, 10);
+    gtk_fixed_put(GTK_FIXED(fixed_margin_combo), margin_combo, 10, 10);
 
-    grid1=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid1), PlateParametersLabel, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateNumberLabel, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateSizeLabel, 0, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateStatsLabel, 0, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), ControlCheck, 0, 6, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlatePosControlLabel, 0, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateNegControlLabel, 0, 8, 1, 1);
+    GtkWidget *grid1=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid1), plate_parameters_label, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_number_label, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_size_label, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_stats_label, 0, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), control_check, 0, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_pos_control_label, 0, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_neg_control_label, 0, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), fixed_plate_number_entry, 1, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), fixed_plate_size_entry, 1, 4, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), fixed_plate_stats_entry, 1, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlatePosControlEntry, 1, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), PlateNegControlEntry, 1, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_pos_control_entry, 1, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), plate_neg_control_entry, 1, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), button, 0, 9, 2, 1);
     gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid1), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid1), 10);
 
-    grid2=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid2), TextLabel, 0, 0, 4, 1);
+    GtkWidget *grid2=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid2), text_label, 0, 0, 4, 1);
     gtk_grid_attach(GTK_GRID(grid2), scrolled_win, 0, 1, 4, 7);
     gtk_grid_attach(GTK_GRID(grid2), textbutton, 0, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), ClearFormat, 1, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), FontChooser, 2, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), clear_format, 1, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), font_chooser, 2, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), fixed_margin_combo, 5, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), SelectionButton, 5, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), UnderlineButton, 5, 6, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), GlobalButton, 5, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), selection_button, 5, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), underline_button, 5, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), global_button, 5, 7, 1, 1);
     gtk_grid_set_column_homogeneous(GTK_GRID(grid2), FALSE);
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid2), 10);
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 10);
 
-    pane=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    GtkWidget *pane=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_add1(GTK_PANED(pane), grid1);
     gtk_paned_add2(GTK_PANED(pane), grid2);
     gtk_widget_set_name(pane, "pane");
 
-    grid3=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid3), MenuBar, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), RaptorFeet, 0, 1, 8, 1);
+    GtkWidget *grid3=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid3), menu_bar, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), raptor_feet, 0, 1, 8, 1);
     gtk_grid_attach(GTK_GRID(grid3), pane, 0, 2, 8, 7);
      
     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(distributions_dialog), NULL);
     g_signal_connect(G_OBJECT(textbutton), "clicked", G_CALLBACK(text_button_clicked), (gpointer) textview);
-    g_signal_connect(G_OBJECT(ClearFormat), "clicked", G_CALLBACK(clear_format_event), textview);
+    g_signal_connect(G_OBJECT(clear_format), "clicked", G_CALLBACK(clear_format_event), textview);
 
     //Attempt to break out of a focus event without runtime errors.
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), PlateNumberEntry);
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), PlateSizeEntry);
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), PlateStatsEntry);
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), PlatePosControlEntry);
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), PlateNegControlEntry);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), plate_number_entry);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), plate_size_entry);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), plate_stats_entry);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), plate_pos_control_entry);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), plate_neg_control_entry);
 
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy_event), NULL); 
  
      //connect_after to try to avoid a run-time error when moving from the entry fields to a dialog.
-    g_signal_connect_after(G_OBJECT(PlateNumberEntry), "focus_out_event", G_CALLBACK(entry_field_changed), textview);
-    g_signal_connect_after(G_OBJECT(PlateSizeEntry), "focus_out_event", G_CALLBACK(entry_field_changed), textview);
-    g_signal_connect_after(G_OBJECT(PlateStatsEntry), "focus_out_event", G_CALLBACK(entry_field_changed), textview); 
-    g_signal_connect_after(G_OBJECT(PlatePosControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);
-    g_signal_connect(G_OBJECT(PlateNegControlEntry), "focus_out_event", G_CALLBACK(control_changed), textview);  
+    g_signal_connect_after(G_OBJECT(plate_number_entry), "focus_out_event", G_CALLBACK(entry_field_changed), textview);
+    g_signal_connect_after(G_OBJECT(plate_size_entry), "focus_out_event", G_CALLBACK(entry_field_changed), textview);
+    g_signal_connect_after(G_OBJECT(plate_stats_entry), "focus_out_event", G_CALLBACK(entry_field_changed), textview); 
+    g_signal_connect_after(G_OBJECT(plate_pos_control_entry), "focus_out_event", G_CALLBACK(control_changed), textview);
+    g_signal_connect(G_OBJECT(plate_neg_control_entry), "focus_out_event", G_CALLBACK(control_changed), textview);  
     
     gtk_container_add(GTK_CONTAINER(window), grid3);
 
@@ -489,7 +496,11 @@ int main(int argc, char *argv[])
     GdkScreen *screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
-    if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    if(css_error!=NULL) 
+      {
+        g_print("CSS loader error %s\n", css_error->message);
+        g_error_free(css_error);
+      }
     if(css_string!=NULL) g_free(css_string);
     g_object_unref(provider);
      
@@ -659,7 +670,7 @@ static void distributions_dialog(GtkButton *button, gpointer data)
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *entry1, *entry2, *entry3, *entry4, *entry5, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Get Test Data", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Get Test Data", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -773,7 +784,7 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Descriptive Statistics", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Descriptive Statistics", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -833,7 +844,7 @@ static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Normality Test", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Normality Test", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -898,7 +909,7 @@ static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textvie
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -981,7 +992,7 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *check_button1, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("One-Way ANOVA", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("One-Way ANOVA", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1070,7 +1081,7 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area, *dunnett_button;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Comparison with Control", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Comparison with Control", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1218,7 +1229,7 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
     GtkWidget *dialog2, *grid, *label1, *label2, *label3, *entry1, *entry2, *content_area, *action_area;
     int result;
 
-    dialog2=gtk_dialog_new_with_buttons("Dunnett's Integration Parameters", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog2=gtk_dialog_new_with_buttons("Dunnett's Integration Parameters", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog2), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog2), 20);
 
@@ -1292,7 +1303,7 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     int iRadioButton=1;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 500);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
@@ -1434,7 +1445,7 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *p_function, *progress, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Permutation Testing", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Permutation Testing", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1628,7 +1639,7 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Calculate Z-factor", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Calculate Z-factor", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1727,7 +1738,7 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *entry1, *entry2, *entry3, *check_button1, *check_button2, *check_button3, *check_button4, *check_button5, *check_button6, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Contingency Data", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Contingency Data", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1856,7 +1867,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
     
     g_print("Send Data from Database to Graph\n");
 
-    dialog=gtk_dialog_new_with_buttons("Scatter Plot", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Scatter Plot", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -1939,7 +1950,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
     
     g_print("Send Data from Database to Graph\n");
 
-    dialog=gtk_dialog_new_with_buttons("Error Plot", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Error Plot", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -2060,7 +2071,7 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
     
     g_print("Send Data from Database to Graph\n");
 
-    dialog=gtk_dialog_new_with_buttons("Box Plot", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Box Plot", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -2156,6 +2167,7 @@ static void about_dialog(GtkWidget *menu, GtkWidget *window)
     const gchar *authors[]={"C. Eric Cashon", "Including the fine art.", "Check the references file\n for more author details.", NULL};
 
     GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), pMainWindow);
     gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Ordered Set VelociRaptor");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
@@ -2691,7 +2703,7 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
    
     g_print("Heatmap Text\n");
 
-    dialog=gtk_dialog_new_with_buttons("Heatmap Platemap", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Heatmap Platemap", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -2815,7 +2827,7 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
 
     g_print("RiseFall Text\n");
 
-    dialog=gtk_dialog_new_with_buttons("RiseFall Platemap", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("RiseFall Platemap", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3040,7 +3052,7 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
     
     g_print("Send Plate Data from Database to HTML\n");
 
-    dialog=gtk_dialog_new_with_buttons("Heatmap Platemap HTML", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Heatmap Platemap HTML", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3154,7 +3166,7 @@ static void html_table_dialog(GtkButton *button, gpointer p)
     
     g_print("Send Tablular Data from Database to HTML\n");
 
-    dialog=gtk_dialog_new_with_buttons("Tabular Data to HTML", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Tabular Data to HTML", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 450);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
@@ -3324,7 +3336,7 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Send Text To Database", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Send Text To Database", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3374,7 +3386,7 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
     GtkWidget *dialog, *grid, *label0, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *pick_entry1, *pick_entry2, *pick_entry3, *pick_entry4, *value_entry1, *value_entry2, *value_entry3, *value_entry4, *check_button1, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Build Auxiliary Table", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Build Auxiliary Table", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
      
@@ -3814,7 +3826,7 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
      GtkWidget *dialog, *grid, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Build Combinations Table", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Build Combinations Table", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3890,7 +3902,7 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
     GtkWidget *dialog, *grid, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
     int result;
 
-    dialog=gtk_dialog_new_with_buttons("Build Permutations Table", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Build Permutations Table", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -3948,7 +3960,7 @@ static void format_text_dialog(GtkButton *button, gpointer data)
     
     g_print("Format Text\n");
 
-    dialog=gtk_dialog_new_with_buttons("Format Platemap", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Format Platemap", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -4080,7 +4092,7 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
     int rows=0;
     int columns=0;
 
-    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Plate Map", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -4135,7 +4147,7 @@ static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWid
     int columns=0;
     int digits=0;
 
-    dialog=gtk_dialog_new_with_buttons("Plate Map", NULL, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    dialog=gtk_dialog_new_with_buttons("Plate Map", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
     gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
 
@@ -4355,6 +4367,7 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
           }
 
        dialog=gtk_dialog_new();
+       gtk_window_set_transient_for(GTK_WINDOW(dialog), pMainWindow);
        gtk_window_set_title(GTK_WINDOW(dialog), "Plate Data");
 
        content_area=gtk_dialog_get_content_area (GTK_DIALOG(dialog));
@@ -4448,7 +4461,8 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
      }
    else
      {
-       dialog2 = gtk_dialog_new();
+       dialog2=gtk_dialog_new();
+       gtk_window_set_transient_for(GTK_WINDOW(dialog2), pMainWindow);
        gtk_window_set_title(GTK_WINDOW(dialog2), "Percent");
 
        content_area2 = gtk_dialog_get_content_area (GTK_DIALOG (dialog2));

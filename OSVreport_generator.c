@@ -1,7 +1,9 @@
 
 /*
+    This program was built for looking at microtiter assay plate data. It draws the plate layout with
+options to heatmap, add standard plate labels along with a few other things. 
 
-    Re-write the report_generator.py program in C. A good comparison with Python, Cython and C.
+    A re-write of the report_generator.py program in C. A good comparison with Python, Cython and C.
 The C program is faster for doing the scrolling and redraws. Also, the binary is smaller than what
 Cython produces.
     The order of some of the functions is different between the Python and C versions. The C version
@@ -10,8 +12,8 @@ The C version also reuses the data for scrolling and the Python version rebuilds
 the comparison between the two programs isn't an equivalent comparison. Some things got switched 
 around to try to improve the performance of the re-draws in the C version. A few things have also been
 added to the C version.
-
-    GTK 3.10 on Ubuntu 14.04.
+    
+    GTK 3.18 on Ubuntu 16.04.
  
     gcc -Wall -O2 OSVreport_generator.c -o OSVreport_generator -I/usr/include/json-glib-1.0 `pkg-config --cflags --libs gtk+-3.0` -ljson-glib-1.0 -lsqlite3 -lm
 
@@ -425,11 +427,8 @@ int main(int argc, char *argv[])
     gint minor_version=gtk_get_minor_version();
     gchar *css_string=NULL;
 
-    /*
-    GTK CSS changed in 3.20. The CSS for after 3.20 may need to be modified to have it work.
-    The CSS has been check on GTK 3.10 and 3.18.
-    */
-    if(minor_version>20)
+    //GTK CSS changed in 3.18. The CSS for after 3.18 may need to be modified to have it work.
+    if(minor_version>18)
       {
         css_string=g_strdup("window, notebook {background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));} button {background: rgba(220,220,220,0.5);}");
       }
@@ -510,6 +509,7 @@ static void clear_tags(GtkWidget *widget, gpointer data)
 static void about_dialog(GtkWidget *widget, gpointer data)
   {
     GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
     gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "OSV Report Generator");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");

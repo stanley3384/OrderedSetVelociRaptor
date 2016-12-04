@@ -2,11 +2,11 @@
 /*
    This program only allows SELECT statements but could easily be changed for INSERT, DELETE and UPDATE
 statements. It compiles along with the VelociRaptor program using make or can be compiled by itself. A 
-limit isn't enforced by the code but by a limit with the sql statement. 
+record limit isn't enforced by the code but by a limit with the sql statement. 
 
    gcc -Wall -O2 simple_sqlite_viewer.c -o simple_sqlite_viewer `pkg-config --cflags --libs gtk+-3.0` -lsqlite3
 
-   With: Ubuntu14.04 with GTK3.10
+   With: Ubuntu16.04 with GTK3.18
 
    C. Eric Cashon
 */
@@ -122,10 +122,7 @@ int main(int argc, char *argv[])
     gint minor_version=gtk_get_minor_version();
     gchar *css_string=NULL;
 
-    /*
-    GTK CSS changed in 3.20. The CSS for after 3.20 may need to be modified to have it work.
-    The CSS has been check on GTK 3.10 and 3.18.
-    */
+    //GTK CSS changed in 3.20. The CSS for after 3.18 may need to be modified to have it work.
     if(minor_version>20)
       {
         css_string=g_strdup("button, dialog {background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(25,0,200,0.5)));} treeview {background:rgba(160,160,160,0.3);} treeview#r_tree row:nth-child(even){background-color:rgba(160,160,160,0.6);} label {background:rgba(0,0,0,0.0);}");
@@ -405,6 +402,7 @@ static void error_message(const gchar *string, gpointer data)
 static void about_dialog(GtkWidget *widget, gpointer data)
   {
     GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
     gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Simple SQLite Viewer");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
