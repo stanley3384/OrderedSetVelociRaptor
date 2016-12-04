@@ -1,6 +1,6 @@
 
 
---A circuit breaker switch widget. It has four simple states that it can be in. Easy to add more states or change things around as needed.
+--A circuit breaker switch widget with four states. Watch the electrons flow. Easy to change colors and things around. The electrons might not be needed.
 
 
 Circuit Breaker Switches
