@@ -20,7 +20,7 @@ struct _CircuitBreakerSwitchPrivate
   guint breaker_direction;
   gint breaker_state;
   //Variables for starting and using animation.
-  gdouble electrons[100];
+  gdouble *electrons;
   guint timer_id;
   GRand *rand;
   guint width;
@@ -153,6 +153,7 @@ static void circuit_breaker_switch_init(CircuitBreakerSwitch *da)
   gint i=0;
   gdouble coord=0; 
   priv->rand=g_rand_new();
+  priv->electrons=g_malloc(100*sizeof(double));
   for(i=0;i<100;i++)
     {
       coord=g_rand_double(priv->rand);
@@ -523,6 +524,8 @@ static void circuit_breaker_switch_finalize(GObject *object)
 {
   CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(object);
   g_rand_free(priv->rand);
+  g_free(priv->electrons);
+  if(priv->timer_id!=0) g_source_remove(priv->timer_id);
   G_OBJECT_CLASS(circuit_breaker_switch_parent_class)->finalize(object);
 }
 
