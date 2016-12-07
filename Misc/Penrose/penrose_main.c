@@ -31,12 +31,18 @@ int main(int argc, char *argv[])
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-  GtkWidget *penrose_triangle_drawing=penrose_triangle_drawing_new();
-  gtk_widget_set_hexpand(penrose_triangle_drawing, TRUE);
-  gtk_widget_set_vexpand(penrose_triangle_drawing, TRUE);
+  GtkWidget *penrose1=penrose_triangle_drawing_new();
+  gtk_widget_set_hexpand(penrose1, TRUE);
+  gtk_widget_set_vexpand(penrose1, TRUE);
+
+  GtkWidget *penrose2=penrose_triangle_drawing_new();
+  gtk_widget_set_hexpand(penrose2, TRUE);
+  gtk_widget_set_vexpand(penrose2, TRUE);
+  gtk_widget_set_name(penrose2, "penrose2");
 
   GtkWidget *grid=gtk_grid_new();
-  gtk_grid_attach(GTK_GRID(grid), penrose_triangle_drawing, 0, 0, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), penrose1, 0, 0, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), penrose2, 0, 1, 1, 1);
 
   gtk_container_add(GTK_CONTAINER(window), grid);
   gtk_widget_show_all(window);

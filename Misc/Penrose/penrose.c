@@ -8,7 +8,7 @@
 */
 
 #include<gtk/gtk.h>
-#include "drawing2.h"
+#include "penrose.h"
 
 #define PENROSE_TRIANGLE_DRAWING_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), PENROSE_TRIANGLE_DRAWING_TYPE, PenroseTriangleDrawingPrivate))
 
@@ -63,14 +63,14 @@ static void penrose_triangle_drawing_get_property(GObject *object, guint prop_id
 static void penrose_triangle_drawing_init(PenroseTriangleDrawing *da)
 {
   //Set the name for CSS
-  gtk_widget_set_name(GTK_WIDGET(da), "drawing2");
+  gtk_widget_set_name(GTK_WIDGET(da), "penrose1");
 
   //Get the CSS colors.
   GError *css_error=NULL;
   GtkCssProvider *provider=gtk_css_provider_new();
   GtkStyleContext *context=gtk_widget_get_style_context(GTK_WIDGET(da));
   gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-  gtk_css_provider_load_from_path(provider, "drawing2.css", &css_error);
+  gtk_css_provider_load_from_path(provider, "penrose.css", &css_error);
   if(css_error!=NULL)
     {
       g_print("CSS loader error %s\n", css_error->message);
