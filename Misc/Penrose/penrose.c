@@ -62,9 +62,6 @@ static void penrose_triangle_drawing_get_property(GObject *object, guint prop_id
 }
 static void penrose_triangle_drawing_init(PenroseTriangleDrawing *da)
 {
-  //Set the name for CSS
-  gtk_widget_set_name(GTK_WIDGET(da), "penrose1");
-
   //Get the CSS colors.
   GError *css_error=NULL;
   GtkCssProvider *provider=gtk_css_provider_new();
@@ -76,8 +73,7 @@ static void penrose_triangle_drawing_init(PenroseTriangleDrawing *da)
       g_print("CSS loader error %s\n", css_error->message);
       g_error_free(css_error);
     }
-  g_object_unref(provider);
-
+  g_object_unref(provider);  
 }
 GtkWidget* penrose_triangle_drawing_new(void)
 {
