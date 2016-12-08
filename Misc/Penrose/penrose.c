@@ -1,7 +1,7 @@
 
 /*
 
-    For use with penrose_main.c. Look in penrose_main2.c for more information.
+    For use with penrose_main.c. Look in penrose_main.c for more information.
 
     C. Eric Cashon
 
@@ -41,6 +41,7 @@ static void penrose_triangle_drawing_class_init(PenroseTriangleDrawingClass *kla
   gobject_class->finalize=penrose_triangle_drawing_finalize; 
  
 }
+//For if someone tries to set a property with g_object_set().
 static void penrose_triangle_drawing_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
 {
   //No properties to set.

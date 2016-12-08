@@ -7,7 +7,7 @@ custom widgets which is very good.
     https://developer.gnome.org/gtkmm-tutorial/stable/sec-custom-widgets.html.en
 
     Since the GTK drawing area is a widget, with the functions that you need to override when 
-deriving from a widget already taken care of, it makes the code simpler.
+deriving from a widget already taken care of, it makes the code simpler to test the CSS.
  
     gcc -Wall penrose.c penrose_main.c -o penrose `pkg-config gtk+-3.0 --cflags --libs`
 
