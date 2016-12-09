@@ -190,55 +190,64 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(label0, TRUE);
     gtk_widget_set_halign(label0, GTK_ALIGN_CENTER);
 
-    GtkWidget *label1=gtk_label_new("Rows");
+    GtkWidget *label1=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='black'>Rows</span>");
     GtkWidget *entry1=gtk_entry_new();
     gtk_widget_set_halign(entry1, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry1), 3);
     gtk_entry_set_text(GTK_ENTRY(entry1), "10");
 
-    GtkWidget *label2=gtk_label_new("Columns");
+    GtkWidget *label2=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label2), "<span foreground='black'>Columns</span>");
     GtkWidget *entry2=gtk_entry_new();
     gtk_widget_set_halign(entry2, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry2), 3);
     gtk_entry_set_text(GTK_ENTRY(entry2), "5");
     
-    GtkWidget *label3=gtk_label_new("Shift Right");
+    GtkWidget *label3=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label3), "<span foreground='black'>Shift Right</span>");
     GtkWidget *entry3=gtk_entry_new();
     gtk_widget_set_halign(entry3, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry3), 3);
     gtk_entry_set_text(GTK_ENTRY(entry3), "10");
 
-    GtkWidget *label4=gtk_label_new("Shift Down");
+    GtkWidget *label4=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label4), "<span foreground='black'>Shift Down</span>");
     GtkWidget *entry4=gtk_entry_new();
     gtk_widget_set_halign(entry4, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry4), 3);
     gtk_entry_set_text(GTK_ENTRY(entry4), "2");
 
-    GtkWidget *label5=gtk_label_new("Column Width");
+    GtkWidget *label5=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label5), "<span foreground='black'>Column Width</span>");
     GtkWidget *entry5=gtk_entry_new();
     gtk_widget_set_halign(entry5, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry5), 3);
     gtk_entry_set_text(GTK_ENTRY(entry5), "10");
 
     GtkWidget *label6=gtk_label_new("Pad Number");
+    gtk_label_set_markup(GTK_LABEL(label6), "<span foreground='black'>Pad Number</span>");
     GtkWidget *entry6=gtk_entry_new();
     gtk_widget_set_halign(entry6, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry6), 3);
     gtk_entry_set_text(GTK_ENTRY(entry6), "1");
 
-    GtkWidget *label7=gtk_label_new("Pad Column");
+    GtkWidget *label7=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label7), "<span foreground='black'>Pad Column</span>");
     GtkWidget *entry7=gtk_entry_new();
     gtk_widget_set_halign(entry7, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry7), 3);
     gtk_entry_set_text(GTK_ENTRY(entry7), "1");
 
-    GtkWidget *label8=gtk_label_new("Tables");
+    GtkWidget *label8=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label8), "<span foreground='black'>Tables</span>");
     GtkWidget *entry8=gtk_entry_new();
     gtk_widget_set_halign(entry8, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry8), 3);
     gtk_entry_set_text(GTK_ENTRY(entry8), "5");
 
-    GtkWidget *label9=gtk_label_new("Table Label");
+    GtkWidget *label9=gtk_label_new("");
+    gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='black'>Table Label</span>");
     GtkWidget *entry9=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry9), "Plate ");
 
@@ -247,12 +256,14 @@ int main(int argc, char *argv[])
     gtk_widget_set_sensitive(entry10, FALSE);
 
     GtkWidget *label11=gtk_label_new("Round Floats");
+    gtk_label_set_markup(GTK_LABEL(label11), "<span foreground='black'>Round Floats</span>");
     GtkWidget *entry11=gtk_entry_new();
     gtk_widget_set_halign(entry11, GTK_ALIGN_START);
     gtk_entry_set_width_chars(GTK_ENTRY(entry11), 3);
     gtk_entry_set_text(GTK_ENTRY(entry11), "3");
 
     GtkWidget *label12=gtk_label_new("Data Source");
+    gtk_label_set_markup(GTK_LABEL(label12), "<span foreground='black'>Data Source</span>");
 
     GtkWidget *check1=gtk_check_button_new_with_label("Add Table Label");
 
@@ -274,7 +285,7 @@ int main(int argc, char *argv[])
     GtkWidget *button5=gtk_button_new_with_label("Set Labels");
     g_signal_connect(entry1, "focus_in_event", G_CALLBACK(save_current_row_value), button5);
     row_clear_block=g_signal_connect(entry1, "focus_out_event", G_CALLBACK(clear_row_labels), button5);
-    g_signal_connect(entry2, "focus_in_event", G_CALLBACK(save_current_column_value), button5);
+    g_signal_connect(entry2, "focus_in_event", G_CALLBACK(save_current_column_value), label2);
     column_clear_block=g_signal_connect(entry2, "focus_out_event", G_CALLBACK(clear_column_labels), button5);
 
     GtkWidget *button6=gtk_button_new_with_label("Set Table Labels");
@@ -427,8 +438,8 @@ int main(int argc, char *argv[])
     gint minor_version=gtk_get_minor_version();
     gchar *css_string=NULL;
 
-    //GTK CSS changed in 3.18. The CSS for after 3.18 may need to be modified to have it work.
-    if(minor_version>18)
+    //GTK CSS changed in 3.20. The CSS for after 3.18 may need to be modified to have it work.
+    if(minor_version>20)
       {
         css_string=g_strdup("window, notebook {background-image: -gtk-gradient (linear, left center, right center, color-stop(0.0,rgba(0,255,0,0.5)), color-stop(0.5,rgba(180,180,180,0.5)), color-stop(1.0,rgba(255,0,255,0.5)));} button {background: rgba(220,220,220,0.5);}");
       }
@@ -442,7 +453,11 @@ int main(int argc, char *argv[])
     GdkScreen *screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
-    if(css_error!=NULL) g_print("CSS loader error %s\n", css_error->message);
+    if(css_error!=NULL)
+      {
+        g_print("CSS loader error %s\n", css_error->message);
+        g_error_free(css_error);
+      }
     if(css_string!=NULL) g_free(css_string);
     g_object_unref(provider);
 
@@ -769,6 +784,7 @@ static gboolean clear_row_labels(GtkWidget *widget, GdkEvent *event, gpointer da
 static gboolean save_current_column_value(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     gint r_value=atoi(gtk_entry_get_text(GTK_ENTRY(widget)));
+    gtk_label_set_markup(GTK_LABEL(data), "<span foreground='black'>Columns</span>");
     if(r_value>0&&r_value<=50) g_column_value=r_value;
     else g_print("Columns %s, Range 0<Columns<=50\n", gtk_entry_get_text(GTK_ENTRY(widget)));         
     return FALSE;  
