@@ -10,6 +10,7 @@ drawing doesn't look as good as the pngcairo terminal but it is all done in memo
     http://www.bersch.net/gnuplot-doc/complete-list-of-terminals.html
 
     Tested with Ubuntu14.04 32bit and GTK3.10
+    This no longer works on Ubuntu16.04 and GTK3.18
 
     C. Eric Cashon
 

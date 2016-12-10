@@ -10,6 +10,7 @@ terminal doesn't have a window parameter so save the drawing to a file and then 
     http://www.bersch.net/gnuplot-doc/complete-list-of-terminals.html
 
     Tested with Ubuntu14.04 32bit and GTK3.10
+    Also works with Ubuntu16.04 and GTK3.18
 
     C. Eric Cashon
 
@@ -18,8 +19,8 @@ terminal doesn't have a window parameter so save the drawing to a file and then 
 #include<gtk/gtk.h>
 #include<stdio.h>
 
-//Test directory the program is in.
-static gchar *test_dir={"/home/owner/eric/Rectangle5/TEST.png"};
+//Test directory the program is in. Need a png that gnuplot can write to.
+static gchar *test_dir={"/home/eric/Velo/Misc/Pipes/TEST.png"};
 static GRand *rand=NULL;
 
 static gboolean plot_data(gpointer image)
