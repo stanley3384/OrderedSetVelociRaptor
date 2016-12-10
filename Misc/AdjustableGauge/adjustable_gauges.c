@@ -1,7 +1,8 @@
 
 /*
 
-    Another test program for the adjustable gauge widget. Test four gauges with some numbers.
+    Another test program for the adjustable gauge widget. Add the critter_icons.c code for
+the critter drawings and to test some speeds.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauges.c -o gauges `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -19,13 +20,30 @@ static gdouble needle1=0.0;
 static gdouble needle2=0.0;
 static gdouble needle3=20.0;
 static gdouble needle4=0.0;
+static gdouble needle_speed=0.5;
 //The top of each scale.
 static const gdouble top1=100.0;
 static const gdouble top2=200.0;
 static const gdouble top3=200.0;
 static const gdouble top4=500.0;
 
+//For critter icon drawing 1,2,3 or 4.
+static gint drawing=1;
+//Change color of background, line drawing and selection rectangle.
+static gdouble bgc[4]={0.0, 0.0, 0.0, 1.0};
+static gdouble fgc[4]={0.0, 1.0, 1.0, 1.0};
+static gdouble selection[4]={1.0, 1.0, 1.0, 1.0};
+
+
 static gboolean time_draw(GtkWidget *widgets[]);
+static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *data);
+static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data);
+static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data);
+static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *data);
+static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data);
+static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data);
+static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data);
+static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data);
 
 int main(int argc, char **argv)
   {      
@@ -36,8 +54,7 @@ int main(int argc, char **argv)
     gtk_window_set_default_size(GTK_WINDOW(window), 600, 600);
     gtk_window_set_title(GTK_WINDOW(window), "Gauges");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-   
-    //Default gauge.
+       
     GtkWidget *gauge1=adjustable_gauge_new();
     adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge1), SPEEDOMETER_GAUGE);
     gtk_widget_set_name(gauge1, "g1");
@@ -68,18 +85,57 @@ int main(int argc, char **argv)
     adjustable_gauge_set_scale_bottom(ADJUSTABLE_GAUGE(gauge4), 0.0);
     adjustable_gauge_set_scale_top(ADJUSTABLE_GAUGE(gauge4), top4);
     adjustable_gauge_set_first_cutoff(ADJUSTABLE_GAUGE(gauge4), 450.0);
-    adjustable_gauge_set_second_cutoff(ADJUSTABLE_GAUGE(gauge4), 480.0); 
+    adjustable_gauge_set_second_cutoff(ADJUSTABLE_GAUGE(gauge4), 480.0);
+
+    //The lower panel of drawing area critters.
+    GtkWidget *label=gtk_label_new("You can't handle turtle speed!");
+    
+    GtkWidget *turtle=gtk_drawing_area_new();
+    gtk_widget_set_hexpand(turtle, TRUE);
+    gtk_widget_set_vexpand(turtle, TRUE);
+    g_signal_connect(turtle, "draw", G_CALLBACK(draw_turtle), NULL);
+    gtk_widget_set_events(turtle, GDK_BUTTON_PRESS_MASK);
+
+    GtkWidget *lizard=gtk_drawing_area_new();
+    gtk_widget_set_hexpand(lizard, TRUE);
+    gtk_widget_set_vexpand(lizard, TRUE);
+    g_signal_connect(lizard, "draw", G_CALLBACK(draw_lizard), NULL);
+    gtk_widget_set_events(lizard, GDK_BUTTON_PRESS_MASK);
+  
+    GtkWidget *rabbit=gtk_drawing_area_new();
+    gtk_widget_set_hexpand(rabbit, TRUE);
+    gtk_widget_set_vexpand(rabbit, TRUE);
+    g_signal_connect(rabbit, "draw", G_CALLBACK(draw_rabbit), NULL);
+    gtk_widget_set_events(rabbit, GDK_BUTTON_PRESS_MASK);
+
+    GtkWidget *cheetah=gtk_drawing_area_new();
+    gtk_widget_set_hexpand(cheetah, TRUE);
+    gtk_widget_set_vexpand(cheetah, TRUE);
+    g_signal_connect(cheetah, "draw", G_CALLBACK(draw_cheetah), NULL);
+    gtk_widget_set_events(cheetah, GDK_BUTTON_PRESS_MASK);
+
+    gpointer critters[]={label, turtle, lizard, rabbit, cheetah};
+    g_signal_connect(turtle, "button_press_event", G_CALLBACK(click_drawing1), critters);
+    g_signal_connect(lizard, "button_press_event", G_CALLBACK(click_drawing2), critters);
+    g_signal_connect(rabbit, "button_press_event", G_CALLBACK(click_drawing3), critters);
+    g_signal_connect(cheetah, "button_press_event", G_CALLBACK(click_drawing4), critters); 
     
     GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), gauge1, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), gauge2, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), gauge3, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), gauge4, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), gauge1, 0, 0, 2, 2);
+    gtk_grid_attach(GTK_GRID(grid), gauge2, 2, 0, 2, 2);
+    gtk_grid_attach(GTK_GRID(grid), gauge3, 0, 2, 2, 2);
+    gtk_grid_attach(GTK_GRID(grid), gauge4, 2, 2, 2, 2);
+
+    gtk_grid_attach(GTK_GRID(grid), turtle, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), lizard, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), rabbit, 2, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), cheetah, 3, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label, 0, 5, 4, 1);
     
     gtk_container_add(GTK_CONTAINER(window), grid);
   
-    GtkWidget *widgets[]={gauge1, gauge2, gauge3, gauge4};    
-    g_timeout_add(100, (GSourceFunc)time_draw, widgets);
+    GtkWidget *gauges[]={gauge1, gauge2, gauge3, gauge4};    
+    g_timeout_add(100, (GSourceFunc)time_draw, gauges);
 
     gtk_widget_show_all(window);                  
     gtk_main();
@@ -90,10 +146,10 @@ static gboolean time_draw(GtkWidget *widgets[])
   {
     gint i=0;
 
-    needle1++;
-    needle2++;
-    needle3++;
-    needle4++;
+    needle1=needle1+needle_speed;
+    needle2=needle2+needle_speed;
+    needle3=needle3+needle_speed;
+    needle4=needle4+needle_speed;
     for(i=0;i<4;i++)
       {
         switch(i)
@@ -150,4 +206,342 @@ static gboolean time_draw(GtkWidget *widgets[])
     
     return TRUE;
   }
+//The critter drawings and clicks.
+static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *data)
+{
+  drawing=1;
+  needle_speed=0.5;
+
+  //Draw the top active critter.
+  gtk_label_set_text(GTK_LABEL(data[0]), "You can't handle the turtle speed!");
+
+  //Redraw panel critters.
+  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+
+  return FALSE;
+}
+static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data)
+{
+  drawing=2;
+  needle_speed=1.5;
+
+  gtk_label_set_text(GTK_LABEL(data[0]), "This is a water dragon lizard, not an alien, OK.");
+
+  //Redraw panel critters.
+  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+
+  return FALSE;
+}
+static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data)
+{
+  drawing=3;
+  needle_speed=2.5;
+
+  gtk_label_set_text(GTK_LABEL(data[0]), "This is no turtle!");
+
+  //Redraw panel critters.
+  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+
+  return FALSE;
+}
+static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *data)
+{
+  drawing=4;
+  needle_speed=4.0;
+
+  gtk_label_set_text(GTK_LABEL(data[0]), "Cheetah speed. Hang on!");
+
+  //Redraw panel critters.
+  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+
+  return FALSE;
+}
+static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data)
+{
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
+  cairo_paint(cr);
+
+  if(drawing==1&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+  cairo_set_line_width(cr, 7.0);
+  cairo_rectangle(cr, 0.0, 0.0, width, height);
+  cairo_stroke(cr);
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+
+  //Move the turtle a little.
+  cairo_translate(cr, 0.7*width/16.0, 2.0*height/16.0);
+ 
+  //Scale drawing line by 400x400 drawing.
+  cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
+  //Top Shell
+  cairo_move_to(cr, 12.0*width/16.0, 9.0*height/16.0);
+  cairo_curve_to(cr, 6.5*width/16.0, 1.0*height/16.0, 6.5*width/16.0, 1.0*height/16.0, 1.0*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Top tail
+  cairo_line_to(cr, 0.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //End of tail to back foot. 
+  cairo_curve_to(cr, 3.0*width/16.0, 9.5*height/16.0, 3.0*width/16.0, 9.5*height/16.0, 3.0*width/16.0, 11.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Bottom of back foot.
+  cairo_line_to(cr, 4.0*width/16.0, 11.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Bottom of shell
+  cairo_curve_to(cr, 2.0*width/16.0, 9.5*height/16.0, 10.5*width/16.0, 9.5*height/16.0, 10.0*width/16.0, 11.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //The bottom of front foot
+  cairo_line_to(cr, 11.0*width/16.0, 11.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Front foot to bottom of head
+  cairo_curve_to(cr, 10.0*width/16.0, 9.5*height/16.0, 10.5*width/16.0, 9.5*height/16.0, 12.0*width/16.0, 10.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Turtle head back to start.
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
+  cairo_curve_to(cr, 16.0*width/16.0, 10.5*height/16.0, 16.0*width/16.0, 6.0*height/16.0, 12.0*width/16.0, 9.0*height/16.0);
+  cairo_stroke(cr);
+  
+  //The eye. Scale radius based on 400x400 drawing.
+  cairo_arc(cr, 14.0*width/16.0, 8.5*height/16.0, 5.0*(gdouble)height/400.0, 0.0, 2*G_PI);
+  cairo_fill(cr);
+ 
+  return FALSE;
+}
+static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data)
+{
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
+  cairo_paint(cr);
+
+  if(drawing==2&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
+  cairo_set_line_width(cr, 7.0);
+  cairo_rectangle(cr, 0.0, 0.0, width, height);
+  cairo_stroke(cr);
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
+
+  //Move the lizard a little.
+  cairo_translate(cr, 0.6*width/16.0, 1.0*height/16.0); 
+ 
+  //scale line width by height. Original drawing 400x400.
+  cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
+  //Head fin
+  cairo_move_to(cr, 15.0*width/16.0, 2.0*height/16.0);
+  cairo_curve_to(cr, width/2.0, 1.0*height/16.0, width/2.0, 3.0*height/16.0, 12.0*width/16.0, 4.0*height/16.0);
+  cairo_stroke_preserve(cr); 
+  //Back fin
+  cairo_curve_to(cr, 5.0*width/16.0, 4.0*height/16.0, 6.0*width/16.0, 5.0*height/16.0, 8.0*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Tail fin 
+  cairo_curve_to(cr, width/4.0, 5.0*height/16.0, width/4.0, 7.0*height/16.0, 3.0*width/16.0, 8.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Tail top 
+  cairo_curve_to(cr, width/8.0, 9.0*height/16.0, width/8.0, 9.0*height/16.0, 0.0, 10.0*height/16.0);
+  cairo_stroke_preserve(cr); 
+  //Tail bottom
+  cairo_curve_to(cr, width/4.0, 8.0*height/16.0, width/4.0, 8.0*height/16.0, 8.0*width/16.0, 7.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back leg top
+  cairo_curve_to(cr, width/8.0, 12.0*height/16.0, width/8.0, 12.0*height/16.0, 2.0*width/16.0, 12.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Toes
+  cairo_line_to(cr, 3.5*width/16.0, 11.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 2.0*width/16.0, 12.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 3.5*width/16.0, 11.5*height/16.0);
+  cairo_stroke_preserve(cr); 
+  cairo_line_to(cr, 2.0*width/16.0, 13.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Foot to body
+  cairo_curve_to(cr, width/4.0, 11.0*height/16.0, width/4.0, 11.0*height/16.0, 9.0*width/16.0, 7.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Belly
+  cairo_curve_to(cr, 11.0*width/16.0, 7.0*height/16.0, 11.0*width/16.0, 7.0*height/16.0, 12.0*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Hand
+  cairo_line_to(cr, 10.0*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 11.0*width/16.0, 8.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 10.0*width/16.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_line_to(cr, 12.5*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back to the start
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
+  cairo_curve_to(cr, 14.0*width/16.0, 4.0*height/16.0, 14.0*width/16.0, 4.0*height/16.0, 15.0*width/16.0, 2.0*height/16.0);
+  cairo_stroke(cr);
+
+  //The eye. Scale based on 400x400 drawing.
+  cairo_arc(cr, 13.0*width/16.0, 2.5*height/16.0, 5.0*(gdouble)height/400.0, 0.0, 2*G_PI);
+  cairo_fill(cr);
+
+  return FALSE;
+}
+static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data)
+{
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
+  cairo_paint(cr);
+
+  if(drawing==3&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+  cairo_set_line_width(cr, 7.0);
+  cairo_rectangle(cr, 0.0, 0.0, width, height);
+  cairo_stroke(cr);
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+ 
+  //scale line width by height. Original drawing 400x400.
+  cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  //Head
+  cairo_move_to(cr, 15.0*width/16.0, 8.0*height/16.0);
+  cairo_curve_to(cr, 15.0*width/16.0, 7.0*height/16.0, 14.0*width/16.0, 6.0*height/16.0, 12.0*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Ear
+  cairo_curve_to(cr, 10.5*width/16.0, 3.5*height/16.0, 10.0*width/16.0, 4.0*height/16.0, 9.0*width/16.0, 3.0*height/16.0);
+  cairo_stroke_preserve(cr); 
+  cairo_curve_to(cr, 9.0*width/16.0, 3.5*height/16.0, 9.0*width/16.0, 3.5*height/16.0, 9.5*width/16.0, 4.0*height/16.0);
+  cairo_stroke_preserve(cr); 
+  cairo_curve_to(cr, 9.0*width/16.0, 3.5*height/16.0, 9.0*width/16.0, 3.5*height/16.0, 8.0*width/16.0, 3.2*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_curve_to(cr, 9.0*width/16.0, 4.0*height/16.0, 9.5*width/16.0, 6.0*height/16.0, 10.5*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back 
+  cairo_curve_to(cr, 6.0*width/16.0, 6.0*height/16.0, 6.0*width/16.0, 6.0*height/16.0, 3.0*width/16.0, 10.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Tail
+  cairo_curve_to(cr, 2.0*width/16.0, 9.0*height/16.0, 1.5*width/16.0, 10.0*height/16.0, 3.0*width/16.0, 11.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back leg
+  cairo_curve_to(cr, 2.0*width/16.0, 12.0*height/16.0, 1.0*width/16.0, 14.0*height/16.0, 1.5*width/16.0, 14.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_curve_to(cr, 2.0*width/16.0, 15.0*height/16.0, 3.5*width/16.0, 12.0*height/16.0, 3.5*width/16.0, 12.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Thigh
+  cairo_curve_to(cr, 4.0*width/16.0, 13.0*height/16.0, 6.0*width/16.0, 14.0*height/16.0, 6.0*width/16.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Move to the start of drawing
+  cairo_move_to(cr, 15.0*width/16.0, 8.0*height/16.0);
+  cairo_curve_to(cr, 14.0*width/16.0, 10.0*height/16.0, 12.0*width/16.0, 9.0*height/16.0, 12.0*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Line to front feet
+  cairo_line_to(cr, 11.0*width/16.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Front feet
+  cairo_curve_to(cr, 13.0*width/16.0, 11.0*height/16.0, 13.0*width/16.0, 11.0*height/16.0, 10.0*width/16.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Belly
+  cairo_curve_to(cr, 9.0*width/16.0, 10.0*height/16.0, 9.0*width/16.0, 10.0*height/16.0, 6.0*width/16.0, 11.0*height/16.0);
+  cairo_stroke(cr);
+
+  //The eye. Scale based on 400x400 drawing.
+  cairo_arc(cr, 13.0*width/16.0, 7.0*height/16.0, 5.0*(gdouble)height/400.0, 0.0, 2*G_PI);
+  cairo_fill(cr);
+
+  return FALSE;
+}
+static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data)
+{
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]); 
+  cairo_paint(cr);
+
+  if(drawing==4&&!g_strcmp0(gtk_widget_get_name(da), "da")==0)
+    {
+      cairo_set_source_rgba(cr, selection[0], selection[1], selection[2], selection[3]);
+    }
+  else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+  cairo_set_line_width(cr, 7.0);
+  cairo_rectangle(cr, 0.0, 0.0, width, height);
+  cairo_stroke(cr);
+  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
+
+  //Move the cheetah a little.
+  cairo_translate(cr, 0.5*width/16.0, 0.0); 
+ 
+  //scale line width by height. Original drawing 400x400.
+  cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  //Head 
+  cairo_move_to(cr, 14.5*width/16.0, 7.5*height/16.0);
+  cairo_curve_to(cr, 14.75*width/16.0, 7.5*height/16.0, 14.5*width/16.0, 7.0*height/16.0, 14.25*width/16.0, 6.5*height/16.0);
+  cairo_stroke_preserve(cr); 
+  cairo_curve_to(cr, 14.0*width/16.0, 6.25*height/16.0, 13.5*width/16.0, 6.0*height/16.0, 12.5*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr); 
+  //Ear
+  cairo_curve_to(cr, 12.25*width/16.0, 5.5*height/16.0, 12.25*width/16.0, 5.5*height/16.0, 12.0*width/16.0, 6.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back hump
+  cairo_curve_to(cr, 11.5*width/16.0, 7.5*height/16.0, 10.5*width/16.0, 6.0*height/16.0, 10.0*width/16.0, 7.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back
+  cairo_curve_to(cr, 9.0*width/16.0, 8.5*height/16.0, 7.5*width/16.0, 7.5*height/16.0, 6.0*width/16.0, 8.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Tail
+  cairo_curve_to(cr, -1.0*width/16.0, 8.0*height/16.0, -1.0*width/16.0, 9.0*height/16.0, 5.0*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back leg
+  cairo_curve_to(cr, 3.25*width/16.0, 9.5*height/16.0, 4.0*width/16.0, 11.0*height/16.0, 3.0*width/16.0, 12.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_curve_to(cr, 2*width/16.0, 13.0*height/16.0, 2.0*width/16.0, 13.0*height/16.0, 1.5*width/16.0, 13.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back foot
+  cairo_curve_to(cr, 1.50*width/16.0, 14.0*height/16.0, 1.50*width/16.0, 14.0*height/16.0, 2.0*width/16.0, 14.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back leg to stomach
+   cairo_curve_to(cr, 4.75*width/16.0, 10.0*height/16.0, 5.0*width/16.0, 13.0*height/16.0, 7.0*width/16.0, 10.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Belly
+  cairo_curve_to(cr, 9.0*width/16.0, 10.5*height/16.0, 9.0*width/16.0, 10.5*height/16.0, 11.0*width/16.0, 9.5*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Front leg
+  cairo_curve_to(cr, 14.0*width/16.0, 11.0*height/16.0, 14.0*width/16.0, 10.0*height/16.0, 11.5*width/16.0, 9.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Bottom neck
+  cairo_curve_to(cr, 12.0*width/16.0, 8.5*height/16.0, 12.0*width/16.0, 8.5*height/16.0, 12.5*width/16.0, 8.25*height/16.0);
+  cairo_stroke_preserve(cr);
+  cairo_curve_to(cr, 13.0*width/16.0, 8.0*height/16.0, 13.0*width/16.0, 8.0*height/16.0, 14.15*width/16.0, 8.0*height/16.0);
+  cairo_stroke_preserve(cr);
+  //Back to the start
+  cairo_curve_to(cr, 14.5*width/16.0, 7.5*height/16.0, 14.5*width/16.0, 7.5*height/16.0, 14.5*width/16.0, 7.5*height/16.0);
+  cairo_stroke(cr);
+  
+  //The eye. Scale based on 400x400 drawing.
+  cairo_arc(cr, 13.75*width/16.0, 6.75*height/16.0, 5.0*(gdouble)height/400.0, 0.0, 2*G_PI);
+  cairo_fill(cr);
+  
+  return FALSE;
+}
+
 
