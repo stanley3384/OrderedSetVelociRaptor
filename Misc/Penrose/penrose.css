@@ -1,11 +1,15 @@
 
 /*
 
-    For use with penrose_main.c. Test some colors with the widget.
+    For use with penrose_main.c. Test some colors with the widget. This is using GTK3.18 CSS.
+After GTK3.20 the CSS has changed.
 
 */
 
-
+GtkDrawingArea {
+  background-color: rgba(0,255,0,255);
+  color:            rgba(0,0,255,255);
+}
 #penrose2 {
   background-color: rgba(255,0,255,255);
   color:            rgba(255,255,0,255);

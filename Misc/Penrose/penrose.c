@@ -91,6 +91,7 @@ static gboolean penrose_triangle_drawing_draw(GtkWidget *widget, cairo_t *cr)
 
   //Paint background with CSS values.
   GtkStyleContext *context=gtk_widget_get_style_context(GTK_WIDGET(da));
+  //Draw background.
   gtk_render_background(context, cr, 0, 0, width, height);
   //Set drawing color with CSS values.
   GdkRGBA color;

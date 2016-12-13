@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-  //Default drawing. No CSS.
+  //Color with CSS with the parent GtkDrawingArea widget.
   GtkWidget *penrose1=penrose_triangle_drawing_new();
   gtk_widget_set_hexpand(penrose1, TRUE);
   gtk_widget_set_vexpand(penrose1, TRUE);
