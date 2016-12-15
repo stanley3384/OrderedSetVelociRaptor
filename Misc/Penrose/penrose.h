@@ -23,6 +23,13 @@ G_DECLARE_FINAL_TYPE(PenroseTriangleDrawing, penrose_triangle_drawing, PENROSE_T
 
 GtkWidget* penrose_triangle_drawing_new(void);
 
+void penrose_triangle_drawing_set_background(PenroseTriangleDrawing *da, const gchar *background_string);
+void penrose_triangle_drawing_set_foreground(PenroseTriangleDrawing *da, const gchar *foreground_string);
+void penrose_triangle_drawing_set_draw_css(PenroseTriangleDrawing *da, gboolean draw_css);
+const gchar* penrose_triangle_drawing_get_background(PenroseTriangleDrawing *da);
+const gchar* penrose_triangle_drawing_get_foreground(PenroseTriangleDrawing *da);
+gboolean penrose_triangle_drawing_get_draw_css(PenroseTriangleDrawing *da);
+
 G_END_DECLS
 
 #endif 

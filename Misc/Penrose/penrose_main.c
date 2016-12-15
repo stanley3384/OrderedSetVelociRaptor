@@ -2,7 +2,8 @@
 /*
 
     See about setting up CSS with a GTK+ widget. This started from the gtkmm tutorial for 
-custom widgets which is very good.
+custom widgets which is very good. Look at setting background and foreground colors with
+CSS or accessor functions.
 
     https://developer.gnome.org/gtkmm-tutorial/stable/sec-custom-widgets.html.en
 
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(window), "Penrose Triangle Drawing");
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-  gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
+  gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -47,10 +48,23 @@ int main(int argc, char *argv[])
   gtk_widget_set_vexpand(penrose3, TRUE);
   gtk_widget_set_name(penrose3, "penrose3");
 
+  //Set color with accessor functions instead of CSS.
+  GtkWidget *penrose4=penrose_triangle_drawing_new();
+  gtk_widget_set_hexpand(penrose4, TRUE);
+  gtk_widget_set_vexpand(penrose4, TRUE);
+  penrose_triangle_drawing_set_background(PENROSE_TRIANGLE_DRAWING(penrose4), "rgba(0, 255, 0, 255)");
+  penrose_triangle_drawing_set_foreground(PENROSE_TRIANGLE_DRAWING(penrose4), "rgba(255, 255, 0, 255)");
+  g_print("Background %s\n", penrose_triangle_drawing_get_background(PENROSE_TRIANGLE_DRAWING(penrose4)));
+  gchar *string=NULL;
+  g_object_get(penrose4, "foreground", &string, NULL);
+  g_print("Foreground %s\n", string);
+  g_free(string);
+
   GtkWidget *grid=gtk_grid_new();
   gtk_grid_attach(GTK_GRID(grid), penrose1, 0, 0, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), penrose2, 0, 1, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), penrose3, 0, 2, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), penrose4, 0, 3, 1, 1);
 
   gtk_container_add(GTK_CONTAINER(window), grid);
   gtk_widget_show_all(window);
