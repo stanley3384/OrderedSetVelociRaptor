@@ -105,7 +105,7 @@ void penrose_triangle_drawing_set_background(PenroseTriangleDrawing *da, const g
     }
   else
     {
-      g_print("background_string error\n");
+      g_warning("background_string error\n");
     } 
 }
 void penrose_triangle_drawing_set_foreground(PenroseTriangleDrawing *da, const gchar *foreground_string)
@@ -126,7 +126,7 @@ void penrose_triangle_drawing_set_foreground(PenroseTriangleDrawing *da, const g
     }
   else
     {
-      g_print("foreground_string error\n");
+      g_warning("foreground_string error\n");
     } 
 }
 void penrose_triangle_drawing_set_draw_css(PenroseTriangleDrawing *da, gboolean draw_css)
