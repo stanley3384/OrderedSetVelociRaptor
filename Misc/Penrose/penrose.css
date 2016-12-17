@@ -2,7 +2,8 @@
 /*
 
     For use with penrose_main.c. Test some colors with the widget. This is using GTK3.18 CSS.
-After GTK3.20 the CSS has changed a little.
+After GTK3.20 the CSS has changed a little. Check gtk_style_context_get_background_color()
+with a solid color and a gradient to see what is returned.
 
 */
 
@@ -10,14 +11,20 @@ GtkDrawingArea {
   background-color: rgba(0,0,255,255);
   color:            rgba(255,255,0,255);
 }
+/*
+GtkDrawingArea {
+  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,255,255)), color-stop(1.0,rgba(0,0,255,255)));
+  color:            rgba(255,255,0,255);
+}
+*/
 
 #penrose2 {
-  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,0,1.0)), color-stop(1.0,rgba(0,0,255,1.0)));
+  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,0,255)), color-stop(1.0,rgba(0,0,255,255)));
   color:            rgba(255,255,0,255);
 }
 
 #penrose3 {
-  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(255,255,0,1.0)), color-stop(1.0,rgba(255,0,255,1.0)));
+  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(255,255,0,255)), color-stop(1.0,rgba(255,0,255,255)));
   color:            rgba(0,0,0,255);
 }
 

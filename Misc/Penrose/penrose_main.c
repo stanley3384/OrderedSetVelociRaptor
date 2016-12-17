@@ -21,6 +21,27 @@ deriving from a widget already taken care of, it makes the code simpler to test 
 #include<gtk/gtk.h>
 #include "penrose.h"
 
+/*
+    Check what gtk_style_context_get_background_color() returns. It is deprecated but it
+looks like it will return a solid color for the widget if one is present. Otherwise it 
+returns 0's for the color if GtkDrawingArea isn't set in CSS.
+*/
+static void get_colors(GtkWidget *button, GtkWidget **widgets)
+{
+  gint i=0;
+  GdkRGBA color;
+  GtkStyleContext *context;
+  for(i=0;widgets[i]!=NULL;i++)
+    {
+      //Reset colors.
+      color.red=1.0; color.green=1.0; color.blue=1.0; color.alpha=1.0;
+      context=gtk_widget_get_style_context(widgets[i]);
+      G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+      gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &color);
+      G_GNUC_END_IGNORE_DEPRECATIONS
+      g_print("penrose%i %f %f %f %f\n", i+1, color.red, color.green, color.blue, color.alpha);
+    }
+}
 int main(int argc, char *argv[])
 {
   gtk_init(&argc, &argv);
@@ -28,7 +49,7 @@ int main(int argc, char *argv[])
   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(window), "Penrose Triangle Drawing");
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-  gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
+  gtk_window_set_default_size(GTK_WINDOW(window), 400, 450);
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -60,11 +81,17 @@ int main(int argc, char *argv[])
   g_print("penrose4 foreground %s\n", string);
   g_free(string);
 
+  GtkWidget *button=gtk_button_new_with_label("Get background colors");
+  gtk_widget_set_hexpand(button, TRUE);
+  GtkWidget *widgets[]={penrose1, penrose2, penrose3, penrose4, NULL};
+  g_signal_connect(button, "clicked", G_CALLBACK(get_colors), widgets);
+
   GtkWidget *grid=gtk_grid_new();
   gtk_grid_attach(GTK_GRID(grid), penrose1, 0, 0, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), penrose2, 0, 1, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), penrose3, 0, 2, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), penrose4, 0, 3, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), button, 0, 4, 1, 1);
 
   gtk_container_add(GTK_CONTAINER(window), grid);
   gtk_widget_show_all(window);
