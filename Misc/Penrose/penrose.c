@@ -184,8 +184,8 @@ static void penrose_triangle_drawing_init(PenroseTriangleDrawing *da)
   priv->foreground[2]=0.0;
   priv->foreground[3]=1.0;
   priv->draw_css=TRUE;
-  priv->background_string=g_strdup("rgba(255, 255, 255, 255)");
-  priv->foreground_string=g_strdup("rgba(0, 0, 0, 255)");
+  priv->background_string=g_strdup("rgba(255, 255, 255, 1.0)");
+  priv->foreground_string=g_strdup("rgba(0, 0, 0, 1.0)");
 
   //Get the CSS colors.
   GError *css_error=NULL;

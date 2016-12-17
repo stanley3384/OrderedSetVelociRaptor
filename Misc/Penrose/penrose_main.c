@@ -73,8 +73,8 @@ int main(int argc, char *argv[])
   GtkWidget *penrose4=penrose_triangle_drawing_new();
   gtk_widget_set_hexpand(penrose4, TRUE);
   gtk_widget_set_vexpand(penrose4, TRUE);
-  penrose_triangle_drawing_set_background(PENROSE_TRIANGLE_DRAWING(penrose4), "rgba(0, 255, 0, 255)");
-  penrose_triangle_drawing_set_foreground(PENROSE_TRIANGLE_DRAWING(penrose4), "rgba(0, 0, 255, 255)");
+  penrose_triangle_drawing_set_background(PENROSE_TRIANGLE_DRAWING(penrose4), "rgba(0, 255, 0, 1.0)");
+  penrose_triangle_drawing_set_foreground(PENROSE_TRIANGLE_DRAWING(penrose4), "rgba(0, 0, 255, 1.0)");
   g_print("penrose4 background %s\n", penrose_triangle_drawing_get_background(PENROSE_TRIANGLE_DRAWING(penrose4)));
   gchar *string=NULL;
   g_object_get(penrose4, "foreground", &string, NULL);

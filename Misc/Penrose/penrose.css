@@ -8,23 +8,23 @@ with a solid color and a gradient to see what is returned.
 */
 
 GtkDrawingArea {
-  background-color: rgba(0,0,255,255);
-  color:            rgba(255,255,0,255);
+  background-color: rgba(0,0,255,1.0);
+  color:            rgba(255,255,0,1.0);
 }
 /*
 GtkDrawingArea {
-  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,255,255)), color-stop(1.0,rgba(0,0,255,255)));
-  color:            rgba(255,255,0,255);
+  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,255,1.0)), color-stop(1.0,rgba(0,0,255,1.0)));
+  color:            rgba(255,255,0,1.0);
 }
 */
 
 #penrose2 {
-  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,0,255)), color-stop(1.0,rgba(0,0,255,255)));
-  color:            rgba(255,255,0,255);
+  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(0,255,0,1.0)), color-stop(1.0,rgba(0,0,255,1.0)));
+  color:            rgba(255,255,0,1.0);
 }
 
 #penrose3 {
-  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(255,255,0,255)), color-stop(1.0,rgba(255,0,255,255)));
-  color:            rgba(0,0,0,255);
+  background-image: -gtk-gradient (linear, left top, right bottom, color-stop(0.0,rgba(255,255,0,1.0)), color-stop(1.0,rgba(255,0,255,1.0)));
+  color:            rgba(0,0,0,1.0);
 }
 
