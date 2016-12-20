@@ -176,8 +176,10 @@ int main(int argc, char *argv[])
     gtk_text_buffer_create_tag(buffer1, "font='16'", "font", "16", NULL);
     gtk_text_buffer_create_tag(buffer1, "weight='900'", "weight", "900", NULL); 
     gtk_text_buffer_create_tag(buffer1, "underline='single'", "underline", PANGO_UNDERLINE_SINGLE, NULL);
-    PangoFontDescription *font=pango_font_description_from_string("Monospace 12"); 
+    PangoFontDescription *font=pango_font_description_from_string("Monospace 12");
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
     gtk_widget_override_font(textview1, font);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     pango_font_description_free(font);
     
     GtkWidget *scroll1=gtk_scrolled_window_new(NULL, NULL);
@@ -247,7 +249,7 @@ int main(int argc, char *argv[])
     gtk_entry_set_text(GTK_ENTRY(entry8), "5");
 
     GtkWidget *label9=gtk_label_new("");
-    gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='black'>Table Label</span>");
+    gtk_label_set_markup(GTK_LABEL(label9), "<span foreground='black'>Table Label</span>");
     GtkWidget *entry9=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry9), "Plate ");
 
@@ -468,8 +470,10 @@ int main(int argc, char *argv[])
 static void change_textview_font(GtkWidget *widget, gpointer data)
   {
     gchar *text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
-    PangoFontDescription *font=pango_font_description_from_string(text); 
+    PangoFontDescription *font=pango_font_description_from_string(text);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
     gtk_widget_override_font(GTK_WIDGET(data), font);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     pango_font_description_free(font);
     if(text!=NULL)g_free(text);
   }
