@@ -340,7 +340,9 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                                    }
                                  if(color)
                                    {
+                                     G_GNUC_BEGIN_IGNORE_DEPRECATIONS
                                      gdk_color_free(color);
+                                     G_GNUC_END_IGNORE_DEPRECATIONS
                                    }
                                 }
                              }
@@ -368,7 +370,9 @@ static void printing_layout_set_text_attributes(GtkTextView *textview, GtkTextIt
                                    }
                                   if(color)
                                     {
+                                      G_GNUC_BEGIN_IGNORE_DEPRECATIONS
                                       gdk_color_free(color);
+                                      G_GNUC_END_IGNORE_DEPRECATIONS
                                     }
                                 }
                            }

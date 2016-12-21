@@ -105,7 +105,7 @@ static void pop_up_button_press_event(GtkWidget*, GdkEventButton*, GtkWidget*);
 //static void copy_selected_to_clipboard(GtkWidget*, GtkWidget*);
 static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview);
 static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWidget *treeview);
-static void copy_plates_to_clipboard(GtkWidget*, GtkWidget*,int,int,int);
+static void copy_plates_to_clipboard(GtkWidget*, GtkWidget*,gint,gint,gint);
 static void select_all(GtkTreeView*, gpointer);
 static void copy_treeview_to_database(GtkWidget*, GtkWidget*);
 static void setup_tree_view_data(GtkTreeView*, int, double, int);
@@ -150,7 +150,9 @@ int main(int argc, char *argv[])
 
     GtkWidget *button=gtk_button_new_with_label("Get Test Data");
     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_widget_set_margin_left(button, 20);
+    G_GNUC_END_IGNORE_DEPRECATIONS
 
     GtkWidget *textbutton=gtk_button_new_with_label("Erase White Board");
     gtk_widget_set_hexpand(textbutton, TRUE);
@@ -286,8 +288,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(textview, TRUE);
     gtk_widget_set_vexpand(textview, TRUE);
     //Set initial font.
-    PangoFontDescription *pfd=pango_font_description_from_string("Monospace 9"); 
+    PangoFontDescription *pfd=pango_font_description_from_string("Monospace 9");
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
     gtk_widget_override_font(GTK_WIDGET(textview), pfd);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect(underline_button, "clicked", G_CALLBACK(change_underline), textview);
     g_signal_connect(selection_button, "clicked", G_CALLBACK(change_selection_font), textview);
     g_signal_connect(global_button, "clicked", G_CALLBACK(change_global_font), textview);
@@ -585,9 +589,9 @@ static void change_underline(GtkWidget *button, GtkTextView *textview)
 static void change_selection_font(GtkWidget *button, GtkTextView *textview)
   {
     //Set the font for the textview.
-    int i=0;
-    int as_return=0;
-    static int tag_counter=0;
+    gint i=0;
+    gint as_return=0;
+    static gint tag_counter=0;
     GString *tag_name=g_string_new(NULL);
     GtkTextIter start, end;
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(textview);
@@ -597,7 +601,7 @@ static void change_selection_font(GtkWidget *button, GtkTextView *textview)
     //Remove prior selection tags in the current selection.
     for(i=0;i<tag_counter;i++)
        {
-         char *string=NULL;
+         gchar *string=NULL;
          as_return=asprintf(&string, "tag%i", i);
          if(as_return!=-1)
            {
@@ -629,12 +633,14 @@ static void change_global_font(GtkWidget *button, GtkTextView *textview)
   {
     PangoFontDescription *pfd;
 
-    pfd = pango_font_description_from_string(pCurrentFont); 
+    pfd = pango_font_description_from_string(pCurrentFont);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
     gtk_widget_override_font(GTK_WIDGET(textview), pfd);
+    G_GNUC_END_IGNORE_DEPRECATIONS
   }
 static void change_margin(GtkWidget *margin, GtkTextView *textview)
   {
-    int left_margin=0;
+    gint left_margin=0;
     gchar *combo_text=NULL;
     combo_text=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(margin));
     left_margin=atoi(combo_text);
@@ -726,7 +732,9 @@ static void distributions_dialog(GtkButton *button, gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
      
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -735,31 +743,31 @@ static void distributions_dialog(GtkButton *button, gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int iRadioButton=0;
-        int seed_value=0;
-        double param=1;
+        gint radio_button=0;
+        gint seed_value=0;
+        gdouble param=1;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
             seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
             param=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
             seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
             param=atof(gtk_entry_get_text(GTK_ENTRY(entry2))); 
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
             seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
             param=atof(gtk_entry_get_text(GTK_ENTRY(entry3))); 
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
             seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry5))); 
             param=atof(gtk_entry_get_text(GTK_ENTRY(entry4))); 
           }
@@ -769,7 +777,7 @@ static void distributions_dialog(GtkButton *button, gpointer data)
           }
         if(seed_value>=0&&param>=1)
           {
-            test_data_button_clicked(button, NULL, seed_value, param, iRadioButton);
+            test_data_button_clicked(button, NULL, seed_value, param, radio_button);
           }
         else
           {
@@ -805,7 +813,9 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -814,27 +824,27 @@ static void basic_statistics_dialog(GtkWidget *menu, GtkTextView *textview)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int iRadioButton=0;
+        gint radio_button=0;
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
 
         if(groups_database_validation(NULL)==0)
           {
-            basic_statistics_sql(textview, iRadioButton);
+            basic_statistics_sql(textview, radio_button);
           }
       }
     gtk_widget_destroy(dialog);
@@ -867,7 +877,9 @@ static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -877,37 +889,37 @@ static void gaussian_dialog(GtkWidget *menu, GtkTextView *textview)
     if(result==GTK_RESPONSE_OK)
       {
         printf("Begin Anderson Darling\n");
-        int iRadioButton=0;         
+        gint radio_button=0;         
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
 
         if(groups_database_validation(NULL)==0)
           {
-            anderson_darling_test(textview, iRadioButton);
+            anderson_darling_test(textview, radio_button);
           }
    
       }
-    printf("Anderson Darling Finished\n");
+    g_print("Anderson Darling Finished\n");
     gtk_widget_destroy(dialog);
   }
 static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textview)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Homogeniety of Variance", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -940,7 +952,9 @@ static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textvie
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -949,25 +963,25 @@ static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textvie
 
     if(result==GTK_RESPONSE_OK)
       {
-        int iRadioButton=0;
-        int check1=0;
-        double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));       
-        printf("Begin Levene's\n");         
+        gint radio_button=0;
+        gint check1=0;
+        gdouble alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));       
+        g_print("Begin Levene's\n");         
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
 
         check1=critical_value_changed_validation(entry1);
@@ -976,10 +990,10 @@ static void homogeniety_of_variance_dialog(GtkWidget *menu, GtkTextView *textvie
           {
             if(groups_database_validation(NULL)==0)
               {
-                levenes_variance_test(textview, iRadioButton, alpha);
+                levenes_variance_test(textview, radio_button, alpha);
               }
           }  
-       printf("Levene's Finished\n");
+        g_print("Levene's Finished\n");
       }
     gtk_widget_destroy(dialog);
   }
@@ -990,7 +1004,7 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
          De Muth, J.E.(2006). "Basic Statistics and Pharmaceutical Statistical Applications", Second Edition, Chapman & Hall/CRC, p. 208-209.
     */
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *check_button1, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("One-Way ANOVA", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -1025,7 +1039,9 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1034,28 +1050,28 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int check_box=0;
-        int iRadioButton=0;
-        int check1=0;
-        double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));       
+        gint check_box=0;
+        gint radio_button=0;
+        gint check1=0;
+        gdouble alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));       
 
         printf("Begin One-Way ANOVA\n");
          
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
          
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button1)))
@@ -1069,17 +1085,17 @@ static void one_way_anova_dialog(GtkWidget *menu, GtkTextView *textview)
           {
             if(groups_database_validation(NULL)==0)
               {
-                one_way_anova_sql(textview, iRadioButton, check_box, alpha);
+                one_way_anova_sql(textview, radio_button, check_box, alpha);
               }
           }  
-        printf("ANOVA Finished\n");
+        g_print("ANOVA Finished\n");
       }
     gtk_widget_destroy(dialog);
   }
 static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textview)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *entry1, *entry2, *radio1, *radio2, *radio3, *radio4, *radio_bonferroni, *radio_sidak, *radio_dunnetts, *radio_hotellingsT2, *progress, *content_area, *action_area, *dunnett_button;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Comparison with Control", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -1135,7 +1151,9 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1147,29 +1165,29 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
 
     if(result==GTK_RESPONSE_OK)
       {
-        printf("Begin Multiple Comparisons\n");
-        int iRadioButton=1;
-        int iRadioCritVal=1;
-        double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
-        int iControlValue=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));         
-        int check1=0;
-        int check2=0;
-        int check3=0; 
+        g_print("Begin Multiple Comparisons\n");
+        gint radio_button=1;
+        gint radio_crit_value=1;
+        gdouble alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
+        gint control_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));         
+        gint check1=0;
+        gint check2=0;
+        gint check3=0; 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
         else
           {
@@ -1178,19 +1196,19 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
         //Choose type of critical values.
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio_bonferroni)))
           {
-            iRadioCritVal=1;
+            radio_crit_value=1;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio_sidak)))
           {
-            iRadioCritVal=2;
+            radio_crit_value=2;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio_dunnetts)))
           {
-            iRadioCritVal=3;
+            radio_crit_value=3;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio_hotellingsT2)))
           {
-            iRadioCritVal=4;
+            radio_crit_value=4;
           }
         else
           {
@@ -1199,28 +1217,28 @@ static void comparison_with_control_dialog(GtkWidget *menu, GtkTextView *textvie
 
         //check entry fields
         check1=critical_value_changed_validation(entry1);
-        if(iRadioButton==1||iRadioButton==2)
+        if(radio_button==1||radio_button==2)
           {
             check2=groups_database_validation(entry2);
           }
-        if(iRadioButton==3||iRadioButton==4)
+        if(radio_button==3||radio_button==4)
           {
             check3=picks_database_validation(entry2);
           }           
 
         if(check1==0&&check2==0&&check3==0)
           {
-            if(iRadioCritVal==4)
+            if(radio_crit_value==4)
               {
-                printf("Call Hotellings T2\n");
-                hotellings_T2(iRadioButton,alpha,0,iControlValue-1,textview,progress,NULL,0);
+                g_print("Call Hotellings T2\n");
+                hotellings_T2(radio_button,alpha,0,control_value-1,textview,progress,NULL,0);
               }
             else
               {
-                comparison_with_control_sql(iRadioButton, iControlValue, alpha, iRadioCritVal, textview, progress, &iBreakLoop); 
+                comparison_with_control_sql(radio_button, control_value, alpha, radio_crit_value, textview, progress, &iBreakLoop); 
               }
           }
-        printf("Multiple Comparisons Finished\n");
+        g_print("Multiple Comparisons Finished\n");
       }
     gtk_widget_destroy(dialog);
   }
@@ -1256,7 +1274,9 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog2));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog2));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1265,30 +1285,30 @@ static void dunnetts_parameters_dialog(GtkWidget *dialog, gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-       int temp1=0;
-       double temp2=0;
+       gint temp1=0;
+       gdouble temp2=0;
        temp1=atoi(gtk_entry_get_text(GTK_ENTRY(entry1))); 
        temp2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
        //Set Global variables.
        if(temp1>=1000&&temp1<=100000)
          {
            MAXPTS_C=atoi(gtk_entry_get_text(GTK_ENTRY(entry1))); 
-           printf("MAXPTS=%i\n", MAXPTS_C);
+           g_print("MAXPTS=%i\n", MAXPTS_C);
          }
        else
          {
-           printf("Max Points Values 1000<=x<=100000\n");
+           g_print("Max Points Values 1000<=x<=100000\n");
            simple_message_dialog("Max Points Values 1000<=x<=100000");
          }
 
        if(temp2>=0.000001&&temp2<=0.1)
          {
            ABSEPS_C=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
-           printf("ABSEPS=%f\n", ABSEPS_C);
+           g_print("ABSEPS=%f\n", ABSEPS_C);
          }
        else
          {
-           printf("Error Tolerance for Alpha 0.000001<=x<=0.1\n");
+           g_print("Error Tolerance for Alpha 0.000001<=x<=0.1\n");
            simple_message_dialog("Error Tolerance for Alpha 0.000001<=x<=0.1");
          }         
       }
@@ -1300,8 +1320,8 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     GtkTextBuffer *buffer1;
     GtkTextIter start1;
     GtkTextIter end1;
-    int iRadioButton=1;
-    int result;
+    gint radio_button=1;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Comparison with Contrasts", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 500);
@@ -1348,7 +1368,9 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1359,15 +1381,15 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
 
     if(result==GTK_RESPONSE_OK)
       {
-        printf("Begin Hotelling's T2 Comparisons\n");
+        g_print("Begin Hotelling's T2 Comparisons\n");
         gsl_matrix *SuppliedContrasts=NULL;
-        int rows=0;
-        int columns=0;
-        int check1=0;
-        int check2=0;
-        int check3=0;
-        int numbers=0;
-        double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
+        gint rows=0;
+        gint columns=0;
+        gint check1=0;
+        gint check2=0;
+        gint check3=0;
+        gint numbers=0;
+        gdouble alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry1))); 
         //get string from textview
         gtk_text_buffer_get_bounds(buffer1, &start1, &end1);
         gchar *string1=gtk_text_buffer_get_text(buffer1, &start1, &end1, TRUE);
@@ -1375,24 +1397,24 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
         //get value of radiobutton.
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
 
         //check the contrast matrix for errors
         check1=contrast_matrix_validation(string1, &rows, &columns);
-        printf("Check = %i rows = %i columns = %i\n", check1, rows, columns);
+        g_print("Check = %i rows = %i columns = %i\n", check1, rows, columns);
   
         //check critical value 0<x<0.3
         check2=critical_value_changed_validation(entry1);
@@ -1410,7 +1432,7 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
           {
             if(groups_database_validation(NULL)==0)
               {
-                hotellings_T2(iRadioButton, alpha, 0, -1, textview, progress, SuppliedContrasts, columns);
+                hotellings_T2(radio_button, alpha, 0, -1, textview, progress, SuppliedContrasts, columns);
               }
           }
 
@@ -1420,14 +1442,14 @@ static void hotelling_dialog(GtkWidget *menu, GtkTextView *textview)
           }
         g_free(string1);
       }
-    printf("Hotelling's T2 Finished\n");
+    g_print("Hotelling's T2 Finished\n");
     gtk_widget_destroy(dialog);
   }
 static void exit_comparison_loop_event(GtkWidget *dialog , gint response, gpointer data)
   {
     if(response==GTK_RESPONSE_CANCEL||response==GTK_RESPONSE_CLOSE)
       {
-        printf("Exit Loop\n");
+        g_print("Exit Loop\n");
         //gtk_widget_destroy(dialog);
         iBreakLoop=1;//Break out of multiple comparison loop.
       }
@@ -1436,14 +1458,14 @@ static void exit_hotelling_dialog(GtkWidget *dialog , gint response, gpointer da
   {
     if(response==GTK_RESPONSE_CANCEL||response==GTK_RESPONSE_CLOSE)
       {
-        printf("Hotelling's T2 Dialog Cancelled.\n");
+        g_print("Hotelling's T2 Dialog Cancelled.\n");
         //gtk_widget_destroy(dialog);
       }
   }
 static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *entry1, *entry2, *entry3, *radio1, *radio2, *radio3, *radio4, *random_radio1, *random_radio2, *random_radio3, *tail_combo, *test_combo, *p_function, *progress, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Permutation Testing", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -1529,7 +1551,9 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
      
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1542,87 +1566,87 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
     if(result==GTK_RESPONSE_OK)
       {
         printf("Begin Permutation Calculation\n");
-        int check1=0;
-        int check2=0;
-        int iRadioButton=1;
-        int iRandomButton=1;
-        int iTail=gtk_combo_box_get_active(GTK_COMBO_BOX(tail_combo))+1;
-        int iTest=gtk_combo_box_get_active(GTK_COMBO_BOX(test_combo))+1;
-        int iFunction=gtk_combo_box_get_active(GTK_COMBO_BOX(p_function))+1;
-        int iControl=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int iPermutations= atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int iSeedValue=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
+        gint check1=0;
+        gint check2=0;
+        gint radio_button=1;
+        gint random_button=1;
+        gint tail=gtk_combo_box_get_active(GTK_COMBO_BOX(tail_combo))+1;
+        gint test=gtk_combo_box_get_active(GTK_COMBO_BOX(test_combo))+1;
+        gint function=gtk_combo_box_get_active(GTK_COMBO_BOX(p_function))+1;
+        gint control=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gint permutations=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        gint seed_value=atoi(gtk_entry_get_text(GTK_ENTRY(entry3)));
          
         //Get value of radiobutton.
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
 
         //Get random generator number.
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(random_radio1)))
           {
-            iRandomButton=1;
+            random_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(random_radio2)))
           {
-            iRandomButton=2;
+            random_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(random_radio3)))
           {
-            iRandomButton=3;
+            random_button=3;
           }
   
         //Check that values are in the database.
-        if(iRadioButton==1||iRadioButton==2)
+        if(radio_button==1||radio_button==2)
           {
             check1=groups_database_validation(entry1);
           }
-        if(iRadioButton==3||iRadioButton==4)
+        if(radio_button==3||radio_button==4)
           {
             check2=picks_database_validation(entry1);
           }  
 
         //Set some bounds for the number of permutations
-        if(iPermutations<10||iPermutations>500000)
+        if(permutations<10||permutations>500000)
           {
-            printf("Permutations Bounds 10<=x<=500000\n");
+            g_print("Permutations Bounds 10<=x<=500000\n");
             simple_message_dialog("Permutations Bounds 10<=x<=500000");
           }
-        else if(iSeedValue<0||iSeedValue>100000000)
+        else if(seed_value<0||seed_value>100000000)
           {
-            printf("Seed Value Bounds 0<=x<=10000000\n");
+            g_print("Seed Value Bounds 0<=x<=10000000\n");
             simple_message_dialog("Seed Value Bounds 0<=x<=10000000");
           }
         else if(check1!=0||check2!=0)
           {
             //Exit. Message dialog in database validation functions.
-            printf("Exit Permutations\n");
+            g_print("Exit Permutations\n");
           }
         else
           {
-            if(iFunction==1)
+            if(function==1)
               {
-                unadjusted_p_sql(iPermutations, iRadioButton, iControl, iTail, iTest, iFunction ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+                unadjusted_p_sql(permutations, radio_button, control, tail, test, function ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, seed_value, random_button);
               }
-            if(iFunction==2||iFunction==3)
+            if(function==2||function==3)
               {
-               unadjusted_p_sql(iPermutations, iRadioButton, iControl, iTail, iTest, iFunction ,textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+               unadjusted_p_sql(permutations, radio_button, control, tail, test, function , textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, seed_value, random_button);
                if(iBreakLoop==0)
                  {
-                   minP_sql(iPermutations, iRadioButton, iControl, iTail, iTest , iFunction, textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, iSeedValue, iRandomButton);
+                   minP_sql(permutations, radio_button, control, tail, test , function, textview, GTK_PROGRESS_BAR(progress), &iBreakLoop, seed_value, random_button);
                  }
                else
                  {
@@ -1631,13 +1655,13 @@ static void permutations_dialog(GtkWidget *menu, GtkTextView *textview)
               }          
           }         
       }
-    printf("Permutations Finished\n");
+    g_print("Permutations Finished\n");
     gtk_widget_destroy(dialog);    
   }
 static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *radio1, *radio2, *radio3, *radio4, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Calculate Z-factor", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -1668,7 +1692,9 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1680,27 +1706,27 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
 
     if(result==GTK_RESPONSE_OK)
       {
-        printf("Begin Z-factor Calculation\n");
-        int iRadioButton=1;
-        int iControl=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int check1=0; 
+        g_print("Begin Z-factor Calculation\n");
+        gint radio_button=1;
+        gint control=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gint check1=0; 
          
         //get value of radiobutton.
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
         else
           {
@@ -1708,21 +1734,21 @@ static void z_factor_dialog(GtkWidget *menu, GtkTextView *textview)
           }
 
         //check entry is in database
-        if(iRadioButton==1||iRadioButton==2)
+        if(radio_button==1||radio_button==2)
           {
             check1=groups_database_validation(entry1);
           }
-        if(iRadioButton==3||iRadioButton==4)
+        if(radio_button==3||radio_button==4)
           {
             check1=picks_database_validation(entry1);
           }
 
         if(check1==0)
           {
-            z_factor(iRadioButton, iControl, textview);
+            z_factor(radio_button, control, textview);
           }
       }
-    printf("Z-factor Finished\n");
+    g_print("Z-factor Finished\n");
     gtk_widget_destroy(dialog);
   }
 static void exit_z_factor_dialog(GtkWidget *dialog , gint response, gpointer data)
@@ -1736,7 +1762,7 @@ static void exit_z_factor_dialog(GtkWidget *dialog , gint response, gpointer dat
 static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *label3, *label4, *label5, *entry1, *entry2, *entry3, *check_button1, *check_button2, *check_button3, *check_button4, *check_button5, *check_button6, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Contingency Data", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -1789,7 +1815,9 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1801,19 +1829,19 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
 
     if(result==GTK_RESPONSE_OK)
       {
-        printf("Begin Contingency Calculation\n");
-        int rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        double alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
-        int plates=atoi(pPlateNumberText);
-        int check_box1=0;
-        int check_box2=0;
-        int check_box3=0;
-        int check_box4=0;
-        int check_box5=0;
-        int check_box6=0;
-        int check1=0;
-        int check2=0;
+        g_print("Begin Contingency Calculation\n");
+        gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        gdouble alpha=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
+        gint plates=atoi(pPlateNumberText);
+        gint check_box1=0;
+        gint check_box2=0;
+        gint check_box3=0;
+        gint check_box4=0;
+        gint check_box5=0;
+        gint check_box6=0;
+        gint check1=0;
+        gint check2=0;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button1)))
           {
@@ -1840,8 +1868,8 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
             check_box6=1;
           }
 
-        printf("Check Boxes %i %i %i %i %i %i\n", check_box1, check_box2, check_box3, check_box4, check_box5, check_box6);     
-        printf("Row=%i Columns=%i Plates=%i Alpha=%f\n", rows, columns, plates, alpha);
+        g_print("Check Boxes %i %i %i %i %i %i\n", check_box1, check_box2, check_box3, check_box4, check_box5, check_box6);     
+        g_print("Row=%i Columns=%i Plates=%i Alpha=%f\n", rows, columns, plates, alpha);
 
         //check entry boxes
         if(rows<1||columns<1)
@@ -1857,13 +1885,13 @@ static void contingency_dialog(GtkWidget *menu, GtkTextView *textview)
             calculate_contingency_values(alpha, textview, check_box1, check_box2, check_box3, check_box4, check_box5, check_box6);
           }       
       }
-    printf("Contingency Finished\n");
+    g_print("Contingency Finished\n");
     gtk_widget_destroy(dialog);
   }
 static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
   {
     GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *radio1, *radio2, *combo1, *content_area, *action_area;
-    int result;
+    gint result;
     
     g_print("Send Data from Database to Graph\n");
 
@@ -1905,7 +1933,9 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -1914,30 +1944,30 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int iCombo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
-        int iRadioButton=0;
+        gint lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gint upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        gint combo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
+        gint radio_button=0;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
 
         if(lower_bound>0&&upper_bound>0&&lower_bound<=upper_bound)
           {
             if(groups_database_validation(NULL)==0)
               {
-                database_to_scatter_graph_sql(iRadioButton, iCombo, lower_bound, upper_bound);
+                database_to_scatter_graph_sql(radio_button, combo, lower_bound, upper_bound);
               }
           }
         else
           {
-            printf("Check Upper and Lower Bounds\n");
+            g_print("Check Upper and Lower Bounds\n");
             simple_message_dialog("Check Upper and Lower Bounds.");
           }
       }
@@ -1946,7 +1976,7 @@ static void database_to_scatter_graph_dialog(GtkWidget *menu , gpointer data)
 static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
   {
     GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *label3, *label4, *radio1, *radio2, *radio3, *radio4, *radio5, *radio6, *radio7, *combo1, *content_area, *action_area;
-    int result;
+    gint result;
     
     g_print("Send Data from Database to Graph\n");
 
@@ -2003,7 +2033,9 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -2012,52 +2044,52 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int iCombo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
-        int iRadioButton1=0;
-        int iRadioButton2=0;
+        gint lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gint upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        gint combo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
+        gint radio_button1=0;
+        gint radio_button2=0;
   
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton1=1;
+            radio_button1=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton1=2;
+            radio_button1=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton1=3;
+            radio_button1=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton1=4;
+            radio_button1=4;
           }
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio5)))
           {
-            iRadioButton2=1;
+            radio_button2=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio6)))
           {
-            iRadioButton2=2;
+            radio_button2=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio7)))
           {
-            iRadioButton2=3;
+            radio_button2=3;
           }
         
         if(lower_bound>0&&upper_bound>0&&lower_bound<=upper_bound)
           {
             if(groups_database_validation(NULL)==0)
               {
-                database_to_error_graph_sql(iRadioButton1, iRadioButton2, iCombo, lower_bound, upper_bound);
+                database_to_error_graph_sql(radio_button1, radio_button2, combo, lower_bound, upper_bound);
               }
           }
         else
           {
-            printf("Check Upper and Lower Bounds\n");
+            g_print("Check Upper and Lower Bounds\n");
             simple_message_dialog("Check Upper and Lower Bounds.");
           }
         
@@ -2067,7 +2099,7 @@ static void database_to_error_graph_dialog(GtkWidget *menu , gpointer data)
 static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
   {
     GtkWidget *dialog, *grid, *entry1, *entry2, *label0, *label1, *label2, *radio1, *radio2, *radio3, *radio4, *combo1, *content_area, *action_area;
-    int result;
+    gint result;
     
     g_print("Send Data from Database to Graph\n");
 
@@ -2115,7 +2147,9 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -2124,38 +2158,38 @@ static void database_to_box_graph_dialog(GtkWidget *menu , gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        int upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        int iCombo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
-        int iRadioButton=0;
+        gint lower_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gint upper_bound=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        gint combo=gtk_combo_box_get_active(GTK_COMBO_BOX(combo1));
+        gint radio_button=0;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
+            radio_button=1;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
+            radio_button=2;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio3)))
           {
-            iRadioButton=3;
+            radio_button=3;
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio4)))
           {
-            iRadioButton=4;
+            radio_button=4;
           }
         
         if(lower_bound>0&&upper_bound>0&&lower_bound<=upper_bound)
           {
             if(groups_database_validation(NULL)==0)
               {
-                database_to_box_graph_sql(iRadioButton, iCombo, lower_bound, upper_bound);
+                database_to_box_graph_sql(radio_button, combo, lower_bound, upper_bound);
               }
           }
         else
           {
-            printf("Check Upper and Lower Bounds\n");
+            g_print("Check Upper and Lower Bounds\n");
             simple_message_dialog("Check Upper and Lower Bounds.");
           }
               
@@ -2325,24 +2359,24 @@ static GdkPixbuf* draw_velociraptor()
   }
 static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer data)
   {   
-    int i=0;
-    int j=0;
-    int ScaleWidthCount=0;
-    int FootCount=0;
-    int window_width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
+    gint i=0;
+    gint j=0;
+    gint scale_width_count=0;
+    gint foot_count=0;
+    gint window_width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   
-    ScaleWidthCount=window_width-1024;
+    scale_width_count=window_width-1024;
 
-    if(ScaleWidthCount<=0)
+    if(scale_width_count<=0)
       {
-        FootCount=22;
+        foot_count=22;
       }
-    if(ScaleWidthCount>0)
+    if(scale_width_count>0)
       {
-        FootCount=22+ScaleWidthCount%45;
+        foot_count=22+scale_width_count%45;
       } 
 
-    int points[9][2] = { 
+    gint points[9][2] = { 
     { -70, -200 }, 
     { -50, -170 }, 
     { -40, -200 }, 
@@ -2354,7 +2388,7 @@ static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer
     { -70, -200 } 
     };
 
-    int points2[9][2] = { 
+    gint points2[9][2] = { 
     { 70, -40 }, 
     { 50, -10 }, 
     { 40, -40 }, 
@@ -2372,7 +2406,7 @@ static gboolean draw_veloci_raptor_feet(GtkWidget *widget, cairo_t *cr, gpointer
     cairo_scale(cr, 0.15, 0.15);
     cairo_set_source_rgb(cr, 0, 1, 0);
  
-    for(i=0;i<FootCount;i++)
+    for(i=0;i<foot_count;i++)
       {      
         for(j=0;j<8;j++)
           {
@@ -2400,20 +2434,20 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
   {
     //Import a simple text file into the application.
     GtkButton *button=NULL;
-    GFile *TextFile;
-    GFileInputStream *FileStream=NULL;
+    GFile *text_file;
+    GFileInputStream *file_stream=NULL;
     gssize length;
-    GFileInfo *FileInfo;
-    gint iFileSize = -1;
+    GFileInfo *file_info;
+    gint file_size = -1;
     GtkWidget *dialog;
-    gchar *pTextBuffer=NULL;
-    GString *TempBuffer=g_string_new(NULL);
-    GArray *DataArray;
-    gchar *pChar=NULL;
+    gchar *text_buffer=NULL;
+    GString *temp_buffer=g_string_new(NULL);
+    GArray *data_array=NULL;
+    gchar *p_char=NULL;
     guint32 counter=0;
-    gint iTextPresent=0;
-    gint iLineNumber=0;
-    double dTemp=0;
+    gint text_present=0;
+    gint line_number=0;
+    double temp=0;
     gboolean new_number=FALSE;
 
     if(iReferenceCountDialogWindow==0)
@@ -2427,55 +2461,55 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
 
         if(result==GTK_RESPONSE_ACCEPT)
           {
-            TextFile=gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
-            FileStream=g_file_read(TextFile, NULL, NULL);
-            FileInfo=g_file_input_stream_query_info (G_FILE_INPUT_STREAM(FileStream),G_FILE_ATTRIBUTE_STANDARD_SIZE,NULL, NULL);     
-            iFileSize=g_file_info_get_size (FileInfo);
-            g_print("Text Length = %d\n", iFileSize);
-            g_object_unref (FileInfo);
-            pTextBuffer=(char *) malloc(sizeof(char) * iFileSize);
-            memset(pTextBuffer, 0, iFileSize);
-            length=g_input_stream_read (G_INPUT_STREAM(FileStream), pTextBuffer, iFileSize, NULL, NULL);
+            text_file=gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
+            file_stream=g_file_read(text_file, NULL, NULL);
+            file_info=g_file_input_stream_query_info (G_FILE_INPUT_STREAM(file_stream),G_FILE_ATTRIBUTE_STANDARD_SIZE,NULL, NULL);     
+            file_size=g_file_info_get_size(file_info);
+            g_print("Text Length = %d\n", file_size);
+            g_object_unref(file_info);
+            text_buffer=(char *) malloc(sizeof(gchar) * file_size);
+            memset(text_buffer, 0, file_size);
+            length=g_input_stream_read(G_INPUT_STREAM(file_stream), text_buffer, file_size, NULL, NULL);
             g_print("Length of Buffer = %i\n", length);
-            DataArray=g_array_new(FALSE, FALSE, sizeof (double));
-            pChar=pTextBuffer;
+            data_array=g_array_new(FALSE, FALSE, sizeof(gdouble));
+            p_char=text_buffer;
             gtk_widget_destroy(dialog);
 
             //Ignore last newline character.
             while(counter<(length-1))
               {
-                if(g_ascii_isdigit(*pChar)||*pChar =='.'||*pChar=='-')
+                if(g_ascii_isdigit(*p_char)||*p_char =='.'||*p_char=='-')
                   {
-                    g_string_append_printf(TempBuffer, "%c", *pChar);
+                    g_string_append_printf(temp_buffer, "%c", *p_char);
                     new_number=TRUE;
                   }
-                else if(*pChar=='\n'||*pChar==' '|| *pChar==',' || *pChar=='|')
+                else if(*p_char=='\n'||*p_char==' '|| *p_char==',' || *p_char=='|')
                   {
                     if(new_number==TRUE)
                       {
-                        dTemp=g_ascii_strtod(TempBuffer->str, NULL);
-                        g_array_append_val(DataArray, dTemp);
-                        g_string_truncate(TempBuffer, 0);
+                        temp=g_ascii_strtod(temp_buffer->str, NULL);
+                        g_array_append_val(data_array, temp);
+                        g_string_truncate(temp_buffer, 0);
                         new_number=FALSE;
                        }
                    }
                 else
                    {
-                     iLineNumber=DataArray[0].len + 1;
-                     g_print("Not a Number at Number %i. Ignore value %c.\n", iLineNumber, *pChar);
+                     line_number=data_array[0].len + 1;
+                     g_print("Not a Number at Number %i. Ignore value %c.\n", line_number, *p_char);
                      //Code change. Just ignore non-numbers when reading in text data.
-                     //iTextPresent=1;
+                     //text_present=1;
                      //break;
                    }
-                pChar++;
+                p_char++;
                 counter++;
               }
-            g_free(pTextBuffer);
+            g_free(text_buffer);
             g_print("Counter=%i and Length=%i\n", counter, length);
 
-            if(iTextPresent==0)
+            if(text_present==0)
               {
-                test_data_button_clicked(button, DataArray,0,0,0);
+                test_data_button_clicked(button, data_array,0,0,0);
                 g_print("Imported Text File\n");
               }
             else
@@ -2483,7 +2517,7 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
                 g_print("Unsuccessful Import\n");
                 simple_message_dialog("Import unsuccessful! Check text file format\n and try again with the terminal window open\n to see what lines caused the errors.");
               }
-            g_array_free(DataArray, TRUE);
+            g_array_free(data_array, TRUE);
           }  
         else
           {
@@ -2495,7 +2529,7 @@ static void get_text_file(GtkWidget *menu, GtkWidget *window)
         simple_message_dialog("Only one initial dataset can be opened at a time!");
       } 
 
-    g_string_free(TempBuffer, TRUE);
+    g_string_free(temp_buffer, TRUE);
        
   }
 static void append_text_dialog(GtkWidget *menu, GtkWidget *window)
@@ -2562,8 +2596,8 @@ static void show_file_dialog_append(GArray *widgets)
 static void append_text_files(GSList *text_file_paths, const gchar *new_file_name)
   {
     gint selected_files=g_slist_length(text_file_paths);
-    int file_size=0;
-    int i=0;
+    gint file_size=0;
+    gint i=0;
     size_t bytes=0;
     FILE *combined=NULL;
     gboolean null_pointer=FALSE;
@@ -2692,7 +2726,7 @@ static void clear_format_event(GtkButton *button, gpointer data)
     GtkTextIter start1, end1;
     GtkTextBuffer *buffer;
 
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (data));
+    buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW (data));
     gtk_text_buffer_get_bounds(buffer, &start1, &end1);
     gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
   }
@@ -2714,10 +2748,12 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris)");
     radio3=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(iris2)");
     radio4=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Heatmap(sun)");
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_widget_set_margin_left(radio1, 30);
     gtk_widget_set_margin_left(radio2, 30);
     gtk_widget_set_margin_left(radio3, 30);
     gtk_widget_set_margin_left(radio4, 30);
+    G_GNUC_END_IGNORE_DEPRECATIONS
      
     grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
@@ -2728,8 +2764,10 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -2738,16 +2776,16 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-        double high=0;
-        double low=0;
-        double difference=0;
+        gdouble high=0;
+        gdouble low=0;
+        gdouble difference=0;
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
             format_text_platemap_heatmap_high_low(GTK_TEXT_VIEW(data), &high, &low);
             difference=abs(high-low)/10.0;
             if(difference!=0)
               {
-                printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                g_print("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
                 format_text_platemap_heatmap(GTK_TEXT_VIEW(data), high, low);
               }
             else
@@ -2761,7 +2799,7 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
             difference=abs(high-low)/10.0;
             if(difference!=0)
               {
-                printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                g_print("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
                 format_text_platemap_heatmap_iris(GTK_TEXT_VIEW(data), high, low);
               }
             else
@@ -2775,7 +2813,7 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
             difference=abs(high-low)/10.0;
             if(difference!=0)
               {
-                printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                g_print("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
                 format_text_platemap_heatmap_iris2(GTK_TEXT_VIEW(data), high, low);
               }
             else
@@ -2789,7 +2827,7 @@ static void heatmap_dialog(GtkButton *button, gpointer data)
             difference=abs(high-low)/10.0;
             if(difference!=0)
               {
-                printf("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
+                g_print("Low %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f High\n", low, low+difference, low+2*difference, low+3*difference, low+4*difference, low+5*difference, low+6*difference, low+7*difference, low+8*difference, low+9*difference, high); 
                 format_text_platemap_heatmap_sun(GTK_TEXT_VIEW(data), high, low);
               }
             else
@@ -2804,26 +2842,26 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
   {
     GtkWidget *dialog, *grid, *entry1, *label1, *label2, *radio1, *radio2, *content_area, *action_area;
     gint result;
-    guint32 iBufferCount;
+    guint32 buffer_count;
     //char cArrayNumber[25];//if a change of space format it can segfault.
-    GString *cArrayNumber=g_string_new("");
-    guint32 iSpace=0;
-    guint32 iPrevSpace=0;
-    guint32 iTwoPrevSpace=0;
+    GString *array_number=g_string_new("");
+    guint32 space=0;
+    guint32 prev_space=0;
+    guint32 two_prev_space=0;
     guint32 i=0;
     guint32 j=0;
     gfloat previous=G_MAXFLOAT;//cludge, start with max value of float for comparison rise.
     gfloat previous2=G_MINFLOAT;//first value to compare with fall run.
-    int iswitch=0;
-    guint32 iBeginIter=0;
-    guint32 iEndIter=0;
-    int iSetSize=2;
-    int iSize=5;
+    gint a_switch=0;
+    guint32 begin_iter=0;
+    guint32 end_iter=0;
+    gint set_size=2;
+    gint size=5;
     char temp;
     GtkTextBuffer *buffer;
     GtkTextIter start1, end1, start_iter;
-    GtkTextTagTable *TagTable;
-    GtkTextTag *TagRiseFall;
+    GtkTextTagTable *tag_table;
+    GtkTextTag *tag_rise_fall;
 
     g_print("RiseFall Text\n");
 
@@ -2833,8 +2871,10 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
 
     radio1=gtk_radio_button_new_with_label(NULL, "Rising Sets");
     radio2=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Declining Sets");
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_widget_set_margin_left(radio1, 20);
     gtk_widget_set_margin_left(radio2, 20);
+    G_GNUC_END_IGNORE_DEPRECATIONS
 
     entry1=gtk_entry_new();
     gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
@@ -2843,8 +2883,10 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
 
     label1=gtk_label_new("Set Runs");
     label2=gtk_label_new("Run Set Size   >=");
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_widget_set_margin_left(label1, 20);
     gtk_widget_set_margin_left(label2, 20);
+    G_GNUC_END_IGNORE_DEPRECATIONS
      
     grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
@@ -2856,7 +2898,9 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 20);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -2866,13 +2910,13 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
     if(result==GTK_RESPONSE_OK)
       {
         //Get active widget value
-        iSize=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        size=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));
          
-        buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (data));
-        TagTable=gtk_text_buffer_get_tag_table(buffer);
-        TagRiseFall=gtk_text_tag_table_lookup(TagTable, "purple_foreground");
+        buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW (data));
+        tag_table=gtk_text_buffer_get_tag_table(buffer);
+        tag_rise_fall=gtk_text_tag_table_lookup(tag_table, "purple_foreground");
 
-        if(TagRiseFall==NULL)
+        if(tag_rise_fall==NULL)
           {
             gtk_text_buffer_create_tag (buffer, "purple_foreground", "foreground", "Purple", NULL);  
           }
@@ -2883,14 +2927,14 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
             gtk_text_buffer_remove_all_tags(buffer, &start1, &end1);
           }
 
-        iBufferCount=gtk_text_buffer_get_char_count(buffer); 
+        buffer_count=gtk_text_buffer_get_char_count(buffer); 
         gtk_text_buffer_get_start_iter(buffer, &start_iter);
 
         //start of large block for radio1.
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
             //Look for rise fall trends
-            for(i=0; i<iBufferCount; i++)
+            for(i=0; i<buffer_count; i++)
               {
                 temp=gtk_text_iter_get_char(&start_iter);
                 //ignore newlines
@@ -2899,49 +2943,49 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                     if(g_ascii_isdigit(temp)|| temp=='.')
                       {
                         //cArrayNumber[j]=gtk_text_iter_get_char(&start_iter);
-                        g_string_insert_c(cArrayNumber, j, gtk_text_iter_get_char(&start_iter)); 
+                        g_string_insert_c(array_number, j, gtk_text_iter_get_char(&start_iter)); 
                         j++;
                       }
                     if(temp==' ')
                       {
-                        iSpace=i;
+                        space=i;
                         //Two choices(>=,<=)
-                        if(previous<atof(cArrayNumber->str)) //switch to less than falls run
+                        if(previous<atof(array_number->str)) //switch to less than falls run
                           {
-                            if(iswitch==0)
+                            if(a_switch==0)
                               {
-                                //printf("%f %f ",previous, atof(cArrayNumber->str));
-                                iBeginIter=iTwoPrevSpace+1;
-                                iswitch=1;
-                                iSetSize=2;
+                                //g_print("%f %f ",previous, atof(array_number->str));
+                                begin_iter=two_prev_space+1;
+                                a_switch=1;
+                                set_size=2;
                               }
                             else
                               {
-                                //printf("%f ", atof(cArrayNumber->str));
+                                //g_print("%f ", atof(array_number->str));
                                 //count sets of a specified size
-                                iSetSize++;
-                                if(i==iBufferCount-3&&iSetSize>=iSize) //ends with " \n\n\n"
+                                set_size++;
+                                if(i==buffer_count-3&&set_size>=size) //ends with " \n\n\n"
                                   {
                                     //end off of last space
-                                    iEndIter=iSpace;
+                                    end_iter=space;
                                     //printf("\nBegin %i End %i\n", iBeginIter, iEndIter);
-                                    gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
-                                    gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
+                                    gtk_text_buffer_get_iter_at_offset (buffer, &start1, begin_iter);
+                                    gtk_text_buffer_get_iter_at_offset (buffer, &end1, end_iter);
                                     gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
                                   }
                               }
                            }
                          else
                            {
-                             if(iswitch==1)
+                             if(a_switch==1)
                                {
                                  //printf("\n");
-                                 iEndIter=iPrevSpace;
-                                 if(iSetSize>=iSize)
+                                 end_iter=prev_space;
+                                 if(set_size>=size)
                                    {
                                      //printf("Begin %i End %i\n", iBeginIter, iEndIter);
-                                     gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
-                                     gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
+                                     gtk_text_buffer_get_iter_at_offset (buffer, &start1, begin_iter);
+                                     gtk_text_buffer_get_iter_at_offset (buffer, &end1, end_iter);
                                      gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
                                    }
                                  else
@@ -2949,13 +2993,13 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                                      //printf("Iters Not Applied!\n");
                                    }
                                 }
-                              iswitch=0;
+                              a_switch=0;
                             }
-                          iTwoPrevSpace=iPrevSpace;
-                          iPrevSpace=iSpace;
-                          previous=atof(cArrayNumber->str);
-                          //memset(cArrayNumber, 0, 25);
-                          g_string_truncate(cArrayNumber,0);
+                          two_prev_space=prev_space;
+                          prev_space=space;
+                          previous=atof(array_number->str);
+                          //memset(array_number, 0, 25);
+                          g_string_truncate(array_number,0);
                           j=0;
                         }
                      }
@@ -2967,7 +3011,7 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
           if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
             {
               //Look for rise fall trends
-              for(i=0; i<iBufferCount; i++)
+              for(i=0; i<buffer_count; i++)
                 {
                   temp=gtk_text_iter_get_char(&start_iter);
                   //ignore newlines
@@ -2976,49 +3020,49 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                       if(g_ascii_isdigit(temp)|| temp=='.')
                         {
                           //cArrayNumber[j]=gtk_text_iter_get_char(&start_iter);
-                          g_string_insert_c(cArrayNumber, j, gtk_text_iter_get_char(&start_iter));
+                          g_string_insert_c(array_number, j, gtk_text_iter_get_char(&start_iter));
                           j++;
                          }
                        if(temp==' ')
                          {
-                           iSpace=i;
+                           space=i;
                            //Two choices(>=,<=)
-                           if(previous2>atof(cArrayNumber->str)) //falls run
+                           if(previous2>atof(array_number->str)) //falls run
                              {
-                               if(iswitch==0)
+                               if(a_switch==0)
                                  {
-                                   //printf("%f %f ",previous2, atof(cArrayNumber->str));
-                                   iBeginIter=iTwoPrevSpace+1;
-                                   iswitch=1;
-                                   iSetSize=2;
+                                   //g_print("%f %f ",previous2, atof(array_number->str));
+                                   begin_iter=two_prev_space+1;
+                                   a_switch=1;
+                                   set_size=2;
                                  }
                                else
                                  {
-                                   //printf("%f ", atof(cArrayNumber->str));
+                                   //g_print("%f ", atof(array_number->str));
                                    //count sets of a specified size
-                                   iSetSize++;
-                                   if(i==iBufferCount-3) //ends with " \n\n\n"
+                                   set_size++;
+                                   if(i==buffer_count-3) //ends with " \n\n\n"
                                      {
                                        //end off of last space
-                                       iEndIter=iSpace;
-                                       //printf("\nBegin %i End %i\n", iBeginIter, iEndIter);
-                                       gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
-                                       gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
+                                       end_iter=space;
+                                       //g_print("\nBegin %i End %i\n", begin_iter, end_iter);
+                                       gtk_text_buffer_get_iter_at_offset (buffer, &start1, begin_iter);
+                                       gtk_text_buffer_get_iter_at_offset (buffer, &end1, end_iter);
                                        gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
                                       }
                                  }
                              }
                            else
                              {
-                               if(iswitch==1)
+                               if(a_switch==1)
                                  {
-                                   printf("\n");
-                                   iEndIter=iPrevSpace;
-                                   if(iSetSize>=iSize)
+                                   g_print("\n");
+                                   end_iter=prev_space;
+                                   if(set_size>=size)
                                      {
-                                       //printf("Begin %i End %i\n", iBeginIter, iEndIter);
-                                       gtk_text_buffer_get_iter_at_offset (buffer, &start1, iBeginIter);
-                                       gtk_text_buffer_get_iter_at_offset (buffer, &end1, iEndIter);
+                                       //g_print("Begin %i End %i\n", begin_iter, end_iter);
+                                       gtk_text_buffer_get_iter_at_offset (buffer, &start1, begin_iter);
+                                       gtk_text_buffer_get_iter_at_offset (buffer, &end1, end_iter);
                                        gtk_text_buffer_apply_tag_by_name (buffer, "purple_foreground", &start1, &end1);
                                      }
                                    else
@@ -3026,13 +3070,13 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
                                        //printf("Iters Not Applied!\n");
                                      }
                                  }
-                               iswitch=0;
+                               a_switch=0;
                              }
-                           iTwoPrevSpace=iPrevSpace;
-                           iPrevSpace=iSpace;
-                           previous2=atof(cArrayNumber->str);
+                           two_prev_space=prev_space;
+                           prev_space=space;
+                           previous2=atof(array_number->str);
                            // memset(cArrayNumber, 0, 25);
-                           g_string_truncate(cArrayNumber,0);
+                           g_string_truncate(array_number,0);
                            j=0;
                          }
                      }
@@ -3041,14 +3085,14 @@ static void rise_fall_text_dialog(GtkButton *button, gpointer data)
              }//end of radio2.         
         } //end of GTK_RESPONSE_OK
 
-     g_string_free (cArrayNumber, TRUE);
+     g_string_free (array_number, TRUE);
      gtk_widget_destroy(dialog);
        
   }
 static void heatmap_html_dialog(GtkButton *button, gpointer p)
   {
      GtkWidget *dialog, *grid, *entry1, *entry2, *label1, *label2, *label3, *label4, *label5, *label6, *radio1, *radio2, *combo1, *combo2, *combo3, *content_area, *action_area;
-    int result;
+    gint result;
     
     g_print("Send Plate Data from Database to HTML\n");
 
@@ -3122,7 +3166,9 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -3131,24 +3177,24 @@ static void heatmap_html_dialog(GtkButton *button, gpointer p)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));//const char
-        int columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));//const char
-        char *prec1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1));
-        int precision=atoi(prec1);
-        char *font1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2));
-        int font_size=atoi(font1);
-        int gradient=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo3)));
-        int iRadioButton=0;
+        gint rows=atoi(gtk_entry_get_text(GTK_ENTRY(entry1)));//const char
+        gint columns=atoi(gtk_entry_get_text(GTK_ENTRY(entry2)));//const char
+        gchar *prec1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1));
+        gint precision=atoi(prec1);
+        gchar *font1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2));
+        gint font_size=atoi(font1);
+        gint gradient=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo3)));
+        gint radio_button=0;
 
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio1)))
           {
-            iRadioButton=1;
-            heatmap_to_html_sql(iRadioButton, rows, columns+1, precision, font_size, gradient);
+            radio_button=1;
+            heatmap_to_html_sql(radio_button, rows, columns+1, precision, font_size, gradient);
           }
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio2)))
           {
-            iRadioButton=2;
-            heatmap_to_html_sql(iRadioButton, rows, columns+1, precision, font_size, gradient);
+            radio_button=2;
+            heatmap_to_html_sql(radio_button, rows, columns+1, precision, font_size, gradient);
           }
   
         if(prec1!=NULL) g_free(prec1);
@@ -3162,7 +3208,7 @@ static void html_table_dialog(GtkButton *button, gpointer p)
   {
     GtkWidget *dialog, *grid, *textview, *scrolled_win, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *label8, *label9, *combo1, *combo2, *combo3, *combo4, *combo5, *combo6, *combo7, *content_area, *action_area;
     GtkTextBuffer *buffer1;
-    int result;
+    gint result;
     
     g_print("Send Tablular Data from Database to HTML\n");
 
@@ -3279,7 +3325,9 @@ static void html_table_dialog(GtkButton *button, gpointer p)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -3288,20 +3336,20 @@ static void html_table_dialog(GtkButton *button, gpointer p)
 
     if(result==GTK_RESPONSE_OK)
       {
-        int check=0;
-        char database_name[]="VelociRaptorData.db";
-        char html_file_name[]="table.html";
+        gint check=0;
+        gchar database_name[]="VelociRaptorData.db";
+        gchar html_file_name[]="table.html";
         GtkTextIter start1;
         GtkTextIter end1;
    
         gchar *prec1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo1));
-        int precision=atoi(prec1);
+        gint precision=atoi(prec1);
         gchar *font1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo2));
-        int font_size=atoi(font1);
+        gint font_size=atoi(font1);
         gchar *font_color=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo3));
         gchar *field_bg_color=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo4));
         gchar *bg_color1=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo5));
-        int alternate=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo6)));
+        gint alternate=atoi(gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo6)));
         gchar *bg_color2=gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo7));
         gtk_text_buffer_get_bounds(buffer1, &start1, &end1);
         gchar *sql=gtk_text_buffer_get_text(buffer1, &start1, &end1, TRUE);
@@ -3310,12 +3358,12 @@ static void html_table_dialog(GtkButton *button, gpointer p)
     
         if(check==0)
           {
-            printf("%s\n", sql);
+            g_print("%s\n", sql);
             parse_sql_field_names(html_file_name, database_name, sql, precision, font_size, bg_color1, bg_color2, alternate, field_bg_color, font_color);
       }
         else
           {
-            printf("Unable to parse SQL statement.\n");
+            g_print("Unable to parse SQL statement.\n");
             simple_message_dialog("Unable to parse SQL statement.");
           }
 
@@ -3334,7 +3382,7 @@ static void html_table_dialog(GtkButton *button, gpointer p)
 static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *entry1, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Send Text To Database", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -3356,7 +3404,9 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -3365,12 +3415,12 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
 
     if(result==GTK_RESPONSE_OK)
       {
-        GtkTextBuffer *Sbuffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-        guint length=gtk_text_buffer_get_char_count(Sbuffer);
-        const gchar *pTableName=gtk_entry_get_text(GTK_ENTRY(entry1));
+        GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+        guint length=gtk_text_buffer_get_char_count(buffer);
+        const gchar *table_name=gtk_entry_get_text(GTK_ENTRY(entry1));
         if(length>5)
           {
-            send_text_to_database(pTableName, textview);
+            send_text_to_database(table_name, textview);
           }
         else
           {
@@ -3384,7 +3434,7 @@ static void send_text_to_database_dialog(GtkButton* button, gpointer textview)
 static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
   {
     GtkWidget *dialog, *grid, *label0, *label1, *label2, *label3, *label4, *label5, *label6, *label7, *pick_entry1, *pick_entry2, *pick_entry3, *pick_entry4, *value_entry1, *value_entry2, *value_entry3, *value_entry4, *check_button1, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Build Auxiliary Table", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -3464,7 +3514,9 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -3475,284 +3527,273 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
       {
         g_print("Build Auxiliary Table\n");
         //get from global variables
-        int iPlateNumber=atoi(pPlateNumberText);
-        int iPlateSize=atoi(pPlateSizeText);
-        int iGroupSize=atoi(pPlateStatsText); 
+        gint plate_number=atoi(pPlateNumberText);
+        gint plate_size=atoi(pPlateSizeText);
+        gint group_size=atoi(pPlateStatsText); 
            
         GString *buffer=g_string_new("");
-        GArray *iPickGroupsArray1=g_array_new(FALSE, FALSE, sizeof (int));
-        GArray *iPickGroupsArray2=g_array_new(FALSE, FALSE, sizeof (int));
-        GArray *iPickGroupsArray3=g_array_new(FALSE, FALSE, sizeof (int));
-        GArray *iPickGroupsArray4=g_array_new(FALSE, FALSE, sizeof (int));
-        int iPickGroupsArrayLength1=0;
-        int iPickGroupsArrayLength2=0;
-        int iPickGroupsArrayLength3=0;
-        int iPickGroupsArrayLength4=0;
-        const gchar *pPickGroups1=gtk_entry_get_text(GTK_ENTRY(pick_entry1));
-        const gchar *pPickGroups2=gtk_entry_get_text(GTK_ENTRY(pick_entry2));
-        const gchar *pPickGroups3=gtk_entry_get_text(GTK_ENTRY(pick_entry3));
-        const gchar *pPickGroups4=gtk_entry_get_text(GTK_ENTRY(pick_entry4));
-        int iValue1=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1)));
-        int iValue2=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
-        int iValue3=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry3)));
-        int iValue4=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry4)));
-        int iPickGroups1Length=strlen(pPickGroups1);
-        int iPickGroups2Length=strlen(pPickGroups2);
-        int iPickGroups3Length=strlen(pPickGroups3);
-        int iPickGroups4Length=strlen(pPickGroups4);
-        int itemp;
+        GArray *pick_groups_array1=g_array_new(FALSE, FALSE, sizeof(gint));
+        GArray *pick_groups_array2=g_array_new(FALSE, FALSE, sizeof(gint));
+        GArray *pick_groups_array3=g_array_new(FALSE, FALSE, sizeof(gint));
+        GArray *pick_groups_array4=g_array_new(FALSE, FALSE, sizeof(gint));
+        gint pick_groups_array_length1=0;
+        gint pick_groups_array_length2=0;
+        gint pick_groups_array_length3=0;
+        gint pick_groups_array_length4=0;
+        const gchar *pick_groups1=gtk_entry_get_text(GTK_ENTRY(pick_entry1));
+        const gchar *pick_groups2=gtk_entry_get_text(GTK_ENTRY(pick_entry2));
+        const gchar *pick_groups3=gtk_entry_get_text(GTK_ENTRY(pick_entry3));
+        const gchar *pick_groups4=gtk_entry_get_text(GTK_ENTRY(pick_entry4));
+        gint value1=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry1)));
+        gint value2=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+        gint value3=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry3)));
+        gint value4=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry4)));
+        gint pick_groups1_length=strlen(pick_groups1);
+        gint pick_groups2_length=strlen(pick_groups2);
+        gint pick_groups3_length=strlen(pick_groups3);
+        gint pick_groups4_length=strlen(pick_groups4);
+        gint temp;
 
-        int iArrayLength=iPlateSize*iPlateNumber;
-        //int iGroups=(iPlateNumber*iPlateSize/iGroupSize);
-        int iArrayPlate[iArrayLength];
-        int iArrayWells[iArrayLength];
-        int iArrayPicks[iArrayLength];
-        int iArrayGroups[iArrayLength]; 
-        int iCounter=0;
-        int iLabel=1;
-        int i=0;
-        int j=0;
-        int k=0;
+        gint array_length=plate_size*plate_number;
+        gint array_plate[array_length];
+        gint array_wells[array_length];
+        gint array_picks[array_length];
+        gint array_groups[array_length]; 
+        gint counter=0;
+        gint label=1;
+        gint i=0;
+        gint j=0;
+        gint k=0;
            
         //Load pick entry values into int arrays.
-        if(iPickGroups1Length>0)
+        if(pick_groups1_length>0)
           {
-            for(i=0;i<iPickGroups1Length;i++)
+            for(i=0;i<pick_groups1_length;i++)
               {
-                if(pPickGroups1[i]!=','|| i==iPickGroups1Length-1)
+                if(pick_groups1[i]!=','|| i==pick_groups1_length-1)
                   {
-                    g_string_append_printf(buffer,"%c", pPickGroups1[i]);
+                    g_string_append_printf(buffer,"%c", pick_groups1[i]);
                   }
                 else
                   {
-                    itemp=atoi(buffer->str);
-                    itemp=itemp-1;
-                    g_array_append_val(iPickGroupsArray1,itemp);
+                    temp=atoi(buffer->str);
+                    temp=temp-1;
+                    g_array_append_val(pick_groups_array1,temp);
                     g_string_truncate(buffer,0);
                   }
                }
-             itemp=atoi(buffer->str);
-             itemp=itemp-1;
-             g_array_append_val(iPickGroupsArray1,itemp);
-             iPickGroupsArrayLength1=iPickGroupsArray1[0].len;
+             temp=atoi(buffer->str);
+             temp=temp-1;
+             g_array_append_val(pick_groups_array1,temp);
+             pick_groups_array_length1=pick_groups_array1[0].len;
              g_string_truncate(buffer,0);
            }
        
-         if(iPickGroups2Length>0)
+         if(pick_groups2_length>0)
            {
-             for(i=0;i<iPickGroups2Length;i++)
+             for(i=0;i<pick_groups2_length;i++)
                {
-                 if(pPickGroups2[i]!=','|| i==iPickGroups2Length-1)
+                 if(pick_groups2[i]!=','|| i==pick_groups2_length-1)
                    {
-                     g_string_append_printf(buffer,"%c", pPickGroups2[i]);
+                     g_string_append_printf(buffer,"%c", pick_groups2[i]);
                    }
                  else
                    {
-                     itemp=atoi(buffer->str);
-                     itemp=itemp-1;
-                     g_array_append_val(iPickGroupsArray2,itemp);
-                     g_string_truncate(buffer,0);
+                     temp=atoi(buffer->str);
+                     temp=temp-1;
+                     g_array_append_val(pick_groups_array2, temp);
+                     g_string_truncate(buffer, 0);
                    }
                 }
-              itemp=atoi(buffer->str);
-              itemp=itemp-1;
-              g_array_append_val(iPickGroupsArray2,itemp);
-              iPickGroupsArrayLength2=iPickGroupsArray2[0].len;
+              temp=atoi(buffer->str);
+              temp=temp-1;
+              g_array_append_val(pick_groups_array2,temp);
+              pick_groups_array_length2=pick_groups_array2[0].len;
               g_string_truncate(buffer,0);
             }
 
-          if(iPickGroups3Length>0)
+          if(pick_groups3_length>0)
             {
-              for(i=0;i<iPickGroups3Length;i++)
+              for(i=0;i<pick_groups3_length;i++)
                 {
-                  if(pPickGroups3[i]!=','|| i==iPickGroups3Length-1)
+                  if(pick_groups3[i]!=','|| i==pick_groups3_length-1)
                     {
-                      g_string_append_printf(buffer,"%c", pPickGroups3[i]);
+                      g_string_append_printf(buffer,"%c", pick_groups3[i]);
                     }
                   else
                     {
-                      itemp=atoi(buffer->str);
-                      itemp=itemp-1;
-                      g_array_append_val(iPickGroupsArray3,itemp);
-                      g_string_truncate(buffer,0);
+                      temp=atoi(buffer->str);
+                      temp=temp-1;
+                      g_array_append_val(pick_groups_array3,temp);
+                      g_string_truncate(buffer, 0);
                     }
                  }
-               itemp=atoi(buffer->str);
-               itemp=itemp-1;
-               g_array_append_val(iPickGroupsArray3,itemp);
-               iPickGroupsArrayLength3=iPickGroupsArray3[0].len;
+               temp=atoi(buffer->str);
+               temp=temp-1;
+               g_array_append_val(pick_groups_array3,temp);
+               pick_groups_array_length3=pick_groups_array3[0].len;
                g_string_truncate(buffer,0);
              }
 
-             if(iPickGroups4Length>0)
+             if(pick_groups4_length>0)
                {
-                for(i=0;i<iPickGroups4Length;i++)
+                for(i=0;i<pick_groups4_length;i++)
                   {
-                    if(pPickGroups4[i]!=','|| i==iPickGroups4Length-1)
+                    if(pick_groups4[i]!=','|| i==pick_groups4_length-1)
                       {
-                        g_string_append_printf(buffer,"%c", pPickGroups4[i]);
+                        g_string_append_printf(buffer,"%c", pick_groups4[i]);
                       }
                     else
                       {
-                        itemp=atoi(buffer->str);
-                        itemp=itemp-1;
-                        g_array_append_val(iPickGroupsArray4,itemp);
+                        temp=atoi(buffer->str);
+                        temp=temp-1;
+                        g_array_append_val(pick_groups_array4,temp);
                         g_string_truncate(buffer,0);
                       }
                  }
-               itemp=atoi(buffer->str);
-               itemp=itemp-1;
-               g_array_append_val(iPickGroupsArray4,itemp);
-               iPickGroupsArrayLength4=iPickGroupsArray4[0].len;
+               temp=atoi(buffer->str);
+               temp=temp-1;
+               g_array_append_val(pick_groups_array4, temp);
+               pick_groups_array_length4=pick_groups_array4[0].len;
                g_string_truncate(buffer,0);
              }
 
              //Label Plate Numbers.
-             for(i=0;i<iPlateNumber;i++)
+             for(i=0;i<plate_number;i++)
                {
-                 for(j=0;j<iPlateSize;j++)
+                 for(j=0;j<plate_size;j++)
                    {
-                     iArrayPlate[iCounter]=i+1;
-                     iCounter++;
+                     array_plate[counter]=i+1;
+                     counter++;
                    }
                }
-             iCounter=0;
+             counter=0;
 
              //Label wells in plate.
-             for(i=0;i<iPlateNumber;i++)
+             for(i=0;i<plate_number;i++)
                {
-                 for(j=0;j<iPlateSize;j++)
+                 for(j=0;j<plate_size;j++)
                    {
-                     iArrayWells[iCounter]=j+1;
-                     iCounter++;
+                     array_wells[counter]=j+1;
+                     counter++;
                    }
                }
-             iCounter=0;
+             counter=0;
     
              //Zero pick array.
-             for(i=0;i<(iPlateNumber*iPlateSize);i++)
+             for(i=0;i<(plate_number*plate_size);i++)
                {
-                 iArrayPicks[i]=0;
+                 array_picks[i]=0;
                }
 
              //Label selected groups in plate based on user picks.
-             if(iPickGroupsArrayLength1>0)
+             if(pick_groups_array_length1>0)
                {
-                 for(i=0;i<iPlateNumber;i++)
+                 for(i=0;i<plate_number;i++)
                    {
                      k=0;
-                     for(j=0;j<iPlateSize;j++)
+                     for(j=0;j<plate_size;j++)
                        {
-                         if(k<iPickGroupsArrayLength1 && j==g_array_index(iPickGroupsArray1, gint, k))
+                         if(k<pick_groups_array_length1 && j==g_array_index(pick_groups_array1, gint, k))
                            {
-                             iArrayPicks[iCounter]=iValue1;
+                             array_picks[counter]=value1;
                              k++;
-                             iCounter++;
+                             counter++;
                            }
                          else
                            {
-                             iCounter++;
+                             counter++;
                            }
                        }
                    }
-                 iCounter=0; 
+                 counter=0; 
                }
                
-             if(iPickGroupsArrayLength2>0)
+             if(pick_groups_array_length2>0)
                {
-                 for(i=0;i<iPlateNumber;i++)
+                 for(i=0;i<plate_number;i++)
                    {
                      k=0;
-                     for(j=0;j<iPlateSize;j++)
+                     for(j=0;j<plate_size;j++)
                        {
-                         if(k<iPickGroupsArrayLength2 && j==g_array_index(iPickGroupsArray2, gint, k))
+                         if(k<pick_groups_array_length2 && j==g_array_index(pick_groups_array2, gint, k))
                            {
-                             iArrayPicks[iCounter]=iValue2;
+                             array_picks[counter]=value2;
                              k++;
-                             iCounter++;
+                             counter++;
                            }
                          else
                            {
-                             //iArrayPicks[iCounter]=0;
-                             iCounter++;
+                             //array_picks[counter]=0;
+                             counter++;
                            }
                        }
                     }
-                 iCounter=0;
+                 counter=0;
                 }
 
-              if(iPickGroupsArrayLength3>0)
+              if(pick_groups_array_length3>0)
                 {
-                 for(i=0;i<iPlateNumber;i++)
+                 for(i=0;i<plate_number;i++)
                    {
                      k=0;
-                     for(j=0;j<iPlateSize;j++)
+                     for(j=0;j<plate_size;j++)
                        {
-                         if(k<iPickGroupsArrayLength3 && j==g_array_index(iPickGroupsArray3, gint, k))
+                         if(k<pick_groups_array_length3 && j==g_array_index(pick_groups_array3, gint, k))
                            {
-                             iArrayPicks[iCounter]=iValue3;
+                             array_picks[counter]=value3;
                              k++;
-                             iCounter++;
+                             counter++;
                            }
                          else
                            {
-                             //iArrayPicks[iCounter]=0;
-                             iCounter++;
+                             //array_picks[counter]=0;
+                             counter++;
                            }
                        }
                     }
-                  iCounter=0;
+                  counter=0;
                  }
 
-             if(iPickGroupsArrayLength4>0)
+             if(pick_groups_array_length4>0)
                {
-                 for(i=0;i<iPlateNumber;i++)
+                 for(i=0;i<plate_number;i++)
                    {
                      k=0;
-                     for(j=0;j<iPlateSize;j++)
+                     for(j=0;j<plate_size;j++)
                         {
-                          if(k<iPickGroupsArrayLength4 && j==g_array_index(iPickGroupsArray4, gint, k))
+                          if(k<pick_groups_array_length4 && j==g_array_index(pick_groups_array4, gint, k))
                             {
-                              iArrayPicks[iCounter]=iValue4;
+                              array_picks[counter]=value4;
                               k++;
-                              iCounter++;
+                              counter++;
                             }
                           else
                             {
-                              //iArrayPicks[iCounter]=0;
-                              iCounter++;
+                              //array_picks[counter]=0;
+                              counter++;
                             }
                         }
                    }
-                 iCounter=0;
+                 counter=0;
                 }
 
-             //Label groups based on set size for stats.
-             //for(i=0;i<iGroups;i++)
-                //{
-                 // for(j=0;j<iGroupSize;j++)
-                     //{
-                       //iArrayGroups[iCounter]=i+1;
-                       //iCounter++;
-                     //}
-                //}
-
              //Label Groups like Picks
-             for(i=0;i<iPlateNumber;i++)
+             for(i=0;i<plate_number;i++)
                {
-                 for(j=0;j<iPlateSize/iGroupSize;j++)  
+                 for(j=0;j<plate_size/group_size;j++)  
                    {
-                     for(k=0;k<iGroupSize;k++)
+                     for(k=0;k<group_size;k++)
                        {
-                         iArrayGroups[iCounter]=iLabel;
-                         iCounter++;
+                         array_groups[counter]=label;
+                         counter++;
                        }
-                     iLabel++;
+                     label++;
                    }
-                 iLabel=1; 
+                 label=1; 
                }
 
-             iCounter=0;
+             counter=0;
 
 
            //Take care of loading the database.
@@ -3774,12 +3815,12 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
                sqlite3_stmt *stmt1;
                sqlite3_prepare(handle, "UPDATE Aux SET Picks=? WHERE KeyID =?;", -1, &stmt1, 0);
                sqlite3_exec(handle, "BEGIN TRANSACTION", NULL, NULL, NULL);
-               for(i=0;i<iArrayLength;i++)
+               for(i=0;i<array_length;i++)
                  {
-                   if(iArrayPicks[i]>0)
+                   if(array_picks[i]>0)
                      {
-                       g_print("UPDATE Aux SET Picks=%i WHERE KeyID = %i;\n", iArrayPicks[i], i+1);
-                       sqlite3_bind_int(stmt1, 1, iArrayPicks[i]);
+                       g_print("UPDATE Aux SET Picks=%i WHERE KeyID = %i;\n", array_picks[i], i+1);
+                       sqlite3_bind_int(stmt1, 1, array_picks[i]);
                        sqlite3_bind_int(stmt1, 2, i+1); 
                        sqlite3_step(stmt1);
                        sqlite3_reset(stmt1); 
@@ -3795,14 +3836,14 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
                  sqlite3_stmt *stmt2;
                  sqlite3_prepare(handle, "INSERT INTO Aux VALUES (?,?,?,?,?);", -1, &stmt2, 0);
                  sqlite3_exec(handle, "BEGIN TRANSACTION", NULL, NULL, NULL);
-                 for(i=0;i<iArrayLength;i++)
+                 for(i=0;i<array_length;i++)
                     {
-                      printf("INSERT INTO Aux VALUES(%i,%i,%i,%i,%i)\n", i+1, iArrayPlate[i], iArrayWells[i], iArrayPicks[i], iArrayGroups[i]);
+                      g_print("INSERT INTO Aux VALUES(%i,%i,%i,%i,%i)\n", i+1, array_plate[i], array_wells[i], array_picks[i], array_groups[i]);
                       sqlite3_bind_int(stmt2, 1, i+1);
-                      sqlite3_bind_int(stmt2, 2, iArrayPlate[i]); 
-                      sqlite3_bind_int(stmt2, 3, iArrayWells[i]); 
-                      sqlite3_bind_int(stmt2, 4, iArrayPicks[i]); 
-                      sqlite3_bind_int(stmt2, 5, iArrayGroups[i]); 
+                      sqlite3_bind_int(stmt2, 2, array_plate[i]); 
+                      sqlite3_bind_int(stmt2, 3, array_wells[i]); 
+                      sqlite3_bind_int(stmt2, 4, array_picks[i]); 
+                      sqlite3_bind_int(stmt2, 5, array_groups[i]); 
                       sqlite3_step(stmt2);
                       sqlite3_reset(stmt2); 
                     }
@@ -3812,10 +3853,10 @@ static void build_aux_table_dialog(GtkWidget *menu, GtkWidget *window)
                  g_print("Auxiliary Table Built\n");
               }
           g_string_free(buffer, TRUE);
-          g_array_free(iPickGroupsArray1, TRUE);
-          g_array_free(iPickGroupsArray2, TRUE);
-          g_array_free(iPickGroupsArray3, TRUE);
-          g_array_free(iPickGroupsArray4, TRUE);
+          g_array_free(pick_groups_array1, TRUE);
+          g_array_free(pick_groups_array2, TRUE);
+          g_array_free(pick_groups_array3, TRUE);
+          g_array_free(pick_groups_array4, TRUE);
         }
      
      gtk_widget_destroy(dialog);
@@ -3824,7 +3865,7 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
   {
      //Build a combinations SQL script, save it to a file and send it off to the database.
      GtkWidget *dialog, *grid, *label1, *label2, *label3, *value_entry1, *value_entry2, *value_entry3, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Build Combinations Table", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -3861,7 +3902,9 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -3871,36 +3914,36 @@ static void build_combo_table_dialog(GtkWidget *menu, GtkWidget *window)
     if(result==GTK_RESPONSE_OK)
       {
         g_print("Build Combinations Table\n");
-        int ComboSet=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
-        int ComboSubSet=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry3)));
-        const gchar *TableName=gtk_entry_get_text(GTK_ENTRY(value_entry1));
+        gint combo_set=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+        gint combo_subset=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry3)));
+        const gchar *table_name=gtk_entry_get_text(GTK_ENTRY(value_entry1));
 
         //cap at 15
-        if(ComboSet>=2&&ComboSet<=15)
+        if(combo_set>=2&&combo_set<=15)
           {
-            if(ComboSubSet>=2&&ComboSubSet<=ComboSet)
+            if(combo_subset>=2&&combo_subset<=combo_set)
               {
-                build_combo_table_sql(ComboSet, ComboSubSet, TableName);
+                build_combo_table_sql(combo_set, combo_subset, table_name);
               }
             else
               {
-                printf("The combination subset range is 2<=x<=ComboSet\n");
+                g_print("The combination subset range is 2<=x<=ComboSet\n");
                 simple_message_dialog("The combination subset range is 2<=x<=ComboSet");
               }
           }
         else
           {
-            printf("The combination set range is 2<=x<=15\n");
+            g_print("The combination set range is 2<=x<=15\n");
             simple_message_dialog("The combination set range is 2<=x<=15");
           }       
      }
-    printf("Combinations Finished\n");
+    g_print("Combinations Finished\n");
     gtk_widget_destroy(dialog);
   }
 static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
   {
     GtkWidget *dialog, *grid, *label1, *label2, *value_entry1, *value_entry2, *content_area, *action_area;
-    int result;
+    gint result;
 
     dialog=gtk_dialog_new_with_buttons("Build Permutations Table", pMainWindow, GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
@@ -3927,7 +3970,9 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -3937,20 +3982,20 @@ static void build_permutation_table_dialog(GtkWidget *menu, GtkWidget *window)
     if(result==GTK_RESPONSE_OK)
       {
         g_print("Build Permutations Table\n");
-        int ComboSet=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
-        const gchar *TableName=gtk_entry_get_text(GTK_ENTRY(value_entry1));
+        gint combo_set=atoi(gtk_entry_get_text(GTK_ENTRY(value_entry2)));
+        const gchar *table_name=gtk_entry_get_text(GTK_ENTRY(value_entry1));
         //Cap at 9
-        if(ComboSet>=2&&ComboSet<=9)
+        if(combo_set>=2&&combo_set<=9)
           {
-            build_permutation_table_sql(ComboSet, TableName);
+            build_permutation_table_sql(combo_set, table_name);
           }
          else
           {
-            printf("The permutation set range of is 2<=x<=9.\n");
+            g_print("The permutation set range of is 2<=x<=9.\n");
             simple_message_dialog("The permutation set range is 2<=x<=9.\n");
           }         
        }
-     printf("Permutations Finished\n");
+     g_print("Permutations Finished\n");
      gtk_widget_destroy(dialog);
   }
 static void format_text_dialog(GtkButton *button, gpointer data)
@@ -4002,7 +4047,9 @@ static void format_text_dialog(GtkButton *button, gpointer data)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -4011,11 +4058,11 @@ static void format_text_dialog(GtkButton *button, gpointer data)
 
     if(result==GTK_RESPONSE_OK)
       {
-        double dEntry1=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));
-        double dEntry2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
-        double dEntry3=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
-        double dEntry4=atof(gtk_entry_get_text(GTK_ENTRY(entry4)));
-        format_text_platemap(dEntry1, dEntry2, dEntry3, dEntry4, GTK_TEXT_VIEW(data));         
+        gdouble d_entry1=atof(gtk_entry_get_text(GTK_ENTRY(entry1)));
+        gdouble d_entry2=atof(gtk_entry_get_text(GTK_ENTRY(entry2)));
+        gdouble d_entry3=atof(gtk_entry_get_text(GTK_ENTRY(entry3)));
+        gdouble d_entry4=atof(gtk_entry_get_text(GTK_ENTRY(entry4)));
+        format_text_platemap(d_entry1, d_entry2, d_entry3, d_entry4, GTK_TEXT_VIEW(data));         
       }
     gtk_widget_destroy(dialog);      
   }
@@ -4117,7 +4164,9 @@ static void copy_plates_to_clipboard_dialog(GtkWidget *copy, GtkWidget *treeview
     gtk_grid_set_column_spacing(GTK_GRID(grid), 40);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -4179,7 +4228,9 @@ static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWid
     gtk_grid_set_column_spacing(GTK_GRID(grid), 30);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_container_add(GTK_CONTAINER(content_area), grid); 
     gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
 
@@ -4206,20 +4257,19 @@ static void copy_plates_to_clipboard_withtruncate_dialog(GtkWidget *copy, GtkWid
       }
     gtk_widget_destroy(dialog);
   }
-static void copy_plates_to_clipboard(GtkWidget *copy, GtkWidget *treeview, int iRows, int iColumns, int digits)
+static void copy_plates_to_clipboard(GtkWidget *copy, GtkWidget *treeview, gint rows, gint columns, gint digits)
   {
     //Copy one dimensional data to two dimensions or plate well format.
-    int iPlateSize=atoi(pPlateSizeText);
-    int iNumberOfPlates=atoi(pPlateNumberText);
-    //int iSetSizeForStatistics=atoi(pPlateStatsText);
+    gint plate_size=atoi(pPlateSizeText);
+    gint number_of_plates=atoi(pPlateNumberText);
     const gchar *title;
     GtkTreeIter iter;
     GtkTreeModel *model;
-    guint32 iModelRows=0;
-    double dTemp=0;
+    guint32 model_rows=0;
+    gdouble temp=0;
 
-    g_print("Rows %i Columns %i PlateSize %i\n", iRows, iColumns, iPlateSize);
-    if(iRows*iColumns!=iPlateSize)
+    g_print("Rows %i Columns %i PlateSize %i\n", rows, columns, plate_size);
+    if(rows*columns!=plate_size)
       {
         simple_message_dialog("The Rows in Plate times the Columns in Plate need\n to equal the Size of Plate!");
       }
@@ -4229,36 +4279,36 @@ static void copy_plates_to_clipboard(GtkWidget *copy, GtkWidget *treeview, int i
         gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(model), &iter, "0");
         do
           {
-            iModelRows++;
+            model_rows++;
           }
         while(gtk_tree_model_iter_next(model,&iter));
         gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(model), &iter, "0");
-        double dDataArray[iModelRows];
-        iModelRows=0;
+        double data_array[model_rows];
+        model_rows=0;
         do
           {
-            gtk_tree_model_get(model, &iter, 1, &dTemp, -1);
-            dDataArray[iModelRows]=dTemp;
-            iModelRows++;
+            gtk_tree_model_get(model, &iter, 1, &temp, -1);
+            data_array[model_rows]=temp;
+            model_rows++;
           }
         while(gtk_tree_model_iter_next(model,&iter));
 
         title=(gtk_menu_item_get_label(GTK_MENU_ITEM(copy)));
         g_print("Menu is %s\n", title);
 
-        if(iModelRows==(iNumberOfPlates*iRows*iColumns))
+        if(model_rows==(number_of_plates*rows*columns))
           {
             if(g_strcmp0(title, "Copy Plates to Clipboard(int)")==0)
               {
-                PlateMapInt(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns);  
+                PlateMapInt(data_array, number_of_plates, plate_size, rows, columns);  
               }
             else if(g_strcmp0(title, "Copy Plates to Clipboard(float)")==0)
               {
-                PlateMapDouble(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns);
+                PlateMapDouble(data_array, number_of_plates, plate_size, rows, columns);
               }
             else
               {
-                PlateMapDoubleTruncate(dDataArray, iNumberOfPlates, iPlateSize, iRows, iColumns, digits);  
+                PlateMapDoubleTruncate(data_array, number_of_plates, plate_size, rows, columns, digits);  
               }
             }
          else
@@ -4310,36 +4360,36 @@ static void cell_edited(GtkCellRendererText *renderer, gchar *path, gchar *new_t
           }
       }
    }
-static void test_data_button_clicked (GtkButton *button, gpointer data, int seed_value, double param, int iRadioButton)
+static void test_data_button_clicked (GtkButton *button, gpointer data, int seed_value, double param, int radio_button)
 {
-   GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *NextButton, *scrolled_win, *menu, *copyplates1, *copyplates2, *copyplates3, *copyappend;
+   GtkWidget *dialog, *content_area, *treeview, *action_area, *label1, *next_button, *scrolled_win, *menu, *copyplates1, *copyplates2, *copyplates3, *copyappend;
    GtkTreeSelection *selection;
    GtkAccelGroup *group = NULL;
-   int iArrayCount;
-   int iArrayNotVoid=0;
-   double dTemp;
-   GArray *DataArray;
-   int check=0;
+   gint array_count;
+   gint array_not_void=0;
+   gdouble temp;
+   GArray *data_array;
+   gint check=0;
 
     //Simple validation checks.
     if(data==NULL)
       {
-        int iPlateSize=atoi(pPlateSizeText);
-        int iNumberOfPlates=atoi(pPlateNumberText);
-        int iSetSizeForStatistics=atoi(pPlateStatsText);
-        printf("Plates %i, PlateSize %i, Stats %i\n",iNumberOfPlates,iPlateSize,iSetSizeForStatistics);
-        if(iPlateSize<1||iNumberOfPlates<1||iSetSizeForStatistics<1)
+        gint plate_size=atoi(pPlateSizeText);
+        gint number_of_plates=atoi(pPlateNumberText);
+        gint set_size_for_statistics=atoi(pPlateStatsText);
+        printf("Plates %i, PlateSize %i, Stats %i\n",number_of_plates,plate_size,set_size_for_statistics);
+        if(plate_size<1||number_of_plates<1||set_size_for_statistics<1)
           {
             check=1;
           }
-        if(iSetSizeForStatistics>0)
+        if(set_size_for_statistics>0)
           {
-            if(iPlateSize%iSetSizeForStatistics!=0)
+            if(plate_size%set_size_for_statistics!=0)
               {
                 check=1;
               }
           }
-        if(iPlateSize<2*iSetSizeForStatistics)
+        if(plate_size<2*set_size_for_statistics)
           {
             check=1;
           }
@@ -4359,11 +4409,11 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
      {
         if(data!=NULL)
           {
-           DataArray=(GArray*)data;
-           iArrayCount=DataArray[0].len;
-           dTemp=g_array_index(DataArray, double, 0);
-           g_print("Check Array Length %i First Value %f\n", iArrayCount, dTemp);
-           iArrayNotVoid=1;
+           data_array=(GArray*)data;
+           array_count=data_array[0].len;
+           temp=g_array_index(data_array, double, 0);
+           g_print("Check Array Length %i First Value %f\n", array_count, temp);
+           array_not_void=1;
           }
 
        dialog=gtk_dialog_new();
@@ -4371,23 +4421,25 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
        gtk_window_set_title(GTK_WINDOW(dialog), "Plate Data");
 
        content_area=gtk_dialog_get_content_area (GTK_DIALOG(dialog));
-       action_area=gtk_dialog_get_action_area (GTK_DIALOG(dialog)); 
+       G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+       action_area=gtk_dialog_get_action_area (GTK_DIALOG(dialog));
+       G_GNUC_END_IGNORE_DEPRECATIONS 
 
        label1=gtk_label_new("");
        gtk_container_add (GTK_CONTAINER (action_area), label1);
-       NextButton=gtk_button_new_with_label("  Calculate Percent>  ");
-       gtk_container_add (GTK_CONTAINER (action_area), NextButton);
+       next_button=gtk_button_new_with_label("  Calculate Percent>  ");
+       gtk_container_add (GTK_CONTAINER (action_area), next_button);
    
        treeview=gtk_tree_view_new();
-       g_signal_connect(G_OBJECT(NextButton), "clicked", G_CALLBACK(next_button_clicked), (gpointer) treeview);
+       g_signal_connect(G_OBJECT(next_button), "clicked", G_CALLBACK(next_button_clicked), (gpointer) treeview);
 
-       if(iArrayNotVoid==0)
+       if(array_not_void==0)
          {
-           setup_tree_view_data(GTK_TREE_VIEW(treeview), seed_value, param, iRadioButton);
+           setup_tree_view_data(GTK_TREE_VIEW(treeview), seed_value, param, radio_button);
          }
        else
          {
-           setup_tree_view_text(GTK_TREE_VIEW(treeview), DataArray);
+           setup_tree_view_text(GTK_TREE_VIEW(treeview), data_array);
          }
   
         scrolled_win=gtk_scrolled_window_new(NULL, NULL);
@@ -4442,7 +4494,7 @@ static void test_data_button_clicked (GtkButton *button, gpointer data, int seed
 static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
 {
    //Create the TreeView for the data produced by the functions listed in the combobox.
-   GtkWidget *dialog2, *content_area2, *treeview2, *action_area2, *label1, *NextButton2, *scrolled_win2, *copyplates2, *copyplatesd2, *copyplatest2, *copyappend2, *menu2;
+   GtkWidget *dialog2, *content_area2, *treeview2, *action_area2, *label1, *next_button2, *scrolled_win2, *copyplates2, *copyplatesd2, *copyplatest2, *copyappend2, *menu2;
    GtkTreeSelection *selection2;
    GtkAccelGroup *group2 = NULL;
 
@@ -4465,14 +4517,16 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
        gtk_window_set_transient_for(GTK_WINDOW(dialog2), pMainWindow);
        gtk_window_set_title(GTK_WINDOW(dialog2), "Percent");
 
-       content_area2 = gtk_dialog_get_content_area (GTK_DIALOG (dialog2));
-       action_area2 = gtk_dialog_get_action_area (GTK_DIALOG (dialog2));
+       content_area2=gtk_dialog_get_content_area(GTK_DIALOG(dialog2));
+       G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+       action_area2=gtk_dialog_get_action_area(GTK_DIALOG(dialog2));
+       G_GNUC_END_IGNORE_DEPRECATIONS
       
        label1=gtk_label_new("");
        gtk_container_add (GTK_CONTAINER (action_area2), label1);
-       NextButton2=gtk_button_new_with_label("Build Auxiliary Table>");
-       gtk_container_add (GTK_CONTAINER (action_area2), NextButton2);
-       g_signal_connect(G_OBJECT(NextButton2), "clicked", G_CALLBACK(build_aux_table_dialog), NULL);
+       next_button2=gtk_button_new_with_label("Build Auxiliary Table>");
+       gtk_container_add (GTK_CONTAINER (action_area2), next_button2);
+       g_signal_connect(G_OBJECT(next_button2), "clicked", G_CALLBACK(build_aux_table_dialog), NULL);
             
        treeview2=gtk_tree_view_new();
 
@@ -4485,7 +4539,7 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
        selection2=gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview2));
        gtk_tree_selection_set_mode(selection2, GTK_SELECTION_MULTIPLE);
 
-       group2 = gtk_accel_group_new();
+       group2=gtk_accel_group_new();
        gtk_window_add_accel_group(GTK_WINDOW(dialog2), group2);
     
        menu2=gtk_menu_new();
@@ -4522,7 +4576,7 @@ static void next_button_clicked(GtkButton *NextButton, GtkTreeView *treeview)
        pWindowTitle=gtk_window_get_title(GTK_WINDOW(dialog2));
      }
   }
-void setup_tree_view_text(GtkTreeView *treeview2, GArray *DataArray)
+void setup_tree_view_text(GtkTreeView *treeview2, GArray *data_array)
   {
     //Create a TreeView for the imported text file.
     GtkListStore *store;
@@ -4530,22 +4584,22 @@ void setup_tree_view_text(GtkTreeView *treeview2, GArray *DataArray)
     GtkCellRenderer *renderer;
     GtkTreeViewColumn *column;
     //GtkTreeModel *model;
-    int iArrayCount;
+    gint array_count;
     guint32 i=0;
-    gchar *pRecords=NULL;
+    gchar *records=NULL;
 
     g_print("Set Up Treeview from Text File or SQLite...\n");
 
     store=gtk_list_store_new(2, G_TYPE_INT, G_TYPE_DOUBLE);
-    iArrayCount=DataArray[0].len;
+    array_count=data_array[0].len;
     //Save count array count to global variable.
-    iTextArrayCount=DataArray[0].len;
-    pRecords=g_strdup_printf("Data (%i records)", iArrayCount); 
+    iTextArrayCount=data_array[0].len;
+    records=g_strdup_printf("Data (%i records)", array_count); 
 
-    for(i=0; i<(iArrayCount); i++)
+    for(i=0; i<array_count; i++)
       {
         gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter, 0 , i+1, 1, g_array_index(DataArray, double, i), -1);
+        gtk_list_store_set(store, &iter, 0 , i+1, 1, g_array_index(data_array, gdouble, i), -1);
       }
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(treeview2), GTK_TREE_MODEL(store));
@@ -4559,17 +4613,17 @@ void setup_tree_view_text(GtkTreeView *treeview2, GArray *DataArray)
     //digits. A problem rendering double and editing double in text.
     renderer=gtk_cell_renderer_text_new();
     g_object_set(renderer, "editable", TRUE, "editable-set", TRUE, NULL);
-    column=gtk_tree_view_column_new_with_attributes(pRecords, renderer, "text", 1, NULL);
+    column=gtk_tree_view_column_new_with_attributes(records, renderer, "text", 1, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(treeview2), column);
-    g_signal_connect(G_OBJECT(renderer), "edited", G_CALLBACK(cell_edited), (gpointer) treeview2);
+    g_signal_connect(G_OBJECT(renderer), "edited", G_CALLBACK(cell_edited), (gpointer)treeview2);
        
-    g_free(pRecords);
+    g_free(records);
     g_print("TreeView Built\n");
     /*
       After text treeview built check the arguments to make sure they apply. Check in next button.
     */
   }
-void setup_tree_view_data(GtkTreeView *treeview, int seed_value, double param, int iRadioButton)
+void setup_tree_view_data(GtkTreeView *treeview, int seed_value, double param, int radio_button)
   {
     //Set up the tree model and renderers for the TreeView and call data functions.
     guint32 i=0;
@@ -4577,59 +4631,59 @@ void setup_tree_view_data(GtkTreeView *treeview, int seed_value, double param, i
     GtkTreeIter iter;
     GtkCellRenderer *renderer;
     GtkTreeViewColumn *column;  
-    guint32 iModelRows=0;
-    gchar *pRecords=NULL;
-    double *dDataArray=NULL;
+    guint32 model_rows=0;
+    gchar *records=NULL;
+    gdouble *data_array=NULL;
       
     //Try to handle input errors before function call and atoi.
-    int iPlateSize=atoi(pPlateSizeText);
-    int iNumberOfPlates=atoi(pPlateNumberText);
-    int iSetSizeForStatistics=atoi(pPlateStatsText);
+    gint plate_size=atoi(pPlateSizeText);
+    gint number_of_plates=atoi(pPlateNumberText);
+    gint set_size_for_statistics=atoi(pPlateStatsText);
 
     g_print("Allocate Arrays on Free Store\n");
-    dDataArray = (double*)malloc((iPlateSize*iNumberOfPlates) * sizeof(double));
-    if(dDataArray==NULL)
+    data_array=(double*)malloc((plate_size*number_of_plates) * sizeof(gdouble));
+    if(data_array==NULL)
       {
         g_print("Array Allocation Failed!\n");
         simple_message_dialog("Couldn't allocate memory for the treeview! Reduce\n the number of records in the dataset.");
       }
-    iRandomDataArrayCount=iPlateSize*iNumberOfPlates;
+    iRandomDataArrayCount=plate_size*number_of_plates;
            
     g_print("Arrays Allocated\n");
     g_print("Setting Up Treeview...\n");      
         
-    if(iRadioButton==1)
+    if(radio_button==1)
       {
-        double gsl_ran_gaussian();
-        GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_gaussian);
+        gdouble gsl_ran_gaussian();
+        GenerateRandomValues(data_array, number_of_plates, plate_size, set_size_for_statistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_gaussian);
       }
-    if(iRadioButton==2)
+    if(radio_button==2)
       {
-        double gsl_ran_chisq();
-        GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_chisq);
+        gdouble gsl_ran_chisq();
+        GenerateRandomValues(data_array, number_of_plates, plate_size, set_size_for_statistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_chisq);
       }
-    if(iRadioButton==3)
+    if(radio_button==3)
       {
-        double gsl_ran_rayleigh();
-        GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_rayleigh);
+        gdouble gsl_ran_rayleigh();
+        GenerateRandomValues(data_array, number_of_plates, plate_size, set_size_for_statistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, gsl_ran_rayleigh);
       }
-    if(iRadioButton==4)
+    if(radio_button==4)
       {
-        double wrap_gsl_rng_uniform();
-        GenerateRandomValues(dDataArray, iNumberOfPlates, iPlateSize, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, wrap_gsl_rng_uniform);
+        gdouble wrap_gsl_rng_uniform();
+        GenerateRandomValues(data_array, number_of_plates, plate_size, set_size_for_statistics, pPlatePosControlText, pPlateNegControlText, seed_value, param, wrap_gsl_rng_uniform);
       }
 
-    iModelRows=iPlateSize*iNumberOfPlates;
+    model_rows=plate_size*number_of_plates;
  
-    g_print("Model Rows Count %i\n", iModelRows);
-    pRecords=g_strdup_printf("Data (%i records)", iModelRows); 
+    g_print("Model Rows Count %i\n", model_rows);
+    records=g_strdup_printf("Data (%i records)", model_rows); 
 
     store=gtk_list_store_new(2, G_TYPE_INT, G_TYPE_DOUBLE);
 
-    for(i=0; i<(iPlateSize*iNumberOfPlates); i++)
+    for(i=0; i<(plate_size*number_of_plates); i++)
       {
         gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter, 0 , i+1, 1, dDataArray[i], -1);
+        gtk_list_store_set(store, &iter, 0 , i+1, 1, data_array[i], -1);
       }
               
     gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), GTK_TREE_MODEL(store));
@@ -4641,14 +4695,14 @@ void setup_tree_view_data(GtkTreeView *treeview, int seed_value, double param, i
 
     renderer=gtk_cell_renderer_text_new();
     g_object_set(renderer, "editable", TRUE, "editable-set", TRUE, NULL);
-    column=gtk_tree_view_column_new_with_attributes(pRecords, renderer, "text", 1, NULL);
+    column=gtk_tree_view_column_new_with_attributes(records, renderer, "text", 1, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
     g_signal_connect(G_OBJECT(renderer), "edited", G_CALLBACK(cell_edited), (gpointer) treeview);
           
-    g_free(pRecords);
-    if(dDataArray!=NULL)
+    g_free(records);
+    if(data_array!=NULL)
       {
-        free(dDataArray);
+        free(data_array);
       }
         
     g_print("Free Arrays\n");
@@ -4664,22 +4718,22 @@ void setup_tree_view_percent(GtkTreeView *treeview2, GtkTreeView *treeview)
      GtkCellRenderer *renderer;
      GtkTreeViewColumn *column;
      GtkTreeModel *model;
-     double dTemp=0;   
-     guint32 iModelRows=0;
-     gchar *pRecords=NULL;
-     double *dDataArray=NULL;
-     double *dPercentArray=NULL;
+     gdouble temp=0;   
+     guint32 model_rows=0;
+     gchar *records=NULL;
+     gdouble *data_array=NULL;
+     gdouble *percent_array=NULL;
       
      //Try to handle input errors before function call and atoi.
-     int iPlateSize=atoi(pPlateSizeText);
-     int iNumberOfPlates=atoi(pPlateNumberText);
-     int iSetSizeForStatistics=atoi(pPlateStatsText);
+     gint plate_size=atoi(pPlateSizeText);
+     gint number_of_plates=atoi(pPlateNumberText);
+     int set_size_for_statistics=atoi(pPlateStatsText);
         
      g_print("Allocate Arrays\n");
-     dDataArray = (double*)malloc((iPlateSize*iNumberOfPlates) * sizeof(double));
-     dPercentArray = (double*)malloc((iPlateSize*iNumberOfPlates) * sizeof(double));
+     data_array = (gdouble*)malloc((plate_size*number_of_plates) * sizeof(gdouble));
+     percent_array = (gdouble*)malloc((plate_size*number_of_plates) * sizeof(gdouble));
 
-     if(dDataArray==NULL||dPercentArray==NULL)
+     if(data_array==NULL||percent_array==NULL)
        {
          g_print("Array Allocation Failed!\n");
          simple_message_dialog("Couldn't allocate memory for the treeview! Reduce\n the number of records in the dataset.");
@@ -4692,23 +4746,23 @@ void setup_tree_view_percent(GtkTreeView *treeview2, GtkTreeView *treeview)
   
      do
        {
-         gtk_tree_model_get(model, &iter, 1, &dTemp, -1);
-         dDataArray[iModelRows]=dTemp;
-         iModelRows++;
+         gtk_tree_model_get(model, &iter, 1, &temp, -1);
+         data_array[model_rows]=temp;
+         model_rows++;
        }
      while(gtk_tree_model_iter_next(model,&iter));
 
-     CalculatePercentControl(dDataArray, dPercentArray, iPlateSize, iNumberOfPlates, iSetSizeForStatistics, pPlatePosControlText, pPlateNegControlText);
-              
-     g_print("Model Rows Count %i\n", iModelRows);
-     pRecords=g_strdup_printf("Data (%i records)", iModelRows); 
+     CalculatePercentControl(data_array, percent_array, plate_size, number_of_plates, set_size_for_statistics, pPlatePosControlText, pPlateNegControlText);
+           
+     g_print("Model Rows Count %i\n", model_rows);
+     records=g_strdup_printf("Data (%i records)", model_rows); 
 
      store=gtk_list_store_new(2, G_TYPE_INT, G_TYPE_DOUBLE);
 
-     for(i=0; i<(iPlateSize*iNumberOfPlates); i++)
+     for(i=0; i<(plate_size*number_of_plates); i++)
        {
          gtk_list_store_append(store, &iter);
-         gtk_list_store_set(store, &iter, 0 , i+1, 1, dPercentArray[i], -1);
+         gtk_list_store_set(store, &iter, 0 , i+1, 1, percent_array[i], -1);
        }
               
      gtk_tree_view_set_model(GTK_TREE_VIEW(treeview2), GTK_TREE_MODEL(store));
@@ -4720,13 +4774,13 @@ void setup_tree_view_percent(GtkTreeView *treeview2, GtkTreeView *treeview)
 
      renderer=gtk_cell_renderer_text_new();
      g_object_set(renderer, "editable", TRUE, "editable-set", TRUE, NULL);
-     column=gtk_tree_view_column_new_with_attributes(pRecords, renderer, "text", 1, NULL);
+     column=gtk_tree_view_column_new_with_attributes(records, renderer, "text", 1, NULL);
      gtk_tree_view_append_column(GTK_TREE_VIEW(treeview2), column);
      g_signal_connect(G_OBJECT(renderer), "edited", G_CALLBACK(cell_edited), (gpointer) treeview2);
           
-     g_free(pRecords);
-     if(dDataArray!=NULL) free(dDataArray);
-     if(dPercentArray!=NULL) free(dPercentArray);
+     g_free(records);
+     if(data_array!=NULL) free(data_array);
+     if(percent_array!=NULL) free(percent_array);
         
      g_print("Free Arrays\n");
      g_print("Treeview Built\n");
@@ -4823,7 +4877,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
     sqlite3_stmt *stmt1=NULL;
     gint sql_return=0;
     gdouble temp=0;
-    GArray *DataArray=g_array_new(FALSE, FALSE, sizeof(double));
+    GArray *data_array=g_array_new(FALSE, FALSE, sizeof(double));
     gchar *database=g_strdup_printf("%s", gtk_entry_get_text(GTK_ENTRY(g_array_index(widgets, GtkWidget*, 0))));
     char *sql1=sqlite3_mprintf("SELECT %q FROM %q;", field, table);
     //g_print("%s\n", sql1);
@@ -4837,7 +4891,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
       {
         temp=sqlite3_column_double(stmt1, 0);
         if(temp<0.0000001&&temp>-0.0000001) zero_counter++;
-        g_array_append_val(DataArray, temp);
+        g_array_append_val(data_array, temp);
         sql_return=sqlite3_step(stmt1);
         i++;
       }
@@ -4845,11 +4899,11 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
     sqlite3_finalize(stmt1);   
     sqlite3_close(cnn);
  
-    g_print("SQLite Check Array Length %i First %f Last %f ZeroWarning %i\n", i, g_array_index(DataArray, double, 0), g_array_index(DataArray, double, i-1), zero_counter);
+    g_print("SQLite Check Array Length %i First %f Last %f ZeroWarning %i\n", i, g_array_index(data_array, double, 0), g_array_index(data_array, double, i-1), zero_counter);
 
     if(i>0)
       {
-        test_data_button_clicked(NULL, DataArray,0,0,0);
+        test_data_button_clicked(NULL, data_array,0,0,0);
       }
     else
       {
@@ -4857,7 +4911,7 @@ static void get_single_field_values(gchar *table, gchar *field, GArray *widgets)
         simple_message_dialog("Couldn't fill array with values.");
       }
 
-    g_array_free(DataArray, TRUE);
+    g_array_free(data_array, TRUE);
     sqlite3_free(sql1);
     if(database!=NULL) g_free(database);
   }
