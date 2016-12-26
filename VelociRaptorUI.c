@@ -38,22 +38,24 @@ cecashon@aol.com
 #include "VelociRaptorPermutations.h"
 #include "VelociRaptorHtmlTable.h"
 
-//Global variables.
-GtkWindow *pMainWindow=NULL;   
-const gchar *pPlateNumberText=NULL;
+//File global variables. Some weird naming for globals.
+static GtkWindow *pMainWindow=NULL;   
+static const gchar *pPlateNumberText=NULL;
+static const gchar *pCurrentFont=NULL;
+static guint32 iTextArrayCount=0;
+static guint32 iRandomDataArrayCount=0;
+static gint iReferenceCountDialogWindow=0;
+static gboolean bUnderline=FALSE;
+
+//Program global variables.
 const gchar *pPlateSizeText=NULL;
 const gchar *pPlateStatsText=NULL;
 const gchar *pPlatePosControlText=NULL;
 const gchar *pPlateNegControlText=NULL;
 const gchar *pWindowTitle=NULL;
-const gchar *pCurrentFont=NULL;
-guint32 iTextArrayCount=0;
-guint32 iRandomDataArrayCount=0;
-int iReferenceCountDialogWindow=0;
-int iBreakLoop=0;
-gboolean underline=FALSE;
+gint iBreakLoop=0;
 
-//Integration parameters in Dunnett's. Declared in VelociRaptorGlobal.h.
+//Global integration parameters in Dunnett's. Declared in VelociRaptorGlobal.h. Used with Fortran.
 int MAXPTS_C=1000;
 double ABSEPS_C=0.01;
 
@@ -579,11 +581,11 @@ static void change_underline(GtkWidget *button, GtkTextView *textview)
   {
     if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button)))
       {
-        underline=TRUE;
+        bUnderline=TRUE;
       }
     else
       {
-        underline=FALSE;
+        bUnderline=FALSE;
       }
   }
 static void change_selection_font(GtkWidget *button, GtkTextView *textview)
@@ -615,7 +617,7 @@ static void change_selection_font(GtkWidget *button, GtkTextView *textview)
            }
        }
 
-    if(!underline)
+    if(!bUnderline)
       {
         gtk_text_buffer_create_tag(buffer, tag_name->str ,"font" , pCurrentFont , NULL);
       }
