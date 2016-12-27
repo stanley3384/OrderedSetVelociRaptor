@@ -14,6 +14,7 @@ record limit isn't enforced by the code but by a limit with the sql statement.
 
 #include<gtk/gtk.h>
 #include<sqlite3.h>
+#include<stdio.h>
 
 //The database to query.
 static GString *database=NULL;
@@ -24,6 +25,7 @@ static void get_sqlite_data(const gchar *sql_string, gpointer data[]);
 static void close_program(GtkWidget *widget, gpointer data);
 static void connect_db(GtkWidget *button1, GArray *widgets);
 static void error_message(const gchar *string, gpointer data);
+static void export_text(GtkWidget *widget, gpointer *data);
 static void about_dialog(GtkWidget *widget, gpointer data);
 static GdkPixbuf* draw_velociraptor();
 
@@ -110,13 +112,23 @@ int main(int argc, char *argv[])
     gtk_paned_add2(GTK_PANED(pane), r_grid);
 
     GtkWidget *menu1=gtk_menu_new();
-    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Simple SQLite Viewer");
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Export Text");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
-    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    GtkWidget *title1=gtk_menu_item_new_with_label("File");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+
+    GtkWidget *menu2=gtk_menu_new();
+    GtkWidget *menu2item1=gtk_menu_item_new_with_label("Simple SQLite Viewer");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu2), menu2item1);
+    GtkWidget *title2=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title2), menu2);
+
     GtkWidget *menu_bar=gtk_menu_bar_new();
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
-    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title2);
+    GtkWidget *win_tree[]={window, r_tree};
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(export_text), win_tree);
+    g_signal_connect(menu2item1, "activate", G_CALLBACK(about_dialog), window);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 0, 1, 1);
@@ -368,8 +380,7 @@ static void connect_db(GtkWidget *button1, GArray *widgets)
             if(stmt1!=NULL) sqlite3_finalize(stmt1);
             sqlite3_close(cnn);
           
-            //Print values loaded into the treeview store to check they are there.
-            //g_print("Print Treeview Values\n");
+            /*Print values loaded into the treeview nodes to check they are there.
             GtkTreeIter iter3, iter4;
             gboolean check1=FALSE;
             gboolean check2=FALSE;
@@ -378,19 +389,21 @@ static void connect_db(GtkWidget *button1, GArray *widgets)
               {
                 gchar *string1=NULL;
                 gtk_tree_model_get(GTK_TREE_MODEL(store), &iter3, 0, &string1, -1);
-                //g_print("%s\n", string1);
+                g_print("%s\n", string1);
                 check2=gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &iter4, &iter3);
                 while(check2)
                   {
                     gchar *string2=NULL;
                     gtk_tree_model_get(GTK_TREE_MODEL(store), &iter4, 0, &string2, -1);
-                    //g_print("  %s\n", string2);
+                    g_print("  %s\n", string2);
                     check2=gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter4);
                     if(string2!=NULL) g_free(string2);
                   }
                 check1=gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter3);
                 if(string1!=NULL) g_free(string1);
               }
+            */
+
             //Attach the store data to the treeview.
             gtk_tree_view_set_model(GTK_TREE_VIEW(g_array_index(widgets, GtkWidget*, 1)), GTK_TREE_MODEL(store));  
           }
@@ -404,6 +417,93 @@ static void error_message(const gchar *string, gpointer data)
     GtkWidget *dialog=gtk_message_dialog_new(GTK_WINDOW(data), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", string);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+  }
+static void export_text(GtkWidget *widget, gpointer *data)
+  {
+    gint result;
+
+    GtkWidget *dialog=gtk_dialog_new_with_buttons("Export Text", data[0], GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, "Cancel", GTK_RESPONSE_CANCEL, NULL);
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+    gtk_container_set_border_width(GTK_CONTAINER(dialog), 20);
+
+    GtkWidget *label1=gtk_label_new("Send the data in the textview to a\ntext file in the current directory.");
+    GtkWidget *label2=gtk_label_new("File Name");
+    
+    GtkWidget *entry1=gtk_entry_new();
+    gtk_widget_set_halign(entry1, GTK_ALIGN_CENTER);
+    gtk_entry_set_text(GTK_ENTRY(entry1), "exported_data");
+ 
+    GtkWidget *grid=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 1, 1, 1);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+
+    GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    GtkWidget *action_area=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    gtk_container_add(GTK_CONTAINER(content_area), grid); 
+    gtk_container_set_border_width(GTK_CONTAINER(action_area), 20);
+
+    gtk_widget_show_all(dialog);
+    result=gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if(result==GTK_RESPONSE_OK)
+      {
+        const gchar *file_name=gtk_entry_get_text(GTK_ENTRY(entry1));
+        GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(data[1]));
+        FILE *f=fopen(file_name, "w");
+      
+        //Load a simple data format into a text file.
+        if(model!=NULL&&f!=NULL)
+          {
+            g_print("Data in Model\n");
+            gint i=0;
+            GValue value=G_VALUE_INIT;
+            gint columns=gtk_tree_model_get_n_columns(GTK_TREE_MODEL(model));
+            GtkTreeIter iter1;
+            gboolean check1=FALSE;
+            check1=gtk_tree_model_get_iter_first(GTK_TREE_MODEL(model), &iter1);
+            while(check1)
+              { 
+                for(i=0;i<columns;i++)
+                  {
+                    gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter1, i, &value);
+                    if(G_VALUE_HOLDS_STRING(&value))
+                      {
+                        //g_print(" %s", g_value_get_string(&value));
+                        fprintf(f, " %s", g_value_get_string(&value));
+                      }
+                    else if(G_VALUE_HOLDS_INT(&value))
+                      {
+                        //g_print(" %i", g_value_get_int(&value));
+                        fprintf(f, " %i", g_value_get_int(&value));
+                      }
+                    else if(G_VALUE_HOLDS_DOUBLE(&value))
+                      {
+                        //g_print(" %f", g_value_get_double(&value));
+                        fprintf(f, " %f", g_value_get_double(&value));
+                      }
+                    else g_print("Couldn't Find Column Value\n");
+                    g_value_unset(&value); 
+                  } 
+                //g_print("\n");
+                fprintf(f, "\n");              
+                check1=gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter1);
+              }
+            fclose(f); 
+            printf("%s File Created.\n", file_name);
+          }
+        else
+          {
+            error_message("There isn't any data\nin the treeview.", data[0]);
+          }
+      }
+
+    gtk_widget_destroy(dialog);
+     
   }
 static void about_dialog(GtkWidget *widget, gpointer data)
   {
