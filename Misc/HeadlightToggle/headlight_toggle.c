@@ -363,12 +363,13 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   */
   gdouble w2=2.0*width;
   gdouble h2=width;
+  gdouble ratio=w2/height;
   if(0.5*height<h2)
     {
-       cairo_scale(cr, 0.5*height/h2, 0.5*height/h2);
-       cairo_translate(cr, -w2/2.0+(width/2.0)*width/height, (0.5*height/h2)*height/16.0);
+      cairo_scale(cr, 0.5*height/h2, 0.5*height/h2);
+      cairo_translate(cr, -w2/(2.0*ratio), (0.5*height/h2)*height/32.0);
     }
-  else cairo_translate(cr, -w2/2.0, (0.5*height/h2)*height/16.0);
+  else cairo_translate(cr, (-w2/2.0)+((1.0/32.0)*w2), (0.5*height/h2)*height/32.0);
 
   if(priv->headlight_toggle_icon==HEADLIGHT_ICON)
     {
@@ -399,8 +400,9 @@ static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, g
       cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
-          cairo_scale(cr, 0.85, 1.0);
-          cairo_translate(cr, 0.05*width, 0.0);
+          //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
+          cairo_scale(cr, 7.0/8.0, 1.0);
+          cairo_translate(cr, (1.0/16.0)*width, 0.0);
         }
       else
         {
@@ -448,8 +450,9 @@ static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble hei
       cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
-          cairo_scale(cr, 0.85, 1.0);
-          cairo_translate(cr, 0.05*width, 0.0);
+          //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
+          cairo_scale(cr, 7.0/8.0, 1.0);
+          cairo_translate(cr, (1.0/16.0)*width, 0.0);
         }
       else
         {
@@ -485,8 +488,9 @@ static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint he
       cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
-          cairo_scale(cr, 0.85, 1.0);
-          cairo_translate(cr, 0.05*width, 0.0);
+          //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
+          cairo_scale(cr, 7.0/8.0, 1.0);
+          cairo_translate(cr, (1.0/16.0)*width, 0.0);
         }
       else
         {
@@ -527,8 +531,9 @@ static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint
       cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
-          cairo_scale(cr, 0.9, 1.0);
-          cairo_translate(cr, 0.05*width, 0.0);
+          //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
+          cairo_scale(cr, 7.0/8.0, 1.0);
+          cairo_translate(cr, (1.0/16.0)*width, 0.0);
         }
       else
         {
