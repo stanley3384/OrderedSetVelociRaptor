@@ -359,7 +359,8 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
 
   /*
     Draw off screen and then translate the drawing back. Scale if needed. It isn't perfect
-    but the drawing functions don't need to be re-written for the vertical drawing. 
+    but the drawing functions don't need to be re-written for the vertical drawing. Also there
+    are some problems with adding small translations to individual drawings. 
   */
   gdouble w2=2.0*width;
   gdouble h2=width;
@@ -367,9 +368,9 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   if(0.5*height<h2)
     {
       cairo_scale(cr, 0.5*height/h2, 0.5*height/h2);
-      cairo_translate(cr, -w2/(2.0*ratio), (0.5*height/h2)*height/32.0);
+      cairo_translate(cr, -w2/(2.0*ratio), (0.5*height/h2)*height/16.0);
     }
-  else cairo_translate(cr, (-w2/2.0)+((1.0/32.0)*w2), (0.5*height/h2)*height/32.0);
+  else cairo_translate(cr, (-w2/2.0)+((1.0/32.0)*w2), (0.5*height/h2)*height/16.0);
 
   if(priv->headlight_toggle_icon==HEADLIGHT_ICON)
     {
@@ -406,14 +407,19 @@ static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, g
         }
       else
         {
-          cairo_scale(cr, 1.0, 0.9);
-          cairo_translate(cr, 0.0, 0.1*height);
+          cairo_scale(cr, 1.0, 7.0/8.0);
+          cairo_translate(cr, 0.0, (1.0/16.0)*height);
         } 
     }
   else
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      if(headlight_toggle_direction==VERTICAL_UP)
+        {
+          cairo_translate(cr, 0.0, -(1.0/16.0)*height);
+        }
     }
+
   cairo_set_line_width(cr, 4.0);
   cairo_move_to(cr, 6.0*width/8.0, height/4.0);
   cairo_curve_to(cr, width/2.0, 3.0*height/8.0, width/2.0, 5.0*height/8.0, 6.0*width/8.0, 3.0*height/4.0);
@@ -456,14 +462,19 @@ static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble hei
         }
       else
         {
-          cairo_scale(cr, 1.0, 0.9);
-          cairo_translate(cr, 0.0, 0.1*height);
+          cairo_scale(cr, 1.0, 7.0/8.0);
+          cairo_translate(cr, -(1.0/32.0)*width, (1.0/16.0)*height);
         } 
     }
   else
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      if(headlight_toggle_direction==VERTICAL_UP)
+        {
+          cairo_translate(cr, -(1.0/32.0)*width, -(1.0/16.0)*height);
+        }
     }
+
   cairo_set_line_width(cr, 4.0);
   cairo_move_to(cr, 6.0*width/8.0, height/4.0);
   cairo_line_to(cr, 5.0*width/8.0, 3.0*height/4.0);
@@ -494,14 +505,19 @@ static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint he
         }
       else
         {
-          cairo_scale(cr, 1.0, 0.9);
-          cairo_translate(cr, 0.0, 0.1*height);
+          cairo_scale(cr, 1.0, 7.0/8.0);
+          cairo_translate(cr, -(1.0/32.0)*width, (1.0/12.0)*height);
         } 
     }
   else
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      if(headlight_toggle_direction==VERTICAL_UP)
+        {
+          cairo_translate(cr, -(1.0/32.0)*width, -(1.0/16.0)*height);
+        }
     }
+
   cairo_set_line_width(cr, 4.0);
   cairo_scale(cr, 0.8, 0.8);
   cairo_translate(cr, 0.18*width, 0.1*height);
@@ -537,13 +553,17 @@ static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint
         }
       else
         {
-          cairo_scale(cr, 1.0, 0.9);
-          cairo_translate(cr, 0.0, 0.1*height);
+          cairo_scale(cr, 1.0, 7.0/8.0);
+          cairo_translate(cr, 0.0, (1.0/16.0)*height);
         } 
     }
   else
     {
       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      if(headlight_toggle_direction==VERTICAL_UP)
+        {
+          cairo_translate(cr, 0.0, -(1.0/16.0)*height);
+        }
     }
 
   //First line
