@@ -261,6 +261,25 @@ static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr)
       cairo_fill(cr);
     }
 
+  //Draw end line "gaps" indented 8 from outside rectangle.
+  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
+    {
+      cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+      cairo_set_line_width(cr, 16.0);
+      cairo_move_to(cr, 0.0, 0.0);
+      cairo_line_to(cr, 0.0, height);
+      cairo_stroke(cr);
+    }
+
+  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_ON)
+    {
+      cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+      cairo_set_line_width(cr, 16.0);
+      cairo_move_to(cr, width, 0.0);
+      cairo_line_to(cr, width, height);
+      cairo_stroke(cr);
+    }
+
   //The outside rectangle.
   cairo_set_source_rgba(cr, 0.8, 0.8, 0.8, 1.0);
   cairo_set_line_width(cr, 8.0);
@@ -351,6 +370,25 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
       cairo_fill(cr);
     }
   
+  //Draw end line "gaps" indented 8 from outside rectangle.
+  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
+    {
+      cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+      cairo_set_line_width(cr, 16.0);
+      cairo_move_to(cr, 0.0, height);
+      cairo_line_to(cr, width, height);
+      cairo_stroke(cr);
+    }
+
+  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_ON)
+    {
+      cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+      cairo_set_line_width(cr, 16.0);
+      cairo_move_to(cr, 0.0, 0.0);
+      cairo_line_to(cr, width, 0.0);
+      cairo_stroke(cr);
+    }
+
   //The outside rectangle.
   cairo_set_source_rgba(cr, 0.8, 0.8, 0.8, 1.0);
   cairo_set_line_width(cr, 8.0);
@@ -476,6 +514,7 @@ static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble hei
     }
 
   cairo_set_line_width(cr, 4.0);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
   cairo_move_to(cr, 6.0*width/8.0, height/4.0);
   cairo_line_to(cr, 5.0*width/8.0, 3.0*height/4.0);
   cairo_stroke_preserve(cr);
