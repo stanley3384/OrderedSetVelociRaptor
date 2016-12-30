@@ -44,6 +44,7 @@ static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data);
+static gboolean draw_window(GtkWidget *da, cairo_t *cr, gpointer data);
 
 int main(int argc, char **argv)
   {      
@@ -53,7 +54,9 @@ int main(int argc, char **argv)
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 600, 600);
     gtk_window_set_title(GTK_WINDOW(window), "Gauges");
+    gtk_widget_set_app_paintable(window, TRUE);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "draw", G_CALLBACK(draw_window), NULL);
        
     GtkWidget *gauge1=adjustable_gauge_new();
     adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge1), SPEEDOMETER_GAUGE);
@@ -88,7 +91,8 @@ int main(int argc, char **argv)
     adjustable_gauge_set_second_cutoff(ADJUSTABLE_GAUGE(gauge4), 480.0);
 
     //The lower panel of drawing area critters.
-    GtkWidget *label=gtk_label_new("You can't handle turtle speed!");
+    GtkWidget *label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label), "<span foreground='white'>You can't handle turtle speed!</span>");
     
     GtkWidget *turtle=gtk_drawing_area_new();
     gtk_widget_set_hexpand(turtle, TRUE);
@@ -213,7 +217,7 @@ static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *dat
   needle_speed=0.5;
 
   //Draw the top active critter.
-  gtk_label_set_text(GTK_LABEL(data[0]), "You can't handle the turtle speed!");
+  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>You can't handle turtle speed!</span>");
 
   //Redraw panel critters.
   gtk_widget_queue_draw(GTK_WIDGET(data[1]));
@@ -228,7 +232,7 @@ static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *dat
   drawing=2;
   needle_speed=1.5;
 
-  gtk_label_set_text(GTK_LABEL(data[0]), "This is a water dragon lizard, not an alien, OK.");
+  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>This is a water dragon lizard, not an alien, OK.</span>");
 
   //Redraw panel critters.
   gtk_widget_queue_draw(GTK_WIDGET(data[1]));
@@ -243,7 +247,7 @@ static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *dat
   drawing=3;
   needle_speed=2.5;
 
-  gtk_label_set_text(GTK_LABEL(data[0]), "This is no turtle!");
+  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>This is no turtle!</span>");
 
   //Redraw panel critters.
   gtk_widget_queue_draw(GTK_WIDGET(data[1]));
@@ -258,7 +262,7 @@ static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *dat
   drawing=4;
   needle_speed=4.0;
 
-  gtk_label_set_text(GTK_LABEL(data[0]), "Cheetah speed. Hang on!");
+  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>Cheetah speed. Hang on!</span>");
 
   //Redraw panel critters.
   gtk_widget_queue_draw(GTK_WIDGET(data[1]));
@@ -284,10 +288,10 @@ static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data)
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
 
-  //Move the turtle a little.
-  cairo_translate(cr, 0.7*width/16.0, 2.0*height/16.0);
+  //Move the turtle and scale a little.
+  cairo_translate(cr, 1.5*width/16.0, 2.0*height/16.0);
+  cairo_scale(cr, 0.90, 1.0);
  
   //Scale drawing line by 400x400 drawing.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
@@ -340,10 +344,10 @@ static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data)
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
 
-  //Move the lizard a little.
-  cairo_translate(cr, 0.6*width/16.0, 1.0*height/16.0); 
+  //Move the lizard and scale a little.
+  cairo_translate(cr, 1.5*width/16.0, 1.0*height/16.0);
+  cairo_scale(cr, 0.90, 1.0); 
  
   //scale line width by height. Original drawing 400x400.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
@@ -416,8 +420,7 @@ static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data)
   else cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
-  cairo_stroke(cr);
-  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]); 
+  cairo_stroke(cr); 
  
   //scale line width by height. Original drawing 400x400.
   cairo_set_line_width(cr, 6.0*(gdouble)height/400.0);
@@ -485,7 +488,6 @@ static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data)
   cairo_set_line_width(cr, 7.0);
   cairo_rectangle(cr, 0.0, 0.0, width, height);
   cairo_stroke(cr);
-  cairo_set_source_rgba(cr, fgc[0], fgc[1], fgc[2], fgc[3]);
 
   //Move the cheetah a little.
   cairo_translate(cr, 0.5*width/16.0, 0.0); 
@@ -541,6 +543,12 @@ static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data)
   cairo_arc(cr, 13.75*width/16.0, 6.75*height/16.0, 5.0*(gdouble)height/400.0, 0.0, 2*G_PI);
   cairo_fill(cr);
   
+  return FALSE;
+}
+static gboolean draw_window(GtkWidget *da, cairo_t *cr, gpointer data)
+{
+  cairo_set_source_rgba(cr, bgc[0], bgc[1], bgc[2], bgc[3]);
+  cairo_paint(cr); 
   return FALSE;
 }
 
