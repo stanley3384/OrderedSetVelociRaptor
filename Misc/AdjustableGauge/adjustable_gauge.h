@@ -66,6 +66,8 @@ void adjustable_gauge_set_arc_color2(AdjustableGauge *da, const gchar *arc_color
 const gchar* adjustable_gauge_get_arc_color2(AdjustableGauge *da);
 void adjustable_gauge_set_arc_color3(AdjustableGauge *da, const gchar *arc_color_string3);
 const gchar* adjustable_gauge_get_arc_color3(AdjustableGauge *da);
+void adjustable_gauge_set_needle_color(AdjustableGauge *da, const gchar *arc_color_string3);
+const gchar* adjustable_gauge_get_needle_color(AdjustableGauge *da);
 
 G_END_DECLS
 

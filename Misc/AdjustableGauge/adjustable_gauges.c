@@ -60,12 +60,18 @@ int main(int argc, char **argv)
        
     GtkWidget *gauge1=adjustable_gauge_new();
     adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge1), SPEEDOMETER_GAUGE);
+    adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge1), "rgba(255, 255, 255, 1.0)");
+    adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge1), "rgba(0, 0, 0, 1.0)");
+    adjustable_gauge_set_needle_color(ADJUSTABLE_GAUGE(gauge1), "rgba(0, 0, 0, 1.0)");
     gtk_widget_set_name(gauge1, "g1");
     gtk_widget_set_hexpand(gauge1, TRUE);
     gtk_widget_set_vexpand(gauge1, TRUE); 
 
     GtkWidget *gauge2=adjustable_gauge_new();
     adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge2), SPEEDOMETER_GAUGE);
+    adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge2), "rgba(255, 255, 255, 1.0)");
+    adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge2), "rgba(0, 0, 0, 1.0)");
+    adjustable_gauge_set_needle_color(ADJUSTABLE_GAUGE(gauge2), "rgba(0, 0, 0, 1.0)");
     gtk_widget_set_hexpand(gauge2, TRUE);
     gtk_widget_set_vexpand(gauge2, TRUE);
     //Set scale values before cutoff values.

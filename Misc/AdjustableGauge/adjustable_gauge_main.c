@@ -65,15 +65,16 @@ int main(int argc, char *argv[])
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   GtkWidget *gauge=adjustable_gauge_new();
-  /*
-  Test setting some colors in the gauge.
+  
+  /*Test setting some colors in the gauge.
   adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge), "rgba(255, 0, 255, 1.0)");
   adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge), "rgba(255, 255, 0, 1.0)");
   adjustable_gauge_set_arc_color1(ADJUSTABLE_GAUGE(gauge), "rgba(0, 200, 0, 1.0)");
   adjustable_gauge_set_arc_color2(ADJUSTABLE_GAUGE(gauge), "rgba(200, 200, 0, 1.0)");
   adjustable_gauge_set_arc_color3(ADJUSTABLE_GAUGE(gauge), "rgba(200, 0, 0, 1.0)");
-  g_print("%s, %s, %s, %s, %s\n", adjustable_gauge_get_background(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_text_color(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color1(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color2(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color3(ADJUSTABLE_GAUGE(gauge)));
-  */
+  adjustable_gauge_set_needle_color(ADJUSTABLE_GAUGE(gauge), "rgba(150, 150, 0, 1.0)");
+  g_print("%s, %s, %s, %s, %s, %s\n", adjustable_gauge_get_background(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_text_color(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color1(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color2(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color3(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_needle_color(ADJUSTABLE_GAUGE(gauge)));
+  */  
   gtk_widget_set_hexpand(gauge, TRUE);
   gtk_widget_set_vexpand(gauge, TRUE);
 

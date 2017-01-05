@@ -29,11 +29,13 @@ struct _AdjustableGaugePrivate
   gchar *arc_color_string1;
   gchar *arc_color_string2;
   gchar *arc_color_string3;
+  gchar *needle_color_string;
   gdouble background[4];
   gdouble text_color[4];
   gdouble arc_color1[4];
   gdouble arc_color2[4];
   gdouble arc_color3[4];
+  gdouble needle_color[4];
 };
 
 enum
@@ -50,7 +52,8 @@ enum
   TEXT_COLOR,
   ARC_COLOR1,
   ARC_COLOR2,
-  ARC_COLOR3
+  ARC_COLOR3,
+  NEEDLE_COLOR
 };
 
 //Private functions.
@@ -105,6 +108,8 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
  
   g_object_class_install_property(gobject_class, ARC_COLOR3, g_param_spec_string("arc_color3", "arc_color3", "arc_color3", NULL, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, NEEDLE_COLOR, g_param_spec_string("needle_color", "needle_color", "needle_color", NULL, G_PARAM_READWRITE));
+
 }
 //Needed for g_object_set().
 static void adjustable_gauge_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
@@ -145,7 +150,10 @@ static void adjustable_gauge_set_property(GObject *object, guint prop_id, const 
       break;
     case ARC_COLOR3:
       adjustable_gauge_set_arc_color3(da, g_value_get_string(value));
-      break;       
+      break;
+    case NEEDLE_COLOR:
+      adjustable_gauge_set_needle_color(da, g_value_get_string(value));
+      break;        
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
       break;
@@ -360,7 +368,27 @@ void adjustable_gauge_set_arc_color3(AdjustableGauge *da, const gchar *arc_color
     {
       g_warning("arc_color_string3 error\n");
     } 
-}   
+} 
+void adjustable_gauge_set_needle_color(AdjustableGauge *da, const gchar *needle_color_string)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, needle_color_string))
+    {
+      //g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->needle_color[0]=rgba.red;
+      priv->needle_color[1]=rgba.green;
+      priv->needle_color[2]=rgba.blue;
+      priv->needle_color[3]=rgba.alpha;
+      if(priv->needle_color_string!=NULL) g_free(priv->needle_color_string);
+      priv->needle_color_string=g_strdup(needle_color_string); 
+    }
+  else
+    {
+      g_warning("needle_color_string error\n");
+    } 
+}     
 static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   AdjustableGauge *da=ADJUSTABLE_GAUGE(object);
@@ -400,6 +428,9 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
       break;
     case ARC_COLOR3:
       g_value_set_string(value, priv->arc_color_string3);
+      break;
+    case NEEDLE_COLOR:
+      g_value_set_string(value, priv->needle_color_string);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -460,6 +491,11 @@ const gchar* adjustable_gauge_get_arc_color3(AdjustableGauge *da)
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   return priv->arc_color_string1;
 }
+const gchar* adjustable_gauge_get_needle_color(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->arc_color_string1;
+}
 static void adjustable_gauge_init(AdjustableGauge *da)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -493,12 +529,17 @@ static void adjustable_gauge_init(AdjustableGauge *da)
   priv->arc_color3[1]=0.0;
   priv->arc_color3[2]=0.0;
   priv->arc_color3[3]=1.0;
+  priv->needle_color[0]=1.0;
+  priv->needle_color[1]=1.0;
+  priv->needle_color[2]=1.0;
+  priv->needle_color[3]=1.0;
   
   priv->background_string=g_strdup("rgba(0, 0, 0, 1.0)");
   priv->text_color_string=g_strdup("rgba(255, 255, 255, 1.0)");
   priv->arc_color_string1=g_strdup("rgba(0, 255, 0, 1.0)");
   priv->arc_color_string2=g_strdup("rgba(255, 255, 0, 1.0)");
   priv->arc_color_string3=g_strdup("rgba(255, 0, 0, 1.0)");
+  priv->needle_color_string=g_strdup("rgba(255, 255, 255, 1.0)");
 
 }
 GtkWidget* adjustable_gauge_new()
@@ -575,7 +616,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
       g_print("Gauge underload %f!\n", priv->needle);
       standard_needle=1.0;
     }
-  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
+  cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
   cairo_move_to(cr, 0, 0);
   cairo_line_to(cr, -(cos(standard_needle*G_PI/12.0)*150), -sin(standard_needle*G_PI/12.0)*150);
   cairo_stroke(cr);
@@ -699,6 +740,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
     }
 
   //The needle line.
+  cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
   gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
   cairo_move_to(cr, 0, 0);
@@ -706,6 +748,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_stroke(cr);
     
   //Text for needle value.
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
   cairo_text_extents_t extents1;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size(cr, 30);
