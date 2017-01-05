@@ -23,6 +23,17 @@ struct _AdjustableGaugePrivate
   gdouble scale_bottom;
   gdouble scale_top;
   gint gauge_drawing_name;
+  //colors
+  gchar *background_string;
+  gchar *text_color_string;
+  gchar *arc_color_string1;
+  gchar *arc_color_string2;
+  gchar *arc_color_string3;
+  gdouble background[4];
+  gdouble text_color[4];
+  gdouble arc_color1[4];
+  gdouble arc_color2[4];
+  gdouble arc_color3[4];
 };
 
 enum
@@ -33,7 +44,13 @@ enum
   NEEDLE,
   SCALE_BOTTOM,
   SCALE_TOP,
-  GAUGE_DRAWING_NAME
+  GAUGE_DRAWING_NAME,
+  //color properties
+  BACKGROUND,
+  TEXT_COLOR,
+  ARC_COLOR1,
+  ARC_COLOR2,
+  ARC_COLOR3
 };
 
 //Private functions.
@@ -78,6 +95,16 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
 
   g_object_class_install_property(gobject_class, SCALE_TOP, g_param_spec_int("gauge_drawing_name", "gauge_drawing_name", "gauge_drawing_name", 0, 1, 0, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, BACKGROUND, g_param_spec_string("background", "background", "background", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, TEXT_COLOR, g_param_spec_string("text_color", "text_color", "text_color", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, ARC_COLOR1, g_param_spec_string("arc_color1", "arc_color1", "arc_color1", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, ARC_COLOR2, g_param_spec_string("arc_color2", "arc_color2", "arc_color2", NULL, G_PARAM_READWRITE));
+ 
+  g_object_class_install_property(gobject_class, ARC_COLOR3, g_param_spec_string("arc_color3", "arc_color3", "arc_color3", NULL, G_PARAM_READWRITE));
+
 }
 //Needed for g_object_set().
 static void adjustable_gauge_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
@@ -103,7 +130,22 @@ static void adjustable_gauge_set_property(GObject *object, guint prop_id, const 
       break; 
     case GAUGE_DRAWING_NAME:
       adjustable_gauge_set_drawing(da, g_value_get_int(value));
-      break; 
+      break;
+    case BACKGROUND:
+      adjustable_gauge_set_background(da, g_value_get_string(value));
+      break;
+    case TEXT_COLOR:
+      adjustable_gauge_set_text_color(da, g_value_get_string(value));
+      break;
+    case ARC_COLOR1:
+      adjustable_gauge_set_arc_color1(da, g_value_get_string(value));
+      break;
+    case ARC_COLOR2:
+      adjustable_gauge_set_arc_color2(da, g_value_get_string(value));
+      break;
+    case ARC_COLOR3:
+      adjustable_gauge_set_arc_color3(da, g_value_get_string(value));
+      break;       
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
       break;
@@ -218,7 +260,107 @@ void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name)
       priv->gauge_drawing_name=0;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
+}
+void adjustable_gauge_set_background(AdjustableGauge *da, const gchar *background_string)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, background_string))
+    {
+      //g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->background[0]=rgba.red;
+      priv->background[1]=rgba.green;
+      priv->background[2]=rgba.blue;
+      priv->background[3]=rgba.alpha;
+      if(priv->background_string!=NULL) g_free(priv->background_string);
+      priv->background_string=g_strdup(background_string); 
+    }
+  else
+    {
+      g_warning("background_string error\n");
+    } 
 } 
+void adjustable_gauge_set_text_color(AdjustableGauge *da, const gchar *text_color_string)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, text_color_string))
+    {
+      //g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->text_color[0]=rgba.red;
+      priv->text_color[1]=rgba.green;
+      priv->text_color[2]=rgba.blue;
+      priv->text_color[3]=rgba.alpha;
+      if(priv->text_color_string!=NULL) g_free(priv->text_color_string);
+      priv->text_color_string=g_strdup(text_color_string); 
+    }
+  else
+    {
+      g_warning("text_color_string error\n");
+    } 
+} 
+void adjustable_gauge_set_arc_color1(AdjustableGauge *da, const gchar *arc_color_string1)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, arc_color_string1))
+    {
+      //g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->arc_color1[0]=rgba.red;
+      priv->arc_color1[1]=rgba.green;
+      priv->arc_color1[2]=rgba.blue;
+      priv->arc_color1[3]=rgba.alpha;
+      if(priv->arc_color_string1!=NULL) g_free(priv->arc_color_string1);
+      priv->arc_color_string1=g_strdup(arc_color_string1); 
+    }
+  else
+    {
+      g_warning("arc_color_string1 error\n");
+    } 
+}
+void adjustable_gauge_set_arc_color2(AdjustableGauge *da, const gchar *arc_color_string2)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, arc_color_string2))
+    {
+      //g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->arc_color2[0]=rgba.red;
+      priv->arc_color2[1]=rgba.green;
+      priv->arc_color2[2]=rgba.blue;
+      priv->arc_color2[3]=rgba.alpha;
+      if(priv->arc_color_string2!=NULL) g_free(priv->arc_color_string2);
+      priv->arc_color_string2=g_strdup(arc_color_string2); 
+    }
+  else
+    {
+      g_warning("arc_color_string2 error\n");
+    } 
+}
+void adjustable_gauge_set_arc_color3(AdjustableGauge *da, const gchar *arc_color_string3)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, arc_color_string3))
+    {
+      //g_print("red %f, green %f, blue %f, alpha %f\n", rgba.red, rgba.green, rgba.blue, rgba.alpha);
+      priv->arc_color3[0]=rgba.red;
+      priv->arc_color3[1]=rgba.green;
+      priv->arc_color3[2]=rgba.blue;
+      priv->arc_color3[3]=rgba.alpha;
+      if(priv->arc_color_string3!=NULL) g_free(priv->arc_color_string3);
+      priv->arc_color_string3=g_strdup(arc_color_string3); 
+    }
+  else
+    {
+      g_warning("arc_color_string3 error\n");
+    } 
+}   
 static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   AdjustableGauge *da=ADJUSTABLE_GAUGE(object);
@@ -243,6 +385,21 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
       break;
     case GAUGE_DRAWING_NAME:
       g_value_set_int(value, priv->gauge_drawing_name);
+      break;
+    case BACKGROUND:
+      g_value_set_string(value, priv->background_string);
+      break;
+    case TEXT_COLOR:
+      g_value_set_string(value, priv->text_color_string);
+      break;
+    case ARC_COLOR1:
+      g_value_set_string(value, priv->arc_color_string1);
+      break;
+    case ARC_COLOR2:
+      g_value_set_string(value, priv->arc_color_string2);
+      break;
+    case ARC_COLOR3:
+      g_value_set_string(value, priv->arc_color_string3);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -278,6 +435,31 @@ gint adjustable_gauge_get_drawing(AdjustableGauge *da)
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   return priv->gauge_drawing_name;
 }
+const gchar* adjustable_gauge_get_background(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->background_string;
+}
+const gchar* adjustable_gauge_get_text_color(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->text_color_string;
+}
+const gchar* adjustable_gauge_get_arc_color1(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->arc_color_string1;
+}
+const gchar* adjustable_gauge_get_arc_color2(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->arc_color_string2;
+}
+const gchar* adjustable_gauge_get_arc_color3(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->arc_color_string1;
+}
 static void adjustable_gauge_init(AdjustableGauge *da)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -289,6 +471,35 @@ static void adjustable_gauge_init(AdjustableGauge *da)
   priv->scale_bottom=0.0;
   priv->scale_top=100.0;
   priv->gauge_drawing_name=0;
+
+  //Set the initial colors.
+  priv->background[0]=0.0;
+  priv->background[1]=0.0;
+  priv->background[2]=0.0;
+  priv->background[3]=1.0;
+  priv->text_color[0]=1.0;
+  priv->text_color[1]=1.0;
+  priv->text_color[2]=1.0;
+  priv->text_color[3]=1.0;
+  priv->arc_color1[0]=0.0;
+  priv->arc_color1[1]=1.0;
+  priv->arc_color1[2]=0.0;
+  priv->arc_color1[3]=1.0;
+  priv->arc_color2[0]=1.0;
+  priv->arc_color2[1]=1.0;
+  priv->arc_color2[2]=0.0;
+  priv->arc_color2[3]=1.0;
+  priv->arc_color3[0]=1.0;
+  priv->arc_color3[1]=0.0;
+  priv->arc_color3[2]=0.0;
+  priv->arc_color3[3]=1.0;
+  
+  priv->background_string=g_strdup("rgba(0, 0, 0, 1.0)");
+  priv->text_color_string=g_strdup("rgba(255, 255, 255, 1.0)");
+  priv->arc_color_string1=g_strdup("rgba(0, 255, 0, 1.0)");
+  priv->arc_color_string2=g_strdup("rgba(255, 255, 0, 1.0)");
+  priv->arc_color_string3=g_strdup("rgba(255, 0, 0, 1.0)");
+
 }
 GtkWidget* adjustable_gauge_new()
 {
@@ -313,7 +524,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Original drawing 400x400.
   gdouble scale_y=(gdouble)height/400.0;
     
-  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+  cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
   cairo_paint(cr);
 
   //transforms
@@ -321,7 +532,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_scale(cr, 1.30*scale_y, 1.30*scale_y);
 
   //Green underneath 
-  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+  cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
   cairo_set_line_width(cr, 3.0);
   cairo_arc_negative(cr, 0, 0, 100, 23.0*G_PI/12.0, 13.0*G_PI/12.0);
   cairo_line_to(cr, -(cos(G_PI/12.0)*150), -sin(G_PI/12.0)*150);
@@ -335,7 +546,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
 
   //Draw yellow next. Standardized on 13 to 23 scale.
   gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
-  cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+   cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
   cairo_arc_negative(cr, 0, 0, 100, 23.0*G_PI/12.0, standard_first_cutoff*G_PI/12.0);
   cairo_arc(cr, 0, 0, 150, standard_first_cutoff*G_PI/12.0, 23.0*G_PI/12.0);
   cairo_close_path(cr);
@@ -344,7 +555,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
 
   //Draw red top. Standardized on 13 to 23 scale.
   gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
-  cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
+   cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
   cairo_arc_negative(cr, 0, 0, 100, 23.0*G_PI/12.0, standard_second_cutoff*G_PI/12.0);
   cairo_arc(cr, 0, 0, 150, standard_second_cutoff*G_PI/12.0, 23.0*G_PI/12.0);
   cairo_close_path(cr);
@@ -364,12 +575,13 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
       g_print("Gauge underload %f!\n", priv->needle);
       standard_needle=1.0;
     }
-  cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
   cairo_move_to(cr, 0, 0);
   cairo_line_to(cr, -(cos(standard_needle*G_PI/12.0)*150), -sin(standard_needle*G_PI/12.0)*150);
   cairo_stroke(cr);
 
   //Text for needle value.
+   cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
   cairo_text_extents_t extents1;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size(cr, 46);
@@ -410,7 +622,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   gint center_y=height/2;
   gdouble scale_y=(gdouble)height/400.0;
     
-  cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+  cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
   cairo_paint(cr);
 
   //transforms
@@ -418,7 +630,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_scale(cr, 1.10*scale_y, 1.10*scale_y);
 
   //Green underneath 
-  cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+   cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
   cairo_set_line_width(cr, 3.0);
   cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
   cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*150), sin(-4.0*G_PI/3.0)*150);
@@ -431,7 +643,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 
   //Yellow next.
   gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
-  cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+   cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
   cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
   cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_first_cutoff, -5.0*G_PI/3.0);
   cairo_close_path(cr);
@@ -440,7 +652,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 
   //Red top.
   gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
-  cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
+   cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
   cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
   cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_second_cutoff, -5.0*G_PI/3.0);
   cairo_close_path(cr);
@@ -449,7 +661,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 
   //Set large tick marks.
   gint i=0;
-  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
   gdouble tenth_scale=diff/10.0;
   gdouble tick_mark=(5.0*G_PI/3.0)/10.0;
   gdouble temp=0;
@@ -506,6 +718,15 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 }
 static void adjustable_gauge_finalize(GObject *object)
 { 
+  AdjustableGauge *da=ADJUSTABLE_GAUGE(object);
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  
+  g_free(priv->background_string);
+  g_free(priv->text_color_string);
+  g_free(priv->arc_color_string1);
+  g_free(priv->arc_color_string2);
+  g_free(priv->arc_color_string3);
+
   G_OBJECT_CLASS(adjustable_gauge_parent_class)->finalize(object);
 }
 

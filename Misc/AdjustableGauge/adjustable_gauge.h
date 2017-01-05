@@ -55,6 +55,17 @@ void adjustable_gauge_set_scale_top(AdjustableGauge *da, gdouble scale_top);
 gdouble adjustable_gauge_get_scale_top(AdjustableGauge *da);
 void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name);
 gint adjustable_gauge_get_drawing(AdjustableGauge *da);
+//Set and get colors.
+void adjustable_gauge_set_background(AdjustableGauge *da, const gchar *background_string);
+const gchar* adjustable_gauge_get_background(AdjustableGauge *da);
+void adjustable_gauge_set_text_color(AdjustableGauge *da, const gchar *text_color_string);
+const gchar* adjustable_gauge_get_text_color(AdjustableGauge *da);
+void adjustable_gauge_set_arc_color1(AdjustableGauge *da, const gchar *arc_color_string1);
+const gchar* adjustable_gauge_get_arc_color1(AdjustableGauge *da);
+void adjustable_gauge_set_arc_color2(AdjustableGauge *da, const gchar *arc_color_string2);
+const gchar* adjustable_gauge_get_arc_color2(AdjustableGauge *da);
+void adjustable_gauge_set_arc_color3(AdjustableGauge *da, const gchar *arc_color_string3);
+const gchar* adjustable_gauge_get_arc_color3(AdjustableGauge *da);
 
 G_END_DECLS
 

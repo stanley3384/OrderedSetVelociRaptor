@@ -2,8 +2,7 @@
 /*
 
     An adjustable gauge widget. There are two cutoff points that can be set along with the 
-range of the scale. No colors are set with functons but you can change them in the code
-easy enough.
+range of the scale.
     There are two types of gauges. One is called a voltage gauge and the other is a speedometer 
 gauge. The range is not enforced.  They can go above 10,000 or below -10,000 but the number formatting
 in the speedometer gets out of place. Also the speedometer numbers are displayed as ints and
@@ -15,7 +14,7 @@ bottom values first.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 
-    Tested on Ubuntu16.04, GTK3.18.
+    Tested on Ubuntu14.04, GTK3.10.
 
     C. Eric Cashon
 
@@ -66,6 +65,15 @@ int main(int argc, char *argv[])
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   GtkWidget *gauge=adjustable_gauge_new();
+  /*
+  Test setting some colors in the gauge.
+  adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge), "rgba(255, 0, 255, 1.0)");
+  adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge), "rgba(255, 255, 0, 1.0)");
+  adjustable_gauge_set_arc_color1(ADJUSTABLE_GAUGE(gauge), "rgba(0, 200, 0, 1.0)");
+  adjustable_gauge_set_arc_color2(ADJUSTABLE_GAUGE(gauge), "rgba(200, 200, 0, 1.0)");
+  adjustable_gauge_set_arc_color3(ADJUSTABLE_GAUGE(gauge), "rgba(200, 0, 0, 1.0)");
+  g_print("%s, %s, %s, %s, %s\n", adjustable_gauge_get_background(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_text_color(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color1(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color2(ADJUSTABLE_GAUGE(gauge)), adjustable_gauge_get_arc_color3(ADJUSTABLE_GAUGE(gauge)));
+  */
   gtk_widget_set_hexpand(gauge, TRUE);
   gtk_widget_set_vexpand(gauge, TRUE);
 
