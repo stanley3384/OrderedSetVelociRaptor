@@ -78,12 +78,16 @@ int main(int argc, char *argv[])
 
   GtkWidget *ht2=headlight_toggle_new();
   headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht2), EMERGENCY_LIGHT_ICON);
+  headlight_toggle_set_dim_color(HEADLIGHT_TOGGLE(ht2), "rgba(0, 200, 0, 1.0)");
+  headlight_toggle_set_lit_color(HEADLIGHT_TOGGLE(ht2), "rgba(0, 255, 0, 1.0)");
   gtk_widget_set_hexpand(ht2, TRUE);
   gtk_widget_set_vexpand(ht2, TRUE);
   gtk_widget_set_events(ht2, GDK_BUTTON_PRESS_MASK);
   g_signal_connect(ht2, "button_press_event", G_CALLBACK(click_horizontal_drawing), NULL); 
 
   GtkWidget *ht3=headlight_toggle_new();
+  headlight_toggle_set_dim_color(HEADLIGHT_TOGGLE(ht3), "rgba(0, 0, 200, 1.0)");
+  headlight_toggle_set_lit_color(HEADLIGHT_TOGGLE(ht3), "rgba(0, 0, 255, 1.0)");
   headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht3), FAN_ICON);
   gtk_widget_set_hexpand(ht3, TRUE);
   gtk_widget_set_vexpand(ht3, TRUE);
@@ -100,6 +104,8 @@ int main(int argc, char *argv[])
   //Vertical drawings.
   GtkWidget *ht5=headlight_toggle_new();
   headlight_toggle_set_direction(HEADLIGHT_TOGGLE(ht5), VERTICAL_UP);
+  headlight_toggle_set_dim_color(HEADLIGHT_TOGGLE(ht5), "rgba(200, 0, 200, 1.0)");
+  headlight_toggle_set_lit_color(HEADLIGHT_TOGGLE(ht5), "rgba(255, 0, 255, 1.0)");
   gtk_widget_set_hexpand(ht5, TRUE);
   gtk_widget_set_vexpand(ht5, TRUE);
   gtk_widget_set_events(ht5, GDK_BUTTON_PRESS_MASK);
@@ -123,6 +129,10 @@ int main(int argc, char *argv[])
 
   GtkWidget *ht8=headlight_toggle_new();
   headlight_toggle_set_direction(HEADLIGHT_TOGGLE(ht8), VERTICAL_UP);
+  headlight_toggle_set_dim_color(HEADLIGHT_TOGGLE(ht8), "rgba(0, 200, 200, 1.0)");
+  headlight_toggle_set_lit_color(HEADLIGHT_TOGGLE(ht8), "rgba(0, 255, 255, 1.0)");
+  headlight_toggle_set_icon_dim_color(HEADLIGHT_TOGGLE(ht8), "rgba(200, 200, 200, 1.0)");
+  headlight_toggle_set_icon_lit_color(HEADLIGHT_TOGGLE(ht8), "rgba(255, 255, 255, 1.0)");
   headlight_toggle_set_icon(HEADLIGHT_TOGGLE(ht8), HEATER_ICON);
   gtk_widget_set_hexpand(ht8, TRUE);
   gtk_widget_set_vexpand(ht8, TRUE);

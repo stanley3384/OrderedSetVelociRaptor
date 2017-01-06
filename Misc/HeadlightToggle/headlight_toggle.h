@@ -63,6 +63,15 @@ void headlight_toggle_set_direction(HeadlightToggle *da, gint state);
 gint headlight_toggle_get_direction(HeadlightToggle *da);
 void headlight_toggle_set_icon(HeadlightToggle *da, gint state);
 gint headlight_toggle_get_icon(HeadlightToggle *da);
+//Set some toggle colors.
+void headlight_toggle_set_dim_color(HeadlightToggle *da, const gchar *dim_color_string);
+const gchar* headlight_toggle_get_dim_color(HeadlightToggle *da);
+void headlight_toggle_set_lit_color(HeadlightToggle *da, const gchar *dim_color_string);
+const gchar* headlight_toggle_get_lit_color(HeadlightToggle *da);
+void headlight_toggle_set_icon_dim_color(HeadlightToggle *da, const gchar *dim_color_string);
+const gchar* headlight_toggle_get_icon_dim_color(HeadlightToggle *da);
+void headlight_toggle_set_icon_lit_color(HeadlightToggle *da, const gchar *dim_color_string);
+const gchar* headlight_toggle_get_icon_lit_color(HeadlightToggle *da);
 
 G_END_DECLS
 

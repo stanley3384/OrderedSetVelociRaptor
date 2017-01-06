@@ -19,6 +19,15 @@ struct _HeadlightTogglePrivate
   gint headlight_toggle_state;
   gint headlight_toggle_direction;
   gint headlight_toggle_icon;
+  //Some drawing colors.
+  gchar *dim_color_string;
+  gchar *lit_color_string;
+  gchar *icon_dim_color_string;
+  gchar *icon_lit_color_string;
+  gdouble dim_color[4];
+  gdouble lit_color[4];
+  gdouble icon_dim_color[4];
+  gdouble icon_lit_color[4];
 };
 
 enum
@@ -26,7 +35,11 @@ enum
   PROP_0,
   HEADLIGHT_TOGGLE_STATE,
   HEADLIGHT_TOGGLE_DIRECTION,
-  HEADLIGHT_TOGGLE_ICON
+  HEADLIGHT_TOGGLE_ICON,
+  HEADLIGHT_TOGGLE_DIM_COLOR,
+  HEADLIGHT_TOGGLE_LIT_COLOR,
+  HEADLIGHT_TOGGLE_ICON_DIM_COLOR,
+  HEADLIGHT_TOGGLE_ICON_LIT_COLOR
 };
 
 //Private functions.
@@ -37,10 +50,10 @@ static void headlight_toggle_init(HeadlightToggle *da);
 static gboolean headlight_toggle_draw(GtkWidget *widget, cairo_t *cr);
 static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr);
 static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr);
-static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
-static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
-static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
-static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
+static void headlight_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
+static void emergency_light_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
+static void fan_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
+static void heater_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction);
 static void headlight_toggle_finalize(GObject *gobject);
 
 G_DEFINE_TYPE(HeadlightToggle, headlight_toggle, GTK_TYPE_DRAWING_AREA)
@@ -68,6 +81,15 @@ static void headlight_toggle_class_init(HeadlightToggleClass *klass)
   g_object_class_install_property(gobject_class, HEADLIGHT_TOGGLE_DIRECTION, g_param_spec_int("headlight_toggle_direction", "headlight_toggle_direction", "headlight_toggle_direction", 0, 1, 0, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, HEADLIGHT_TOGGLE_ICON, g_param_spec_int("headlight_toggle_icon", "headlight_toggle_icon", "headlight_toggle_icon", 0, 1, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, HEADLIGHT_TOGGLE_DIM_COLOR, g_param_spec_string("dim_color", "dim_color", "dim_color", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, HEADLIGHT_TOGGLE_LIT_COLOR, g_param_spec_string("lit_color", "lit_color", "lit_color", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, HEADLIGHT_TOGGLE_ICON_DIM_COLOR, g_param_spec_string("icon_dim_color", "icon_dim_color", "icon_dim_color", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, HEADLIGHT_TOGGLE_ICON_LIT_COLOR, g_param_spec_string("icon_lit_color", "icon_lit_color", "icon_lit_color", NULL, G_PARAM_READWRITE));
+
 }
 //Needed for g_object_set().
 static void headlight_toggle_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
@@ -85,7 +107,19 @@ static void headlight_toggle_set_property(GObject *object, guint prop_id, const 
       break;  
     case HEADLIGHT_TOGGLE_ICON:
       headlight_toggle_set_icon(da, g_value_get_int(value));
-      break;    
+      break;
+    case HEADLIGHT_TOGGLE_DIM_COLOR:
+      headlight_toggle_set_dim_color(da, g_value_get_string(value));
+      break;
+    case HEADLIGHT_TOGGLE_LIT_COLOR:
+      headlight_toggle_set_lit_color(da, g_value_get_string(value));
+      break;
+    case HEADLIGHT_TOGGLE_ICON_DIM_COLOR:
+      headlight_toggle_set_icon_dim_color(da, g_value_get_string(value));
+      break; 
+    case HEADLIGHT_TOGGLE_ICON_LIT_COLOR:
+      headlight_toggle_set_icon_lit_color(da, g_value_get_string(value));
+      break;         
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
       break;
@@ -133,6 +167,82 @@ void headlight_toggle_set_icon(HeadlightToggle *da, gint headlight_toggle_icon)
       g_warning("The headlight icon can be HEADLIGHT_ICON=0, EMERGENCY_ICON=1, FAN_ICON=2 or HEATER_ICON=3.");
     }
 }
+void headlight_toggle_set_dim_color(HeadlightToggle *da, const gchar *dim_color_string)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, dim_color_string))
+    {
+      priv->dim_color[0]=rgba.red;
+      priv->dim_color[1]=rgba.green;
+      priv->dim_color[2]=rgba.blue;
+      priv->dim_color[3]=rgba.alpha;
+      if(priv->dim_color_string!=NULL) g_free(priv->dim_color_string);
+      priv->dim_color_string=g_strdup(dim_color_string); 
+    }
+  else
+    {
+      g_warning("dim_color_string error\n");
+    } 
+}
+void headlight_toggle_set_lit_color(HeadlightToggle *da, const gchar *lit_color_string)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, lit_color_string))
+    {
+      priv->lit_color[0]=rgba.red;
+      priv->lit_color[1]=rgba.green;
+      priv->lit_color[2]=rgba.blue;
+      priv->lit_color[3]=rgba.alpha;
+      if(priv->lit_color_string!=NULL) g_free(priv->lit_color_string);
+      priv->lit_color_string=g_strdup(lit_color_string); 
+    }
+  else
+    {
+      g_warning("lit_color_string error\n");
+    } 
+} 
+void headlight_toggle_set_icon_dim_color(HeadlightToggle *da, const gchar *icon_dim_color_string)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, icon_dim_color_string))
+    {
+      priv->icon_dim_color[0]=rgba.red;
+      priv->icon_dim_color[1]=rgba.green;
+      priv->icon_dim_color[2]=rgba.blue;
+      priv->icon_dim_color[3]=rgba.alpha;
+      if(priv->icon_dim_color_string!=NULL) g_free(priv->icon_dim_color_string);
+      priv->icon_dim_color_string=g_strdup(icon_dim_color_string); 
+    }
+  else
+    {
+      g_warning("icon_dim_color_string error\n");
+    } 
+}
+void headlight_toggle_set_icon_lit_color(HeadlightToggle *da, const gchar *icon_lit_color_string)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, icon_lit_color_string))
+    {
+      priv->icon_lit_color[0]=rgba.red;
+      priv->icon_lit_color[1]=rgba.green;
+      priv->icon_lit_color[2]=rgba.blue;
+      priv->icon_lit_color[3]=rgba.alpha;
+      if(priv->icon_lit_color_string!=NULL) g_free(priv->icon_lit_color_string);
+      priv->icon_lit_color_string=g_strdup(icon_lit_color_string); 
+    }
+  else
+    {
+      g_warning("icon_lit_color_string error\n");
+    } 
+}    
 static void headlight_toggle_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   HeadlightToggle *da=HEADLIGHT_TOGGLE(object);
@@ -148,6 +258,18 @@ static void headlight_toggle_get_property(GObject *object, guint prop_id, GValue
       break;
     case HEADLIGHT_TOGGLE_ICON:
       g_value_set_int(value, priv->headlight_toggle_icon);
+      break;
+    case HEADLIGHT_TOGGLE_DIM_COLOR:
+      g_value_set_string(value, priv->dim_color_string);
+      break;
+    case HEADLIGHT_TOGGLE_LIT_COLOR:
+      g_value_set_string(value, priv->lit_color_string);
+      break;
+    case HEADLIGHT_TOGGLE_ICON_DIM_COLOR:
+      g_value_set_string(value, priv->icon_dim_color_string);
+      break;
+    case HEADLIGHT_TOGGLE_ICON_LIT_COLOR:
+      g_value_set_string(value, priv->icon_lit_color_string);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -168,6 +290,26 @@ gint headlight_toggle_get_icon(HeadlightToggle *da)
   HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
   return priv->headlight_toggle_icon;
 }
+const gchar* headlight_toggle_get_dim_color(HeadlightToggle *da)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+  return priv->dim_color_string;
+}
+const gchar* headlight_toggle_get_lit_color(HeadlightToggle *da)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+  return priv->lit_color_string;
+}
+const gchar* headlight_toggle_get_icon_dim_color(HeadlightToggle *da)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+  return priv->icon_dim_color_string;
+}
+const gchar* headlight_toggle_get_icon_lit_color(HeadlightToggle *da)
+{
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+  return priv->icon_lit_color_string;
+}
 static void headlight_toggle_init(HeadlightToggle *da)
 {
   HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
@@ -178,6 +320,24 @@ static void headlight_toggle_init(HeadlightToggle *da)
   priv->headlight_toggle_state=HORIZONTAL_RIGHT; 
   //Default icon drawing to headlight.
   priv->headlight_toggle_icon=HEADLIGHT_ICON; 
+
+  //Set some initial colors.
+  priv->dim_color[0]=0.8;
+  priv->dim_color[1]=0.0;
+  priv->dim_color[2]=0.0;
+  priv->dim_color[3]=1.0;
+  priv->lit_color[0]=1.0;
+  priv->lit_color[1]=0.0;
+  priv->lit_color[2]=0.0;
+  priv->lit_color[3]=1.0;
+  priv->icon_dim_color[0]=0.8;
+  priv->icon_dim_color[1]=0.8;
+  priv->icon_dim_color[2]=0.0;
+  priv->icon_dim_color[3]=1.0;
+  priv->icon_lit_color[0]=1.0;
+  priv->icon_lit_color[1]=1.0;
+  priv->icon_lit_color[2]=0.0;
+  priv->icon_lit_color[3]=1.0;
 }
 GtkWidget* headlight_toggle_new()
 {
@@ -245,8 +405,8 @@ static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr)
     }
 
   //The lit part of the switch.
-  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF) cairo_set_source_rgba(cr, 0.8, 0.0, 0.0, 1.0);
-  else cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
+  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF) cairo_set_source_rgba(cr, priv->dim_color[0], priv->dim_color[1], priv->dim_color[2], priv->dim_color[3]);
+  else cairo_set_source_rgba(cr, priv->lit_color[0], priv->lit_color[1], priv->lit_color[2], priv->lit_color[3]);
   cairo_rectangle(cr, button_middle, 0, width-button_middle, height);
   cairo_fill(cr);
 
@@ -254,7 +414,7 @@ static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr)
   cairo_pattern_t *pattern3=cairo_pattern_create_linear(button_right, 0.0, width, 0.0);
   if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
     {
-      cairo_pattern_add_color_stop_rgba(pattern3, 0.0, 1.0, 0.0, 0.0, 1.0); 
+      cairo_pattern_add_color_stop_rgba(pattern3, 0.0, priv->lit_color[0], priv->lit_color[1], priv->lit_color[2], priv->lit_color[3]); 
       cairo_pattern_add_color_stop_rgba(pattern3, 1.0, 0.0, 0.0, 0.0, 1.0); 
       cairo_set_source(cr, pattern3);    
       cairo_rectangle(cr, button_right, 0, width-button_right, height);
@@ -289,19 +449,19 @@ static void headlight_toggle_horizontal_right_draw(GtkWidget *da, cairo_t *cr)
   //The headlight drawing.
   if(priv->headlight_toggle_icon==HEADLIGHT_ICON)
     {
-      headlight_icon_drawing(cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      headlight_icon_drawing(da, cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   else if(priv->headlight_toggle_icon==EMERGENCY_LIGHT_ICON)
     {
-      emergency_light_icon_drawing(cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      emergency_light_icon_drawing(da, cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   else if(priv->headlight_toggle_icon==FAN_ICON)
     {
-      fan_icon_drawing(cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      fan_icon_drawing(da, cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   else
     {
-      heater_icon_drawing(cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      heater_icon_drawing(da, cr, width, height, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   
   cairo_pattern_destroy(pattern1);
@@ -354,8 +514,8 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
     }
 
   //The lit top part of the switch.
-  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF) cairo_set_source_rgba(cr, 0.0, 0.0, 0.8, 1.0);
-  else cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+  if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF) cairo_set_source_rgba(cr, priv->dim_color[0], priv->dim_color[1], priv->dim_color[2], priv->dim_color[3]);
+  else cairo_set_source_rgba(cr, priv->lit_color[0], priv->lit_color[1], priv->lit_color[2], priv->lit_color[3]);
   cairo_rectangle(cr, 0.0, 0.0, width, button_middle);
   cairo_fill(cr);
   
@@ -364,7 +524,7 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   if(priv->headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
     {
       cairo_pattern_add_color_stop_rgba(pattern3, 0.0, 0.0, 0.0, 0.0, 1.0); 
-      cairo_pattern_add_color_stop_rgba(pattern3, 1.0, 0.0, 0.0, 1.0, 1.0); 
+      cairo_pattern_add_color_stop_rgba(pattern3, 1.0, priv->lit_color[0], priv->lit_color[1], priv->lit_color[2], priv->lit_color[3]); 
       cairo_set_source(cr, pattern3);    
       cairo_rectangle(cr, 0.0, 0.0, width, button_top);
       cairo_fill(cr);
@@ -412,19 +572,19 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
 
   if(priv->headlight_toggle_icon==HEADLIGHT_ICON)
     {
-      headlight_icon_drawing(cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      headlight_icon_drawing(da, cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   else if(priv->headlight_toggle_icon==EMERGENCY_LIGHT_ICON)
     {
-      emergency_light_icon_drawing(cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      emergency_light_icon_drawing(da, cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   else if(priv->headlight_toggle_icon==FAN_ICON)
     {
-      fan_icon_drawing(cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      fan_icon_drawing(da, cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   else
     {
-      heater_icon_drawing(cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
+      heater_icon_drawing(da, cr, w2, h2, priv->headlight_toggle_state, priv->headlight_toggle_direction);
     }
   
   cairo_pattern_destroy(pattern1);
@@ -432,11 +592,13 @@ static void headlight_toggle_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   cairo_pattern_destroy(pattern3);
   
 }
-static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
+static void headlight_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
 {
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+ 
   if(headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
     {
-      cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_dim_color[0], priv->icon_dim_color[1], priv->icon_dim_color[2], priv->icon_dim_color[3]);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
           //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
@@ -451,7 +613,7 @@ static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, g
     }
   else
     {
-      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_lit_color[0], priv->icon_lit_color[1], priv->icon_lit_color[2], priv->icon_lit_color[3]);
       if(headlight_toggle_direction==VERTICAL_UP)
         {
           cairo_translate(cr, 0.0, -(1.0/16.0)*height);
@@ -487,11 +649,13 @@ static void headlight_icon_drawing(cairo_t *cr, gdouble width, gdouble height, g
   cairo_line_to(cr, 7.0*width/8.0, 13.0*height/16.0);
   cairo_stroke(cr); 
 }
-static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
+static void emergency_light_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
 {
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
   if(headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
     {
-      cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_dim_color[0], priv->icon_dim_color[1], priv->icon_dim_color[2], priv->icon_dim_color[3]);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
           //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
@@ -506,7 +670,7 @@ static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble hei
     }
   else
     {
-      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_lit_color[0], priv->icon_lit_color[1], priv->icon_lit_color[2], priv->icon_lit_color[3]);
       if(headlight_toggle_direction==VERTICAL_UP)
         {
           cairo_translate(cr, -(1.0/32.0)*width, -(1.0/16.0)*height);
@@ -531,11 +695,13 @@ static void emergency_light_icon_drawing(cairo_t *cr, gdouble width, gdouble hei
   cairo_line_to(cr, 6.0*width/8.0, 1.7*height/4.0);
   cairo_stroke_preserve(cr);
 }
-static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
+static void fan_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
 {
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
   if(headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
     {
-      cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_dim_color[0], priv->icon_dim_color[1], priv->icon_dim_color[2], priv->icon_dim_color[3]);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
           //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
@@ -550,7 +716,7 @@ static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint he
     }
   else
     {
-      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_lit_color[0], priv->icon_lit_color[1], priv->icon_lit_color[2], priv->icon_lit_color[3]);
       if(headlight_toggle_direction==VERTICAL_UP)
         {
           cairo_translate(cr, -(1.0/32.0)*width, -(1.0/16.0)*height);
@@ -579,11 +745,13 @@ static void fan_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint he
   cairo_stroke(cr);
 
 }
-static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
+static void heater_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdouble height, gint headlight_toggle_state, gint headlight_toggle_direction)
 {
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+
   if(headlight_toggle_state==HEADLIGHT_TOGGLE_OFF)
     {
-      cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_dim_color[0], priv->icon_dim_color[1], priv->icon_dim_color[2], priv->icon_dim_color[3]);
       if(headlight_toggle_direction==HORIZONTAL_RIGHT)
         {
           //Scale based on end gradient shift of drawing. Translate 0.5 of 1/8.
@@ -598,7 +766,7 @@ static void heater_icon_drawing(cairo_t *cr, gdouble width, gdouble height, gint
     }
   else
     {
-      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->icon_lit_color[0], priv->icon_lit_color[1], priv->icon_lit_color[2], priv->icon_lit_color[3]);
       if(headlight_toggle_direction==VERTICAL_UP)
         {
           cairo_translate(cr, 0.0, -(1.0/16.0)*height);
