@@ -826,6 +826,12 @@ static void heater_icon_drawing(GtkWidget *da, cairo_t *cr, gdouble width, gdoub
 }
 static void headlight_toggle_finalize(GObject *object)
 {
+  HeadlightToggle *da=HEADLIGHT_TOGGLE(object);
+  HeadlightTogglePrivate *priv=HEADLIGHT_TOGGLE_GET_PRIVATE(da);
+  g_free(priv->dim_color_string);
+  g_free(priv->lit_color_string);
+  g_free(priv->icon_dim_color_string);
+  g_free(priv->icon_lit_color_string);
   G_OBJECT_CLASS(headlight_toggle_parent_class)->finalize(object);
 }
 
