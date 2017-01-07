@@ -8,10 +8,10 @@
 
 #include<gtk/gtk.h>
 
-gboolean lightning_break=FALSE;
+static gint drawing=0;
 
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
-static void toggle_button(GtkToggleButton *button, GtkWidget *da);
+static void button_clicked(GtkWidget *button, GtkWidget *da);
 
 int main(int argc, char **argv)
  {
@@ -28,9 +28,9 @@ int main(int argc, char **argv)
    gtk_widget_set_vexpand(da, TRUE);
    g_signal_connect(da, "draw", G_CALLBACK(da_drawing), NULL);
 
-   GtkWidget *button=gtk_toggle_button_new_with_label("Toggle Break");
+   GtkWidget *button=gtk_button_new_with_label("Toggle");
    gtk_widget_set_hexpand(button, TRUE);
-   g_signal_connect(button, "toggled", G_CALLBACK(toggle_button), da);
+   g_signal_connect(button, "clicked", G_CALLBACK(button_clicked), da);
 
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
@@ -44,10 +44,12 @@ int main(int argc, char **argv)
 
    return 0;  
  }
-static void toggle_button(GtkToggleButton *button, GtkWidget *da)
+static void button_clicked(GtkWidget *button, GtkWidget *da)
  {
-   if(lightning_break) lightning_break=FALSE;
-   else lightning_break=TRUE;
+   if(drawing==0) drawing=1;
+   else if(drawing==1) drawing=2;
+   else if(drawing==2) drawing=0;
+   else drawing=0;
    gtk_widget_queue_draw(da);
  }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
@@ -61,31 +63,34 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_line_width(cr, 1.0);
 
    //Lightning bolt.
-   cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-   cairo_move_to(cr, 7.0*width/10.0, 1.0*height/10.0);
-   cairo_line_to(cr, 4.5*width/10.0, 4.5*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_line_to(cr, 3.0*width/10.0, 6.0*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_line_to(cr, 4.5*width/10.0, 5.5*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_line_to(cr, 3.0*width/10.0, 9.0*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_line_to(cr, 5.5*width/10.0, 5.5*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_line_to(cr, 7.0*width/10.0, 4.0*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_line_to(cr, 5.5*width/10.0, 4.5*height/10.0);
-   cairo_stroke_preserve(cr);
-   cairo_close_path(cr);
-   cairo_fill(cr);
-   cairo_stroke(cr);
+   if(drawing==0||drawing==1)
+     {
+       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+       cairo_move_to(cr, 7.0*width/10.0, 1.0*height/10.0);
+       cairo_line_to(cr, 4.5*width/10.0, 4.5*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_line_to(cr, 3.0*width/10.0, 6.0*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_line_to(cr, 4.5*width/10.0, 5.5*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_line_to(cr, 3.0*width/10.0, 9.0*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_line_to(cr, 5.5*width/10.0, 5.5*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_line_to(cr, 7.0*width/10.0, 4.0*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_line_to(cr, 5.5*width/10.0, 4.5*height/10.0);
+       cairo_stroke_preserve(cr);
+       cairo_close_path(cr);
+       cairo_fill(cr);
+       cairo_stroke(cr);
+     }
 
    //Lightning break.
-   if(lightning_break)
+   if(drawing==1)
      {
        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
-       cairo_set_line_width(cr, 10.0);
+       cairo_set_line_width(cr, 10.0*height/400.0);
        cairo_move_to(cr, 3.0*width/10.0, 5.15*height/10.0);
        cairo_line_to(cr, 3.5*width/10.0, 4.85*height/10.0);
        cairo_stroke_preserve(cr);
@@ -103,6 +108,34 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_stroke_preserve(cr);
        cairo_line_to(cr, 7.0*width/10.0, 5.15*height/10.0);
        cairo_stroke(cr);
+     }
+
+   //Charges.
+   if(drawing==2)
+     {
+       gint i=1;
+       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+       cairo_set_line_width(cr, 14.0*height/400.0);       
+       //Negatives
+       for(i=1;i<10;i+=2)
+         {
+           cairo_move_to(cr, 7.5*width/10.0, (gdouble)i*height/10.0);
+           cairo_line_to(cr, 8.5*width/10.0, (gdouble)i*height/10.0);
+           cairo_stroke(cr);
+         }
+       //Positives
+       for(i=1;i<10;i+=2)
+         {
+           cairo_move_to(cr, 1.5*width/10.0, (gdouble)i*height/10.0);
+           cairo_line_to(cr, 2.5*width/10.0, (gdouble)i*height/10.0);
+           cairo_stroke(cr);
+         }
+       for(i=1;i<10;i+=2)
+         {
+           cairo_move_to(cr, 2.0*width/10.0, ((gdouble)i-0.5)*height/10.0);
+           cairo_line_to(cr, 2.0*width/10.0, ((gdouble)i+0.5)*height/10.0);
+           cairo_stroke(cr);
+         }
      }
 
    //Layout axis for drawing.
