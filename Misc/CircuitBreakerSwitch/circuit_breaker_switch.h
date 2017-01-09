@@ -56,6 +56,8 @@ void circuit_breaker_switch_set_direction(CircuitBreakerSwitch *da, gint breaker
 gint circuit_breaker_switch_get_direction(CircuitBreakerSwitch *da);
 void circuit_breaker_switch_set_state(CircuitBreakerSwitch *da, gint state);
 gint circuit_breaker_switch_get_state(CircuitBreakerSwitch *da);
+void circuit_breaker_switch_set_icon(CircuitBreakerSwitch *da, gboolean state);
+gint circuit_breaker_switch_get_icon(CircuitBreakerSwitch *da);
 
 G_END_DECLS
 

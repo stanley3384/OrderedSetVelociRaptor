@@ -8,7 +8,9 @@
 
 #include<gtk/gtk.h>
 
+//Lightning=0, broken lightning=1, charges=2
 static gint drawing=0;
+//Translate with combo box.
 static gint translate=0;
 
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);

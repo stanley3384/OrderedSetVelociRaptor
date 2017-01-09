@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   GtkWidget *cbs1=circuit_breaker_switch_new();
+  circuit_breaker_switch_set_icon(CIRCUIT_BREAKER_SWITCH(cbs1), FALSE);
   gtk_widget_set_hexpand(cbs1, TRUE);
   gtk_widget_set_vexpand(cbs1, TRUE);
   gtk_widget_set_events(cbs1, GDK_BUTTON_PRESS_MASK);
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
   g_signal_connect(cbs3, "button_press_event", G_CALLBACK(click_drawing), NULL); 
 
   GtkWidget *cbs4=circuit_breaker_switch_new();
+  circuit_breaker_switch_set_icon(CIRCUIT_BREAKER_SWITCH(cbs4), FALSE);
   circuit_breaker_switch_set_direction(CIRCUIT_BREAKER_SWITCH(cbs4), BREAKER_VERTICAL_UP);
   gtk_widget_set_hexpand(cbs4, TRUE);
   gtk_widget_set_vexpand(cbs4, TRUE);
