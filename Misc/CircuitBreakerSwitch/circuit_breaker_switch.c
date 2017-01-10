@@ -25,7 +25,19 @@ struct _CircuitBreakerSwitchPrivate
   GRand *rand;
   guint width;
   guint height;
+  //Set text or lightning icon.
   gboolean breaker_icon;
+  //Set some background and foreground colors.
+  gchar *bg_off_string;
+  gchar *bg_starting_string;
+  gchar *bg_on_string;
+  gchar *bg_break_string;
+  gchar *fg1_string;
+  gdouble bg_off[4];
+  gdouble bg_starting[4];
+  gdouble bg_on[4];
+  gdouble bg_break[4];
+  gdouble fg1[4];
 };
 
 enum
@@ -33,7 +45,12 @@ enum
   PROP_0,
   BREAKER_DIRECTION,
   BREAKER_STATE,
-  BREAKER_ICON
+  BREAKER_ICON,
+  BREAKER_BG_OFF,
+  BREAKER_BG_STARTING,
+  BREAKER_BG_ON,
+  BREAKER_BG_BREAK,
+  BREAKER_FG1
 };
 
 //Private functions.
@@ -78,7 +95,19 @@ static void circuit_breaker_switch_class_init(CircuitBreakerSwitchClass *klass)
 
   g_object_class_install_property(gobject_class, BREAKER_DIRECTION, g_param_spec_int("breaker_direction", "breaker_direction", "breaker_direction", 0, 1, 0, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, BREAKER_STATE, g_param_spec_int("breaker_state", "breaker_state", "breaker_state", 0, 1, 0, G_PARAM_READWRITE));
+
   g_object_class_install_property(gobject_class, BREAKER_ICON, g_param_spec_boolean("breaker_icon", "breaker_icon", "breaker_icon", TRUE, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, BREAKER_BG_OFF, g_param_spec_string("bg_off", "bg_off", "bg_off", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, BREAKER_BG_STARTING, g_param_spec_string("bg_starting", "bg_starting", "bg_starting", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, BREAKER_BG_ON, g_param_spec_string("bg_on", "bg_on", "bg_on", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, BREAKER_BG_BREAK, g_param_spec_string("bg_break", "bg_break", "bg_break", NULL, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, BREAKER_FG1, g_param_spec_string("fg1", "fg1", "fg1", NULL, G_PARAM_READWRITE));
 
 }
 //Needed for g_object_set().
@@ -97,7 +126,22 @@ static void circuit_breaker_switch_set_property(GObject *object, guint prop_id, 
       break;
     case BREAKER_ICON:
       circuit_breaker_switch_set_state(da, g_value_get_boolean(value));
-      break;  
+      break;
+    case BREAKER_BG_OFF:
+      circuit_breaker_switch_set_background_off(da, g_value_get_string(value));
+      break;
+    case BREAKER_BG_STARTING:
+      circuit_breaker_switch_set_background_starting(da, g_value_get_string(value));
+      break;
+    case BREAKER_BG_ON:
+      circuit_breaker_switch_set_background_on(da, g_value_get_string(value));
+      break;
+    case BREAKER_BG_BREAK:
+      circuit_breaker_switch_set_background_break(da, g_value_get_string(value));
+      break;
+    case BREAKER_FG1:
+      circuit_breaker_switch_set_foreground(da, g_value_get_string(value));
+      break;      
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
       break;
@@ -145,6 +189,101 @@ void circuit_breaker_switch_set_icon(CircuitBreakerSwitch *da, gboolean breaker_
       g_warning("The breaker icon can be either TRUE or FALSE.");
     }
 }
+void circuit_breaker_switch_set_background_off(CircuitBreakerSwitch *da, const gchar *bg_off_string)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, bg_off_string))
+    {
+      priv->bg_off[0]=rgba.red;
+      priv->bg_off[1]=rgba.green;
+      priv->bg_off[2]=rgba.blue;
+      priv->bg_off[3]=rgba.alpha;
+      if(priv->bg_off_string!=NULL) g_free(priv->bg_off_string);
+      priv->bg_off_string=g_strdup(bg_off_string); 
+    }
+  else
+    {
+      g_warning("bg_off_string not set.\n");
+    } 
+}
+void circuit_breaker_switch_set_background_starting(CircuitBreakerSwitch *da, const gchar *bg_starting_string)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, bg_starting_string))
+    {
+      priv->bg_starting[0]=rgba.red;
+      priv->bg_starting[1]=rgba.green;
+      priv->bg_starting[2]=rgba.blue;
+      priv->bg_starting[3]=rgba.alpha;
+      if(priv->bg_starting_string!=NULL) g_free(priv->bg_starting_string);
+      priv->bg_starting_string=g_strdup(bg_starting_string); 
+    }
+  else
+    {
+      g_warning("bg_starting_string not set.\n");
+    } 
+}
+void circuit_breaker_switch_set_background_on(CircuitBreakerSwitch *da, const gchar *bg_on_string)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, bg_on_string))
+    {
+      priv->bg_on[0]=rgba.red;
+      priv->bg_on[1]=rgba.green;
+      priv->bg_on[2]=rgba.blue;
+      priv->bg_on[3]=rgba.alpha;
+      if(priv->bg_on_string!=NULL) g_free(priv->bg_on_string);
+      priv->bg_on_string=g_strdup(bg_on_string); 
+    }
+  else
+    {
+      g_warning("bg_on_string not set.\n");
+    } 
+}
+void circuit_breaker_switch_set_background_break(CircuitBreakerSwitch *da, const gchar *bg_break_string)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, bg_break_string))
+    {
+      priv->bg_break[0]=rgba.red;
+      priv->bg_break[1]=rgba.green;
+      priv->bg_break[2]=rgba.blue;
+      priv->bg_break[3]=rgba.alpha;
+      if(priv->bg_break_string!=NULL) g_free(priv->bg_break_string);
+      priv->bg_break_string=g_strdup(bg_break_string); 
+    }
+  else
+    {
+      g_warning("bg_break_string not set.\n");
+    } 
+}
+void circuit_breaker_switch_set_foreground(CircuitBreakerSwitch *da, const gchar *fg1_string)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, fg1_string))
+    {
+      priv->fg1[0]=rgba.red;
+      priv->fg1[1]=rgba.green;
+      priv->fg1[2]=rgba.blue;
+      priv->fg1[3]=rgba.alpha;
+      if(priv->fg1_string!=NULL) g_free(priv->fg1_string);
+      priv->fg1_string=g_strdup(fg1_string); 
+    }
+  else
+    {
+      g_warning("fg1_string not set.\n");
+    } 
+}
 static void circuit_breaker_switch_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   CircuitBreakerSwitch *da=CIRCUIT_BREAKER_SWITCH(object);
@@ -160,6 +299,21 @@ static void circuit_breaker_switch_get_property(GObject *object, guint prop_id, 
       break;
     case BREAKER_ICON:
       g_value_set_boolean(value, priv->breaker_icon);
+      break;
+    case BREAKER_BG_OFF:
+      g_value_set_string(value, priv->bg_off_string);
+      break;
+    case BREAKER_BG_STARTING:
+      g_value_set_string(value, priv->bg_starting_string);
+      break;
+    case BREAKER_BG_ON:
+      g_value_set_string(value, priv->bg_on_string);
+      break;
+    case BREAKER_BG_BREAK:
+      g_value_set_string(value, priv->bg_break_string);
+      break;
+    case BREAKER_FG1:
+      g_value_set_string(value, priv->fg1_string);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -179,6 +333,31 @@ gboolean circuit_breaker_switch_get_icon(CircuitBreakerSwitch *da)
 {
   CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
   return priv->breaker_icon;
+}
+const gchar* circuit_breaker_switch_get_background_off(CircuitBreakerSwitch *da)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+  return priv->bg_off_string;
+}
+const gchar* circuit_breaker_switch_get_background_starting(CircuitBreakerSwitch *da)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+  return priv->bg_starting_string;
+}
+const gchar* circuit_breaker_switch_get_background_on(CircuitBreakerSwitch *da)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+  return priv->bg_on_string;
+}
+const gchar* circuit_breaker_switch_get_background_break(CircuitBreakerSwitch *da)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+  return priv->bg_break_string;
+}
+const gchar* circuit_breaker_switch_get_foreground(CircuitBreakerSwitch *da)
+{
+  CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(da);
+  return priv->fg1_string;
 }
 static void circuit_breaker_switch_init(CircuitBreakerSwitch *da)
 {
@@ -202,6 +381,34 @@ static void circuit_breaker_switch_init(CircuitBreakerSwitch *da)
     }
   //Initialize the timer for animation to 0.
   priv->timer_id=0;
+
+  //Set some background and foreground colors.
+  priv->bg_off[0]=0.0;
+  priv->bg_off[1]=0.0;
+  priv->bg_off[2]=1.0;
+  priv->bg_off[3]=1.0;
+  priv->bg_starting[0]=0.0;
+  priv->bg_starting[1]=1.0;
+  priv->bg_starting[2]=1.0;
+  priv->bg_starting[3]=1.0;
+  priv->bg_on[0]=0.0;
+  priv->bg_on[1]=1.0;
+  priv->bg_on[2]=0.0;
+  priv->bg_on[3]=1.0;
+  priv->bg_break[0]=1.0;
+  priv->bg_break[1]=1.0;
+  priv->bg_break[2]=0.0;
+  priv->bg_break[3]=1.0;
+  priv->fg1[0]=0.0;
+  priv->fg1[1]=0.0;
+  priv->fg1[2]=0.0;
+  priv->fg1[3]=1.0;
+
+  priv->bg_off_string=g_strdup("rgba(0, 0, 255, 1.0)");
+  priv->bg_starting_string=g_strdup("rgba(0, 255, 255, 1.0)");
+  priv->bg_on_string=g_strdup("rgba(0, 255, 0, 1.0)");
+  priv->bg_break_string=g_strdup("rgba(255, 255, 0, 1.0)");
+  priv->fg1_string=g_strdup("rgba(0, 0, 0, 1.0)");
   
 }
 GtkWidget* circuit_breaker_switch_new()
@@ -264,22 +471,22 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
   //Paint background.
   if(priv->breaker_state==0)
     {
-      cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_on[0], priv->bg_on[1], priv->bg_on[2], priv->bg_on[3]);
       cairo_paint(cr);
     }
   if(priv->breaker_state==1)
     {
-      cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_starting[0], priv->bg_starting[1], priv->bg_starting[2], priv->bg_starting[3]);
       cairo_paint(cr);
     }
   if(priv->breaker_state==2)
     {
-      cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_off[0], priv->bg_off[1], priv->bg_off[2], priv->bg_off[3]);
       cairo_paint(cr);
     }
   if(priv->breaker_state==3)
     {
-      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_break[0], priv->bg_break[1], priv->bg_break[2], priv->bg_break[3]);
       cairo_paint(cr);
     }
 
@@ -287,7 +494,7 @@ static void circuit_breaker_switch_horizontal_right_draw(GtkWidget *da, cairo_t 
   if(priv->breaker_state==1)
     {
       gint i=0;
-      cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+      cairo_set_source_rgba(cr, priv->fg1[0], priv->fg1[1], priv->fg1[2], priv->fg1[3]);
       cairo_set_line_width(cr, 5);
       cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
       for(i=0;i<100;i+=2)
@@ -352,7 +559,7 @@ static void circuit_breaker_switch_horizontal_right_draw_text(GtkWidget *da, cai
   //Draw the text.
   cairo_text_extents_t extents1;
   cairo_text_extents_t extents2;
-  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+  cairo_set_source_rgba(cr, priv->fg1[0], priv->fg1[1], priv->fg1[2], priv->fg1[3]);
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size(cr, font_size);
   if(priv->breaker_state==0)
@@ -445,22 +652,22 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   //Paint background.
   if(priv->breaker_state==0)
     {
-      cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_on[0], priv->bg_on[1], priv->bg_on[2], priv->bg_on[3]);
       cairo_paint(cr);
     }
   if(priv->breaker_state==1)
     {
-      cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_starting[0], priv->bg_starting[1], priv->bg_starting[2], priv->bg_starting[3]);
       cairo_paint(cr);
     }
   if(priv->breaker_state==2)
     {
-      cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_off[0], priv->bg_off[1], priv->bg_off[2], priv->bg_off[3]);
       cairo_paint(cr);
     }
   if(priv->breaker_state==3)
     {
-      cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+      cairo_set_source_rgba(cr, priv->bg_break[0], priv->bg_break[1], priv->bg_break[2], priv->bg_break[3]);
       cairo_paint(cr);
     }
 
@@ -468,7 +675,7 @@ static void circuit_breaker_switch_vertical_up_draw(GtkWidget *da, cairo_t *cr)
   if(priv->breaker_state==1)
     {
       gint i=0;
-      cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+      cairo_set_source_rgba(cr, priv->fg1[0], priv->fg1[1], priv->fg1[2], priv->fg1[3]);
       cairo_set_line_width(cr, 5);
       cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
       for(i=0;i<100;i+=2)
@@ -534,7 +741,7 @@ static void circuit_breaker_switch_vertical_up_draw_text(GtkWidget *da, cairo_t 
   //Draw the text.
   cairo_text_extents_t extents1;
   cairo_text_extents_t extents2;
-  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+  cairo_set_source_rgba(cr, priv->fg1[0], priv->fg1[1], priv->fg1[2], priv->fg1[3]);
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size(cr, font_size);
   if(priv->breaker_state==0)
@@ -595,12 +802,11 @@ static void circuit_breaker_switch_draw_icon(GtkWidget *da, cairo_t *cr, gint wi
   gint i=0;
 
   cairo_set_line_width(cr, 1.0);
-  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+  cairo_set_source_rgba(cr, priv->fg1[0], priv->fg1[1], priv->fg1[2], priv->fg1[3]);
 
   //Lightning bolt.
    if(priv->breaker_state==0)
      {
-       //cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
        cairo_move_to(cr, 6.0*width/10.0, 1.0*height/10.0);
        cairo_line_to(cr, 4.0*width/10.0, 5.5*height/10.0);
        cairo_stroke_preserve(cr);
@@ -622,7 +828,7 @@ static void circuit_breaker_switch_draw_icon(GtkWidget *da, cairo_t *cr, gint wi
      {
        for(i=0;i<2;i++)
          {     
-           cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+           cairo_set_source_rgba(cr, priv->fg1[0], priv->fg1[1], priv->fg1[2], priv->fg1[3]);
            cairo_set_line_width(cr, 1.0);      
            cairo_move_to(cr, 6.0*width/10.0, 1.0*height/10.0);
            cairo_line_to(cr, 4.0*width/10.0, 5.5*height/10.0);
@@ -639,7 +845,7 @@ static void circuit_breaker_switch_draw_icon(GtkWidget *da, cairo_t *cr, gint wi
            cairo_fill(cr);
            cairo_stroke(cr);
            //The break.
-           cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+           cairo_set_source_rgba(cr, priv->bg_break[0], priv->bg_break[1], priv->bg_break[2], priv->bg_break[3]);
            cairo_set_line_width(cr, 10.0*height/400.0);
            cairo_move_to(cr, 3.0*width/10.0, 5.15*height/10.0);
            cairo_line_to(cr, 3.5*width/10.0, 4.85*height/10.0);
@@ -666,7 +872,6 @@ static void circuit_breaker_switch_draw_icon(GtkWidget *da, cairo_t *cr, gint wi
    //Charges.
    if(priv->breaker_state==2)
      {
-       //cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
        cairo_set_line_width(cr, 14.0*height/400.0);       
        //Negatives
        for(i=2;i<9;i+=3)
@@ -722,6 +927,11 @@ static void circuit_breaker_switch_finalize(GObject *object)
   CircuitBreakerSwitchPrivate *priv=CIRCUIT_BREAKER_SWITCH_GET_PRIVATE(object);
   g_rand_free(priv->rand);
   g_free(priv->electrons);
+  g_free(priv->bg_off_string);
+  g_free(priv->bg_starting_string);
+  g_free(priv->bg_on_string);
+  g_free(priv->bg_break_string);
+  g_free(priv->fg1_string);
   if(priv->timer_id!=0) g_source_remove(priv->timer_id);
   G_OBJECT_CLASS(circuit_breaker_switch_parent_class)->finalize(object);
 }

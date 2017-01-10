@@ -338,6 +338,11 @@ static void headlight_toggle_init(HeadlightToggle *da)
   priv->icon_lit_color[1]=1.0;
   priv->icon_lit_color[2]=0.0;
   priv->icon_lit_color[3]=1.0;
+
+  priv->dim_color_string=g_strdup("rgba(204, 0, 0, 1.0)");
+  priv->lit_color_string=g_strdup("rgba(255, 0, 0, 1.0)");
+  priv->icon_dim_color_string=g_strdup("rgba(204, 204, 0, 1.0)");
+  priv->icon_lit_color_string=g_strdup("rgba(255, 255, 0, 1.0)");
 }
 GtkWidget* headlight_toggle_new()
 {

@@ -46,6 +46,12 @@ int main(int argc, char *argv[])
   g_signal_connect(cbs1, "button_press_event", G_CALLBACK(click_drawing), NULL);
 
   GtkWidget *cbs2=circuit_breaker_switch_new();
+  circuit_breaker_switch_set_background_off(CIRCUIT_BREAKER_SWITCH(cbs2), "rgba(150, 150, 150, 1.0)");
+  circuit_breaker_switch_set_background_starting(CIRCUIT_BREAKER_SWITCH(cbs2), "rgba(0, 200, 200, 1.0)");
+  circuit_breaker_switch_set_background_on(CIRCUIT_BREAKER_SWITCH(cbs2), "rgba(200, 200, 0, 1.0)");
+  circuit_breaker_switch_set_background_break(CIRCUIT_BREAKER_SWITCH(cbs2), "rgba(0, 0, 0, 1.0)");
+  circuit_breaker_switch_set_foreground(CIRCUIT_BREAKER_SWITCH(cbs2), "rgba(255, 255, 255, 1.0)");
+  g_print("%s\n%s\n%s\n%s\n%s\n", circuit_breaker_switch_get_background_off(CIRCUIT_BREAKER_SWITCH(cbs2)), circuit_breaker_switch_get_background_starting(CIRCUIT_BREAKER_SWITCH(cbs2)), circuit_breaker_switch_get_background_on(CIRCUIT_BREAKER_SWITCH(cbs2)), circuit_breaker_switch_get_background_break(CIRCUIT_BREAKER_SWITCH(cbs2)), circuit_breaker_switch_get_foreground(CIRCUIT_BREAKER_SWITCH(cbs2)));
   gtk_widget_set_hexpand(cbs2, TRUE);
   gtk_widget_set_vexpand(cbs2, TRUE);
   gtk_widget_set_events(cbs2, GDK_BUTTON_PRESS_MASK);

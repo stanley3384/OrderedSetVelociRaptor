@@ -56,8 +56,22 @@ void circuit_breaker_switch_set_direction(CircuitBreakerSwitch *da, gint breaker
 gint circuit_breaker_switch_get_direction(CircuitBreakerSwitch *da);
 void circuit_breaker_switch_set_state(CircuitBreakerSwitch *da, gint state);
 gint circuit_breaker_switch_get_state(CircuitBreakerSwitch *da);
+//Set text or lighting icon.
 void circuit_breaker_switch_set_icon(CircuitBreakerSwitch *da, gboolean state);
 gint circuit_breaker_switch_get_icon(CircuitBreakerSwitch *da);
+//Set some circuit breaker background and foreground colors.
+void circuit_breaker_switch_set_background_off(CircuitBreakerSwitch *da, const gchar *off_color_string);
+const gchar* circuit_breaker_switch_get_background_off(CircuitBreakerSwitch *da);
+void circuit_breaker_switch_set_background_starting(CircuitBreakerSwitch *da, const gchar *starting_color_string);
+const gchar* circuit_breaker_switch_get_background_starting(CircuitBreakerSwitch *da);
+void circuit_breaker_switch_set_background_on(CircuitBreakerSwitch *da, const gchar *on_color_string);
+const gchar* circuit_breaker_switch_get_background_on(CircuitBreakerSwitch *da);
+void circuit_breaker_switch_set_background_break(CircuitBreakerSwitch *da, const gchar *break_color_string);
+const gchar* circuit_breaker_switch_get_background_break(CircuitBreakerSwitch *da);
+void circuit_breaker_switch_set_foreground(CircuitBreakerSwitch *da, const gchar *foreground_color_string);
+const gchar* circuit_breaker_switch_get_foreground(CircuitBreakerSwitch *da);
+
+
 
 G_END_DECLS
 
