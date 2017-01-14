@@ -2,7 +2,7 @@
 /*
 
     Another test program for the adjustable gauge widget. Add the critter_icons.c code for
-the critter drawings and to test some speeds.
+the critter drawings and to test some speeds. Use a GdkFrameClock for smooth animation.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauges.c -o gauges `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -20,7 +20,7 @@ static gdouble needle1=0.0;
 static gdouble needle2=0.0;
 static gdouble needle3=20.0;
 static gdouble needle4=0.0;
-static gdouble needle_speed=0.5;
+static gdouble needle_speed=0.01;
 //The top of each scale.
 static const gdouble top1=100.0;
 static const gdouble top2=200.0;
@@ -35,7 +35,7 @@ static gdouble fgc[4]={0.0, 1.0, 1.0, 1.0};
 static gdouble selection[4]={1.0, 1.0, 1.0, 1.0};
 
 
-static gboolean time_draw(GtkWidget *widgets[]);
+static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidget *widgets[]);
 static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *data);
 static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data);
 static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data);
@@ -144,15 +144,19 @@ int main(int argc, char **argv)
     
     gtk_container_add(GTK_CONTAINER(window), grid);
   
-    GtkWidget *gauges[]={gauge1, gauge2, gauge3, gauge4};    
-    g_timeout_add(100, (GSourceFunc)time_draw, gauges);
+    GtkWidget *gauges[]={gauge1, gauge2, gauge3, gauge4};
+    gtk_widget_add_tick_callback(gauge1, (GtkTickCallback)tick_draw, gauges, NULL); 
+    gtk_widget_add_tick_callback(gauge2, (GtkTickCallback)tick_draw, gauges, NULL); 
+    gtk_widget_add_tick_callback(gauge3, (GtkTickCallback)tick_draw, gauges, NULL); 
+    gtk_widget_add_tick_callback(gauge4, (GtkTickCallback)tick_draw, gauges, NULL);    
+    //g_timeout_add(100, (GSourceFunc)time_draw, gauges);
 
     gtk_widget_show_all(window);                  
     gtk_main();
 
     return 0;
   }
-static gboolean time_draw(GtkWidget *widgets[])
+static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidget *widgets[])
   {
     gint i=0;
 
@@ -214,13 +218,13 @@ static gboolean time_draw(GtkWidget *widgets[])
           }        
       }
     
-    return TRUE;
+    return G_SOURCE_CONTINUE;
   }
 //The critter drawings and clicks.
 static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=1;
-  needle_speed=0.5;
+  needle_speed=0.01;
 
   //Draw the top active critter.
   gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>You can't handle turtle speed!</span>");
@@ -236,7 +240,7 @@ static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *dat
 static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=2;
-  needle_speed=1.5;
+  needle_speed=0.04;
 
   gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>This is a water dragon lizard, not an alien, OK.</span>");
 
@@ -251,7 +255,7 @@ static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *dat
 static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=3;
-  needle_speed=2.5;
+  needle_speed=0.08;
 
   gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>This is no turtle!</span>");
 
@@ -266,7 +270,7 @@ static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *dat
 static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *data)
 {
   drawing=4;
-  needle_speed=4.0;
+  needle_speed=0.12;
 
   gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>Cheetah speed. Hang on!</span>");
 
