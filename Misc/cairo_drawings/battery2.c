@@ -1,6 +1,6 @@
 /*
     Test code for drawing a battery icon and animating it for charging. This one uses a frame
-clock for the animation. 
+clock for the animation and does a rotation. 
 
     gcc -Wall battery2.c -o battery2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -46,6 +46,7 @@ int main(int argc, char **argv)
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "Center");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "Translate +1/4");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "Translate +1/3");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 3, "4", "Rotate 90");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
    g_signal_connect(combo, "changed", G_CALLBACK(translate_drawing), da);
 
@@ -95,6 +96,7 @@ static void translate_drawing(GtkWidget *combo, GtkWidget *da)
    gint row=gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
    if(row==1) translate=1;
    else if(row==2) translate=2;
+   else if(row==3) translate=3; //rotate 90.
    else translate=0;
    gtk_widget_queue_draw(da);
  }
@@ -102,12 +104,23 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
  {
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+   gdouble saved_width=width;
+   gdouble saved_height=height;
 
    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
    cairo_paint(cr);
    
+   cairo_save(cr);
    if(translate==1) cairo_translate(cr, width/4.0, 0.0);
    if(translate==2) cairo_translate(cr, width/3.0, 0.0);
+   if(translate==3)
+     {
+       cairo_translate(cr, width, 0.0);
+       //Swap width and height for rotated drawing.
+       width=saved_height;
+       height=saved_width;
+       cairo_rotate(cr, G_PI/2.0);
+     }
 
    //Battery background rectangle.
    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
@@ -154,6 +167,13 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_stroke(cr);
      }
 
+   cairo_restore(cr);
+   if(translate==3)
+     {
+       width=saved_width;
+       height=saved_height;
+     }
+
    //Add percentage text.
    cairo_text_extents_t extents1;
    cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
@@ -161,12 +181,10 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_font_size(cr, 16);
    gchar *percent=g_strdup_printf("%.2f", ((9.0-animate)/8.0)*100.0);
    cairo_text_extents(cr, percent, &extents1);
-   cairo_move_to(cr, width/2.0 - extents1.width/2, 9.5*height/10.0 + extents1.height/2);  
+   if(translate==3) cairo_move_to(cr, width/2.0 - extents1.width/2, 8.0*height/10.0 + extents1.height/2);
+   else cairo_move_to(cr, width/2.0 - extents1.width/2, 9.5*height/10.0 + extents1.height/2);  
    cairo_show_text(cr, percent);
    g_free(percent);
-
-   if(translate==1) cairo_translate(cr, -width/4.0, 0.0);
-   if(translate==2) cairo_translate(cr, -width/3.0, 0.0);
 
    //Layout axis for drawing.
    cairo_set_line_width(cr, 1.0);
