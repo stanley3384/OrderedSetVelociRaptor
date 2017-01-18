@@ -13,7 +13,7 @@ clock for the animation and does a rotation.
 static gint translate=0;
 static gdouble animate=1.0;
 static gboolean charging=FALSE;
-static guint timer_id=0;
+static guint tick_id=0;
 
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void button_clicked(GtkWidget *button, GtkWidget *widgets[]);
@@ -69,7 +69,7 @@ static void button_clicked(GtkWidget *button, GtkWidget *widgets[])
    charging=TRUE;
    gtk_widget_queue_draw(widgets[1]);
    gtk_widget_set_sensitive(button, FALSE);
-   gtk_widget_add_tick_callback(widgets[1], (GtkTickCallback)draw_battery, widgets, NULL);
+   tick_id=gtk_widget_add_tick_callback(widgets[1], (GtkTickCallback)draw_battery, widgets, NULL);
  }
 static gboolean draw_battery(GtkWidget *da, GdkFrameClock *frame_clock, GtkWidget *widgets[])
  {
@@ -83,11 +83,11 @@ static gboolean draw_battery(GtkWidget *da, GdkFrameClock *frame_clock, GtkWidge
      {
        animate=1.0;
        gtk_widget_queue_draw(widgets[1]);
-       g_print("Timer Done\n");
+       g_print("Frame Clock Done\n");
        charging=FALSE;
        gtk_widget_set_sensitive(widgets[0], TRUE);
-       gtk_widget_remove_tick_callback(da, timer_id);
-       timer_id=0;
+       gtk_widget_remove_tick_callback(da, tick_id);
+       tick_id=0;
        return G_SOURCE_REMOVE;
      }
  }
@@ -204,7 +204,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 }
 static void exit_program(GtkWidget *widget, GtkWidget *da)
 {
-   if(timer_id!=0) gtk_widget_remove_tick_callback(da, timer_id);
+   if(tick_id!=0) gtk_widget_remove_tick_callback(da, tick_id);
    gtk_main_quit();
 }
 

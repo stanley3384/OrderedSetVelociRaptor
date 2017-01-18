@@ -2,7 +2,7 @@
 /*
     Make a simple cairo digital space clock with 2d surfaces in 3d space out of the rotating rectangle code.
 Add some moving stars for added animation. Test some drawing with cairo.
-    Tested on Ubuntu14.04 with GTK3.10.
+    Tested on Ubuntu16.04 with GTK3.18.
 
     gcc -Wall space_clock.c -o space_clock -lm `pkg-config --cflags --libs gtk+-3.0`
 
@@ -12,13 +12,13 @@ Add some moving stars for added animation. Test some drawing with cairo.
 #include<gtk/gtk.h>
 #include<math.h>
 
-static guint timer_id=0;
+static guint tick_id=0;
 
 static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord);
-static gboolean start_drawing(gpointer drawing);
+static gboolean start_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
-static void quit_program(GtkWidget *widget, gpointer data);
+static void quit_program(GtkWidget *widget, GtkWidget *da);
 
 int main(int argc, char *argv[])
   {
@@ -38,7 +38,6 @@ int main(int argc, char *argv[])
       }
     else g_print("Can't set window transparency.\n");
     g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
-    g_signal_connect(window, "destroy", G_CALLBACK(quit_program), NULL);
 
     gint i=0;
     gdouble width=20.0;
@@ -81,13 +80,14 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(drawing, TRUE);
     gtk_widget_set_vexpand(drawing, TRUE);
     g_signal_connect(drawing, "draw", G_CALLBACK(rotate_rectangle), coord);
+    g_signal_connect(window, "destroy", G_CALLBACK(quit_program), drawing);
 
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), drawing, 0, 0, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
     gtk_widget_show_all(window);
 
-    timer_id=g_timeout_add(100, start_drawing, drawing); 
+    tick_id=gtk_widget_add_tick_callback(drawing, (GtkTickCallback)start_drawing, NULL, NULL); 
 
     gtk_main();
 
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     static gint i=1;
-    gdouble angle=i*G_PI/64.0;
+    gdouble angle=i*G_PI/256.0;
     gdouble angle2=-angle-G_PI;
     gdouble scale_x=sin(angle);
     gdouble scale_x_inv=1.0/scale_x;
@@ -284,7 +284,7 @@ static gboolean rotate_rectangle(GtkWidget *widget, cairo_t *cr, gpointer data)
 static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord)
   {
     gint i=0;
-    gdouble speed=4.0;
+    gdouble speed=2.0;
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_set_line_width(cr, 5);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
@@ -302,10 +302,10 @@ static void draw_stars(cairo_t *cr, gint width, gint height, gdouble *coord)
           }
       }
   }
-static gboolean start_drawing(gpointer drawing)
+static gboolean start_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data)
   {
     gtk_widget_queue_draw(GTK_WIDGET(drawing));
-    return TRUE;
+    return G_SOURCE_CONTINUE;
   }
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
@@ -313,10 +313,9 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_paint(cr);
     return FALSE;
   }
-static void quit_program(GtkWidget *widget, gpointer data)
+static void quit_program(GtkWidget *widget, GtkWidget *da)
   {
-    //Remove the timer before quiting to prevent possible GTK+ error on exit.
-    g_source_remove(timer_id);
+    if(tick_id!=0) gtk_widget_remove_tick_callback(da, tick_id);
     gtk_main_quit();
   }
 
