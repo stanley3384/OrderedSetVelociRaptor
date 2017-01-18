@@ -15,6 +15,11 @@ the critter drawings and to test some speeds. Use a GdkFrameClock for smooth ani
 #include <gtk/gtk.h>
 #include "adjustable_gauge.h"
 
+//The frame clock id's.
+static guint tick_id1=0;
+static guint tick_id2=0;
+static guint tick_id3=0;
+static guint tick_id4=0;
 //Save the needle position between calls.
 static gdouble needle1=0.0;
 static gdouble needle2=0.0;
@@ -35,16 +40,17 @@ static gdouble fgc[4]={0.0, 1.0, 1.0, 1.0};
 static gdouble selection[4]={1.0, 1.0, 1.0, 1.0};
 
 
-static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidget *widgets[]);
-static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *data);
-static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data);
-static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data);
-static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *data);
+static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidget *gauges[]);
+static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[]);
+static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[]);
+static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[]);
+static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[]);
 static gboolean draw_lizard(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_turtle(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_rabbit(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_cheetah(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_window(GtkWidget *da, cairo_t *cr, gpointer data);
+static void quit_program(GtkWidget *widget, GtkWidget *gauges[]);
 
 int main(int argc, char **argv)
   {      
@@ -55,7 +61,6 @@ int main(int argc, char **argv)
     gtk_window_set_default_size(GTK_WINDOW(window), 600, 600);
     gtk_window_set_title(GTK_WINDOW(window), "Gauges");
     gtk_widget_set_app_paintable(window, TRUE);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(window, "draw", G_CALLBACK(draw_window), NULL);
        
     GtkWidget *gauge1=adjustable_gauge_new();
@@ -124,7 +129,7 @@ int main(int argc, char **argv)
     g_signal_connect(cheetah, "draw", G_CALLBACK(draw_cheetah), NULL);
     gtk_widget_set_events(cheetah, GDK_BUTTON_PRESS_MASK);
 
-    gpointer critters[]={label, turtle, lizard, rabbit, cheetah};
+    GtkWidget *critters[]={label, turtle, lizard, rabbit, cheetah};
     g_signal_connect(turtle, "button_press_event", G_CALLBACK(click_drawing1), critters);
     g_signal_connect(lizard, "button_press_event", G_CALLBACK(click_drawing2), critters);
     g_signal_connect(rabbit, "button_press_event", G_CALLBACK(click_drawing3), critters);
@@ -145,18 +150,19 @@ int main(int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(window), grid);
   
     GtkWidget *gauges[]={gauge1, gauge2, gauge3, gauge4};
-    gtk_widget_add_tick_callback(gauge1, (GtkTickCallback)tick_draw, gauges, NULL); 
-    gtk_widget_add_tick_callback(gauge2, (GtkTickCallback)tick_draw, gauges, NULL); 
-    gtk_widget_add_tick_callback(gauge3, (GtkTickCallback)tick_draw, gauges, NULL); 
-    gtk_widget_add_tick_callback(gauge4, (GtkTickCallback)tick_draw, gauges, NULL);    
-    //g_timeout_add(100, (GSourceFunc)time_draw, gauges);
+    tick_id1=gtk_widget_add_tick_callback(gauge1, (GtkTickCallback)tick_draw, gauges, NULL); 
+    tick_id2=gtk_widget_add_tick_callback(gauge2, (GtkTickCallback)tick_draw, gauges, NULL); 
+    tick_id3=gtk_widget_add_tick_callback(gauge3, (GtkTickCallback)tick_draw, gauges, NULL); 
+    tick_id4=gtk_widget_add_tick_callback(gauge4, (GtkTickCallback)tick_draw, gauges, NULL);    
+    
+    g_signal_connect(window, "destroy", G_CALLBACK(quit_program), gauges);
 
     gtk_widget_show_all(window);                  
     gtk_main();
 
     return 0;
   }
-static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidget *widgets[])
+static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidget *gauges[])
   {
     gint i=0;
 
@@ -171,49 +177,49 @@ static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidg
             case 0:
               if(needle1<top1)
                 {
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle1);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle1);
                 }
               else
                 {
                   g_print("Reset Gauge1\n");
                   needle1=0.0;
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle1);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle1);
                 }
               break;
             case 1:
               if(needle2<top2)
                 {
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle2);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle2);
                 }
               else
                 {
                   g_print("Reset Gauge2\n");
                   needle2=0.0;
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle2);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle2);
                 }
               break;
             case 2:
               if(needle3<top3)
                 {
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle3);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle3);
                 }
               else
                 {
                   g_print("Reset Gauge3\n");
                   needle3=20.0;
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle3);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle3);
                 }
               break;
             case 3:
               if(needle4<top4)
                 {
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle4);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle4);
                 }
               else
                 {
                   g_print("Reset Gauge4\n");
                   needle4=0.0;
-                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[i]), needle4);
+                  adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(gauges[i]), needle4);
                 }
           }        
       }
@@ -221,64 +227,64 @@ static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidg
     return G_SOURCE_CONTINUE;
   }
 //The critter drawings and clicks.
-static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, gpointer *data)
+static gboolean click_drawing1(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[])
 {
   drawing=1;
   needle_speed=0.01;
 
   //Draw the top active critter.
-  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>You can't handle turtle speed!</span>");
+  gtk_label_set_markup(GTK_LABEL(critters[0]), "<span foreground='white'>You can't handle turtle speed!</span>");
 
   //Redraw panel critters.
-  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[4]));
 
   return FALSE;
 }
-static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, gpointer *data)
+static gboolean click_drawing2(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[])
 {
   drawing=2;
   needle_speed=0.04;
 
-  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>This is a water dragon lizard, not an alien, OK.</span>");
+  gtk_label_set_markup(GTK_LABEL(critters[0]), "<span foreground='white'>This is a water dragon lizard, not an alien, OK.</span>");
 
   //Redraw panel critters.
-  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[4]));
 
   return FALSE;
 }
-static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, gpointer *data)
+static gboolean click_drawing3(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[])
 {
   drawing=3;
   needle_speed=0.08;
 
-  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>This is no turtle!</span>");
+  gtk_label_set_markup(GTK_LABEL(critters[0]), "<span foreground='white'>This is no turtle!</span>");
 
   //Redraw panel critters.
-  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[4]));
 
   return FALSE;
 }
-static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, gpointer *data)
+static gboolean click_drawing4(GtkWidget *widget, GdkEvent *event, GtkWidget *critters[])
 {
   drawing=4;
   needle_speed=0.12;
 
-  gtk_label_set_markup(GTK_LABEL(data[0]), "<span foreground='white'>Cheetah speed. Hang on!</span>");
+  gtk_label_set_markup(GTK_LABEL(critters[0]), "<span foreground='white'>Cheetah speed. Hang on!</span>");
 
   //Redraw panel critters.
-  gtk_widget_queue_draw(GTK_WIDGET(data[1]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[2]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[3]));
-  gtk_widget_queue_draw(GTK_WIDGET(data[4]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[1]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[2]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[3]));
+  gtk_widget_queue_draw(GTK_WIDGET(critters[4]));
 
   return FALSE;
 }
@@ -561,5 +567,13 @@ static gboolean draw_window(GtkWidget *da, cairo_t *cr, gpointer data)
   cairo_paint(cr); 
   return FALSE;
 }
+static void quit_program(GtkWidget *widget, GtkWidget *gauges[])
+  {
+    if(tick_id1!=0) gtk_widget_remove_tick_callback(gauges[0], tick_id1);
+    if(tick_id2!=0) gtk_widget_remove_tick_callback(gauges[1], tick_id2);
+    if(tick_id3!=0) gtk_widget_remove_tick_callback(gauges[2], tick_id3);
+    if(tick_id4!=0) gtk_widget_remove_tick_callback(gauges[3], tick_id4);
+    gtk_main_quit();
+  }
 
 
