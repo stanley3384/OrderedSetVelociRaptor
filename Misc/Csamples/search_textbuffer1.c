@@ -24,15 +24,20 @@ static void button_clicked(GtkWidget *button, gpointer *data)
     temp_string[count]='\0';
     gchar *temp_p=temp_string;
 
+    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
+    gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
+    gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
+    start_word=start;
+
     if(count>0)
       {
-        gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
-        gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
-        gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
-        start_word=start;
         do
           {
-            if(g_unichar_toupper(g_utf8_get_char(p))==gtk_text_iter_get_char(&start)||g_unichar_tolower(g_utf8_get_char(p))==gtk_text_iter_get_char(&start))
+            if('\n'==gtk_text_iter_get_char(&start))
+              {
+                //Skip over newlines.
+              }
+            else if(g_unichar_toupper(g_utf8_get_char(p))==gtk_text_iter_get_char(&start)||g_unichar_tolower(g_utf8_get_char(p))==gtk_text_iter_get_char(&start))
               {
                 end_word=start;
                 gtk_text_iter_forward_char(&end_word);
@@ -79,7 +84,7 @@ int main(int argc, char *argv[])
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *textview=gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_CHAR);
     gtk_widget_set_size_request(textview, 400, 300);
 
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
