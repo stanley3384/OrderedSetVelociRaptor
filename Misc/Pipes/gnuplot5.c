@@ -24,15 +24,31 @@ static GRand *rand=NULL;
 //Where to write the image file to.
 static gchar *test_dir={"/home/eric/Velo/Misc/Pipes/TEST.png"};
 
+static gboolean read_err(GObject *pollable_stream, gpointer user_data);
 static void gnuplot_finished(GObject *source_object, GAsyncResult *res, GtkWidget *image);
 static void plot_data(GtkWidget *image);
 
+static gboolean read_err(GObject *pollable_stream, gpointer user_data)
+  {
+    g_print("Read Error\n");
+    char *buffer=g_malloc(500);
+    memset(buffer, '\0', 500);
+    gssize bytes_read=0;
+
+    bytes_read=g_pollable_input_stream_read_nonblocking((GPollableInputStream*)pollable_stream, buffer, 499, NULL, NULL);
+    if(bytes_read>0) g_print("Error From Gnuplot: %s", buffer);
+    g_input_stream_close((GInputStream*)pollable_stream, NULL, NULL);
+    g_free(buffer);
+
+    return FALSE;
+  }
 static void gnuplot_finished(GObject *source_object, GAsyncResult *res, GtkWidget *image)
   {   
     gtk_image_set_from_file(GTK_IMAGE(image), test_dir);
     gtk_widget_queue_draw(image);
     if(g_subprocess_get_successful(G_SUBPROCESS(source_object))) g_print("Gnuplot Success\n");
     g_object_unref(source_object);
+    g_print("Gnuplot Finished\n");
     //Plot the image again.
     plot_data(image);
   }
@@ -47,43 +63,22 @@ static void plot_data(GtkWidget *image)
     gchar *cmd=g_strdup("/usr/bin/gnuplot");
     gchar *script=g_strdup_printf("set terminal pngcairo size %d,%d\nset output '%s'\nset xlabel \"sine wave\"\nset yrange [-1:1]\nset ylabel \"amplitude\"\nplot %f*sin(x)", width, height, test_dir, rand_num);
     g_print("%s\n", script);
-    GError *error1=NULL;
-    GError *error2=NULL;
-    GError *error3=NULL;
-    GError *error4=NULL;
 
-    GSubprocess *process=g_subprocess_new(G_SUBPROCESS_FLAGS_STDIN_PIPE, &error1, cmd, NULL);
-    GOutputStream *stream=g_subprocess_get_stdin_pipe(process);
-    g_output_stream_write(stream, script, strlen(script)+1, NULL, &error2);
-    g_output_stream_flush(stream, NULL, &error3);
-    g_output_stream_close(stream, NULL, &error4); 
+    //The Gnuplot process.
+    GSubprocess *sub_process=g_subprocess_new(G_SUBPROCESS_FLAGS_STDIN_PIPE|G_SUBPROCESS_FLAGS_STDERR_PIPE, NULL, cmd, NULL);
+    //Set up the stderr pipe and callback.
+    GInputStream *err_stream=g_subprocess_get_stderr_pipe(sub_process);
+    GSource *source=g_pollable_input_stream_create_source((GPollableInputStream*)err_stream, NULL);
+    g_source_attach(source, NULL);
+    g_source_set_callback(source, (GSourceFunc)read_err, NULL, NULL);
+    //Set up finished callback.
+    g_subprocess_wait_async(sub_process, NULL, (GAsyncReadyCallback)gnuplot_finished, image); 
+    //Set up the stdin pipe and send script to gnuplot.
+    GOutputStream *stream=g_subprocess_get_stdin_pipe(sub_process);
+    g_output_stream_write(stream, script, strlen(script)+1, NULL, NULL);
+    g_output_stream_flush(stream, NULL, NULL);
+    g_output_stream_close(stream, NULL, NULL);    
     
-    if(error1!=NULL)
-      {
-        g_print("Error1: %s\n", error1->message);
-        g_error_free(error1);
-      }
-    else if(error2!=NULL)
-      {
-        g_print("Error2: %s\n", error2->message);
-        g_error_free(error2);
-      }
-    else if(error3!=NULL)
-      {
-        g_print("Error3: %s\n", error3->message);
-        g_error_free(error3);
-      }
-    else if(error4!=NULL)
-      {
-        g_print("Error4: %s\n", error4->message);
-        g_error_free(error4);
-      }
-    else
-      {
-        //Want to know when gnuplot finishes.
-        g_subprocess_wait_async(process, NULL, (GAsyncReadyCallback)gnuplot_finished, image); 
-      }
-
     g_free(cmd);  
     g_free(script);   
   }
