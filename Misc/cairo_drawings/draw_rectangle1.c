@@ -7,7 +7,7 @@ and be able to clear them.
 
     gcc -Wall draw_rectangle1.c -o draw_rectangle1 `pkg-config --cflags --libs gtk+-3.0`
 
-    Tested on Ubuntu14.04 and GTK3.10
+    Tested on Ubuntu16.04 and GTK3.18
 
     C. Eric Cashon
 
@@ -260,12 +260,6 @@ static gboolean draw_foreground(GtkWidget *widget, cairo_t *cr, gpointer data)
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     g_signal_handler_unblock(widget, motion_id);
-    GdkWindow *win=gtk_widget_get_window(widget);
-    cairo_t *cr=gdk_cairo_create(win);
-
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-    cairo_paint(cr);
-    cairo_destroy(cr);
 
     rect[0]=event->button.x;
     rect[1]=event->button.y;
