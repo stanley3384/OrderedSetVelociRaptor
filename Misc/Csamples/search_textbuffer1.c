@@ -20,6 +20,7 @@ static void button_clicked(GtkWidget *button, gpointer *data)
     gchar *p=search_string;
     glong count=g_utf8_strlen(search_string, -1);
     glong counter=0;
+    //Might want to put the temp_string on the heap.
     gchar temp_string[count+1];
     temp_string[count]='\0';
     gchar *temp_p=temp_string;
@@ -29,7 +30,8 @@ static void button_clicked(GtkWidget *button, gpointer *data)
     gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
     start_word=start;
 
-    if(count>0)
+    //Check if there are some chars.
+    if(count>0&&gtk_text_buffer_get_char_count(GTK_TEXT_BUFFER(data[0]))>0)
       {
         do
           {
@@ -37,14 +39,15 @@ static void button_clicked(GtkWidget *button, gpointer *data)
               {
                 //Skip over newlines.
               }
-            else if(g_unichar_toupper(g_utf8_get_char(p))==gtk_text_iter_get_char(&start)||g_unichar_tolower(g_utf8_get_char(p))==gtk_text_iter_get_char(&start))
+            //Should be more lower chars so check first.
+            else if(g_unichar_tolower(g_utf8_get_char(p))==gtk_text_iter_get_char(&start)||g_unichar_toupper(g_utf8_get_char(p))==gtk_text_iter_get_char(&start))
               {
                 end_word=start;
                 gtk_text_iter_forward_char(&end_word);
                 *temp_p=gtk_text_iter_get_char(&start);
                 counter++;
                 temp_p=g_utf8_offset_to_pointer(temp_string, counter); 
-                p=g_utf8_find_next_char(p, NULL); //p++
+                p=g_utf8_find_next_char(p, NULL); //p++ for utf-8.
                 if(counter>=count)
                   {
                     if(!gtk_text_iter_is_start(&start_word)) gtk_text_iter_forward_char(&start_word);
