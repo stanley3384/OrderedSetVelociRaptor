@@ -13,23 +13,39 @@
 static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_string, GtkTextIter *start_word, GtkTextIter *end_word)
   {
     //Case in-sensitive search.
+    gint i=0;
     gchar *p=search_string;
     glong count=g_utf8_strlen(search_string, -1);
     glong counter=0;
-
-    gtk_text_iter_assign(start_word, start);
+    gint last_repeat=0;
+    gchar first_char=*p;
+    gint backwards_chars=0;
 
     //Check if there are some chars.
     if(count>0)
       {
+         /*
+          Check for last repeat of first char in the string. Need this to "search sa" in
+          "search search sand". The previous search ends at 'e'. When searching, the loop
+          might have to check some chars more than once.
+         */
+        for(i=0;i<count;i++)
+          {
+            if(g_unichar_tolower(g_utf8_get_char(p))==first_char||g_unichar_toupper(g_utf8_get_char(p))==first_char)
+              {
+                last_repeat=i;
+              }
+            p=g_utf8_find_next_char(p, NULL);
+          }
+        p=search_string;
+        if(last_repeat>0) backwards_chars=count-last_repeat;
+
+        gtk_text_iter_assign(start_word, start); 
+
+        //Search for the word.
         do
           {
-            if('\n'==gtk_text_iter_get_char(start)||0xFFFC==gtk_text_iter_get_char(start))
-              {
-                //Skip over newlines and the unicode "unknown" character.
-              }
-            //Should be more lower chars so check first.
-            else if(g_unichar_tolower(g_utf8_get_char(p))==gtk_text_iter_get_char(start)||g_unichar_toupper(g_utf8_get_char(p))==gtk_text_iter_get_char(start))
+            if(g_unichar_tolower(g_utf8_get_char(p))==gtk_text_iter_get_char(start)||g_unichar_toupper(g_utf8_get_char(p))==gtk_text_iter_get_char(start))
               {
                 gtk_text_iter_assign(end_word, start);
                 gtk_text_iter_forward_char(end_word);
@@ -37,19 +53,25 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
                 p=g_utf8_find_next_char(p, NULL); //p++ for utf-8.
                 if(counter>=count)
                   {
-                    if(' '==gtk_text_iter_get_char(start_word)) gtk_text_iter_forward_char(start_word);
                     return TRUE;
                   }
               }
             else
               {
+                gtk_text_iter_assign(start_word, start);
+                gtk_text_iter_forward_char(start_word);
                 if(counter>0)
                   {
+                    if(last_repeat>0&&counter>last_repeat)
+                      {
+                        gtk_text_iter_backward_chars(start, backwards_chars); 
+                        gtk_text_iter_backward_chars(start_word, backwards_chars); 
+                      } 
                     counter=0;
                     p=search_string;
-                  }
-                gtk_text_iter_assign(start_word, start);
+                  }                           
               }
+
           }while(gtk_text_iter_forward_char(start));
       }    
 
@@ -130,7 +152,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_size_request(textview, 400, 300);
 
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-    gtk_text_buffer_set_text(buffer, "SEArch Add some words to Search search SearCH SEaRch search search Search and a few extra s ss sssr Sea Sear.", -1);
+    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss            sssr Sea Search zzzzzzz.", -1);
     gtk_text_buffer_create_tag(buffer, "yellow-tag", "background", "yellow", NULL); 
 
     GtkWidget *entry=gtk_entry_new();
