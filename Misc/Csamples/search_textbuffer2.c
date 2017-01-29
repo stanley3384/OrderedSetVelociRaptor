@@ -25,15 +25,17 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
     if(count>0)
       {
          /*
-          Check for last repeat of first char in the string. Need this to "search sa" in
+          Check for a second occurance of the first char in the string. Need this to "search sa" in
           "search search sand". The previous search ends at 'e'. When searching, the loop
           might have to check some chars more than once.
          */
-        for(i=0;i<count;i++)
+        p=g_utf8_find_next_char(p, NULL);
+        for(i=1;i<count;i++)
           {
             if(g_unichar_tolower(g_utf8_get_char(p))==first_char||g_unichar_toupper(g_utf8_get_char(p))==first_char)
               {
                 last_repeat=i;
+                break;
               }
             p=g_utf8_find_next_char(p, NULL);
           }
