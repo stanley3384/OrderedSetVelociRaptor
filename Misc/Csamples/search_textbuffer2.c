@@ -17,7 +17,7 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
     gchar *p=search_string;
     glong count=g_utf8_strlen(search_string, -1);
     glong counter=0;
-    gint last_repeat=0;
+    gint first_repeat=0;
     gchar first_char=*p;
     gint backwards_chars=0;
 
@@ -34,13 +34,13 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
           {
             if(g_unichar_tolower(g_utf8_get_char(p))==first_char||g_unichar_toupper(g_utf8_get_char(p))==first_char)
               {
-                last_repeat=i;
+                first_repeat=i;
                 break;
               }
             p=g_utf8_find_next_char(p, NULL);
           }
         p=search_string;
-        if(last_repeat>0) backwards_chars=count-last_repeat;
+        if(first_repeat>0) backwards_chars=count-first_repeat;
 
         gtk_text_iter_assign(start_word, start); 
 
@@ -64,7 +64,7 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
                 gtk_text_iter_forward_char(start_word);
                 if(counter>0)
                   {
-                    if(last_repeat>0&&counter>last_repeat)
+                    if(first_repeat>0&&counter>first_repeat)
                       {
                         gtk_text_iter_backward_chars(start, backwards_chars); 
                         gtk_text_iter_backward_chars(start_word, backwards_chars); 
