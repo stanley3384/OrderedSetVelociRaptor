@@ -2,6 +2,13 @@
 /*
 
     Test a case in-sensitive search and compare it with the GTK text in-sensitive search.
+
+    There is a problem with this code that makes in unsuitable for case in-sensitive searching.
+This was presented to me in the following discussion. 
+
+https://mail.gnome.org/archives/gtk-devel-list/2017-January/msg00025.html
+
+which details some language details that cause problems checking the upper and lower case chars.
     
     gcc -Wall search_textbuffer2.c -o search_textbuffer2 `pkg-config --cflags --libs gtk+-3.0`
 
