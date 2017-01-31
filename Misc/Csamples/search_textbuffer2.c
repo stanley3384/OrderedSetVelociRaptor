@@ -3,7 +3,7 @@
 
     Test a case in-sensitive search and compare it with the GTK text in-sensitive search.
 
-    There is a problem with this code that makes in unsuitable for case in-sensitive searching.
+    There is a problem with this code that makes it unsuitable for case in-sensitive searching.
 This was presented to me in the following discussion. 
 
 https://mail.gnome.org/archives/gtk-devel-list/2017-January/msg00025.html
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_size_request(textview, 400, 300);
 
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss            sssr Sea Search zzzzzzz.", -1);
+    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD.", -1);
     gtk_text_buffer_create_tag(buffer, "yellow-tag", "background", "yellow", NULL); 
 
     GtkWidget *entry=gtk_entry_new();
