@@ -8,7 +8,8 @@ Follow up to.
 
 which details some language details that cause problems checking the upper and lower case chars.
 
-    This version tries a case-insensitive search with a UTF-8 casefold function.
+    This version tries a case-insensitive search with a UTF-8 casefold function. Still some
+problems with the ligatures.
     
     gcc -Wall search_textbuffer3.c -o search_textbuffer3 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -57,23 +58,42 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
 
         //Search for the word.
         gint case_len=0;
-        gboolean second_char=FALSE;
+        gint case_len_forward=0;
+        gint max=0;
+        gint offset=0;
         gunichar c;
+        gboolean run_loop=TRUE;
         do
           {
             gtk_text_iter_forward_char(&start_plus);
             gchar *uni=gtk_text_iter_get_slice(start, &start_plus);
             gchar *casefold=g_utf8_casefold(uni, -1);
-            case_len=g_utf8_strlen(casefold, -1);
-            if(second_char) case_len=1;               
+            case_len=g_utf8_strlen(casefold, -1);                                
             g_free(uni);
 
-            if(second_char)
+            //Start a multi char ligature.
+            if(case_len>1&&case_len_forward==0)
+              {  
+                //g_print("case %i\n", case_len);             
+                case_len_forward=case_len;
+                max=case_len_forward;
+              }   
+
+            //If we are checking a ligature else just get the char.
+            if(case_len_forward>0&&max-case_len_forward<=count)
               {
-                c=g_utf8_get_char(g_utf8_find_next_char(casefold, NULL));
-                second_char=FALSE;
+                //count forward.
+                offset=max-case_len_forward;
+                //g_print("forward %s %i %i\n", casefold, max, case_len_forward);
+                c=g_utf8_get_char(g_utf8_offset_to_pointer(casefold, offset));
+                //g_print("|%c|%c|%i,%i,%i\n", g_utf8_get_char(p), c, max, case_len_forward, offset);
+                case_len_forward--;
               }
-            else c=g_utf8_get_char(casefold);
+            else
+              { 
+                c=g_utf8_get_char(casefold);
+                //g_print("|%c|%c|%i,%i,%i\n", g_utf8_get_char(p), c, max, case_len_forward, offset); 
+              }
              
             if(g_utf8_get_char(p)==c)
               {
@@ -88,13 +108,15 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
               }
             else
               {
+                case_len_forward=0;
                 gtk_text_iter_assign(start_word, start);
                 gtk_text_iter_forward_char(start_word);
                 if(counter>0)
                   {
                     if(first_repeat>0&&counter>first_repeat)
                       {
-                        gtk_text_iter_backward_chars(start, backwards_chars); 
+                        gtk_text_iter_backward_chars(start, backwards_chars);
+                        gtk_text_iter_backward_chars(&start_plus, backwards_chars);  
                         gtk_text_iter_backward_chars(start_word, backwards_chars); 
                       } 
                     counter=0;
@@ -103,17 +125,15 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
               }
 
             g_free(casefold);
-            if(case_len>1&&second_char==FALSE)
-              {
-                //Need a repeat on the ligature character.
-                gtk_text_iter_backward_char(start);
-                gtk_text_iter_backward_char(&start_plus);
-                second_char=TRUE;
-              }
 
-          }while(gtk_text_iter_forward_char(start));
+            //Need to hold on the ligature char until it's chars are checked.
+            if(case_len_forward>0) gtk_text_iter_backward_char(&start_plus);
+            else run_loop=gtk_text_iter_forward_char(start);
+
+          }while(run_loop);
       }    
 
+    g_free(casefold_search);
     return FALSE;
     
   }
@@ -191,7 +211,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_size_request(textview, 400, 300);
 
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD Straße and STRASSE ﬁeld FIELD.", -1);
+    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD Straße and STRASSE ﬁeld FIELD ﬄ  ﬄ testﬄ.", -1);
     gtk_text_buffer_create_tag(buffer, "yellow-tag", "background", "yellow", NULL); 
 
     GtkWidget *entry=gtk_entry_new();
