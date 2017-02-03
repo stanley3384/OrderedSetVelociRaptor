@@ -105,8 +105,6 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
         if(first_repeat>0) backwards_chars=count-first_repeat;
 
         gtk_text_iter_assign(start_word, start);
-        GtkTextIter start_plus;
-        gtk_text_iter_assign(&start_plus, start); 
 
         //Search for the word.
         gint case_len=0;
@@ -166,8 +164,7 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
                   {
                     if(first_repeat>0&&counter>first_repeat)
                       {
-                        gtk_text_iter_backward_chars(start, backwards_chars);
-                        gtk_text_iter_backward_chars(&start_plus, backwards_chars);  
+                        gtk_text_iter_backward_chars(start, backwards_chars);  
                         gtk_text_iter_backward_chars(start_word, backwards_chars); 
                       } 
                     counter=0;
@@ -175,11 +172,8 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
                   }                           
               }
 
-            //g_free(casefold);
-
             //Need to hold on the ligature char until it's chars are checked.
-            if(case_len_forward>0) gtk_text_iter_backward_char(&start_plus);
-            else run_loop=gtk_text_iter_forward_char(start);
+            if(case_len_forward<1) run_loop=gtk_text_iter_forward_char(start);
 
           }while(run_loop);
       }    
