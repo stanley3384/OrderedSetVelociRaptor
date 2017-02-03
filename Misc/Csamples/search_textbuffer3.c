@@ -9,7 +9,13 @@ Follow up to.
 which details some language details that cause problems checking the upper and lower case chars.
 
     This version tries a case-insensitive search with a UTF-8 casefold function. Still some
-problems with the ligatures.
+problems with the ligatures. For example, if you search ff on the "ffl" single char, how do 
+you just highlight ff? 
+
+    With a lot of mallocs and frees for each char it runs a little slow. If you could reuse a
+small byte array with the casefold function maybe the performance might be better. Another strategy
+would be to have a function look for if a char was a ligature and return true/false before
+using the casefold function.
     
     gcc -Wall search_textbuffer3.c -o search_textbuffer3 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -80,7 +86,7 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
               }   
 
             //If we are checking a ligature else just get the char.
-            if(case_len_forward>0&&max-case_len_forward<=count)
+            if(case_len_forward>0)
               {
                 //count forward.
                 offset=max-case_len_forward;
