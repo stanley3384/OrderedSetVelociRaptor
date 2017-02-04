@@ -1,19 +1,19 @@
 
 /*
 
-    Test a case in-sensitive search and compare it with the GTK text in-sensitive search.
+    Test a case in-sensitive search and compare it with the GTK case in-sensitive search.
 Follow up to.
 
     https://mail.gnome.org/archives/gtk-devel-list/2017-January/msg00025.html
 
-which details some language details that cause problems checking the upper and lower case chars.
+which details some language details that cause problems checking just the upper and lower case chars.
 
     This version tries a case-insensitive search with a UTF-8 casefold function. Still some
 problems with the ligatures. For example, if you search ff on the "ffl" single char, how do 
 you just highlight ff? 
 
-    OK, just use a small buffer on the stack to hold the casefolded chars. This get the performance
-back into the search.
+    OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
+back into the search. Not sure how big that buffer needs to be though.
 
     To use, copy the glib header files into your test folder and change the include path.
 
@@ -28,8 +28,8 @@ back into the search.
 #include<gunichartables.h>
 #include<gmacros.h>
 
-//Adapt the g_utf8_casefold() function to use a small buffer on the stack.
-static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer)
+//Adapt the glib g_utf8_casefold() function to use a small buffer on the stack to speed things up.
+static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_size)
   {
     gint i=0;
     gint start = 0;
@@ -38,7 +38,8 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer)
     gint buffer_len=0;
     gint end = G_N_ELEMENTS (casefold_table);
     gchar *p;
- 
+  
+    memset(buffer, '\0', buffer_size);
     if (ch >= casefold_table[start].ch && ch <= casefold_table[end - 1].ch)
       {
         while (TRUE)
@@ -113,17 +114,19 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
         gint offset=0;
         gunichar c;
         gboolean run_loop=TRUE;
-        //Ten bytes should be more than enough for a buffer here. I think?
+        /*
+           Ten bytes should be more than enough for a buffer here. I think??? This is
+           needed for casefolded ligatures that expand out to more than one char.
+        */
         gchar casefold[10];
         do
           {
-            memset(casefold, '\0', 10);
-            case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold);
+            //Casefold the char into the buffer.
+            case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold, 10);
 
-            //Start a multi char ligature.
+            //Start checking a multi char ligature if more than one char in the buffer.
             if(case_len>1&&case_len_forward==0)
-              {  
-                //g_print("case %i\n", case_len);             
+              {               
                 case_len_forward=case_len;
                 max=case_len_forward;
               }   
@@ -131,19 +134,17 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
             //If we are checking a ligature else just get the char.
             if(case_len_forward>0)
               {
-                //count forward.
+                //count forward finding chars in the ligature.
                 offset=max-case_len_forward;
-                //g_print("forward %s %i %i\n", casefold, max, case_len_forward);
                 c=g_utf8_get_char(g_utf8_offset_to_pointer(casefold, offset));
-                //g_print("|%c|%c|%i,%i,%i\n", g_utf8_get_char(p), c, max, case_len_forward, offset);
                 case_len_forward--;
               }
             else
               { 
-                c=g_utf8_get_char(casefold);
-                //g_print("|%c|%c|%i,%i,%i\n", g_utf8_get_char(p), c, max, case_len_forward, offset); 
+                c=g_utf8_get_char(casefold); 
               }
              
+            //Check for character matches and move on.
             if(g_utf8_get_char(p)==c)
               {
                 gtk_text_iter_assign(end_word, start);
@@ -172,15 +173,14 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
                   }                           
               }
 
-            //Need to hold on the ligature char until it's chars are checked.
+            //Need to hold the loop on the ligature char until it's chars are checked.
             if(case_len_forward<1) run_loop=gtk_text_iter_forward_char(start);
 
           }while(run_loop);
       }    
 
     g_free(casefold_search);
-    return FALSE;
-    
+    return FALSE;    
   }
 static void search1(GtkWidget *button, gpointer *data)
   {
