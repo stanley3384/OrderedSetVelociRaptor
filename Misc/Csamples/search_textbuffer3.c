@@ -16,6 +16,8 @@ you just highlight ff?
 small byte array with the casefold function maybe the performance might be better. Another strategy
 would be to have a function look for if a char was a ligature and return true/false before
 using the casefold function.
+
+    Take a look at search_textbuffer4 for getting rid of the mallocs.
     
     gcc -Wall search_textbuffer3.c -o search_textbuffer3 `pkg-config --cflags --libs gtk+-3.0`
 
