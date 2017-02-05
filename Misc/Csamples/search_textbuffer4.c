@@ -13,7 +13,8 @@ problems with the ligatures. For example, if you search ff on the "ffl" single c
 you just highlight ff? 
 
     OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
-back into the search. Not sure how big that buffer needs to be though.
+back into the search. Not sure how big that buffer needs to be though. Most searches are working.
+Haven't found Åström yet.
 
     To use, copy the glib header files into your test folder and change the include path.
 
@@ -38,7 +39,7 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_s
     gint buffer_len=0;
     gint end = G_N_ELEMENTS (casefold_table);
     gchar *p;
-  
+
     memset(buffer, '\0', buffer_size);
     if (ch >= casefold_table[start].ch && ch <= casefold_table[end - 1].ch)
       {
@@ -63,11 +64,9 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_s
 	    else end = half;
 	  }
       }
-    else
-      {
-        buffer[buffer_bytes]=g_unichar_tolower(ch);
-        buffer_len++;
-      }
+
+    buffer[0]=g_unichar_tolower(ch);
+    buffer_len++;
 
     end:
     return buffer_len; 
@@ -256,7 +255,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_size_request(textview, 400, 300);
 
     GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD Straße and STRASSE ﬁeld FIELD ﬄ  ﬄ testﬄ.", -1);
+    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD Straße and STRASSE ﬁeld FIELD ﬄ  ﬄ testﬄ Åström swedish.", -1);
     gtk_text_buffer_create_tag(buffer, "yellow-tag", "background", "yellow", NULL); 
 
     GtkWidget *entry=gtk_entry_new();
