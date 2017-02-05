@@ -13,8 +13,7 @@ problems with the ligatures. For example, if you search ff on the "ffl" single c
 you just highlight ff? 
 
     OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
-back into the search. Not sure how big that buffer needs to be though. Most searches are working.
-Haven't found Åström yet.
+back into the search. Not sure how big that buffer needs to be though.
 
     To use, copy the glib header files into your test folder and change the include path.
 
@@ -29,6 +28,51 @@ Haven't found Åström yet.
 #include<gunichartables.h>
 #include<gmacros.h>
 
+//From glib gstring.c g_string_insert_unichar().
+static void g_unichar_to_utf(gchar *dest, gunichar wc)
+  {
+    gint charlen, first, i;
+
+    /* Code copied from g_unichar_to_utf() */
+    if (wc < 0x80)
+      {
+        first = 0;
+        charlen = 1;
+      }
+    else if (wc < 0x800)
+      {
+        first = 0xc0;
+        charlen = 2;
+      }
+    else if (wc < 0x10000)
+      {
+        first = 0xe0;
+        charlen = 3;
+      }
+     else if (wc < 0x200000)
+      {
+        first = 0xf0;
+        charlen = 4;
+      }
+    else if (wc < 0x4000000)
+      {
+        first = 0xf8;
+        charlen = 5;
+      }
+    else
+      {
+        first = 0xfc;
+        charlen = 6;
+      }
+    
+    for (i = charlen - 1; i > 0; --i)
+      {
+        dest[i] = (wc & 0x3f) | 0x80;
+        wc >>= 6;
+      }
+    dest[0] = wc | first;
+  /* End of copied code */
+}
 //Adapt the glib g_utf8_casefold() function to use a small buffer on the stack to speed things up.
 static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_size)
   {
@@ -65,7 +109,7 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_s
 	  }
       }
 
-    buffer[0]=g_unichar_tolower(ch);
+    g_unichar_to_utf(buffer, g_unichar_tolower(ch));
     buffer_len++;
 
     end:
