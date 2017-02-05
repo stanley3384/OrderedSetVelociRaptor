@@ -1,6 +1,6 @@
 /*
     Test code for drawing a battery icon and animating it for charging. This one uses a frame
-clock for the animation and does a rotation. 
+clock for the animation. It checks the drawing time vs. the screen redraw time.
 
     gcc -Wall battery2.c -o battery2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -75,6 +75,14 @@ static gboolean draw_battery(GtkWidget *da, GdkFrameClock *frame_clock, GtkWidge
  {
    if(animate>1.0)
      {
+       if(animate>=4.02&&animate<=4.07)
+         {
+           gint64 base_time=gdk_frame_clock_get_frame_time(frame_clock);
+           gint64 refresh=0;
+           gint64 presentation=0;           
+           gdk_frame_clock_get_refresh_info(frame_clock, base_time, &refresh, &presentation);
+           g_print("Frame Clock %lld, %f, %lld\n", base_time, .000001*(gdouble)refresh, presentation);
+         }
        animate-=0.05;
        gtk_widget_queue_draw(widgets[1]);
        return G_SOURCE_CONTINUE;
@@ -102,6 +110,11 @@ static void translate_drawing(GtkWidget *combo, GtkWidget *da)
  }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
  {
+   GTimer *timer=NULL;
+   if(animate>=4.02&&animate<=4.07)
+     {
+       timer=g_timer_new();
+     }
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
    gdouble saved_width=width;
@@ -199,6 +212,12 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_stroke(cr);
 
    cairo_pattern_destroy(pattern1);
+
+   if(animate>=4.02&&animate<=4.07)
+     {
+       g_print("Drawing Timer %f\n", g_timer_elapsed(timer, NULL));
+       g_timer_destroy(timer);
+     }
 
    return FALSE;
 }
