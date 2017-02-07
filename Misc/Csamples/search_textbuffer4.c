@@ -1,8 +1,7 @@
 
 /*
 
-    Test a case in-sensitive search and compare it with the GTK case in-sensitive search.
-Follow up to.
+    Test a search algorithm and compare it with the GTK+ search algorithm. Follow up to.
 
     https://mail.gnome.org/archives/gtk-devel-list/2017-January/msg00025.html
 
@@ -13,7 +12,8 @@ problems with the ligatures. For example, if you search ff on the "ffl" single c
 you just highlight ff? 
 
     OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
-back into the search. Not sure how big that buffer needs to be though.
+back into the case insensitive search. Not sure how big that buffer needs to be though. The case
+sensitive search is a bit slow.
 
     To use, copy the glib header files into your test folder and change the include path.
 
@@ -27,6 +27,13 @@ back into the search. Not sure how big that buffer needs to be though.
 #include<string.h>
 #include<gunichartables.h>
 #include<gmacros.h>
+
+enum
+{
+  TEXT_SEARCH_VISIBLE_ONLY,
+  TEXT_SEARCH_TEXT_ONLY,
+  TEXT_SEARCH_CASE_INSENSITIVE
+};
 
 //From glib gstring.c g_string_insert_unichar().
 static void g_unichar_to_utf(gchar *dest, gunichar wc)
@@ -74,7 +81,7 @@ static void g_unichar_to_utf(gchar *dest, gunichar wc)
   /* End of copied code */
 }
 //Adapt the glib g_utf8_casefold() function to use a small buffer on the stack to speed things up.
-static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_size)
+static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer)
   {
     gint i=0;
     gint start = 0;
@@ -84,7 +91,6 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_s
     gint end = G_N_ELEMENTS (casefold_table);
     gchar *p;
 
-    memset(buffer, '\0', buffer_size);
     if (ch >= casefold_table[start].ch && ch <= casefold_table[end - 1].ch)
       {
         while (TRUE)
@@ -115,17 +121,36 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer, gint buffer_s
     end:
     return buffer_len; 
   }
-static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_string, GtkTextIter *start_word, GtkTextIter *end_word)
+static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *str, gint flags, GtkTextIter *match_start, GtkTextIter *match_end, const GtkTextIter *limit)
   {
-    //Case in-sensitive search.
     gint i=0;
-    gchar *casefold_search=g_utf8_casefold(search_string, -1); 
-    gchar *p=casefold_search;
-    glong count=g_utf8_strlen(casefold_search, -1);
+    gchar *search1=NULL; 
+    gchar *p=NULL;
+    glong count=0;
     glong counter=0;
     gint first_repeat=0;
-    gchar first_char=*p;
+    gchar first_char;
     gint backwards_chars=0;
+    GtkTextIter *start=NULL;
+    GtkTextIter *end=NULL;
+
+    //Only case sensitive and insensitive search is connected and currently working.
+    switch(flags) 
+      {
+        case TEXT_SEARCH_TEXT_ONLY:
+          search1=g_strdup((gchar*)str);
+          count=g_utf8_strlen(search1, -1);
+          p=search1;
+          first_char=*p;
+          break;
+        default:
+          search1=g_utf8_casefold((gchar*)str, -1);
+          count=g_utf8_strlen(search1, -1);
+          p=search1;
+          first_char=*p;          
+      } 
+    start=gtk_text_iter_copy(iter);
+    if(limit!=NULL) end=gtk_text_iter_copy(limit);
 
     //Check if there are some chars.
     if(count>0)
@@ -145,10 +170,10 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
               }
             p=g_utf8_find_next_char(p, NULL);
           }
-        p=casefold_search;
+        p=search1;
         if(first_repeat>0) backwards_chars=count-first_repeat;
 
-        gtk_text_iter_assign(start_word, start);
+        gtk_text_iter_assign(match_start, start);
 
         //Search for the word.
         gint case_len=0;
@@ -160,12 +185,22 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
         /*
            Ten bytes should be more than enough for a buffer here. I think??? This is
            needed for casefolded ligatures that expand out to more than one char.
+           Should probably change the casefold buffer to a GString.
         */
         gchar casefold[10];
         do
           {
-            //Casefold the char into the buffer.
-            case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold, 10);
+            memset(casefold, '\0', 10);
+            if(flags==TEXT_SEARCH_TEXT_ONLY)
+              {
+                casefold[0]=gtk_text_iter_get_char(start);
+                case_len=1;
+              }
+            else
+              {  
+                //Casefold the char into the buffer for case insensitive.        
+                case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold);
+              }           
 
             //Start checking a multi char ligature if more than one char in the buffer.
             if(case_len>1&&case_len_forward==0)
@@ -190,8 +225,8 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
             //Check for character matches and move on.
             if(g_utf8_get_char(p)==c)
               {
-                gtk_text_iter_assign(end_word, start);
-                gtk_text_iter_forward_char(end_word);
+                gtk_text_iter_assign(match_end, start);
+                gtk_text_iter_forward_char(match_end);
                 counter++;  
                 p=g_utf8_find_next_char(p, NULL); //p++ for utf-8.
                 if(counter>=count)
@@ -202,44 +237,61 @@ static gboolean text_iter_forward_search(GtkTextIter *start, gchar *search_strin
             else
               {
                 case_len_forward=0;
-                gtk_text_iter_assign(start_word, start);
-                gtk_text_iter_forward_char(start_word);
+                gtk_text_iter_assign(match_start, start);
+                gtk_text_iter_forward_char(match_start);
                 if(counter>0)
                   {
                     if(first_repeat>0&&counter>first_repeat)
                       {
                         gtk_text_iter_backward_chars(start, backwards_chars);  
-                        gtk_text_iter_backward_chars(start_word, backwards_chars); 
+                        gtk_text_iter_backward_chars(match_start, backwards_chars); 
                       } 
                     counter=0;
-                    p=casefold_search;
+                    p=search1;
                   }                           
               }
 
             //Need to hold the loop on the ligature char until it's chars are checked.
-            if(case_len_forward<1) run_loop=gtk_text_iter_forward_char(start);
+            if(case_len_forward<1)
+              {
+                run_loop=gtk_text_iter_forward_char(start);
+                //Check if we are at the limit or end of requested search.
+                if(end!=NULL&&gtk_text_iter_equal(start, end)) run_loop=FALSE;
+              }
 
           }while(run_loop);
       }    
 
-    g_free(casefold_search);
+    g_free(search1);
     return FALSE;    
   }
 static void search1(GtkWidget *button, gpointer *data)
   {
     GtkTextIter start;
     GtkTextIter end;
-    GtkTextIter start_word;
-    GtkTextIter end_word;
+    GtkTextIter match_start;
+    GtkTextIter match_end;
+    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(data[2]));
     gchar *search_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[1])));
     gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
     gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
     gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
 
-    while(text_iter_forward_search(&start, search_string, &start_word, &end_word))
+    if(active==0)
       {
-        gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &start_word, &end_word);
-        start=end_word;
+        while(text_iter_forward_search(&start, search_string, TEXT_SEARCH_TEXT_ONLY, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
+      }
+    else
+      {
+        while(text_iter_forward_search(&start, search_string, TEXT_SEARCH_CASE_INSENSITIVE, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
       }
 
     g_free(search_string);
@@ -248,17 +300,29 @@ static void search2(GtkWidget *button, gpointer *data)
   {
     GtkTextIter start;
     GtkTextIter end;
-    GtkTextIter start_word;
-    GtkTextIter end_word;
+    GtkTextIter match_start;
+    GtkTextIter match_end;
+    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(data[2]));
     gchar *search_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[1])));
     gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
     gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
     gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
 
-    while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_CASE_INSENSITIVE, &start_word, &end_word, NULL))
+    if(active==0)
       {
-        gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &start_word, &end_word);
-        start=end_word;
+        while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_TEXT_ONLY, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
+      }
+    else
+      {
+        while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_CASE_INSENSITIVE, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
       }
 
     g_free(search_string);
@@ -305,8 +369,14 @@ int main(int argc, char *argv[])
     GtkWidget *entry=gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(entry), "search");
 
+    GtkWidget *combo=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "TEXT_SEARCH_TEXT_ONLY");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "TEXT_SEARCH_CASE_INSENSITIVE");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 1);
+
     GtkWidget *button1=gtk_button_new_with_label("Test Search");
-    gpointer test[]={buffer, entry};
+    gpointer test[]={buffer, entry, combo};
     g_signal_connect(button1, "clicked", G_CALLBACK(button1_clicked), test);
 
     GtkWidget *button2=gtk_button_new_with_label("Gtk Search");
@@ -317,6 +387,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo, 0, 4, 1, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
 
