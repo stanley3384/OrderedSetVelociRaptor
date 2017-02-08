@@ -193,7 +193,7 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
             memset(casefold, '\0', 10);
             if(flags==TEXT_SEARCH_TEXT_ONLY)
               {
-                casefold[0]=gtk_text_iter_get_char(start);
+                g_unichar_to_utf(casefold, gtk_text_iter_get_char(start));
                 case_len=1;
               }
             else
