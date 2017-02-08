@@ -7,13 +7,13 @@
 
 which details some language details that cause problems checking just the upper and lower case chars.
 
-    This version tries a case-insensitive search with a UTF-8 casefold function. Still some
+    This version tries a case insensitive search with a UTF-8 casefold function. Still some
 problems with the ligatures. For example, if you search ff on the "ffl" single char, how do 
 you just highlight ff? 
 
     OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
 back into the case insensitive search. Not sure how big that buffer needs to be though. The case
-sensitive search is a bit slow.
+sensitive search is a bit slow. The test search doesn't normalize the string or chars either.
 
     To use, copy the glib header files into your test folder and change the include path.
 
@@ -34,6 +34,147 @@ enum
   TEXT_SEARCH_TEXT_ONLY,
   TEXT_SEARCH_CASE_INSENSITIVE
 };
+
+static void button1_clicked(GtkWidget *button, gpointer *data);
+static void button2_clicked(GtkWidget *button, gpointer *data);
+static void search1(GtkWidget *button, gpointer *data);
+static void search2(GtkWidget *button, gpointer *data);
+static void g_unichar_to_utf(gchar *dest, gunichar wc);
+static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer);
+static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *str, gint flags, GtkTextIter *match_start, GtkTextIter *match_end, const GtkTextIter *limit);
+
+int main(int argc, char *argv[])
+  {
+    gtk_init(&argc, &argv);
+
+    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "Search Textbuffer Test");
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    GtkWidget *textview=gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_CHAR);
+    gtk_widget_set_size_request(textview, 400, 300);
+
+    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD Straße and STRASSE ﬁeld FIELD ﬄ  ﬄ testﬄ Åström swedish.", -1);
+    gtk_text_buffer_create_tag(buffer, "yellow-tag", "background", "yellow", NULL); 
+
+    GtkWidget *entry=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry), "search");
+
+    GtkWidget *combo=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "TEXT_SEARCH_TEXT_ONLY");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "TEXT_SEARCH_CASE_INSENSITIVE");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 1);
+
+    GtkWidget *button1=gtk_button_new_with_label("Test Search");
+    gpointer test[]={buffer, entry, combo};
+    g_signal_connect(button1, "clicked", G_CALLBACK(button1_clicked), test);
+
+    GtkWidget *button2=gtk_button_new_with_label("Gtk Search");
+    g_signal_connect(button2, "clicked", G_CALLBACK(button2_clicked), test);
+
+    GtkWidget *grid=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), textview, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo, 0, 4, 1, 1);
+
+    gtk_container_add(GTK_CONTAINER(window), grid);
+
+    gtk_widget_show_all(window);
+    
+    gtk_main();
+
+    return 0;
+  }
+static void button1_clicked(GtkWidget *button, gpointer *data)
+  {
+    GTimer *timer=g_timer_new();
+    gint i=0;
+
+    for(i=0;i<1000;i++) search1(button, data);
+
+    g_print("Timer1 %f\n", g_timer_elapsed(timer, NULL));
+    g_timer_destroy(timer);
+  }
+static void button2_clicked(GtkWidget *button, gpointer *data)
+  {
+    GTimer *timer=g_timer_new();
+    gint i=0;
+
+    for(i=0;i<1000;i++) search2(button, data);
+
+    g_print("Timer2 %f\n", g_timer_elapsed(timer, NULL));
+    g_timer_destroy(timer);
+  }
+static void search1(GtkWidget *button, gpointer *data)
+  {
+    GtkTextIter start;
+    GtkTextIter end;
+    GtkTextIter match_start;
+    GtkTextIter match_end;
+    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(data[2]));
+    gchar *search_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[1])));
+    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
+    gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
+    gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
+
+    if(active==0)
+      {
+        while(text_iter_forward_search(&start, search_string, TEXT_SEARCH_TEXT_ONLY, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
+      }
+    else
+      {
+        while(text_iter_forward_search(&start, search_string, TEXT_SEARCH_CASE_INSENSITIVE, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
+      }
+
+    g_free(search_string);
+  }
+static void search2(GtkWidget *button, gpointer *data)
+  {
+    GtkTextIter start;
+    GtkTextIter end;
+    GtkTextIter match_start;
+    GtkTextIter match_end;
+    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(data[2]));
+    gchar *search_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[1])));
+    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
+    gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
+    gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
+
+    if(active==0)
+      {
+        while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_TEXT_ONLY, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
+      }
+    else
+      {
+        while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_CASE_INSENSITIVE, &match_start, &match_end, &end))
+          {
+            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
+            start=match_end;
+          }
+      }
+
+    g_free(search_string);
+  }
 
 //From glib gstring.c g_string_insert_unichar().
 static void g_unichar_to_utf(gchar *dest, gunichar wc)
@@ -134,7 +275,7 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
     GtkTextIter *start=NULL;
     GtkTextIter *end=NULL;
 
-    //Only case sensitive and insensitive search is connected and currently working.
+    //Only case sensitive and insensitive search is connected.
     switch(flags) 
       {
         case TEXT_SEARCH_TEXT_ONLY:
@@ -265,137 +406,6 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
     g_free(search1);
     return FALSE;    
   }
-static void search1(GtkWidget *button, gpointer *data)
-  {
-    GtkTextIter start;
-    GtkTextIter end;
-    GtkTextIter match_start;
-    GtkTextIter match_end;
-    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(data[2]));
-    gchar *search_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[1])));
-    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
-    gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
-    gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
 
-    if(active==0)
-      {
-        while(text_iter_forward_search(&start, search_string, TEXT_SEARCH_TEXT_ONLY, &match_start, &match_end, &end))
-          {
-            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
-            start=match_end;
-          }
-      }
-    else
-      {
-        while(text_iter_forward_search(&start, search_string, TEXT_SEARCH_CASE_INSENSITIVE, &match_start, &match_end, &end))
-          {
-            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
-            start=match_end;
-          }
-      }
-
-    g_free(search_string);
-  }
-static void search2(GtkWidget *button, gpointer *data)
-  {
-    GtkTextIter start;
-    GtkTextIter end;
-    GtkTextIter match_start;
-    GtkTextIter match_end;
-    gint active=gtk_combo_box_get_active(GTK_COMBO_BOX(data[2]));
-    gchar *search_string=g_strdup(gtk_entry_get_text(GTK_ENTRY(data[1])));
-    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(data[0]), &start);
-    gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(data[0]), &end);
-    gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(data[0]), &start, &end);
-
-    if(active==0)
-      {
-        while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_TEXT_ONLY, &match_start, &match_end, &end))
-          {
-            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
-            start=match_end;
-          }
-      }
-    else
-      {
-        while(gtk_text_iter_forward_search(&start, search_string, GTK_TEXT_SEARCH_CASE_INSENSITIVE, &match_start, &match_end, &end))
-          {
-            gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(data[0]), "yellow-tag", &match_start, &match_end);
-            start=match_end;
-          }
-      }
-
-    g_free(search_string);
-  }
-static void button1_clicked(GtkWidget *button, gpointer *data)
-  {
-    GTimer *timer=g_timer_new();
-    gint i=0;
-
-    for(i=0;i<1000;i++) search1(button, data);
-
-    g_print("Timer1 %f\n", g_timer_elapsed(timer, NULL));
-    g_timer_destroy(timer);
-  }
-static void button2_clicked(GtkWidget *button, gpointer *data)
-  {
-    GTimer *timer=g_timer_new();
-    gint i=0;
-
-    for(i=0;i<1000;i++) search2(button, data);
-
-    g_print("Timer2 %f\n", g_timer_elapsed(timer, NULL));
-    g_timer_destroy(timer);
-  }
-int main(int argc, char *argv[])
-  {
-    gtk_init(&argc, &argv);
-
-    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Search Textbuffer Test");
-    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
-    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-    GtkWidget *textview=gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_CHAR);
-    gtk_widget_set_size_request(textview, 400, 300);
-
-    GtkTextBuffer *buffer=gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-    gtk_text_buffer_set_text(buffer, "SEArch Add search a some words to Search  search SearCH a SEaRch search search Search sand a few extra s ss      sssr Sea Search zzzzzzz compare Straße and STRASSE ﬁeld FIELD Straße and STRASSE ﬁeld FIELD ﬄ  ﬄ testﬄ Åström swedish.", -1);
-    gtk_text_buffer_create_tag(buffer, "yellow-tag", "background", "yellow", NULL); 
-
-    GtkWidget *entry=gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(entry), "search");
-
-    GtkWidget *combo=gtk_combo_box_text_new();
-    gtk_widget_set_hexpand(combo, TRUE);
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "TEXT_SEARCH_TEXT_ONLY");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "TEXT_SEARCH_CASE_INSENSITIVE");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 1);
-
-    GtkWidget *button1=gtk_button_new_with_label("Test Search");
-    gpointer test[]={buffer, entry, combo};
-    g_signal_connect(button1, "clicked", G_CALLBACK(button1_clicked), test);
-
-    GtkWidget *button2=gtk_button_new_with_label("Gtk Search");
-    g_signal_connect(button2, "clicked", G_CALLBACK(button2_clicked), test);
-
-    GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), textview, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo, 0, 4, 1, 1);
-
-    gtk_container_add(GTK_CONTAINER(window), grid);
-
-    gtk_widget_show_all(window);
-    
-    gtk_main();
-
-    return 0;
-  }
 
 
