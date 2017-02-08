@@ -12,8 +12,13 @@ problems with the ligatures. For example, if you search ff on the "ffl" single c
 you just highlight ff? 
 
     OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
-back into the case insensitive search. Not sure how big that buffer needs to be though. The case
-sensitive search is a bit slow. The test search doesn't normalize the string or chars either.
+back into the case insensitive search. The case sensitive search is a bit slow. The test search
+doesn't normalize the string or chars either so the comparison isn't equivalent. For example
+Åström is changed for string comparison as follows
+
+    Original String "Åström swedish."
+    Casefolded "åström swedish."
+    Normalized "åström swedish."
 
     To use, copy the glib header files into your test folder and change the include path.
 
@@ -28,6 +33,7 @@ sensitive search is a bit slow. The test search doesn't normalize the string or 
 #include<gunichartables.h>
 #include<gmacros.h>
 
+//These are not all used.
 enum
 {
   TEXT_SEARCH_VISIBLE_ONLY,
@@ -324,14 +330,14 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
         gunichar c;
         gboolean run_loop=TRUE;
         /*
-           Ten bytes should be more than enough for a buffer here. I think??? This is
+           Eighteen bytes should be more than enough for a buffer here. I think??? This is
            needed for casefolded ligatures that expand out to more than one char.
            Should probably change the casefold buffer to a GString.
         */
-        gchar casefold[10];
+        gchar casefold[18];
         do
           {
-            memset(casefold, '\0', 10);
+            memset(casefold, '\0', 18);
             if(flags==TEXT_SEARCH_TEXT_ONLY)
               {
                 g_unichar_to_utf(casefold, gtk_text_iter_get_char(start));
@@ -340,7 +346,7 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
             else
               {  
                 //Casefold the char into the buffer for case insensitive.        
-                case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold);
+                case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold);                
               }           
 
             //Start checking a multi char ligature if more than one char in the buffer.
