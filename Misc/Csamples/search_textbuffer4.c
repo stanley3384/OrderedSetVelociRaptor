@@ -45,7 +45,6 @@ static void button1_clicked(GtkWidget *button, gpointer *data);
 static void button2_clicked(GtkWidget *button, gpointer *data);
 static void search1(GtkWidget *button, gpointer *data);
 static void search2(GtkWidget *button, gpointer *data);
-static void g_unichar_to_utf(gchar *dest, gunichar wc);
 static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer);
 static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *str, gint flags, GtkTextIter *match_start, GtkTextIter *match_end, const GtkTextIter *limit);
 
@@ -181,52 +180,6 @@ static void search2(GtkWidget *button, gpointer *data)
 
     g_free(search_string);
   }
-
-//From glib gstring.c g_string_insert_unichar().
-static void g_unichar_to_utf(gchar *dest, gunichar wc)
-  {
-    gint charlen, first, i;
-
-    /* Code copied from g_unichar_to_utf() */
-    if (wc < 0x80)
-      {
-        first = 0;
-        charlen = 1;
-      }
-    else if (wc < 0x800)
-      {
-        first = 0xc0;
-        charlen = 2;
-      }
-    else if (wc < 0x10000)
-      {
-        first = 0xe0;
-        charlen = 3;
-      }
-     else if (wc < 0x200000)
-      {
-        first = 0xf0;
-        charlen = 4;
-      }
-    else if (wc < 0x4000000)
-      {
-        first = 0xf8;
-        charlen = 5;
-      }
-    else
-      {
-        first = 0xfc;
-        charlen = 6;
-      }
-    
-    for (i = charlen - 1; i > 0; --i)
-      {
-        dest[i] = (wc & 0x3f) | 0x80;
-        wc >>= 6;
-      }
-    dest[0] = wc | first;
-  /* End of copied code */
-}
 //Adapt the glib g_utf8_casefold() function to use a small buffer on the stack to speed things up.
 static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer)
   {
@@ -262,7 +215,7 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer)
 	  }
       }
 
-    g_unichar_to_utf(buffer, g_unichar_tolower(ch));
+    g_unichar_to_utf8(g_unichar_tolower(ch), buffer);
     buffer_len++;
 
     end:
@@ -343,7 +296,7 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
             gchar *normalize=NULL;
             if(flags==TEXT_SEARCH_TEXT_ONLY)
               {
-                g_unichar_to_utf(casefold, gtk_text_iter_get_char(start));
+                g_unichar_to_utf8(gtk_text_iter_get_char(start), casefold);
                 normalize=g_strdup(casefold);
                 case_len=1;
               }
