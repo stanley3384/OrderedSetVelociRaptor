@@ -7,14 +7,14 @@
 
 which details some language details that cause problems checking just the upper and lower case chars.
 
-    This version tries a case insensitive search with a UTF-8 casefold function. Still some
+    This version tries a case insensitive search with UTF-8 casefold and normalize functions. Still some
 problems with the ligatures. For example, if you search ff on the "ffl" single char, how do 
 you just highlight ff? 
 
     OK, just use a small buffer on the stack to hold the casefolded chars. This gets the performance
-back into the case insensitive search. The case sensitive search is a bit slow. The test search
-doesn't normalize the string or chars either so the comparison isn't equivalent. For example
-Åström is changed for string comparison as follows
+back into the case insensitive search. Still a lot of mallocs and frees for the normalize function. 
+
+    Here is the basic process of casefolding and normalizing so that you can compare strings.
 
     Original String "Åström swedish."
     Casefolded "åström swedish."
@@ -33,7 +33,7 @@ doesn't normalize the string or chars either so the comparison isn't equivalent.
 #include<gunichartables.h>
 #include<gmacros.h>
 
-//These are not all used.
+//TEXT_SEARCH_VISIBLE_ONLY is not used.
 enum
 {
   TEXT_SEARCH_VISIBLE_ONLY,
@@ -271,6 +271,7 @@ static gint g_utf8_casefold_char(const gunichar ch, gchar *buffer)
 static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *str, gint flags, GtkTextIter *match_start, GtkTextIter *match_end, const GtkTextIter *limit)
   {
     gint i=0;
+    gchar *search=NULL;
     gchar *search1=NULL; 
     gchar *p=NULL;
     glong count=0;
@@ -291,7 +292,8 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
           first_char=*p;
           break;
         default:
-          search1=g_utf8_casefold((gchar*)str, -1);
+          search=g_utf8_casefold((gchar*)str, -1);
+          search1=g_utf8_normalize(search, -1, G_NORMALIZE_DEFAULT);
           count=g_utf8_strlen(search1, -1);
           p=search1;
           first_char=*p;          
@@ -338,15 +340,19 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
         do
           {
             memset(casefold, '\0', 18);
+            gchar *normalize=NULL;
             if(flags==TEXT_SEARCH_TEXT_ONLY)
               {
                 g_unichar_to_utf(casefold, gtk_text_iter_get_char(start));
+                normalize=g_strdup(casefold);
                 case_len=1;
               }
             else
               {  
-                //Casefold the char into the buffer for case insensitive.        
-                case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold);                
+                //Casefold and normalize the char for case insensitive.        
+                case_len=g_utf8_casefold_char(gtk_text_iter_get_char(start), casefold);
+                normalize=g_utf8_normalize(casefold, -1, G_NORMALIZE_DEFAULT);
+                case_len=g_utf8_strlen(normalize, -1);             
               }           
 
             //Start checking a multi char ligature if more than one char in the buffer.
@@ -361,12 +367,12 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
               {
                 //count forward finding chars in the ligature.
                 offset=max-case_len_forward;
-                c=g_utf8_get_char(g_utf8_offset_to_pointer(casefold, offset));
+                c=g_utf8_get_char(g_utf8_offset_to_pointer(normalize, offset));
                 case_len_forward--;
               }
             else
               { 
-                c=g_utf8_get_char(casefold); 
+                c=g_utf8_get_char(normalize); 
               }
              
             //Check for character matches and move on.
@@ -406,9 +412,12 @@ static gboolean text_iter_forward_search(const GtkTextIter *iter, const gchar *s
                 if(end!=NULL&&gtk_text_iter_equal(start, end)) run_loop=FALSE;
               }
 
+            g_free(normalize);
+
           }while(run_loop);
       }    
 
+    g_free(search);
     g_free(search1);
     return FALSE;    
   }
