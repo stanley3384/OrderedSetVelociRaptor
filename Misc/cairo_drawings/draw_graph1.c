@@ -18,7 +18,7 @@ static const double dashed_line[]={20.0, 5.0};
 static gint dashed_len=2;
 
 static void get_random_numbers(void);
-static gboolean redraw(gpointer data);
+static gboolean redraw(gpointer *data);
 static gboolean draw_points(GtkWidget *widget, cairo_t *cr, gpointer data);
 
 int main(int argc, char *argv[])
@@ -26,20 +26,29 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
    
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 300);
-    gtk_window_set_title(GTK_WINDOW(window), "Draw Graph");
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 400);
+    gtk_window_set_title(GTK_WINDOW(window), "Draw Graphs");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     rand1=g_rand_new();
     get_random_numbers();
 
-    GtkWidget *drawing_area = gtk_drawing_area_new();
-    gtk_widget_set_size_request(drawing_area, 500, 300);   
-    g_signal_connect(G_OBJECT(drawing_area), "draw", G_CALLBACK(draw_points), NULL);
+    GtkWidget *da1=gtk_drawing_area_new();
+    gtk_widget_set_size_request(da1, 500, 200);   
+    g_signal_connect(da1, "draw", G_CALLBACK(draw_points), NULL);
 
-    gtk_container_add(GTK_CONTAINER(window), drawing_area);
+    GtkWidget *da2=gtk_drawing_area_new();
+    gtk_widget_set_size_request(da2, 500, 200);   
+    g_signal_connect(da2, "draw", G_CALLBACK(draw_points), NULL);
 
-    g_timeout_add(1000, redraw, drawing_area);
+    GtkWidget *grid=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), da1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), da2, 0, 1, 1, 1);
+
+    gtk_container_add(GTK_CONTAINER(window), grid);
+
+    gpointer drawings[]={da1, da2};
+    g_timeout_add(1000, (GSourceFunc)redraw, drawings);
 
     gtk_widget_show_all(window);
     
@@ -49,10 +58,10 @@ int main(int argc, char *argv[])
 
     return 0;
   }
-static gboolean redraw(gpointer data)
+static gboolean redraw(gpointer *data)
   {
-    get_random_numbers();
-    gtk_widget_queue_draw(GTK_WIDGET(data));
+    gtk_widget_queue_draw(GTK_WIDGET(data[0]));
+    gtk_widget_queue_draw(GTK_WIDGET(data[1]));
     return TRUE;
   }
 static void get_random_numbers(void)
@@ -65,6 +74,8 @@ static gboolean draw_points(GtkWidget *widget, cairo_t *cr, gpointer data)
     gint i=0;
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+
+    get_random_numbers();
 
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     cairo_paint(cr);
