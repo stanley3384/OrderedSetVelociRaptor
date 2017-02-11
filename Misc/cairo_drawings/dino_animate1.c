@@ -1,12 +1,12 @@
 
 /*
+    Simple animation with GTK+ and Cairo. Click to start movement. Dino needs a frame clock.
 
-Simple animation with GTK+ and Cairo. Click to start movement. Testing things out.
+    gcc -Wall dino_animate1.c -o dino_animate1 `pkg-config --cflags --libs gtk+-3.0`
 
-Compile with; gcc -Wall `pkg-config --cflags gtk+-3.0`DinoAnimate.c -o dino `pkg-config --libs gtk+-3.0` 
+    Tested on Ubuntu16.04 and GTK3.18
 
-C. Eric Cashon
-
+    C. Eric Cashon
 */
 
 #include <gtk/gtk.h>
@@ -19,7 +19,6 @@ gint timer_id=0;
 static void close_window(GtkWidget *widget, gpointer data);
 static gboolean start_drawing(gpointer data);
 static void click_drawing(GtkWidget *widget, gpointer data);
-static void realize_drawing(GtkWidget *widget, gpointer data);
 static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data);
 
 int main (int argc, char *argv[])
@@ -28,14 +27,15 @@ int main (int argc, char *argv[])
     
     GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size(GTK_WINDOW(window), 900, 300);
+    gtk_window_set_title(GTK_WINDOW(window), "Dino Animate");
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(close_window), NULL);
 
     GtkWidget *RaptorDrawing = gtk_drawing_area_new();
     gtk_widget_set_size_request (RaptorDrawing, 900, 300);
     gtk_widget_set_events(RaptorDrawing, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(RaptorDrawing, "button_press_event", G_CALLBACK(click_drawing), NULL); 
-    g_signal_connect(RaptorDrawing, "draw", G_CALLBACK(draw_veloci_raptor), NULL); 
-    g_signal_connect(RaptorDrawing, "realize", G_CALLBACK(realize_drawing), NULL); 
+    g_signal_connect(RaptorDrawing, "draw", G_CALLBACK(draw_veloci_raptor), NULL);  
 
     gtk_container_add(GTK_CONTAINER(window), RaptorDrawing); 
 
@@ -55,18 +55,9 @@ static void close_window(GtkWidget *widget, gpointer data)
   }
 static gboolean start_drawing(gpointer widget)
   {
-    GtkAllocation allocation;
-    GdkWindow *win=gtk_widget_get_window(GTK_WIDGET(widget));
-    gtk_widget_get_allocation(GTK_WIDGET(widget), &allocation);
-
-    gdk_window_invalidate_rect(win, &allocation, FALSE);
-
+    gtk_widget_queue_draw(GTK_WIDGET(widget));
     if(move>move_ulimit) return FALSE;
     else return TRUE;      
-  }
-static void realize_drawing(GtkWidget *widget, gpointer data)
-  {
-    printf("Drawing Realized\n");
   }
 static void click_drawing(GtkWidget *widget, gpointer data)
   {
@@ -108,7 +99,7 @@ static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data
       { 90, 125 },
       { 40, 85 } 
   };
-    g_print("Draw Dino %i\n", move);
+    //g_print("Draw Dino %i\n", move);
     
     //Scaled from a 1024x576 screen. Original graphic.
     ScaleWidth=250/1024.0;
@@ -224,6 +215,5 @@ static gboolean draw_veloci_raptor(GtkWidget *widget, cairo_t *cr, gpointer data
       }
 
     return TRUE;
-
   }
 
