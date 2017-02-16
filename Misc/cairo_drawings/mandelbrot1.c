@@ -9,7 +9,7 @@ with the -O2 flag on my test computer.
     gcc -Wall -Werror mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
     gcc -Wall -Werror -O2 mandelbrot1.c -o mandelbrot1 `pkg-config --cflags --libs gtk+-3.0`
 
-    Tested on Ubuntu14.04 and GTK3.10
+    Tested on Ubuntu16.04 and GTK3.18
 
     C. Eric Cashon
 
@@ -29,6 +29,16 @@ static gint columns_done=0;
 static gint max_iteration=25;
 static GThread *thread=NULL;
 
+//Custom progress bar
+static gint progress_step=0;
+//The number of steps to draw at start. Can be changed with the combo box.
+#define start_steps 20
+static gint steps=start_steps;
+//For the pattern size.
+static gint total_steps=20*start_steps;
+//gradient_end_end value < 20. The end color for the gradient.
+static gdouble gradient_end=19.0;
+
 static void start_drawing_thread(gpointer widgets_pixbuf[]);
 //Draw the mandelbrot set on the pixbuf on a seperate thread.
 static gpointer draw_mandelbrot(GdkPixbuf *pixbuf);
@@ -38,6 +48,7 @@ static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbu
 static gboolean check_pixbuf_status(gpointer widgets_pixbuf[]);
 static void combo_changed(GtkComboBox *combo_box, gpointer data);
 static void redraw_bug(GtkWidget *button, gpointer widgets_pixbuf[]);
+static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpointer data);
 
 int main(int argc, char **argv)
   {      
@@ -77,8 +88,12 @@ int main(int argc, char **argv)
     GtkWidget *button=gtk_button_new_with_label("Redraw Bug");
     gtk_widget_set_sensitive(button, FALSE);
 
-    GtkWidget *progress=gtk_progress_bar_new();
-    gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress), TRUE);
+    //Custom horizontal progress bar.    
+    GtkWidget *da1=gtk_drawing_area_new();
+    gtk_widget_set_size_request(da1, 300, 30);
+    gtk_widget_set_hexpand(da1, TRUE);
+    g_signal_connect(da1, "draw", G_CALLBACK(draw_custom_progress_horizontal), NULL);
+
 
     GtkWidget *statusbar=gtk_statusbar_new();
     gtk_statusbar_push(GTK_STATUSBAR(statusbar), 0, "Drawing Mandelbrot Bug");
@@ -87,13 +102,13 @@ int main(int argc, char **argv)
     gtk_grid_attach(GTK_GRID(grid), scroll, 0, 0, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), combo, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), progress, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), da1, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), statusbar, 0, 3, 2, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
     
     //Draw the initial mandelbrot bug and hook up button click for re-draws.
-    gpointer widgets_pixbuf[]={da, progress, statusbar, combo, button, pixbuf};
+    gpointer widgets_pixbuf[]={da, da1, statusbar, combo, button, pixbuf};
     g_signal_connect(button, "clicked", G_CALLBACK(redraw_bug), widgets_pixbuf);
     start_drawing_thread(widgets_pixbuf);
 
@@ -221,8 +236,8 @@ static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
     static gint j=1;
     if(g_atomic_int_get(&status)==1)
       {
-        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(widgets_pixbuf[1]), (gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_ROWS);
-        gtk_progress_bar_set_text(GTK_PROGRESS_BAR(widgets_pixbuf[1]), "Drawing Done");
+        progress_step=(gint)((gdouble)start_steps*(gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS)+1;
+        gtk_widget_queue_draw(widgets_pixbuf[1]);        
         gtk_statusbar_pop(GTK_STATUSBAR(widgets_pixbuf[2]), 0);
         gtk_statusbar_push(GTK_STATUSBAR(widgets_pixbuf[2]), 0, "Drawing Done");
         gtk_widget_queue_draw(widgets_pixbuf[0]);
@@ -234,8 +249,8 @@ static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
     else 
       {
         GString *string=g_string_new("Drawing Mandelbrot Bug");
-        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(widgets_pixbuf[1]), (gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS);
-        gtk_progress_bar_set_text(GTK_PROGRESS_BAR(widgets_pixbuf[1]), string->str);
+        progress_step=(gint)((gdouble)start_steps*(gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS)+1;
+        gtk_widget_queue_draw(widgets_pixbuf[1]);
         for(i=0;i<j;i++) g_string_append_c(string, '.');
         gtk_statusbar_pop(GTK_STATUSBAR(widgets_pixbuf[2]), 0);
         gtk_statusbar_push(GTK_STATUSBAR(widgets_pixbuf[2]), 0, string->str);
@@ -281,7 +296,45 @@ static void redraw_bug(GtkWidget *button, gpointer widgets_pixbuf[])
     g_atomic_int_set(&status, 0);
     start_drawing_thread(widgets_pixbuf);
   }
+static gboolean draw_custom_progress_horizontal(GtkWidget *da, cairo_t *cr, gpointer data)
+  {
+    gint width=gtk_widget_get_allocated_width(da);
+    gint height=gtk_widget_get_allocated_height(da);
+    gint i=0;
+    
+    //The background gradient.
+    cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
+    for(i=0;i<=total_steps;i+=20)
+      { 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i/(gdouble)total_steps), 0.0, 1.0, 1.0); 
+        cairo_pattern_add_color_stop_rgb(pattern1, (gdouble)(i+gradient_end)/(gdouble)total_steps, 0.0, 0.0, 1.0); 
+      }
+    cairo_set_source(cr, pattern1);
+     
+    cairo_rectangle(cr, 0, 0, width, height);
+    cairo_fill(cr);
 
+    //The foreground gradient.
+    cairo_pattern_t *pattern2=cairo_pattern_create_linear(0.0, 0.0, width, 0.0);
+    for(i=0;i<=total_steps;i+=20)
+      { 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i/(gdouble)total_steps), 0.0, 0.7, 0.0); 
+        cairo_pattern_add_color_stop_rgb(pattern2, (gdouble)(i+gradient_end)/(gdouble)total_steps, 0.0, 1.0, 0.0); 
+      }
+    cairo_set_source(cr, pattern2);
+     
+    cairo_rectangle(cr, 0, 0, ((gdouble)progress_step/(gdouble)steps)*(gdouble)width, height);
+    cairo_fill(cr);
+
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 6);
+    cairo_rectangle(cr, 0, 0, width, height);
+    cairo_stroke(cr);
+
+    cairo_pattern_destroy(pattern1);
+    cairo_pattern_destroy(pattern2);
+    return FALSE;
+  }
 
 
 
