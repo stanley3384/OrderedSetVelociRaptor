@@ -1,7 +1,9 @@
 
 /*
 
-    Draw a mandelbrot set onto a GDK pixbuf then use cairo to draw a couple of bug eyes.
+    Draw a mandelbrot set onto a GDK pixbuf. Then use cairo to draw a couple of bug eyes. Draw
+on a different thread so that the main thread remains responsive when openinng the program and
+when redrawing. 
  
     Try both of the following to see if there is a difference in the drawing. There is more green
 with the -O2 flag on my test computer.
@@ -56,14 +58,13 @@ int main(int argc, char **argv)
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
     gtk_window_set_title(GTK_WINDOW(window), "Mandelbrot Bug");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
     GdkPixbuf *pixbuf=gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, PICTURE_ROWS, PICTURE_COLUMNS);
 
     GtkWidget *da=gtk_drawing_area_new();
-    gtk_widget_set_size_request(da, 400, 400);
     gtk_widget_set_hexpand(da, TRUE);
     gtk_widget_set_vexpand(da, TRUE);
     g_signal_connect(da, "draw", G_CALLBACK(draw_mandelbrot_bug), pixbuf);
@@ -90,20 +91,19 @@ int main(int argc, char **argv)
 
     //Custom horizontal progress bar.    
     GtkWidget *da1=gtk_drawing_area_new();
-    gtk_widget_set_size_request(da1, 300, 30);
     gtk_widget_set_hexpand(da1, TRUE);
+    gtk_widget_set_vexpand(da1, TRUE);
     g_signal_connect(da1, "draw", G_CALLBACK(draw_custom_progress_horizontal), NULL);
-
 
     GtkWidget *statusbar=gtk_statusbar_new();
     gtk_statusbar_push(GTK_STATUSBAR(statusbar), 0, "Drawing Mandelbrot Bug");
       
     GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), scroll, 0, 0, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), da1, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), statusbar, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), scroll, 0, 0, 2, 8);
+    gtk_grid_attach(GTK_GRID(grid), combo, 0, 9, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button, 1, 9, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), da1, 0, 10, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), statusbar, 0, 11, 2, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
     
@@ -198,6 +198,9 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
   }
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf)
   {
+    gint width=gtk_widget_get_allocated_width(da);
+    gint height=gtk_widget_get_allocated_height(da);
+    
     if(g_atomic_int_get(&status)==1)
       {
         if(thread!=NULL)
@@ -225,7 +228,7 @@ static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbu
         cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, 30.0);
         cairo_text_extents(cr, "Drawing...", &extents); 
-        cairo_move_to(cr, PICTURE_ROWS/2-extents.width/2, PICTURE_COLUMNS/2-extents.height/2);  
+        cairo_move_to(cr, width/2-extents.width/2, height/2-extents.height/2);  
         cairo_show_text(cr, "Drawing...");
       }
     return FALSE;
@@ -234,6 +237,7 @@ static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
   {
     gint i=0;
     static gint j=1;
+    
     if(g_atomic_int_get(&status)==1)
       {
         progress_step=(gint)((gdouble)start_steps*(gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS)+1;
