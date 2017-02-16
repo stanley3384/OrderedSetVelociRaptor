@@ -27,6 +27,7 @@ static gint status=0;
 static gint columns_done=0;
 //Iterations for the mandelbrot drawing.
 static gint max_iteration=25;
+static GThread *thread=NULL;
 
 static void start_drawing_thread(gpointer widgets_pixbuf[]);
 //Draw the mandelbrot set on the pixbuf on a seperate thread.
@@ -106,7 +107,7 @@ int main(int argc, char **argv)
 static void start_drawing_thread(gpointer widgets_pixbuf[])
   {
     g_timeout_add(300, (GSourceFunc)check_pixbuf_status, widgets_pixbuf);
-    g_thread_new("thread1", (GThreadFunc)draw_mandelbrot, widgets_pixbuf[5]);
+    thread=g_thread_new("thread1", (GThreadFunc)draw_mandelbrot, widgets_pixbuf[5]);
   }
 static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
   {
@@ -184,6 +185,11 @@ static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbu
   {
     if(g_atomic_int_get(&status)==1)
       {
+        if(thread!=NULL)
+          {
+            g_thread_join(thread);
+            thread=NULL;
+          }
         gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
         cairo_paint(cr);
         cairo_scale(cr, (gdouble)PICTURE_ROWS/500.0, (gdouble)PICTURE_COLUMNS/500.0);
