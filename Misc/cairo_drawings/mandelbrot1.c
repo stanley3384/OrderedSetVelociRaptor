@@ -58,13 +58,14 @@ int main(int argc, char **argv)
 
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
     gtk_window_set_title(GTK_WINDOW(window), "Mandelbrot Bug");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
     GdkPixbuf *pixbuf=gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, PICTURE_ROWS, PICTURE_COLUMNS);
 
     GtkWidget *da=gtk_drawing_area_new();
+    gtk_widget_set_size_request(da, PICTURE_COLUMNS, PICTURE_ROWS);
     gtk_widget_set_hexpand(da, TRUE);
     gtk_widget_set_vexpand(da, TRUE);
     g_signal_connect(da, "draw", G_CALLBACK(draw_mandelbrot_bug), pixbuf);
