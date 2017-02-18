@@ -44,6 +44,7 @@ static gdouble gradient_end=19.0;
 static void start_drawing_thread(gpointer widgets_pixbuf[]);
 //Draw the mandelbrot set on the pixbuf on a seperate thread.
 static gpointer draw_mandelbrot(GdkPixbuf *pixbuf);
+static gboolean thread_join(gpointer user_data);
 //Use cairo to draw a couple of bug eyes.
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf);
 //Check to see if the drawing is done. If it is, put it in the drawing area.
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(view), da);
     GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), view);
-
+    
     GtkWidget *combo=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "MaxIteration=5");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "MaxIteration=10");
@@ -86,7 +87,7 @@ int main(int argc, char **argv)
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 4);
     g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), NULL);
     gtk_widget_set_sensitive(combo, FALSE);
-
+    
     GtkWidget *button=gtk_button_new_with_label("Redraw Bug");
     gtk_widget_set_sensitive(button, FALSE);
 
@@ -98,16 +99,15 @@ int main(int argc, char **argv)
 
     GtkWidget *statusbar=gtk_statusbar_new();
     gtk_statusbar_push(GTK_STATUSBAR(statusbar), 0, "Drawing Mandelbrot Bug");
-      
+    
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid), scroll, 0, 0, 2, 8);
     gtk_grid_attach(GTK_GRID(grid), combo, 0, 9, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button, 1, 9, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), da1, 0, 10, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), statusbar, 0, 11, 2, 1);
-
     gtk_container_add(GTK_CONTAINER(window), grid);
-    
+   
     //Draw the initial mandelbrot bug and hook up button click for re-draws.
     gpointer widgets_pixbuf[]={da, da1, statusbar, combo, button, pixbuf};
     g_signal_connect(button, "clicked", G_CALLBACK(redraw_bug), widgets_pixbuf);
@@ -192,10 +192,21 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
               }
           }
       }
-    g_atomic_int_set(&status, 1);
     g_print("Mandelbrot Drawing Time %f\n", g_timer_elapsed(timer, NULL));
     g_timer_destroy(timer);
+    g_idle_add((GSourceFunc)thread_join, NULL);
     return NULL;
+  }
+static gboolean thread_join(gpointer user_data)
+  {
+    g_print("Thread Join\n");
+    if(thread!=NULL)
+     {
+       g_thread_join(thread);
+       thread=NULL;
+     }
+    g_atomic_int_set(&status, 1);
+    return FALSE;
   }
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf)
   {
@@ -204,11 +215,6 @@ static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbu
     
     if(g_atomic_int_get(&status)==1)
       {
-        if(thread!=NULL)
-          {
-            g_thread_join(thread);
-            thread=NULL;
-          }
         gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
         cairo_paint(cr);
         cairo_scale(cr, (gdouble)PICTURE_ROWS/500.0, (gdouble)PICTURE_COLUMNS/500.0);
