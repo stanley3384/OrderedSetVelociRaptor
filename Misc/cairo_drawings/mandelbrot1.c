@@ -43,8 +43,8 @@ static gdouble gradient_end=19.0;
 
 static void start_drawing_thread(gpointer widgets_pixbuf[]);
 //Draw the mandelbrot set on the pixbuf on a seperate thread.
-static gpointer draw_mandelbrot(GdkPixbuf *pixbuf);
-static gboolean thread_join(gpointer user_data);
+static gpointer draw_mandelbrot(gpointer widgets_pixbuf[]);
+static gboolean thread_join(gpointer widgets_pixbuf[]);
 //Use cairo to draw a couple of bug eyes.
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf);
 //Check to see if the drawing is done. If it is, put it in the drawing area.
@@ -123,9 +123,9 @@ int main(int argc, char **argv)
 static void start_drawing_thread(gpointer widgets_pixbuf[])
   {
     g_timeout_add(300, (GSourceFunc)check_pixbuf_status, widgets_pixbuf);
-    thread=g_thread_new("thread1", (GThreadFunc)draw_mandelbrot, widgets_pixbuf[5]);
+    thread=g_thread_new("thread1", (GThreadFunc)draw_mandelbrot, widgets_pixbuf);
   }
-static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
+static gpointer draw_mandelbrot(gpointer widgets_pixbuf[])
   {
     GTimer *timer=g_timer_new();
     gdouble x1=0.0;
@@ -139,12 +139,12 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
     gdouble max_value=0.0;
     gint i=0;
     gint j=0;
-    gint width=gdk_pixbuf_get_width(pixbuf);
-    gint height=gdk_pixbuf_get_height(pixbuf);
-    gint step=gdk_pixbuf_get_rowstride(pixbuf);
-    gint channels=gdk_pixbuf_get_n_channels(pixbuf);
+    gint width=gdk_pixbuf_get_width(widgets_pixbuf[5]);
+    gint height=gdk_pixbuf_get_height(widgets_pixbuf[5]);
+    gint step=gdk_pixbuf_get_rowstride(widgets_pixbuf[5]);
+    gint channels=gdk_pixbuf_get_n_channels(widgets_pixbuf[5]);
     guchar *pixels, *p;
-    pixels=gdk_pixbuf_get_pixels(pixbuf);
+    pixels=gdk_pixbuf_get_pixels(widgets_pixbuf[5]);
 
     for(i=0;i<width;i++)
       {
@@ -194,10 +194,10 @@ static gpointer draw_mandelbrot(GdkPixbuf *pixbuf)
       }
     g_print("Mandelbrot Drawing Time %f\n", g_timer_elapsed(timer, NULL));
     g_timer_destroy(timer);
-    g_idle_add((GSourceFunc)thread_join, NULL);
+    g_idle_add((GSourceFunc)thread_join, widgets_pixbuf);
     return NULL;
   }
-static gboolean thread_join(gpointer user_data)
+static gboolean thread_join(gpointer widgets_pixbuf[])
   {
     g_print("Thread Join\n");
     if(thread!=NULL)
@@ -206,6 +206,16 @@ static gboolean thread_join(gpointer user_data)
        thread=NULL;
      }
     g_atomic_int_set(&status, 1);
+
+    //Update UI.
+    progress_step=(gint)((gdouble)start_steps*(gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS)+1;
+    gtk_widget_queue_draw(widgets_pixbuf[1]);        
+    gtk_statusbar_pop(GTK_STATUSBAR(widgets_pixbuf[2]), 0);
+    gtk_statusbar_push(GTK_STATUSBAR(widgets_pixbuf[2]), 0, "Drawing Done");
+    gtk_widget_queue_draw(widgets_pixbuf[0]);
+    gtk_widget_set_sensitive(widgets_pixbuf[3], TRUE);
+    gtk_widget_set_sensitive(widgets_pixbuf[4], TRUE);
+
     return FALSE;
   }
 static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbuf)
@@ -243,17 +253,11 @@ static gboolean draw_mandelbrot_bug(GtkWidget *da, cairo_t *cr, GdkPixbuf *pixbu
 static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
   {
     gint i=0;
+    //Status bar text dots....
     static gint j=1;
     
     if(g_atomic_int_get(&status)==1)
       {
-        progress_step=(gint)((gdouble)start_steps*(gdouble)g_atomic_int_get(&columns_done)/(gdouble)PICTURE_COLUMNS)+1;
-        gtk_widget_queue_draw(widgets_pixbuf[1]);        
-        gtk_statusbar_pop(GTK_STATUSBAR(widgets_pixbuf[2]), 0);
-        gtk_statusbar_push(GTK_STATUSBAR(widgets_pixbuf[2]), 0, "Drawing Done");
-        gtk_widget_queue_draw(widgets_pixbuf[0]);
-        gtk_widget_set_sensitive(widgets_pixbuf[3], TRUE);
-        gtk_widget_set_sensitive(widgets_pixbuf[4], TRUE);
         j=1;
         return FALSE;
       }
