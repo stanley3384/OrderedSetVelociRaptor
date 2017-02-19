@@ -213,8 +213,6 @@ static gboolean thread_join(gpointer widgets_pixbuf[])
     gtk_statusbar_pop(GTK_STATUSBAR(widgets_pixbuf[2]), 0);
     gtk_statusbar_push(GTK_STATUSBAR(widgets_pixbuf[2]), 0, "Drawing Done");
     gtk_widget_queue_draw(widgets_pixbuf[0]);
-    gtk_widget_set_sensitive(widgets_pixbuf[3], TRUE);
-    gtk_widget_set_sensitive(widgets_pixbuf[4], TRUE);
 
     return FALSE;
   }
@@ -258,6 +256,8 @@ static gboolean check_pixbuf_status(gpointer widgets_pixbuf[])
     
     if(g_atomic_int_get(&status)==1)
       {
+        gtk_widget_set_sensitive(widgets_pixbuf[3], TRUE);
+        gtk_widget_set_sensitive(widgets_pixbuf[4], TRUE);
         j=1;
         return FALSE;
       }
