@@ -1,6 +1,7 @@
 
 /*
-    Try drawing a circular gradient.
+    Try drawing a circular gradient with cairo and a couple of tensor-product patch meshes.
+Draw four arc patches of a circle.
    
     gcc -Wall circle_gradient1.c -o circle_gradient1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -49,17 +50,21 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
+   //Layout for the drawing is a 10x10 rectangle.
+   gdouble w1=width/10.0;
+   gdouble h1=height/10.0;
+
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
    cairo_paint(cr);
 
-   //Quadrant 1.
+   //Quadrant 1 arc.
    cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
    cairo_mesh_pattern_begin_patch(pattern1);
-   cairo_mesh_pattern_move_to(pattern1, 5.0*width/10.0, 1.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern1, (5.0*width/10.0)+(points*4.0*width/10), 1.0*height/10.0,  9.0*width/10.0,  (5.0*height/10.0)-(points*4.0*height/10), 9.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern1, 8.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern1, 8.0*width/10.0, (5.0*height/10.0)-(points*3.0*height/10),  (5.0*width/10.0)+(points*3.0*width/10.0), 2.0*height/10.0, 5.0*width/10.0, 2.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern1, 5.0*width/10.0, 1.0*height/10.0);
+   cairo_mesh_pattern_move_to(pattern1, 5.0*w1, 1.0*h1);
+   cairo_mesh_pattern_curve_to(pattern1, (5.0*w1)+(points*4.0*width/10), 1.0*h1,  9.0*w1,  (5.0*h1)-(points*4.0*height/10), 9.0*w1, 5.0*h1);
+   cairo_mesh_pattern_line_to(pattern1, 8.0*w1, 5.0*h1);
+   cairo_mesh_pattern_curve_to(pattern1, 8.0*w1, (5.0*h1)-(points*3.0*height/10),  (5.0*w1)+(points*3.0*w1), 2.0*h1, 5.0*w1, 2.0*h1);
+   cairo_mesh_pattern_line_to(pattern1, 5.0*w1, 1.0*h1);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, 1.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 1.0, 0.0, 1.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 1.0, 0.0, 1.0);
@@ -68,14 +73,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source(cr, pattern1);
    cairo_paint(cr);
 
-   //Quadrant 2.
+   //Quadrant 2 arc.
    cairo_pattern_t *pattern2=cairo_pattern_create_mesh();
    cairo_mesh_pattern_begin_patch(pattern2);
-   cairo_mesh_pattern_move_to(pattern2, 1.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern2, 1.0*width/10.0, (5.0*height/10.0)-(points*4.0*height/10), (5.0*width/10.0)-(points*4.0*width/10), 1.0*height/10.0, 5.0*width/10.0, 1.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern2, 5.0*width/10.0, 2.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern2, (5.0*width/10.0)-(points*3.0*width/10), 2.0*height/10.0,  2.0*width/10.0, (5.0*height/10.0)-(points*3.0*height/10.0), 2.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern2, 1.0*width/10.0, 5.0*height/10.0);
+   cairo_mesh_pattern_move_to(pattern2, 1.0*w1, 5.0*h1);
+   cairo_mesh_pattern_curve_to(pattern2, 1.0*w1, (5.0*h1)-(points*4.0*height/10), (5.0*w1)-(points*4.0*width/10), 1.0*h1, 5.0*w1, 1.0*h1);
+   cairo_mesh_pattern_line_to(pattern2, 5.0*w1, 2.0*h1);
+   cairo_mesh_pattern_curve_to(pattern2, (5.0*w1)-(points*3.0*width/10), 2.0*h1,  2.0*w1, (5.0*h1)-(points*3.0*h1), 2.0*w1, 5.0*h1);
+   cairo_mesh_pattern_line_to(pattern2, 1.0*w1, 5.0*h1);
    cairo_mesh_pattern_set_corner_color_rgb(pattern2, 0, 1.0, 0.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern2, 1, 1.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern2, 2, 1.0, 1.0, 0.0);
@@ -84,14 +89,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source(cr, pattern2);
    cairo_paint(cr);
 
-   //Quadrant 3.
+   //Quadrant 3 arc.
    cairo_pattern_t *pattern3=cairo_pattern_create_mesh();
    cairo_mesh_pattern_begin_patch(pattern3);
-   cairo_mesh_pattern_move_to(pattern3, 5.0*width/10.0, 9.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern3, (5.0*width/10.0)-(points*4.0*width/10), 9.0*height/10.0, 1.0*width/10.0, (5.0*height/10.0)+(points*4.0*height/10), 1.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern3, 2.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern3, 2.0*width/10.0, (5.0*height/10.0)+(points*3.0*height/10),  (5.0*width/10.0)-(points*3.0*width/10), 8.0*height/10.0, 5.0*width/10.0, 8.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern3, 5.0*width/10.0, 9.0*height/10.0);
+   cairo_mesh_pattern_move_to(pattern3, 5.0*w1, 9.0*h1);
+   cairo_mesh_pattern_curve_to(pattern3, (5.0*w1)-(points*4.0*width/10), 9.0*h1, 1.0*w1, (5.0*h1)+(points*4.0*height/10), 1.0*w1, 5.0*h1);
+   cairo_mesh_pattern_line_to(pattern3, 2.0*w1, 5.0*h1);
+   cairo_mesh_pattern_curve_to(pattern3, 2.0*w1, (5.0*h1)+(points*3.0*height/10),  (5.0*w1)-(points*3.0*width/10), 8.0*h1, 5.0*w1, 8.0*h1);
+   cairo_mesh_pattern_line_to(pattern3, 5.0*w1, 9.0*h1);
    cairo_mesh_pattern_set_corner_color_rgb(pattern3, 0, 0.0, 0.0, 1.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern3, 1, 1.0, 0.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern3, 2, 1.0, 0.0, 0.0);
@@ -100,14 +105,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source(cr, pattern3);
    cairo_paint(cr);
 
-   //Quadrant 4.
+   //Quadrant 4 arc.
    cairo_pattern_t *pattern4=cairo_pattern_create_mesh();
    cairo_mesh_pattern_begin_patch(pattern4);
-   cairo_mesh_pattern_move_to(pattern4, 9.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern4, 9.0*width/10.0, (5.0*height/10.0)+(points*4.0*height/10), (5.0*width/10.0)+(points*4.0*width/10),  9.0*height/10.0, 5.0*width/10.0, 9.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern4, 5.0*width/10.0, 8.0*height/10.0);
-   cairo_mesh_pattern_curve_to(pattern4, (5.0*width/10.0)+(points*3.0*width/10), 8.0*height/10.0,  8.0*width/10.0, (5.0*height/10.0)+(points*3.0*height/10), 8.0*width/10.0, 5.0*height/10.0);
-   cairo_mesh_pattern_line_to(pattern4, 9.0*width/10.0, 5.0*height/10.0);
+   cairo_mesh_pattern_move_to(pattern4, 9.0*w1, 5.0*h1);
+   cairo_mesh_pattern_curve_to(pattern4, 9.0*w1, (5.0*h1)+(points*4.0*height/10), (5.0*w1)+(points*4.0*width/10),  9.0*h1, 5.0*w1, 9.0*h1);
+   cairo_mesh_pattern_line_to(pattern4, 5.0*w1, 8.0*h1);
+   cairo_mesh_pattern_curve_to(pattern4, (5.0*w1)+(points*3.0*width/10), 8.0*h1,  8.0*w1, (5.0*h1)+(points*3.0*height/10), 8.0*w1, 5.0*h1);
+   cairo_mesh_pattern_line_to(pattern4, 9.0*w1, 5.0*h1);
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 0, 1.0, 0.0, 1.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 1, 0.0, 0.0, 1.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 2, 0.0, 0.0, 1.0);
@@ -119,13 +124,13 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Layout axis for drawing.
    cairo_set_line_width(cr, 1.0);
    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
-   cairo_rectangle(cr, width/10.0, height/10.0, 8.0*width/10.0, 8.0*height/10.0);
+   cairo_rectangle(cr, w1, h1, 8.0*w1, 8.0*h1);
    cairo_stroke(cr);
-   cairo_move_to(cr, 1.0*width/10.0, 5.0*height/10.0);
-   cairo_line_to(cr, 9.0*width/10.0, 5.0*height/10.0);
+   cairo_move_to(cr, 1.0*w1, 5.0*h1);
+   cairo_line_to(cr, 9.0*w1, 5.0*h1);
    cairo_stroke(cr);
-   cairo_move_to(cr, 5.0*width/10.0, 1.0*height/10.0);
-   cairo_line_to(cr, 5.0*width/10.0, 9.0*height/10.0);
+   cairo_move_to(cr, 5.0*w1, 1.0*h1);
+   cairo_line_to(cr, 5.0*w1, 9.0*h1);
    cairo_stroke(cr);
 
    cairo_pattern_destroy(pattern1);
