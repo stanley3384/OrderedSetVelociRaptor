@@ -28,7 +28,7 @@ int main(int argc, char **argv)
    gtk_widget_set_hexpand(da, TRUE);
    gtk_widget_set_vexpand(da, TRUE);
    g_signal_connect(da, "draw", G_CALLBACK(da_drawing), NULL);
-
+   
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
    
@@ -66,8 +66,8 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_mesh_pattern_curve_to(pattern1, 8.0*w1, (5.0*h1)-(points*3.0*height/10),  (5.0*w1)+(points*3.0*w1), 2.0*h1, 5.0*w1, 2.0*h1);
    cairo_mesh_pattern_line_to(pattern1, 5.0*w1, 1.0*h1);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, 1.0, 1.0, 0.0);
-   cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 1.0, 0.0, 1.0);
-   cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 1.0, 0.0, 1.0);
+   cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 0.0, 1.0, 0.0);
+   cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, 1.0, 1.0, 0.0);
    cairo_mesh_pattern_end_patch (pattern1);
    cairo_set_source(cr, pattern1);
@@ -113,10 +113,10 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_mesh_pattern_line_to(pattern4, 5.0*w1, 8.0*h1);
    cairo_mesh_pattern_curve_to(pattern4, (5.0*w1)+(points*3.0*width/10), 8.0*h1,  8.0*w1, (5.0*h1)+(points*3.0*height/10), 8.0*w1, 5.0*h1);
    cairo_mesh_pattern_line_to(pattern4, 9.0*w1, 5.0*h1);
-   cairo_mesh_pattern_set_corner_color_rgb(pattern4, 0, 1.0, 0.0, 1.0);
+   cairo_mesh_pattern_set_corner_color_rgb(pattern4, 0, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 1, 0.0, 0.0, 1.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 2, 0.0, 0.0, 1.0);
-   cairo_mesh_pattern_set_corner_color_rgb(pattern4, 3, 1.0, 0.0, 1.0);
+   cairo_mesh_pattern_set_corner_color_rgb(pattern4, 3, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_end_patch (pattern4);
    cairo_set_source(cr, pattern4);
    cairo_paint(cr);
