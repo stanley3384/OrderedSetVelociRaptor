@@ -21,7 +21,7 @@ int main(int argc, char **argv)
    gtk_init(&argc, &argv);
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(window), "Circular Gradient");
+   gtk_window_set_title(GTK_WINDOW(window), "Circular Gradient Clock");
    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -63,8 +63,27 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble w1=width/10.0;
    gdouble h1=height/10.0;
 
-   cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+   //White background.
+   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
    cairo_paint(cr);
+
+   //Black outside ring.
+   cairo_save(cr);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   cairo_translate(cr, width/2.0, height/2.0);
+   cairo_scale(cr, 8.3*w1/2.0, 8.3*h1/2.0);
+   cairo_arc(cr, 0.0, 0.0, 1.0, 0.0, 2.0*M_PI);
+   cairo_fill(cr);
+   cairo_restore(cr);
+
+   //Gray inside.
+   cairo_save(cr);
+   cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+   cairo_translate(cr, width/2.0, height/2.0);
+   cairo_scale(cr, 8.0*w1/2.0, 8.0*h1/2.0);
+   cairo_arc(cr, 0.0, 0.0, 1.0, 0.0, 2.0*M_PI);
+   cairo_fill(cr);
+   cairo_restore(cr);
 
    //Quadrant 1 arc.
    cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
@@ -78,7 +97,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, 1.0, 1.0, 0.0);
-   cairo_mesh_pattern_end_patch (pattern1);
+   cairo_mesh_pattern_end_patch(pattern1);
    cairo_set_source(cr, pattern1);
    cairo_paint(cr);
 
@@ -130,9 +149,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source(cr, pattern4);
    cairo_paint(cr);
    
+   cairo_pattern_destroy(pattern1);
+   cairo_pattern_destroy(pattern2);
+   cairo_pattern_destroy(pattern3);
+   cairo_pattern_destroy(pattern4);
+
    //Layout axis for drawing.
    cairo_set_line_width(cr, 1.0);
-   cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    cairo_rectangle(cr, w1, h1, 8.0*w1, 8.0*h1);
    cairo_stroke(cr);
    cairo_move_to(cr, 1.0*w1, 5.0*h1);
@@ -142,15 +166,10 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_line_to(cr, 5.0*w1, 9.0*h1);
    cairo_stroke(cr);
 
-   cairo_pattern_destroy(pattern1);
-   cairo_pattern_destroy(pattern2);
-   cairo_pattern_destroy(pattern3);
-   cairo_pattern_destroy(pattern4);
-
    //Set the clock text.
    gint i=0;
    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-   gchar *hours[]={"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"};
+   gchar *hours[]={"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "CGC"};
    gdouble hour_start=-G_PI/2.0;
    gdouble next_hour=-G_PI/6.0;
    //Start at 12 or radius with just the y component.
@@ -175,6 +194,12 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_show_text(cr, hours[i]);
      }
 
+   //Put the clock name on the clock.
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   cairo_text_extents(cr, hours[12], &tick_extents);
+   cairo_move_to(cr, -(tick_extents.width/2.0), (1.5*h1)+(tick_extents.height/2.0));
+   cairo_show_text(cr, hours[12]);
+
    //Get the current time.
    GTimeZone *time_zone=g_time_zone_new_local();
    GDateTime *date_time=g_date_time_new_now(time_zone);
@@ -192,7 +217,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_move_to(cr, 0.0, 0.0);
    temp_cos=cos(hour_start-(next_hour*hour));
    temp_sin=sin(hour_start-(next_hour*hour));
-   hour_radius=((2.0*w1)*(2.0*h1))/sqrt(((2.0*w1)*(2.0*w1)*temp_sin*temp_sin) + ((2.0*h1)*(2.0*h1)*temp_cos*temp_cos));
+   hour_radius=((1.75*w1)*(1.75*h1))/sqrt(((1.75*w1)*(1.75*w1)*temp_sin*temp_sin) + ((1.75*h1)*(1.75*h1)*temp_cos*temp_cos));
    temp_cos=temp_cos*hour_radius;
    temp_sin=temp_sin*hour_radius;
    cairo_line_to(cr, temp_cos, temp_sin);
@@ -203,7 +228,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_move_to(cr, 0.0, 0.0);
    temp_cos=cos(hour_start-(next_minute*minute));
    temp_sin=sin(hour_start-(next_minute*minute));
-   hour_radius=((3.0*w1)*(3.0*h1))/sqrt(((3.0*w1)*(3.0*w1)*temp_sin*temp_sin) + ((3.0*h1)*(3.0*h1)*temp_cos*temp_cos));
+   hour_radius=((2.75*w1)*(2.75*h1))/sqrt(((2.75*w1)*(2.75*w1)*temp_sin*temp_sin) + ((2.75*h1)*(2.75*h1)*temp_cos*temp_cos));
    temp_cos=temp_cos*hour_radius;
    temp_sin=temp_sin*hour_radius;
    cairo_line_to(cr, temp_cos, temp_sin);
