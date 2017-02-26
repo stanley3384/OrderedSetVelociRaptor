@@ -1,6 +1,6 @@
 
 /*
-    Try drawing a circular gradient with cairo and a couple of tensor-product patch meshes.
+    Draw a clock with a circular gradient. Use a couple of tensor-product patch meshes.
 Draw four arc patches of a circle. Then add the rest to make a clock.
    
     gcc -Wall circle_gradient1.c -o circle_gradient1 `pkg-config --cflags --libs gtk+-3.0` -lm
@@ -15,6 +15,7 @@ Draw four arc patches of a circle. Then add the rest to make a clock.
 
 static gboolean time_redraw(gpointer da);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
+static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 
 int main(int argc, char **argv)
  {
@@ -25,6 +26,16 @@ int main(int argc, char **argv)
    gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+   gtk_widget_set_app_paintable(window, TRUE);
+    //Try to set transparency of main window.
+    if(gtk_widget_is_composited(window))
+      {
+        GdkScreen *screen=gtk_widget_get_screen(window);  
+        GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual(window, visual);
+      }
+    else g_print("Can't set window transparency.\n");
+    g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
 
    GtkWidget *da=gtk_drawing_area_new();
    gtk_widget_set_hexpand(da, TRUE);
@@ -63,11 +74,11 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble w1=width/10.0;
    gdouble h1=height/10.0;
 
-   //White background.
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+   //Transparent background.
+   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
    cairo_paint(cr);
 
-   //Black outside ring.
+   //Blue outside ring.
    cairo_save(cr);
    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    cairo_translate(cr, width/2.0, height/2.0);
@@ -78,7 +89,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 
    //Gray inside.
    cairo_save(cr);
-   cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+   cairo_set_source_rgb(cr, 0.8, 0.8, 1.0);
    cairo_translate(cr, width/2.0, height/2.0);
    cairo_scale(cr, 8.0*w1/2.0, 8.0*h1/2.0);
    cairo_arc(cr, 0.0, 0.0, 1.0, 0.0, 2.0*M_PI);
@@ -154,6 +165,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_pattern_destroy(pattern3);
    cairo_pattern_destroy(pattern4);
 
+   /*
    //Layout axis for drawing.
    cairo_set_line_width(cr, 1.0);
    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
@@ -165,6 +177,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_move_to(cr, 5.0*w1, 1.0*h1);
    cairo_line_to(cr, 5.0*w1, 9.0*h1);
    cairo_stroke(cr);
+   */
 
    //Set the clock text.
    gint i=0;
@@ -235,7 +248,13 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_stroke(cr);
   
    return FALSE;
-}
+ }
+static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+ {
+   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+   cairo_paint(cr);
+   return FALSE;
+ }
 
 
 
