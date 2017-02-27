@@ -96,6 +96,33 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_fill(cr);
    cairo_restore(cr);
 
+   //Color circle pyramid.
+   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_set_line_width(cr, 4.0);
+   //purple
+   cairo_arc(cr, 5.0*w1, 2.95*h1, 0.10*w1, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   //yellow
+   cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+   cairo_arc(cr, 4.85*w1, 3.25*h1, 0.10*w1, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   //cyan
+   cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+   cairo_arc(cr, 5.15*w1, 3.25*h1, 0.10*w1, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   //red
+   cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+   cairo_arc(cr, 4.70*w1, 3.55*h1, 0.10*w1, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   //green
+   cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+   cairo_arc(cr, 5.0*w1, 3.55*h1, 0.10*w1, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   //blue
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   cairo_arc(cr, 5.3*w1, 3.55*h1, 0.10*w1, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   
    //Quadrant 1 arc.
    cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
    cairo_mesh_pattern_begin_patch(pattern1);
@@ -181,7 +208,6 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 
    //Set the clock text.
    gint i=0;
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
    gchar *hours[]={"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "CGC"};
    gdouble hour_start=-G_PI/2.0;
    gdouble next_hour=-G_PI/6.0;
@@ -194,6 +220,8 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_font_size(cr, 20);
    cairo_move_to(cr, 0.0, 0.0);
    cairo_translate(cr, width/2.0, height/2.0);
+   //Color 12 with blue for contrast with yellow. Other numbers are white.
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    for(i=0;i<12;i++)
      {
        temp_cos=cos(hour_start-(next_hour*i));
@@ -205,6 +233,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        temp_sin=temp_sin*hour_radius+tick_extents.height/2.0;
        cairo_move_to(cr, temp_cos, temp_sin);
        cairo_show_text(cr, hours[i]);
+       cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
      }
 
    //Put the clock name on the clock.
