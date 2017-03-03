@@ -1,6 +1,7 @@
 /*
 
-    A decision tree to take a look at some simple probablilities. 
+    A decision tree to take a look at some simple probablilities. Drop balls into the decision
+tree and collect them in the bins below.
 
     gcc -Wall decision_tree1.c -o decision_tree1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -12,9 +13,12 @@
 #include<gtk/gtk.h>
 
 static GRand *rand1;
-static GArray *bins;
+//Position of dropping ball.
 static gdouble ball_position[]={0.0, 2.5};
+//Count of balls in a bin.
 static gint bin_count[]={0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+//Count dropped balls.
+static gint counter=1;
 
 static gboolean redraw(gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
@@ -30,7 +34,6 @@ int main(int argc, char **argv)
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    rand1=g_rand_new();
-   bins=g_array_new(FALSE, TRUE, sizeof(gdouble));
 
    GtkWidget *da=gtk_drawing_area_new();
    gtk_widget_set_hexpand(da, TRUE);
@@ -49,7 +52,6 @@ int main(int argc, char **argv)
    gtk_main();
 
    g_rand_free(rand1);
-   g_array_free(bins, TRUE);
 
    return 0;  
  }
@@ -83,7 +85,6 @@ static gboolean redraw(gpointer data)
     //Reset when ball is at bottom. Should eventually reset arrays also.
     if(ball_position[1]>21.0)
       {
-        g_array_append_val(bins, ball_position[0]);
         //Add the ball to the bin.
         if(ball_position[0]<-3.6) bin_count[0]++;
         else if(ball_position[0]>-3.6&&ball_position[0]<-2.6) bin_count[1]++;
@@ -98,6 +99,7 @@ static gboolean redraw(gpointer data)
         else g_print("Outside of bins!\n");
         ball_position[0]=0.0;
         ball_position[1]=2.5;
+        counter++;
         x=0;
       }
 
@@ -154,13 +156,43 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        tick_row++;
      }
 
-   //Draw the ball.
+   //Draw the ball feeding line.
+   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_move_to(cr, 0.0, 0.0);
+   cairo_line_to(cr, 11.5*w1, 2.0*h1);
+   cairo_stroke(cr);
+   if(ball_position[1]<20.4)
+     {
+       cairo_move_to(cr, 11.5*w1, 2.0*h1);
+       cairo_line_to(cr, 11.65*w1, 1.0*h1);
+       cairo_stroke(cr);
+     }
+   else
+     {
+       cairo_move_to(cr, 11.5*w1, 2.0*h1);
+       cairo_line_to(cr, 11.5*w1, 3.0*h1);
+       cairo_stroke(cr);
+     }
+
+   //Draw the balls on the line.
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   gdouble slope=-0.55;
+   gdouble shift=0.0;
+   if(ball_position[1]>20.4&&ball_position[1]<20.6) shift=0.4;
+   for(i=0;i<12;i++)
+     {
+       cairo_arc(cr, ((gdouble)i+shift)*w1, slope*h1, 0.5*w1, 0.0, 2.0*G_PI);
+       cairo_fill(cr);
+       slope=slope+(2.0/11.5);
+     }
+
+   //Draw the ball in the gates.
    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    cairo_arc(cr, (12.0+ball_position[0])*w1, ball_position[1]*h1, 0.5*w1, 0.0, 2.0*G_PI);
    cairo_fill(cr);
 
    //Draw bin progress bars.
-   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    gdouble start_x=7.0*w1;
    for(i=0;i<10;i++)
      {
@@ -168,6 +200,15 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_fill(cr);
        start_x=start_x+(1.0*w1); 
      }
+
+   //Draw the ball count text.
+   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(cr, 20);
+   gchar *string=g_strdup_printf("%i", counter);
+   cairo_move_to(cr, 17.0*w1, 3.0*h1);
+   cairo_show_text(cr, string);
+   g_free(string);
 
    return FALSE;
 }
