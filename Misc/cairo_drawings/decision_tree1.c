@@ -99,9 +99,9 @@ static gboolean redraw(gpointer data)
         else g_print("Outside of bins!\n");
         /*
           Get the probabilities for the 50/50 binomial. Expected values for the 10 bins are
-          1/512, 9/512, 36/512, 84/512, 126/512, 126/512, 84/512, 36/512, 9/512, 1/521
+          1/512, 9/512, 36/512, 84/512, 126/512, 126/512, 84/512, 36/512, 9/512, 1/512
         */
-        g_print("Expected %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", 1.0/512.0, 9.0/512.0, 36.0/512.0, 84.0/512.0, 126.0/512.0, 126.0/512.0, 84.0/512.0, 36.0/512.0, 9.0/512.0, 1.0/521.0);
+        g_print("Expected %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", 1.0/512.0, 9.0/512.0, 36.0/512.0, 84.0/512.0, 126.0/512.0, 126.0/512.0, 84.0/512.0, 36.0/512.0, 9.0/512.0, 1.0/512.0);
         g_print("Current  %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", (gdouble)bin_count[0]/(gdouble)counter, (gdouble)bin_count[1]/(gdouble)counter, (gdouble)bin_count[2]/(gdouble)counter, (gdouble)bin_count[3]/(gdouble)counter, (gdouble)bin_count[4]/(gdouble)counter, (gdouble)bin_count[5]/(gdouble)counter, (gdouble)bin_count[6]/(gdouble)counter, (gdouble)bin_count[7]/(gdouble)counter, (gdouble)bin_count[8]/(gdouble)counter, (gdouble)bin_count[9]/(gdouble)counter);
         ball_position[0]=0.0;
         ball_position[1]=2.5;
