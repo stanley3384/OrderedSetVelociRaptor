@@ -136,9 +136,32 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_pattern_destroy(pattern3);
    cairo_pattern_destroy(pattern4);
 
+   cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+   cairo_set_line_width(cr, 4.0);
+
+   //Yellow curve1.
+   cairo_move_to(cr, 1.0*w1, 1.0*h1);
+   cairo_curve_to(cr, 0.0*w1, 2.0*h1, 2.0*w1, 4.0*h1, 1.0*w1, 5.0*h1);
+   cairo_stroke_preserve(cr);
+   cairo_curve_to(cr, 0.0*w1, 6.0*h1, 2.0*w1, 8.0*h1, 1.0*w1, 9.0*h1);
+   cairo_stroke(cr);
+
+   //Yellow curve2.
+   cairo_move_to(cr, 5.0*w1, 1.0*h1);
+   cairo_curve_to(cr, 4.0*w1, 2.0*h1, 6.0*w1, 4.0*h1, 5.0*w1, 5.0*h1);
+   cairo_stroke_preserve(cr);
+   cairo_curve_to(cr, 4.0*w1, 6.0*h1, 6.0*w1, 8.0*h1, 5.0*w1, 9.0*h1);
+   cairo_stroke(cr);
+
+   //Yellow curve3.
+   cairo_move_to(cr, 9.0*w1, 1.0*h1);
+   cairo_curve_to(cr, 8.0*w1, 2.0*h1, 10.0*w1, 4.0*h1, 9.0*w1, 5.0*h1);
+   cairo_stroke_preserve(cr);
+   cairo_curve_to(cr, 8.0*w1, 6.0*h1, 10.0*w1, 8.0*h1, 9.0*w1, 9.0*h1);
+   cairo_stroke(cr);
+
    //Layout axis for drawing.
-   cairo_set_line_width(cr, 1.0);
-   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    cairo_rectangle(cr, width/10.0, height/10.0, 8.0*width/10.0, 8.0*height/10.0);
    cairo_stroke(cr);
    cairo_move_to(cr, 1.0*width/10.0, 5.0*height/10.0);
