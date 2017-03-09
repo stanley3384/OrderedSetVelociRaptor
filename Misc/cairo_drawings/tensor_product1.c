@@ -1,6 +1,7 @@
 
 /*
-    Draw a simple tensor-product patch mesh to get an idea how it works.
+    Draw a simple tensor-product patch mesh to get an idea how it works. Then "tile" the 
+layout with the patches.
    
     gcc -Wall tensor_product1.c -o tensor_product1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -11,6 +12,9 @@
 
 #include<gtk/gtk.h>
 
+static gboolean tile=FALSE;
+
+static void combo_changed(GtkComboBox *combo_box, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 
@@ -38,9 +42,17 @@ int main(int argc, char **argv)
    gtk_widget_set_hexpand(da, TRUE);
    gtk_widget_set_vexpand(da, TRUE);
    g_signal_connect(da, "draw", G_CALLBACK(da_drawing), NULL);
+
+   GtkWidget *combo=gtk_combo_box_text_new();
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "Patch Layout");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "Tile Patches");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+   gtk_widget_set_hexpand(combo, TRUE);
+   g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), da);
    
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo, 0, 1, 1, 1);
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -50,8 +62,23 @@ int main(int argc, char **argv)
 
    return 0;  
  }
+static void combo_changed(GtkComboBox *combo_box, gpointer data)
+ {
+   gint combo_id=gtk_combo_box_get_active(combo_box);
+   switch(combo_id)
+      {
+        case 0:
+          tile=FALSE;
+          break;
+        case 1:
+          tile=TRUE;
+      }
+   gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
  {
+   gint i=0;
+   gint j=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
@@ -62,6 +89,12 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Transparent background.
    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.3);
    cairo_paint(cr);
+
+   if(tile==TRUE)
+     {
+       cairo_scale(cr, 0.25, 0.25);
+       cairo_translate(cr, 2.5*w1, 2.5*h1);
+     }
 
    //Patch1
    cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
@@ -78,8 +111,6 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Pull purple into the center with a control point.
    cairo_mesh_pattern_set_control_point(pattern1, 1, 0.0*w1, 9.0*h1);
    cairo_mesh_pattern_end_patch(pattern1);
-   cairo_set_source(cr, pattern1);
-   cairo_paint(cr);
    
    //Patch2
    cairo_pattern_t *pattern2=cairo_pattern_create_mesh();
@@ -96,8 +127,6 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Pull blue up to the right with a control point.
    cairo_mesh_pattern_set_control_point(pattern2, 3, 9.0*w1, -4.0*h1);
    cairo_mesh_pattern_end_patch(pattern2);
-   cairo_set_source(cr, pattern2);
-   cairo_paint(cr);
 
    //Patch3
    cairo_pattern_t *pattern3=cairo_pattern_create_mesh();
@@ -112,8 +141,6 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_mesh_pattern_set_corner_color_rgb(pattern3, 2, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern3, 3, 0.0, 0.0, 1.0);
    cairo_mesh_pattern_end_patch(pattern3);
-   cairo_set_source(cr, pattern3);
-   cairo_paint(cr);
 
    //Patch4
    cairo_pattern_t *pattern4=cairo_pattern_create_mesh();
@@ -128,48 +155,80 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 2, 0.0, 1.0, 0.0);
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 3, 0.0, 0.0, 1.0);
    cairo_mesh_pattern_end_patch(pattern4);
-   cairo_set_source(cr, pattern4);
-   cairo_paint(cr);
+
+   if(tile==TRUE)
+     {
+       for(i=0;i<4;i++)
+         {
+           for(j=0;j<4;j++)
+             {
+               cairo_set_source(cr, pattern1);
+               cairo_paint(cr);
+               cairo_set_source(cr, pattern2);
+               cairo_paint(cr);
+               cairo_set_source(cr, pattern3);
+               cairo_paint(cr);
+               cairo_set_source(cr, pattern4);
+               cairo_paint(cr);
+               cairo_translate(cr, 8.0*w1, 0.0);
+             }
+           cairo_translate(cr, -32.0*w1, 8.0*h1);
+         }
+     }
+   else
+     {
+       cairo_set_source(cr, pattern1);
+       cairo_paint(cr);
+       cairo_set_source(cr, pattern2);
+       cairo_paint(cr);
+       cairo_set_source(cr, pattern3);
+       cairo_paint(cr);
+       cairo_set_source(cr, pattern4);
+       cairo_paint(cr);
+     }
    
    cairo_pattern_destroy(pattern1);
    cairo_pattern_destroy(pattern2);
    cairo_pattern_destroy(pattern3);
    cairo_pattern_destroy(pattern4);
 
-   cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-   cairo_set_line_width(cr, 4.0);
+   if(tile==FALSE)
+     {
+       cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+       cairo_set_line_width(cr, 4.0);
 
-   //Yellow curve1.
-   cairo_move_to(cr, 1.0*w1, 1.0*h1);
-   cairo_curve_to(cr, 0.0*w1, 2.0*h1, 2.0*w1, 4.0*h1, 1.0*w1, 5.0*h1);
-   cairo_stroke_preserve(cr);
-   cairo_curve_to(cr, 0.0*w1, 6.0*h1, 2.0*w1, 8.0*h1, 1.0*w1, 9.0*h1);
-   cairo_stroke(cr);
+       //Yellow curve1.
+       cairo_move_to(cr, 1.0*w1, 1.0*h1);
+       cairo_curve_to(cr, 0.0*w1, 2.0*h1, 2.0*w1, 4.0*h1, 1.0*w1, 5.0*h1);
+       cairo_stroke_preserve(cr);
+       cairo_curve_to(cr, 0.0*w1, 6.0*h1, 2.0*w1, 8.0*h1, 1.0*w1, 9.0*h1);
+       cairo_stroke(cr);
 
-   //Yellow curve2.
-   cairo_move_to(cr, 5.0*w1, 1.0*h1);
-   cairo_curve_to(cr, 4.0*w1, 2.0*h1, 6.0*w1, 4.0*h1, 5.0*w1, 5.0*h1);
-   cairo_stroke_preserve(cr);
-   cairo_curve_to(cr, 4.0*w1, 6.0*h1, 6.0*w1, 8.0*h1, 5.0*w1, 9.0*h1);
-   cairo_stroke(cr);
+       //Yellow curve2.
+       cairo_move_to(cr, 5.0*w1, 1.0*h1);
+       cairo_curve_to(cr, 4.0*w1, 2.0*h1, 6.0*w1, 4.0*h1, 5.0*w1, 5.0*h1);
+       cairo_stroke_preserve(cr);
+       cairo_curve_to(cr, 4.0*w1, 6.0*h1, 6.0*w1, 8.0*h1, 5.0*w1, 9.0*h1);
+       cairo_stroke(cr);
 
-   //Yellow curve3.
-   cairo_move_to(cr, 9.0*w1, 1.0*h1);
-   cairo_curve_to(cr, 8.0*w1, 2.0*h1, 10.0*w1, 4.0*h1, 9.0*w1, 5.0*h1);
-   cairo_stroke_preserve(cr);
-   cairo_curve_to(cr, 8.0*w1, 6.0*h1, 10.0*w1, 8.0*h1, 9.0*w1, 9.0*h1);
-   cairo_stroke(cr);
+       //Yellow curve3.
+       cairo_move_to(cr, 9.0*w1, 1.0*h1);
+       cairo_curve_to(cr, 8.0*w1, 2.0*h1, 10.0*w1, 4.0*h1, 9.0*w1, 5.0*h1);
+       cairo_stroke_preserve(cr);
+       cairo_curve_to(cr, 8.0*w1, 6.0*h1, 10.0*w1, 8.0*h1, 9.0*w1, 9.0*h1);
+       cairo_stroke(cr);
 
-   //Layout axis for drawing.
-   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-   cairo_rectangle(cr, width/10.0, height/10.0, 8.0*width/10.0, 8.0*height/10.0);
-   cairo_stroke(cr);
-   cairo_move_to(cr, 1.0*width/10.0, 5.0*height/10.0);
-   cairo_line_to(cr, 9.0*width/10.0, 5.0*height/10.0);
-   cairo_stroke(cr);
-   cairo_move_to(cr, 5.0*width/10.0, 1.0*height/10.0);
-   cairo_line_to(cr, 5.0*width/10.0, 9.0*height/10.0);
-   cairo_stroke(cr);
+       //Layout axis for drawing.
+       cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+       cairo_rectangle(cr, width/10.0, height/10.0, 8.0*width/10.0, 8.0*height/10.0);
+       cairo_stroke(cr);
+       cairo_move_to(cr, 1.0*width/10.0, 5.0*height/10.0);
+       cairo_line_to(cr, 9.0*width/10.0, 5.0*height/10.0);
+       cairo_stroke(cr);
+       cairo_move_to(cr, 5.0*width/10.0, 1.0*height/10.0);
+       cairo_line_to(cr, 5.0*width/10.0, 9.0*height/10.0);
+       cairo_stroke(cr);
+     }
 
    return FALSE;
  }
