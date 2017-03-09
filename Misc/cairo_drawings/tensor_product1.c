@@ -13,6 +13,7 @@ layout with the patches.
 #include<gtk/gtk.h>
 
 static gboolean tile=FALSE;
+static gboolean clip_tiles=FALSE;
 
 static void combo_changed(GtkComboBox *combo_box, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
@@ -46,6 +47,7 @@ int main(int argc, char **argv)
    GtkWidget *combo=gtk_combo_box_text_new();
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "Patch Layout");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "Tile Patches");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "Clip Tiles");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
    gtk_widget_set_hexpand(combo, TRUE);
    g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), da);
@@ -69,9 +71,15 @@ static void combo_changed(GtkComboBox *combo_box, gpointer data)
       {
         case 0:
           tile=FALSE;
+          clip_tiles=FALSE;
           break;
         case 1:
           tile=TRUE;
+          clip_tiles=FALSE;
+          break;
+        case 2:
+          tile=TRUE;
+          clip_tiles=TRUE;
       }
    gtk_widget_queue_draw(GTK_WIDGET(data));
  }
@@ -89,6 +97,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Transparent background.
    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.3);
    cairo_paint(cr);
+
+   //Clip tiles with a circle.
+   if(clip_tiles==TRUE)
+     {
+       cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+       cairo_arc(cr, width/2.0, height/2.0, 3.0*w1, 0.0, 2.0*G_PI);
+       cairo_clip(cr);
+     }
 
    if(tile==TRUE)
      {
