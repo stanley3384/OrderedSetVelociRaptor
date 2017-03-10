@@ -109,7 +109,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    if(tile==TRUE)
      {
        cairo_scale(cr, 0.25, 0.25);
-       cairo_translate(cr, 2.5*w1, 2.5*h1);
+       cairo_translate(cr, 3.0*w1, 3.0*h1);
      }
 
    //Patch1
