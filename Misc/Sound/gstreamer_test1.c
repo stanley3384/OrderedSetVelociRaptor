@@ -6,20 +6,20 @@ as the program. Used a test ogg file from the following.
 
    http://rpg.hamsterrepublic.com/ohrrpgce/Free_Sound_Effects
 
-   Ubuntu14.04 with GTK3.10
+   Ubuntu16.04 with GTK3.18
 
-   gcc -Wall gstreamer_test1.c -o gstreamer_test1 `pkg-config --cflags --libs gtk+-3.0 gstreamer-0.10`
+   gcc -Wall gstreamer_test1.c -o gstreamer_test1 `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0`
 
    C. Eric Cashon
 */
 
 #include<gtk/gtk.h>
 #include<gst/gst.h>
-#include<stdio.h>
+#include<stdlib.h>
 
 //The sound file to test. Change ogg char strings for testing
 static gchar *ogg_file="Metal_Hit.ogg";
-static gchar *ogg_file_uri="playbin2 uri=file:///home/owner/eric/Rectangle2/Metal_Hit.ogg";
+static gchar *ogg_file_uri="playbin uri=file:///home/eric/Velo/Misc/Sound/Metal_Hit.ogg";
 static gchar *ogg_file_spawn="gst-launch-1.0 filesrc location=Metal_Hit.ogg ! decodebin ! pulsesink";
 /*
   The timer doesn't give a total time for async since it returns right away. Gstreamer will
@@ -37,7 +37,6 @@ static void play_sound(GtkWidget *button, gpointer data);
 static void sound_pipeline(GtkWidget *button);
 static void sound_pipeline_playbin(GtkWidget *button);
 static void spawn_sound(gpointer data);
-static void click_button(GtkWidget *button, gpointer data);
 
 int main(int argc, char *argv[])
  {
@@ -64,14 +63,8 @@ int main(int argc, char *argv[])
    gtk_widget_set_vexpand(button1, TRUE);
    g_signal_connect(button1, "clicked", G_CALLBACK(play_sound), combo);
   
-   GtkWidget *button2=gtk_button_new_with_label("Click Button");
-   gtk_widget_set_hexpand(button2, TRUE);
-   gtk_widget_set_vexpand(button2, TRUE);
-   g_signal_connect(button2, "clicked", G_CALLBACK(click_button), NULL);
-
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), button2, 0, 1, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), combo, 0, 2, 1, 1);
    gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -210,10 +203,6 @@ static void spawn_sound(gpointer data)
       {
         system(ogg_file_spawn);
       }
-  }
-static void click_button(GtkWidget *button, gpointer data)
-  {
-    g_print("Button Clicked\n");
   }
 
 
