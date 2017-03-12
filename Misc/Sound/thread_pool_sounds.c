@@ -2,14 +2,14 @@
 /*
     Test code for playing sound files with alsa. Set up a thread pool to play a sound several
 times without binding up the UI. Concerned the playsound function isn't reentrant but it seems
-to work.
+to work fine.
     This one looks for wav and ogg files in the local directory and loads them into a combobox. It tries
 to set the background transparency of the the main window also.
 
     ALSA is thread safe and the following about sndfile.
     http://comments.gmane.org/gmane.comp.audio.libsndfile.devel/563
 
-    Tested on Ubuntu14.03 with GTK3.10.
+    Tested on Ubuntu16.04 with GTK3.18.
 
     gcc -Wall thread_pool_sounds.c -o thread_pool_sounds -lasound -lsndfile `pkg-config --cflags --libs gtk+-3.0`
 
@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 5, 1, 1);
     gtk_container_add(GTK_CONTAINER(window), grid);
 
+    //Works on GTK3.18. The CSS needs to be changed for >=GTK3.20.
     GError *css_error=NULL;
     gchar css_string[]="GtkWidget{background-color: rgba(0,0,255,0.3); color: yellow} GtkButton{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.9)), color-stop(0.5,rgba(180,180,180,0.9)), color-stop(1.0,rgba(25,0,200,0.9)));} GtkLabel#b1_label{background-image: -gtk-gradient (linear, left bottom, right top, color-stop(0.0,rgba(0,255,0,0.9)), color-stop(0.5,rgba(180,180,180,0.9)), color-stop(1.0,rgba(25,0,200,0.9)))} GtkDialog{background: rgba(0,0,255,1.0)}";
     GtkCssProvider *provider = gtk_css_provider_new();
