@@ -2,7 +2,8 @@
 /*
    Test code for pooling sounds in gstreamer. Not sure if this is the way to do it. It plays
 the sounds but don't press the button twice while the sounds are playing. The GST elements
-won't get unique names which means errors.
+won't get unique names which means errors. There is also a memory leak in there someplace.
+If the sounds are played several times with Valgrind will show this.
 
    The program needs some short ogg sound files. Used test ogg files from the following.
 
@@ -92,19 +93,21 @@ static void play_sound(GtkWidget *button, gpointer *sounds)
   }
 static void sound_pipeline(struct s_pipeline *p1)
   {
+    gchar *s0=g_strdup_printf("audio-player%i", p1->array_index);
     gchar *s1=g_strdup_printf("file-source%i", p1->array_index);
     gchar *s2=g_strdup_printf("ogg-demuxer%i", p1->array_index);
     gchar *s3=g_strdup_printf("vorbis-decoder%i", p1->array_index);
     gchar *s4=g_strdup_printf("converter%i", p1->array_index);
     gchar *s5=g_strdup_printf("audio-output%i", p1->array_index);
 
-    p1->pipeline=gst_pipeline_new("audio-player");
+    p1->pipeline=gst_pipeline_new(s0);
     GstElement *source=gst_element_factory_make("filesrc", s1);
     GstElement *demuxer=gst_element_factory_make("oggdemux", s2);
     p1->decoder=gst_element_factory_make("vorbisdec", s3);
     GstElement *conv=gst_element_factory_make("audioconvert", s4);
     GstElement *sink=gst_element_factory_make ("autoaudiosink", s5);
 
+    g_free(s0);
     g_free(s1);
     g_free(s2);
     g_free(s3);
