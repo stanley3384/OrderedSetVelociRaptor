@@ -411,13 +411,7 @@ int main(int argc, char *argv[])
     GtkWidget *scroll2=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_hexpand(scroll2, TRUE);
     gtk_widget_set_vexpand(scroll2, TRUE);
-
-    GtkWidget *layout=gtk_layout_new(NULL, NULL);
-    gtk_layout_set_size(GTK_LAYOUT(layout), 10000, 10000);
-    gtk_widget_set_hexpand(layout, TRUE);
-    gtk_widget_set_vexpand(layout, TRUE);
-    gtk_layout_put(GTK_LAYOUT(layout), da, 0, 0);
-    gtk_container_add(GTK_CONTAINER(scroll2), layout);
+    gtk_container_add(GTK_CONTAINER(scroll2), da);
 
     GtkWidget *notebook=gtk_notebook_new();
     GtkWidget *nb_label1=gtk_label_new("Setup");
