@@ -1,8 +1,7 @@
 
 /*
    Test code for pooling sounds in gstreamer. Not sure if this is the way to do it. It plays
-the sounds. There is a memory leak in there someplace. If the sounds are played several times
-Valgrind will show this. This code needs work.
+the sounds.
 
    The program needs some short ogg sound files. Used test ogg files from the following.
 
@@ -56,6 +55,7 @@ int main(int argc, char *argv[])
 
    //A pool and some sounds.
    pool=gst_task_pool_new();
+   gst_task_pool_prepare(pool, NULL);
    struct s_pipeline p1, p2, p3, p4;
    //Just set indexes into ogg_files[].
    p1.array_index=0;
@@ -95,7 +95,6 @@ static void play_sound(GtkWidget *button, gpointer *sounds)
     for(i=0;i<array_len;i++)
       {
         ((struct s_pipeline *)(sounds[i]))->pipeline_id=id;
-        gst_task_pool_prepare(pool, NULL);
         ((struct s_pipeline *)(sounds[i]))->pool_id=gst_task_pool_push(pool, (GstTaskPoolFunction)sound_pipeline, (struct s_pipeline *)sounds[i], &error);
         if(error!=NULL) g_print("Error: %s\n", error->message);
       }
