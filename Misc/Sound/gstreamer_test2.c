@@ -1,9 +1,8 @@
 
 /*
    Test code for pooling sounds in gstreamer. Not sure if this is the way to do it. It plays
-the sounds but don't press the button twice while the sounds are playing. The GST elements
-won't get unique names which means errors. There is also a memory leak in there someplace.
-If the sounds are played several times with Valgrind will show this.
+the sounds. There is a memory leak in there someplace. If the sounds are played several times
+Valgrind will show this. This code needs work.
 
    The program needs some short ogg sound files. Used test ogg files from the following.
 
@@ -22,6 +21,8 @@ If the sounds are played several times with Valgrind will show this.
 //The sound files to play.
 static gchar *ogg_files[]={"Metal_Hit.ogg", "StormMagic.ogg", "Rain.ogg", "BigWave.ogg"};
 static gint array_len=4;
+static GMutex mutex;
+static gint sounds_left=0;
 
 struct s_pipeline
 {
@@ -30,9 +31,11 @@ struct s_pipeline
   GstElement *decoder;
   gint array_index;
   guint bus_watch_id;
+  guint pipeline_id;
 }; 
 
-static GstTaskPool *pool; 
+static GstTaskPool *pool;
+static GtkWidget *button1; 
 
 static void play_sound(GtkWidget *button, gpointer *sounds);
 static void sound_pipeline(struct s_pipeline *p1);
@@ -43,6 +46,7 @@ int main(int argc, char *argv[])
  {
    gtk_init(&argc, &argv);
    gst_init(&argc, &argv);
+   g_mutex_init(&mutex);
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Sounds");
@@ -60,7 +64,7 @@ int main(int argc, char *argv[])
    p4.array_index=3;
    gpointer sounds[]={&p1, &p2, &p3, &p4};
 
-   GtkWidget *button1=gtk_button_new_with_label("Play Sounds");
+   button1=gtk_button_new_with_label("Play Sounds");
    gtk_widget_set_hexpand(button1, TRUE);
    gtk_widget_set_vexpand(button1, TRUE);
    g_signal_connect(button1, "clicked", G_CALLBACK(play_sound), sounds);
@@ -74,31 +78,39 @@ int main(int argc, char *argv[])
    gtk_main();
 
    gst_object_unref(pool);
+   g_mutex_clear(&mutex);
 
    return 0;
  }
 static void play_sound(GtkWidget *button, gpointer *sounds)
   { 
     gint i=0;
+    static gint id=0;
     GError *error=NULL;
 
+    gtk_widget_set_sensitive(button, FALSE);
+    sounds_left=array_len;
+
+    //Start sound threads in pool.
     for(i=0;i<array_len;i++)
       {
+        ((struct s_pipeline *)(sounds[i]))->pipeline_id=id;
         gst_task_pool_prepare(pool, NULL);
         ((struct s_pipeline *)(sounds[i]))->pool_id=gst_task_pool_push(pool, (GstTaskPoolFunction)sound_pipeline, (struct s_pipeline *)sounds[i], &error);
         if(error!=NULL) g_print("Error: %s\n", error->message);
       }
-            
+    
+    id++;        
     if(error!=NULL) g_error_free(error);
   }
 static void sound_pipeline(struct s_pipeline *p1)
   {
-    gchar *s0=g_strdup_printf("audio-player%i", p1->array_index);
-    gchar *s1=g_strdup_printf("file-source%i", p1->array_index);
-    gchar *s2=g_strdup_printf("ogg-demuxer%i", p1->array_index);
-    gchar *s3=g_strdup_printf("vorbis-decoder%i", p1->array_index);
-    gchar *s4=g_strdup_printf("converter%i", p1->array_index);
-    gchar *s5=g_strdup_printf("audio-output%i", p1->array_index);
+    gchar *s0=g_strdup_printf("audio-player%i_%i", p1->pipeline_id, p1->array_index);
+    gchar *s1=g_strdup_printf("file-source%i_%i", p1->pipeline_id, p1->array_index);
+    gchar *s2=g_strdup_printf("ogg-demuxer%i_%i", p1->pipeline_id, p1->array_index);
+    gchar *s3=g_strdup_printf("vorbis-decoder%i_%i", p1->pipeline_id, p1->array_index);
+    gchar *s4=g_strdup_printf("converter%i_%i", p1->pipeline_id, p1->array_index);
+    gchar *s5=g_strdup_printf("audio-output%i_%i", p1->pipeline_id, p1->array_index);
 
     p1->pipeline=gst_pipeline_new(s0);
     GstElement *source=gst_element_factory_make("filesrc", s1);
@@ -107,6 +119,7 @@ static void sound_pipeline(struct s_pipeline *p1)
     GstElement *conv=gst_element_factory_make("audioconvert", s4);
     GstElement *sink=gst_element_factory_make ("autoaudiosink", s5);
 
+    g_print("Pipeline %s started\n", s0);
     g_free(s0);
     g_free(s1);
     g_free(s2);
@@ -119,7 +132,9 @@ static void sound_pipeline(struct s_pipeline *p1)
         g_print("Error, One element could not be created.\n");
       }
 
+    g_mutex_lock(&mutex);
     g_object_set(G_OBJECT(source), "location", ogg_files[p1->array_index], NULL);
+    g_mutex_unlock(&mutex);
 
     GstBus *bus=gst_pipeline_get_bus(GST_PIPELINE(p1->pipeline));
     p1->bus_watch_id=gst_bus_add_watch(bus, (GstBusFunc)bus_call, p1);
@@ -139,11 +154,14 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
    switch(GST_MESSAGE_TYPE(msg))
     {
       case GST_MESSAGE_EOS:
+        g_mutex_lock(&mutex);
         g_print("%s Done\n", ogg_files[p1->array_index]);
+        g_mutex_unlock(&mutex);
         gst_element_set_state(p1->pipeline, GST_STATE_NULL);
         //Unreference the pipeline and other element objects stored in the pipeline.
         gst_object_unref(GST_OBJECT(p1->pipeline));
         g_source_remove(p1->bus_watch_id);
+        sounds_left--;
         gst_task_pool_join(pool, p1->pool_id);
         break;
       case GST_MESSAGE_ERROR:
@@ -154,6 +172,8 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
       default:
         break;
     }
+   
+    if(sounds_left==0) gtk_widget_set_sensitive(button1, TRUE);
     return TRUE;
   }
 static void on_pad_added(GstElement *element, GstPad *pad, struct s_pipeline *p1)
