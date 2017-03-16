@@ -93,9 +93,9 @@ static gboolean layout_drawing(GtkWidget *layout, cairo_t *cr, gpointer data)
    //Draw on moving layout window.
    GdkWindow *win=gtk_layout_get_bin_window(GTK_LAYOUT(layout));
    cairo_t *cr2=gdk_cairo_create(win);
-   cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
-   cairo_rectangle(cr2, 175, 75, 30, 30);
-   cairo_stroke(cr2);
+   cairo_set_source_rgb(cr2, 0.0, 1.0, 1.0);
+   cairo_rectangle(cr2, 175, 50, 60, 30);
+   cairo_fill(cr2);
    cairo_destroy(cr2);
 
    return FALSE;
