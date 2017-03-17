@@ -1,7 +1,6 @@
 
 /*
-   Test code for pooling sounds in gstreamer. Not sure if this is the way to do it. It plays
-the sounds.
+   Test code for pooling sounds in gstreamer. Working at it.
 
    The program needs some short ogg sound files. Used test ogg files from the following.
 
@@ -17,9 +16,9 @@ the sounds.
 #include<gtk/gtk.h>
 #include<gst/gst.h>
 
-//The sound files to play.
-static gchar *ogg_files[]={"Metal_Hit.ogg", "StormMagic.ogg", "Rain.ogg", "BigWave.ogg"};
-static gint array_len=4;
+//The sound files to play put in an array.
+static GPtrArray *ogg_files;
+static gint array_len=0;
 static GMutex mutex;
 static gint sounds_left=0;
 
@@ -36,6 +35,7 @@ struct s_pipeline
 static GstTaskPool *pool;
 static GtkWidget *button1; 
 
+static gint load_sounds(GtkWidget *combo, gpointer data);
 static void play_sound(GtkWidget *button, gpointer *sounds);
 static void sound_pipeline(struct s_pipeline *p1);
 static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1);
@@ -53,24 +53,38 @@ int main(int argc, char *argv[])
    gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-   //A pool and some sounds.
+   //The found .ogg file names
+   ogg_files=g_ptr_array_new_full(10, g_free);
+
+   GtkWidget *combo1=gtk_combo_box_text_new();
+   gtk_widget_set_hexpand(combo1, TRUE);
+
+   //Load the .ogg files into the combobox to start with.
+   gint num_sounds=load_sounds(combo1, NULL);
+   array_len=num_sounds;
+
+   //Set up the pipeline structs.
+   gint i=0;
+   g_print("Sounds %i\n", num_sounds);
+   gpointer sounds[num_sounds];
+   for(i=0;i<num_sounds;i++)
+     {
+       sounds[i]=g_new(struct s_pipeline, 1);
+       ((struct s_pipeline *)(sounds[i]))->array_index=i;
+     } 
+
+   //A pool for the sounds.
    pool=gst_task_pool_new();
    gst_task_pool_prepare(pool, NULL);
-   struct s_pipeline p1, p2, p3, p4;
-   //Just set indexes into ogg_files[].
-   p1.array_index=0;
-   p2.array_index=1;
-   p3.array_index=2;
-   p4.array_index=3;
-   gpointer sounds[]={&p1, &p2, &p3, &p4};
 
-   button1=gtk_button_new_with_label("Play Sounds");
+   button1=gtk_button_new_with_label("Play .ogg Sounds");
    gtk_widget_set_hexpand(button1, TRUE);
    gtk_widget_set_vexpand(button1, TRUE);
    g_signal_connect(button1, "clicked", G_CALLBACK(play_sound), sounds);
   
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
    gtk_container_add(GTK_CONTAINER(window), grid);
 
    gtk_widget_show_all(window);
@@ -79,9 +93,55 @@ int main(int argc, char *argv[])
 
    gst_object_unref(pool);
    g_mutex_clear(&mutex);
+   g_ptr_array_free(ogg_files, TRUE);
+   for(i=0;i<num_sounds;i++)
+     {
+       g_free(sounds[i]);
+     } 
 
    return 0;
  }
+static gint load_sounds(GtkWidget *combo, gpointer data)
+  {
+    GError *dir_error=NULL;
+    const gchar *file_temp=NULL;
+    gchar *file_type=g_strdup(".ogg");
+    gint i=0;
+
+    GDir *directory=g_dir_open("./", 0, &dir_error);
+    if(dir_error!=NULL)
+      {
+        g_print("dir Error %s\n", dir_error->message);
+        g_error_free(dir_error);
+        gtk_widget_set_sensitive(combo, FALSE);
+      }
+    else
+      {
+        file_temp=g_dir_read_name(directory);
+        while(file_temp!=NULL)
+          {
+            if(file_temp!=NULL&&g_str_has_suffix(file_temp, file_type))
+              {
+                g_print("%s\n", file_temp);
+                g_ptr_array_add(ogg_files, g_strdup(file_temp));
+                gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), file_temp);
+                i++;
+              }
+            file_temp=g_dir_read_name(directory);
+          }
+        if(i>0)
+          {
+            gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+            gtk_widget_set_sensitive(combo, TRUE);
+          }
+        else gtk_widget_set_sensitive(combo, FALSE);
+        g_dir_close(directory);
+      }
+
+    if(file_type!=NULL) g_free(file_type);
+
+    return i;
+  }
 static void play_sound(GtkWidget *button, gpointer *sounds)
   { 
     gint i=0;
@@ -132,7 +192,7 @@ static void sound_pipeline(struct s_pipeline *p1)
       }
 
     g_mutex_lock(&mutex);
-    g_object_set(G_OBJECT(source), "location", ogg_files[p1->array_index], NULL);
+    g_object_set(G_OBJECT(source), "location", (gchar*)g_ptr_array_index(ogg_files, p1->array_index), NULL);
     g_mutex_unlock(&mutex);
 
     GstBus *bus=gst_pipeline_get_bus(GST_PIPELINE(p1->pipeline));
@@ -154,7 +214,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
     {
       case GST_MESSAGE_EOS:
         g_mutex_lock(&mutex);
-        g_print("%s Done\n", ogg_files[p1->array_index]);
+        g_print("%s Done\n", (gchar*)g_ptr_array_index(ogg_files, p1->array_index));
         g_mutex_unlock(&mutex);
         gst_element_set_state(p1->pipeline, GST_STATE_NULL);
         //Unreference the pipeline and other element objects stored in the pipeline.
