@@ -1,6 +1,7 @@
 
 /*
-   Test code for pooling sounds in gstreamer. Working at it.
+   Test code for pooling sounds in gstreamer. Add sounds to the pool and then play. All
+the sounds will be played at once.
 
    The program needs some short ogg sound files in the same folder as the program. Used
 test ogg files from the following.
@@ -43,6 +44,7 @@ static void play_sound(GtkWidget *button, gpointer *sounds);
 static void sound_pipeline(struct s_pipeline *p1);
 static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1);
 static void on_pad_added(GstElement *element, GstPad *pad, struct s_pipeline *p1);
+static gboolean draw_pool(GtkWidget *widget, cairo_t *cr, gpointer data);
   
 int main(int argc, char *argv[])
  {
@@ -53,7 +55,7 @@ int main(int argc, char *argv[])
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Sound Pool");
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    //The found .ogg file names
@@ -64,10 +66,10 @@ int main(int argc, char *argv[])
    GtkWidget *combo1=gtk_combo_box_text_new();
    gtk_widget_set_hexpand(combo1, TRUE);
 
-   //Load the .ogg files into the combobox to start with.
+   //Load the .ogg files into the combobox from the local file to start with.
    gint num_sounds=load_sounds(combo1, NULL);
 
-   //Set up the pipeline structs.
+   //Set up the pipeline structs for the sounds.
    gint i=0;
    g_print("Sounds %i\n", num_sounds);
    gpointer sounds[num_sounds];
@@ -77,7 +79,7 @@ int main(int argc, char *argv[])
        ((struct s_pipeline *)(sounds[i]))->array_index=i;
      } 
 
-   //A pool for the sounds.
+   //A pool for playing the sounds all at once.
    pool=gst_task_pool_new();
    gst_task_pool_prepare(pool, NULL);
 
@@ -86,25 +88,38 @@ int main(int argc, char *argv[])
    g_signal_connect(button1, "clicked", G_CALLBACK(play_sound), sounds);
 
    GtkWidget *label1=gtk_label_new("");
-   gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='Blue' size='x-large'>Sound Pool</span>");
+   gtk_label_set_markup(GTK_LABEL(label1), "<span foreground='Blue' size='x-large'>Add Sounds to Pool</span>");
    gtk_widget_set_hexpand(label1, TRUE);
 
    GtkWidget *label2=gtk_label_new("");
+   gtk_label_set_markup(GTK_LABEL(label2), "<span foreground='Blue' size='x-large'>Sound Pool</span>");
    gtk_widget_set_hexpand(label2, TRUE);
-   gtk_widget_set_vexpand(label2, TRUE);
 
-   g_signal_connect(combo1, "changed", G_CALLBACK(add_sound_to_pool), label2);
+   GtkWidget *label3=gtk_label_new("");
+   gtk_widget_set_hexpand(label3, TRUE);
+   gtk_widget_set_vexpand(label3, TRUE);
+
+   g_signal_connect(combo1, "changed", G_CALLBACK(add_sound_to_pool), label3);
+
+   GtkWidget *event_box=gtk_event_box_new();
+   gtk_widget_set_hexpand(event_box, TRUE);
+   gtk_widget_set_vexpand(event_box, TRUE);
+   gtk_container_add(GTK_CONTAINER(event_box), label3);
+   g_signal_connect(event_box, "draw", G_CALLBACK(draw_pool), NULL);
 
    GtkWidget *button2=gtk_button_new_with_label("Clear Pool");
    gtk_widget_set_hexpand(button2, TRUE);
-   g_signal_connect(button2, "clicked", G_CALLBACK(clear_pool), label2);
+   g_signal_connect(button2, "clicked", G_CALLBACK(clear_pool), label3);
   
    GtkWidget *grid=gtk_grid_new();
-   gtk_grid_attach(GTK_GRID(grid), button1, 0, 0, 1, 1);
+   gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
+   gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+   gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label1, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), button2, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label2, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), event_box, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), button2, 0, 5, 1, 1);
    gtk_container_add(GTK_CONTAINER(window), grid);
 
    gtk_widget_show_all(window);
@@ -129,7 +144,7 @@ static void add_sound_to_pool(GtkWidget *combo, gpointer data)
     gboolean add_sound=TRUE;
     gint length=play_index->len;
    
-    //Can only have one instance of the sound.
+    //Can only have one instance of the sound in the pool.
     for(i=0;i<length;i++)
       {
         if(index==g_array_index(play_index, gint, i)) add_sound=FALSE;
@@ -292,6 +307,12 @@ static void on_pad_added(GstElement *element, GstPad *pad, struct s_pipeline *p1
     sinkpad=gst_element_get_static_pad(p1->decoder, "sink");
     gst_pad_link(pad, sinkpad);
     gst_object_unref(sinkpad);   
+  }
+static gboolean draw_pool(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    cairo_set_source_rgb(cr, 0.0, 0.7, 1.0);
+    cairo_paint(cr);
+    return FALSE;
   }
 
 
