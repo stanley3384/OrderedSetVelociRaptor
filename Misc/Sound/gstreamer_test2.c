@@ -1,7 +1,7 @@
 
 /*
    Test code for pooling sounds in gstreamer. Add sounds to the pool and then play. All
-the sounds will be played at once.
+the sounds will be played at once. Working towards an alarm for circular_gradient_clock1.c.
 
    The program needs some short ogg sound files in the same folder as the program. Used
 test ogg files from the following.
@@ -53,9 +53,9 @@ int main(int argc, char *argv[])
    g_mutex_init(&mutex);
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(window), "Sound Pool");
+   gtk_window_set_title(GTK_WINDOW(window), "Clock Alarm");
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 500);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    //The found .ogg file names
@@ -107,19 +107,50 @@ int main(int argc, char *argv[])
    gtk_container_add(GTK_CONTAINER(event_box), label3);
    g_signal_connect(event_box, "draw", G_CALLBACK(draw_pool), NULL);
 
-   GtkWidget *button2=gtk_button_new_with_label("Clear Pool");
+   GtkWidget *button2=gtk_button_new_with_label("Clear Sound Pool");
    gtk_widget_set_hexpand(button2, TRUE);
    g_signal_connect(button2, "clicked", G_CALLBACK(clear_pool), label3);
+
+   GtkWidget *label4=gtk_label_new("");
+   gtk_label_set_markup(GTK_LABEL(label4), "<span foreground='Blue' size='x-large'>Alarm Time</span>");
+   gtk_widget_set_hexpand(label4, TRUE);
   
+   GtkWidget *label5=gtk_label_new("Hour");
+
+   GtkAdjustment *adj1=gtk_adjustment_new(1.0, 1.0, 12.0, 1.0, 0.0, 0.0);
+   GtkWidget *spin1=gtk_spin_button_new(adj1, 1.0, 0);
+
+   GtkWidget *label6=gtk_label_new("Minute");
+
+   GtkAdjustment *adj2=gtk_adjustment_new(1.0, 1.0, 60.0, 1.0, 0.0, 0.0);
+   GtkWidget *spin2=gtk_spin_button_new(adj2, 1.0, 0);
+
+   GtkWidget *check1=gtk_check_button_new_with_label("AM");
+
+   GtkWidget *check2=gtk_check_button_new_with_label("Set Alarm");
+   GtkWidget *check_label=gtk_bin_get_child(GTK_BIN(check2));
+   gtk_label_set_markup(GTK_LABEL(check_label), "<span foreground='purple' size='x-large'> Set Alarm</span>");
+   gtk_widget_set_hexpand(check2, TRUE);
+   gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
+ 
    GtkWidget *grid=gtk_grid_new();
    gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
-   gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label2, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), event_box, 0, 3, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), button2, 0, 5, 1, 1);
+   gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+   gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), label2, 0, 2, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), event_box, 0, 3, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), button2, 0, 5, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), label4, 0, 6, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), label5, 0, 7, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), spin1, 1, 7, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label6, 2, 7, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), spin2, 3, 7, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check1, 4, 7, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check2, 0, 8, 5, 1);
+
    gtk_container_add(GTK_CONTAINER(window), grid);
 
    gtk_widget_show_all(window);
