@@ -1,7 +1,7 @@
 
 /*
    Test code for pooling sounds in gstreamer. Add sounds to the pool and then play. All
-the sounds will be played at once. Working towards an alarm for circular_gradient_clock1.c.
+the sounds will be played at once. Working towards an alarm for the circular_gradient_clock1.c.
 
    The program needs some short ogg sound files in the same folder as the program. Used
 test ogg files from the following.
@@ -23,6 +23,12 @@ static GPtrArray *ogg_files;
 static GArray *play_index;
 static GMutex mutex;
 static gint sounds_left=0;
+//For the alarm.
+static gint alarm_hour=1;
+static gint alarm_minute=1;
+static gboolean alarm_am=FALSE;
+static gboolean block_alarm=FALSE;
+static gboolean alarm_set=FALSE;
 
 struct s_pipeline
 {
@@ -37,6 +43,10 @@ struct s_pipeline
 static GstTaskPool *pool;
 static GtkWidget *button1; 
 
+static gboolean check_time(gpointer *data);
+static void set_alarm_active(GtkWidget *widget, gpointer data);
+static void set_alarm_spin(GtkSpinButton *spin_button, gpointer *data);
+static void set_alarm_check(GtkWidget *widget, gpointer *data);
 static void add_sound_to_pool(GtkWidget *combo, gpointer data);
 static void clear_pool(GtkWidget *button, gpointer data);
 static gint load_sounds(GtkWidget *combo, gpointer data);
@@ -132,6 +142,13 @@ int main(int argc, char *argv[])
    gtk_label_set_markup(GTK_LABEL(check_label), "<span foreground='purple' size='x-large'> Set Alarm</span>");
    gtk_widget_set_hexpand(check2, TRUE);
    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
+   g_signal_connect(check2, "clicked", G_CALLBACK(set_alarm_active), NULL);
+
+   //Update the alarm when the spin buttons or am/pm is clicked.
+   gpointer spin_data[]={spin1, spin2, check1};
+   g_signal_connect(spin1, "value-changed", G_CALLBACK(set_alarm_spin), spin_data);
+   g_signal_connect(spin2, "value-changed", G_CALLBACK(set_alarm_spin), spin_data);
+   g_signal_connect(check1, "clicked", G_CALLBACK(set_alarm_check), spin_data);
  
    GtkWidget *grid=gtk_grid_new();
    gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
@@ -155,6 +172,9 @@ int main(int argc, char *argv[])
 
    gtk_widget_show_all(window);
 
+   gpointer button1_sound[]={button1, sounds};
+   g_timeout_add_seconds(10, (GSourceFunc)check_time, button1_sound);
+
    gtk_main();
 
    gst_object_unref(pool);
@@ -167,6 +187,43 @@ int main(int argc, char *argv[])
    g_array_free(play_index, TRUE); 
 
    return 0;
+ }
+static gboolean check_time(gpointer *data)
+ {
+   GTimeZone *time_zone=g_time_zone_new_local();
+   GDateTime *date_time=g_date_time_new_now(time_zone);
+   gint hour=g_date_time_get_hour(date_time);
+   gint minute=g_date_time_get_minute(date_time);
+   if(hour>12&&!alarm_am) hour=hour-12;
+   g_print("Time %i %i Alarm %i %i %i Set %i\n", hour, minute, alarm_hour, alarm_minute, (gint)alarm_am, (gint)alarm_set);
+   if(alarm_set&&alarm_hour==hour&&alarm_minute==minute&&!block_alarm)
+     {
+       play_sound(GTK_WIDGET(data[0]), data[1]);
+       block_alarm=TRUE;
+     }
+   if(minute!=alarm_minute) block_alarm=FALSE;
+   g_time_zone_unref(time_zone);
+   g_date_time_unref(date_time);
+   return TRUE;
+ }
+static void set_alarm_active(GtkWidget *widget, gpointer data)
+ {
+   if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) alarm_set=TRUE;
+   else alarm_set=FALSE;     
+ }
+static void set_alarm_spin(GtkSpinButton *spin_button, gpointer *data)
+ {
+   g_print("Set Alarm Time\n");
+   gint spin1=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(data[0]));
+   gint spin2=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(data[1]));
+   alarm_hour=spin1;
+   alarm_minute=spin2;
+   if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data[2]))) alarm_am=TRUE;
+   else alarm_am=FALSE;   
+ }
+static void set_alarm_check(GtkWidget *widget, gpointer *data)
+ {
+   set_alarm_spin(NULL, data);
  }
 static void add_sound_to_pool(GtkWidget *combo, gpointer data)
   {
@@ -273,7 +330,7 @@ static void sound_pipeline(struct s_pipeline *p1)
     GstElement *demuxer=gst_element_factory_make("oggdemux", s2);
     p1->decoder=gst_element_factory_make("vorbisdec", s3);
     GstElement *conv=gst_element_factory_make("audioconvert", s4);
-    GstElement *sink=gst_element_factory_make ("autoaudiosink", s5);
+    GstElement *sink=gst_element_factory_make("autoaudiosink", s5);
 
     g_print("Pipeline %s started\n", s0);
     g_free(s0);
