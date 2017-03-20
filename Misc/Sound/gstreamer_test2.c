@@ -200,7 +200,7 @@ static gboolean check_time(gpointer *data)
      {
        play_sound(GTK_WIDGET(data[0]), data[1]);
        block_alarm=TRUE;
-     }
+     };
    if(minute!=alarm_minute) block_alarm=FALSE;
    g_time_zone_unref(time_zone);
    g_date_time_unref(date_time);
@@ -218,6 +218,7 @@ static void set_alarm_spin(GtkSpinButton *spin_button, gpointer *data)
    gint spin2=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(data[1]));
    alarm_hour=spin1;
    alarm_minute=spin2;
+   block_alarm=FALSE;
    if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data[2]))) alarm_am=TRUE;
    else alarm_am=FALSE;   
  }
@@ -285,7 +286,6 @@ static gint load_sounds(GtkWidget *combo, gpointer data)
           }
         if(i>0)
           {
-            gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
             gtk_widget_set_sensitive(combo, TRUE);
           }
         else gtk_widget_set_sensitive(combo, FALSE);
