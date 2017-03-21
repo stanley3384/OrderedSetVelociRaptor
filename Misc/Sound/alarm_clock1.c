@@ -48,6 +48,7 @@ static GtkWidget *button1;
 //For clock display
 static gboolean time_redraw(gpointer *data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
+static void draw_clock(cairo_t *cr, gdouble width, gdouble height);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void set_alarm_dialog(GtkWidget *widget, gpointer *data);
 //For alarm setup dialog and sounds.
@@ -66,6 +67,9 @@ static void sound_pipeline(struct s_pipeline *p1);
 static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1);
 static void on_pad_added(GstElement *element, GstPad *pad, struct s_pipeline *p1);
 static gboolean draw_pool(GtkWidget *widget, cairo_t *cr, gpointer data);
+//About dialog and icon.
+static void about_dialog(GtkWidget *widget, gpointer data);
+static GdkPixbuf* draw_icon();
 
 int main(int argc, char **argv)
  {
@@ -88,6 +92,10 @@ int main(int argc, char **argv)
      }
    else g_print("Can't set window transparency.\n");
    g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL);
+
+   //Draw the program icon.
+   GdkPixbuf *icon=draw_icon();
+   gtk_window_set_default_icon(icon);
 
    //The found .ogg file names
    ogg_files=g_ptr_array_new_full(10, g_free);
@@ -121,9 +129,19 @@ int main(int argc, char **argv)
    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
    GtkWidget *title1=gtk_menu_item_new_with_label("Settings");
    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+
+   GtkWidget *menu2=gtk_menu_new();
+   GtkWidget *menu2item1=gtk_menu_item_new_with_label("Circular Gradient Clock");
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu2), menu2item1);
+   GtkWidget *title2=gtk_menu_item_new_with_label("About");
+   gtk_menu_item_set_submenu(GTK_MENU_ITEM(title2), menu2);
+
    GtkWidget *menu_bar=gtk_menu_bar_new();
    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title2);
+
    g_signal_connect(menu1item1, "activate", G_CALLBACK(set_alarm_dialog), sounds);
+   g_signal_connect(menu2item1, "activate", G_CALLBACK(about_dialog), NULL);
    
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
@@ -171,13 +189,18 @@ static gboolean time_redraw(gpointer *data)
  }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
  {
+   gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+   draw_clock(cr, width, height);
+   return FALSE;
+ }
+static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
+ {
    /*
      From http://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves
      So for 4 points it is (4/3)*tan(pi/8) = 4*(sqrt(2)-1)/3 = 0.552284749831
    */
    gdouble points=0.552284749831;
-   gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
-   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
 
    //Layout for the drawing is a 10x10 rectangle.
    gdouble w1=width/10.0;
@@ -370,8 +393,6 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    temp_sin=temp_sin*hour_radius;
    cairo_line_to(cr, temp_cos, temp_sin);
    cairo_stroke(cr);
-  
-   return FALSE;
  }
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
@@ -504,7 +525,7 @@ static void close_dialog(GtkDialog *dialog, gint response_id, gpointer data)
  }
 static gboolean draw_background_dialog(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
-   cairo_set_source_rgba(cr, 0.0, 0.7, 1.0, 0.5);
+   cairo_set_source_rgba(cr, 0.0, 0.7, 1.0, 0.9);
    cairo_paint(cr);
    return FALSE;
  }
@@ -723,6 +744,153 @@ static gboolean draw_pool(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_paint(cr);
     return FALSE;
   }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(window));
+    gtk_widget_set_app_paintable(dialog, TRUE);
+    //Try to set transparency.
+    if(gtk_widget_is_composited(dialog))
+      {
+        GdkScreen *screen=gtk_widget_get_screen(dialog);  
+        GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual(dialog, visual);
+      }
+    else g_print("Can't set window transparency.\n");
+    g_signal_connect(dialog, "draw", G_CALLBACK(draw_background_dialog), NULL);
+
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Circular Gradient Clock");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A colorful clock with a sound pool alarm.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2017 C. Eric Cashon");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+//The diving and swimming pool notes.
+static GdkPixbuf* draw_icon()
+  {
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface);
+    
+    //Paint the background.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_paint(cr);
+
+    //The diving note.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 1);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_translate(cr, 60, 60);
+    cairo_rotate(cr, 3*G_PI/4);
+    cairo_scale(cr, 1.0, 0.60);
+    cairo_arc(cr, 0, 0, 30, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //The diving note line.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); 
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 80, 40);
+    cairo_line_to(cr, 170, 130);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Two leg lines on diving note line.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);  
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 170, 130);
+    cairo_line_to(cr, 170, 90);
+    cairo_stroke(cr); 
+    cairo_move_to(cr, 150, 110);
+    cairo_line_to(cr, 150, 70);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //The pool arc.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 6);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.5);
+    cairo_arc(cr, 128, 380, 240, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //A note in the pool.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 1);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_translate(cr, 70, 230);
+    cairo_rotate(cr, G_PI);
+    cairo_scale(cr, 0.60, 1.0);
+    cairo_arc(cr, 0, 0, 15, 0, G_PI);
+    cairo_fill(cr);
+    cairo_stroke_preserve(cr);
+    cairo_restore(cr);
+
+    //Note flag legs sticking up in pool.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 2);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 100, 180);
+    cairo_line_to(cr, 105, 170);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 105, 180);
+    cairo_line_to(cr, 110, 170);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //Note flag in pool.
+    cairo_save(cr);
+    cairo_set_line_width(cr, 2);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_move_to(cr, 50, 190);
+    cairo_line_to(cr, 50, 170);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 50, 170);
+    cairo_line_to(cr, 43, 177);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 50, 175);
+    cairo_line_to(cr, 43, 182);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    //A green border.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 6);
+    cairo_rectangle(cr, 0, 0, 256, 256);
+    cairo_stroke(cr);
+
+    //The diving board.
+    cairo_save(cr);
+    cairo_matrix_t matrix;
+    cairo_matrix_init(&matrix, 1.0, 0.5, 0.0, 1.0, 0.0, 0.0);
+    cairo_transform(cr, &matrix);
+    cairo_rectangle(cr, 148, 100, 140, 50);
+    cairo_stroke_preserve(cr);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    //The clock.
+    cairo_translate(cr, 165, 0);
+    cairo_scale(cr, 0.35, 0.35);
+    draw_clock(cr, 256.0, 256.0);
+
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    return icon;
+  }
+
 
 
 
