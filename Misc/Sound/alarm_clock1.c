@@ -27,6 +27,7 @@ static gint alarm_minute=1;
 static gboolean alarm_am=FALSE;
 static gboolean block_alarm=FALSE;
 static gboolean alarm_set=FALSE;
+static gboolean dialog_active=FALSE;
 
 struct s_pipeline
 {
@@ -47,6 +48,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void set_alarm_dialog(GtkWidget *widget, gpointer *data);
 //For alarm setup dialog and sounds.
+static void close_dialog(GtkDialog *dialog, gint response_id, gpointer data);
 static gboolean draw_background_dialog(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void set_alarm_active(GtkWidget *widget, gpointer data);
 static void set_alarm_spin1(GtkSpinButton *spin_button, gpointer data);
@@ -379,7 +381,7 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    GtkWidget *dialog=gtk_dialog_new_with_buttons("Clock Alarm", GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, "OK", GTK_RESPONSE_NONE, NULL);
    gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 500);
    GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-   g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
+   g_signal_connect(dialog, "response", G_CALLBACK(close_dialog), NULL);
 
    gtk_widget_set_app_paintable(dialog, TRUE);
    //Try to set transparency.
@@ -489,7 +491,13 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
 
    gtk_container_add(GTK_CONTAINER(content_area), grid);
 
+   dialog_active=TRUE;
    gtk_widget_show_all(dialog);
+ }
+static void close_dialog(GtkDialog *dialog, gint response_id, gpointer data)
+ {
+   dialog_active=FALSE;
+   gtk_widget_destroy(GTK_WIDGET(dialog));
  }
 static gboolean draw_background_dialog(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
@@ -614,7 +622,7 @@ static void play_sound(GtkWidget *button, gpointer *sounds)
     //Start sound threads in pool.
     gint length=play_index->len;
     sounds_left=length;
-    if(sounds_left!=0&&button!=NULL) gtk_widget_set_sensitive(button, FALSE);
+    if(sounds_left!=0&&dialog_active) gtk_widget_set_sensitive(button, FALSE);
 
     for(i=0;i<length;i++)
       {
@@ -696,7 +704,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
         break;
     }
    
-    if(sounds_left==0) gtk_widget_set_sensitive(button1, TRUE);
+    if(sounds_left==0&&dialog_active) gtk_widget_set_sensitive(button1, TRUE);
     return TRUE;
   }
 static void on_pad_added(GstElement *element, GstPad *pad, struct s_pipeline *p1)
