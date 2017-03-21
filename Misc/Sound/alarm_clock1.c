@@ -2,7 +2,10 @@
 /*
     Put the circular_gradient_clock1.c and gstreamer_test2.c together to make an alarm clock.
 The alarm sounds are .ogg files in the program folder. The sounds are loaded at startup. You can
-get the barnyard making noise with this one. 
+get the barnyard making noise with this one.
+
+    For some .ogg sounds to test out
+    http://www.bigsoundbank.com 
    
     gcc -Wall alarm_clock1.c -o alarm_clock1 `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0` -lm
 
