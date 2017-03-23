@@ -1,7 +1,7 @@
 
 /*
-    Draw a simple tensor-product patch mesh to get an idea how it works. Then "tile" the 
-layout and clip the mesh region in a circle and a fish.
+    Draw a tensor-product patch mesh. Start with a drawing area that has a grid to draw
+the four meshes. Then "tile" the layout. Next, clip the tiled mesh region in a circle and a fish.
    
     gcc -Wall tensor_product1.c -o tensor_product1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -73,6 +73,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
    gint combo_id=gtk_combo_box_get_active(GTK_COMBO_BOX(data));
+   //Draw the combo selection.
    mesh_drawing(cr, width, height, combo_id);
    return FALSE;
  }
@@ -104,7 +105,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
        cairo_clip(cr);
      }
 
-
+   //Scale and translate the drawings with many tiles.
    if(drawing_id==1||drawing_id==2||drawing_id==3)
      {
        cairo_scale(cr, 0.25, 0.25);
@@ -171,6 +172,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
    cairo_mesh_pattern_set_corner_color_rgb(pattern4, 3, 0.0, 0.0, 1.0);
    cairo_mesh_pattern_end_patch(pattern4);
 
+   //Draw the patterns in a grid or just draw the four patterns as is.
    if(drawing_id==1||drawing_id==2||drawing_id==3)
      {
        for(i=0;i<4;i++)
@@ -207,6 +209,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
    cairo_pattern_destroy(pattern3);
    cairo_pattern_destroy(pattern4);
 
+   //Some highlights and a grid to help with drawing.
    if(drawing_id==0)
      {
        cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
@@ -252,6 +255,7 @@ static void mesh_drawing_fish(cairo_t *cr, gint width, gint height)
    gdouble w1=width/10.0;
    gdouble h1=height/10.0;
 
+   //The outline for the fish.
    cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
    cairo_set_line_width(cr, 6.0);
    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
