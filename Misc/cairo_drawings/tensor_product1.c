@@ -106,6 +106,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
      }
 
    //Scale and translate the drawings with many tiles.
+   cairo_save(cr);
    if(drawing_id==1||drawing_id==2||drawing_id==3)
      {
        cairo_scale(cr, 0.25, 0.25);
@@ -208,6 +209,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
    cairo_pattern_destroy(pattern2);
    cairo_pattern_destroy(pattern3);
    cairo_pattern_destroy(pattern4);
+   cairo_restore(cr);
 
    //Some highlights and a grid to help with drawing.
    if(drawing_id==0)
@@ -246,6 +248,17 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
        cairo_move_to(cr, 5.0*w1, 1.0*h1);
        cairo_line_to(cr, 5.0*w1, 9.0*h1);
        cairo_stroke(cr);
+     }
+
+   //A smile and eye on the fish.
+   if(drawing_id==3)
+     {
+       cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+       cairo_move_to(cr, 9.0*w1, 5.0*h1);
+       cairo_curve_to(cr, 8.0*w1, 5.0*h1, 7.5*w1, 5.0*h1, 7.0*w1, 4.5*h1);
+       cairo_stroke(cr);
+       cairo_arc(cr, 7.5*w1, 3.0*h1, 0.25*h1, 0.0, 2.0*G_PI);
+       cairo_fill(cr);  
      }
 
  }
