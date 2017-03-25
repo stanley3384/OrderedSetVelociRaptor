@@ -6,7 +6,7 @@ get the barnyard making noise with this one.
 
     For some .ogg sounds to test out
     http://www.bigsoundbank.com 
-   
+
     gcc -Wall alarm_clock1.c -o alarm_clock1 `pkg-config --cflags --libs gtk+-3.0 gstreamer-1.0` -lm
 
     Tested on Ubuntu16.04 and GTK3.18
@@ -156,6 +156,7 @@ int main(int argc, char **argv)
 
    gtk_main();
 
+   g_object_unref(icon);
    gst_object_unref(pool);
    g_mutex_clear(&mutex);
    g_ptr_array_free(ogg_files, TRUE);
@@ -876,6 +877,38 @@ static GdkPixbuf* draw_icon()
     cairo_transform(cr, &matrix);
     cairo_rectangle(cr, 148, 100, 140, 50);
     cairo_stroke_preserve(cr);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
+    //Draw a jumping fish.
+    cairo_save(cr);
+    gdouble w1=256.0/10.0;
+    gdouble h1=256.0/10.0;
+    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 2.0);
+    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_rotate(cr, -G_PI/6.0);
+    cairo_scale(cr, 0.20, 0.12);
+    cairo_translate(cr, 15.0*w1, 75.0*h1);
+    cairo_move_to(cr, 1.0*w1, 3.0*h1);
+    cairo_curve_to(cr, 2.0*w1, 3.0*h1, 2.0*w1, 3.0*h1, 3.0*w1, 4.5*h1);
+    cairo_stroke_preserve(cr);  
+    cairo_curve_to(cr, 4.0*w1, 2.0*h1, 4.0*w1, 2.0*h1, 6.0*w1, 2.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.0*w1, 2.0*h1, 8.0*w1, 2.0*h1, 9.0*w1, 5.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.0*w1, 8.0*h1, 8.0*w1, 8.0*h1, 6.0*w1, 8.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.0*w1, 8.0*h1, 4.0*w1, 8.0*h1, 3.0*w1, 5.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 7.0*h1, 2.0*w1, 7.0*h1, 1.0*w1, 7.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 6.0*h1, 2.0*w1, 6.0*h1, 2.0*w1, 5.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 4.0*h1, 2.0*w1, 4.0*h1, 1.0*w1, 3.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_close_path(cr);
     cairo_fill(cr);
     cairo_restore(cr);
 
