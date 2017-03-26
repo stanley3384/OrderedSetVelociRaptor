@@ -24,6 +24,7 @@ static GPtrArray *ogg_files;
 static GArray *play_index;
 static GMutex mutex;
 static gint sounds_left=0;
+static gint num_sounds=0;
 //For the alarm.
 static gint alarm_hour=1;
 static gint alarm_minute=1;
@@ -59,6 +60,7 @@ static void set_alarm_spin1(GtkSpinButton *spin_button, gpointer data);
 static void set_alarm_spin2(GtkSpinButton *spin_button, gpointer data);
 static void set_alarm_check(GtkWidget *widget, gpointer data);
 static void add_sound_to_pool(GtkWidget *combo, gpointer data);
+static void stop_sounds(GtkWidget *button, gpointer *sounds);
 static void clear_pool(GtkWidget *button, gpointer data);
 static gint load_sounds_array();
 static void load_sounds_combo(GtkWidget *combo);
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
    play_index=g_array_new(FALSE, FALSE, sizeof(gint));
 
    //Load the .ogg files into the combobox from the local file to start with.
-   gint num_sounds=load_sounds_array();
+   num_sounds=load_sounds_array();
 
    //Set up the pipeline structs for the sounds.
    gint i=0;
@@ -113,6 +115,7 @@ int main(int argc, char **argv)
      {
        sounds[i]=g_new(struct s_pipeline, 1);
        ((struct s_pipeline *)(sounds[i]))->array_index=i;
+       ((struct s_pipeline *)(sounds[i]))->pipeline=NULL;
      } 
 
    //A pool for playing the sounds all at once.
@@ -404,7 +407,7 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
 static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
  {    
    GtkWidget *dialog=gtk_dialog_new_with_buttons("Clock Alarm", GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, "OK", GTK_RESPONSE_NONE, NULL);
-   gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 500);
+   gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 600);
    GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
    g_signal_connect(dialog, "response", G_CALLBACK(close_dialog), NULL);
 
@@ -460,9 +463,13 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    gtk_widget_set_vexpand(scroll, TRUE);
    gtk_container_add(GTK_CONTAINER(scroll), event_box);
 
-   GtkWidget *button2=gtk_button_new_with_label("Clear Sound Pool");
+   GtkWidget *button2=gtk_button_new_with_label("Stop Sound Pool");
    gtk_widget_set_hexpand(button2, TRUE);
-   g_signal_connect(button2, "clicked", G_CALLBACK(clear_pool), label3);
+   g_signal_connect(button2, "clicked", G_CALLBACK(stop_sounds), sounds);
+
+   GtkWidget *button3=gtk_button_new_with_label("Clear Sound Pool");
+   gtk_widget_set_hexpand(button3, TRUE);
+   g_signal_connect(button3, "clicked", G_CALLBACK(clear_pool), label3);
 
    GtkWidget *label4=gtk_label_new("");
    gtk_label_set_markup(GTK_LABEL(label4), "<span foreground='yellow' size='x-large'>Alarm Time</span>");
@@ -506,13 +513,14 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    gtk_grid_attach(GTK_GRID(grid), scroll, 0, 3, 5, 1);
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 5, 1);
    gtk_grid_attach(GTK_GRID(grid), button2, 0, 5, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), label4, 0, 6, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), label5, 0, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), spin1, 1, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label6, 2, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), spin2, 3, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), check1, 4, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), check2, 0, 8, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), button3, 0, 6, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), label4, 0, 7, 5, 1);
+   gtk_grid_attach(GTK_GRID(grid), label5, 0, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), spin1, 1, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label6, 2, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), spin2, 3, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check1, 4, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check2, 0, 9, 5, 1);
 
    gtk_container_add(GTK_CONTAINER(content_area), grid);
 
@@ -578,6 +586,26 @@ static void add_sound_to_pool(GtkWidget *combo, gpointer data)
         g_free(file_name);
       }
     else g_print("The sound is already in the pool.\n");
+  }
+static void stop_sounds(GtkWidget *button, gpointer *sounds)
+  {
+    gint i=0;
+    for(i=0;i<num_sounds;i++)
+      {
+        g_mutex_lock(&mutex);
+        if(((struct s_pipeline *)(sounds[i]))->pipeline!=NULL)
+          {
+            g_print("Stop Pipeline %i\n", i);
+            gst_element_set_state(((struct s_pipeline *)(sounds[i]))->pipeline, GST_STATE_PAUSED);
+            gst_object_unref(GST_OBJECT(((struct s_pipeline *)(sounds[i]))->pipeline));
+            ((struct s_pipeline *)(sounds[i]))->pipeline=NULL;
+            g_source_remove(((struct s_pipeline *)(sounds[i]))->bus_watch_id);
+            sounds_left--;
+            gst_task_pool_join(pool, ((struct s_pipeline *)(sounds[i]))->pool_id);
+          }
+        g_mutex_unlock(&mutex);
+        gtk_widget_set_sensitive(button1, TRUE);
+      }
   }
 static void clear_pool(GtkWidget *button, gpointer data)
   {
@@ -707,18 +735,20 @@ static void sound_pipeline(struct s_pipeline *p1)
 static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
  {
    GError *error=NULL;
+   //g_print("%s\n", gst_message_type_get_name(GST_MESSAGE_TYPE(msg)));
    switch(GST_MESSAGE_TYPE(msg))
     {
       case GST_MESSAGE_EOS:
         g_mutex_lock(&mutex);
         g_print("%s Done\n", (gchar*)g_ptr_array_index(ogg_files, p1->array_index));
-        g_mutex_unlock(&mutex);
         gst_element_set_state(p1->pipeline, GST_STATE_NULL);
         //Unreference the pipeline and other element objects stored in the pipeline.
         gst_object_unref(GST_OBJECT(p1->pipeline));
+        p1->pipeline=NULL;
         g_source_remove(p1->bus_watch_id);
         sounds_left--;
         gst_task_pool_join(pool, p1->pool_id);
+        g_mutex_unlock(&mutex);
         break;
       case GST_MESSAGE_ERROR:
         gst_message_parse_error(msg, &error, NULL);
