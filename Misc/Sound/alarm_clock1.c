@@ -618,7 +618,11 @@ static void clear_pool(GtkWidget *button, gpointer data)
     gtk_label_set_text(GTK_LABEL(data), "");
     gint length=play_index->len;
     g_array_remove_range(play_index, 0, length);
-    if(pool_string!=NULL) g_free(pool_string);
+    if(pool_string!=NULL)
+      {
+        g_free(pool_string);
+        pool_string=NULL;
+      }
   }
 static gint load_sounds_array()
   {
