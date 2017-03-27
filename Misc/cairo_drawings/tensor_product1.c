@@ -2,7 +2,8 @@
 /*
     Draw a tensor-product patch mesh. Start with a drawing area that has a grid to draw
 the four meshes to start with. Then "tile" the meshes. Next, clip the tiled mesh region
-in a circle and a fish. Scale and translate 4 fish to fit in original coordinates.
+in a circle and a fish. Scale and translate 4 fish to fit in original coordinates. Tile
+again to create a school of fish. That is as far as it goes.
    
     gcc -Wall tensor_product1.c -o tensor_product1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -50,6 +51,7 @@ int main(int argc, char **argv)
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "Clip Tiles Circle");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 3, "4", "Clip Tiles Fish");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 4, "5", "Four Fish");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 5, "6", "School of Fish");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
    gtk_widget_set_hexpand(combo, TRUE);
    g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), da);
@@ -90,7 +92,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
      {
        mesh_drawing(cr, width, height, combo_id);
      }
-   else
+   else if(combo_id==4)
      {
        //Draw fish but scale and translate for 4 of them.
        cairo_scale(cr, 0.5, 0.5);
@@ -103,6 +105,24 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
                mesh_drawing(cr, width, height, combo_id);
                cairo_restore(cr);
              }
+         }
+     }
+   else
+     {
+       //Tile the fish.
+       cairo_scale(cr, 0.5, 0.5);
+       cairo_scale(cr, 0.25, 0.25);
+       cairo_translate(cr, 6.0*w1, 6.0*h1);
+       for(i=0;i<8;i++)
+         {
+           for(j=0;j<8;j++)
+             {
+               cairo_save(cr);
+               mesh_drawing(cr, width, height, combo_id);
+               cairo_restore(cr);
+               cairo_translate(cr, 8.0*w1, 0.0);
+             }
+           cairo_translate(cr, -64.0*w1, 8.0*h1);
          }
      }
    return FALSE;
@@ -125,7 +145,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
      }
 
    //Clip tiles with a fish.
-   if(drawing_id==3||drawing_id==4)
+   if(drawing_id==3||drawing_id==4||drawing_id==5)
      {
        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
        mesh_drawing_fish(cr, width, height);
@@ -133,7 +153,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
      }
 
    //Scale and translate the drawings with many tiles.
-   if(drawing_id==1||drawing_id==2||drawing_id==3||drawing_id==4)
+   if(drawing_id!=0)
      {
        cairo_scale(cr, 0.25, 0.25);
        cairo_translate(cr, 3.0*w1, 3.0*h1);
@@ -200,7 +220,7 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
    cairo_mesh_pattern_end_patch(pattern4);
 
    //Draw the patterns in a grid or just draw the four patterns as is.
-   if(drawing_id==1||drawing_id==2||drawing_id==3||drawing_id==4)
+   if(drawing_id!=0)
      {
        for(i=0;i<4;i++)
          {
@@ -280,10 +300,10 @@ static void mesh_drawing(cairo_t *cr, gint width, gint height, gint drawing_id)
      }
 
    //A smile and eye on the fish.
-   if(drawing_id==3||drawing_id==4)
+   if(drawing_id==3||drawing_id==4||drawing_id==5)
      {
        cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-       cairo_set_line_width(cr, 4.0);
+       cairo_set_line_width(cr, 10.0);
        cairo_move_to(cr, 9.0*w1, 5.0*h1);
        cairo_curve_to(cr, 8.0*w1, 5.0*h1, 7.5*w1, 5.0*h1, 7.0*w1, 4.5*h1);
        cairo_stroke(cr);
