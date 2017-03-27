@@ -25,6 +25,7 @@ static GArray *play_index;
 static GMutex mutex;
 static gint sounds_left=0;
 static gint num_sounds=0;
+static gchar *pool_string=NULL;
 //For the alarm.
 static gint alarm_hour=1;
 static gint alarm_minute=1;
@@ -435,6 +436,8 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
 
    //button1 is global.
    button1=gtk_button_new_with_label("Play Sound Pool");
+   if(g_atomic_int_get(&sounds_left)==0) gtk_widget_set_sensitive(button1, TRUE);
+   else gtk_widget_set_sensitive(button1, FALSE);
    gtk_widget_set_hexpand(button1, TRUE);
    g_signal_connect(button1, "clicked", G_CALLBACK(play_sound), sounds);
 
@@ -447,6 +450,7 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    gtk_widget_set_hexpand(label2, TRUE);
 
    GtkWidget *label3=gtk_label_new("");
+   if(pool_string!=NULL) gtk_label_set_markup(GTK_LABEL(label3), pool_string);
    gtk_widget_set_hexpand(label3, TRUE);
    gtk_widget_set_vexpand(label3, TRUE);
 
@@ -581,6 +585,8 @@ static void add_sound_to_pool(GtkWidget *combo, gpointer data)
         gchar *label_string=g_strdup_printf("%s%s\n", gtk_label_get_text(GTK_LABEL(data)), file_name);
         gchar *label_string2=g_strdup_printf("<span foreground='yellow'>%s</span>", label_string);
         gtk_label_set_markup(GTK_LABEL(data), label_string2);
+        if(pool_string!=NULL) g_free(pool_string);
+        pool_string=g_strdup(label_string2);
         g_free(label_string);
         g_free(label_string2);
         g_free(file_name);
@@ -612,6 +618,7 @@ static void clear_pool(GtkWidget *button, gpointer data)
     gtk_label_set_text(GTK_LABEL(data), "");
     gint length=play_index->len;
     g_array_remove_range(play_index, 0, length);
+    if(pool_string!=NULL) g_free(pool_string);
   }
 static gint load_sounds_array()
   {
