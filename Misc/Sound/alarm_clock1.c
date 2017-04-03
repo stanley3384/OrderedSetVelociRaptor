@@ -54,6 +54,7 @@ static gboolean time_redraw(gpointer sounds);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_clock(cairo_t *cr, gdouble width, gdouble height);
 static void draw_rooster(cairo_t *cr, gdouble width, gdouble height);
+static void draw_koala(cairo_t *cr, gdouble width, gdouble height);
 static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpointer sounds);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void set_alarm_dialog(GtkWidget *widget, gpointer *data);
@@ -411,6 +412,8 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
        cairo_scale(cr, 0.25, 0.25);
        cairo_translate(cr, 31.0*w1, 31.0*h1);
        draw_rooster(cr, width, height);
+       cairo_translate(cr, -31.0*w1, 0.0*h1);
+       draw_koala(cr, width, height);
      }
  }
 static void draw_rooster(cairo_t *cr, gdouble width, gdouble height)
@@ -497,6 +500,90 @@ static void draw_rooster(cairo_t *cr, gdouble width, gdouble height)
     cairo_arc(cr, 7.25*w1, 1.85*h1, 0.07*h1, 0.0, 2.0*G_PI);
     cairo_fill(cr);  
   }
+static void draw_koala(cairo_t *cr, gdouble width, gdouble height)
+  {
+    //Layout for the drawing is a 10x10 rectangle.
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+  
+    //Draw tree branch.
+    cairo_set_source_rgb(cr, 0.7, 0.2, 0.1);
+    cairo_move_to(cr, 2.5*w1, 9.0*h1);
+    cairo_curve_to(cr, 4.0*w1, 8.0*h1, 6.0*w1, 7.0*h1, 9.0*w1, 6.1*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 9.0*w1, 8.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.0*w1, 8.0*h1, 7.0*w1, 8.5*h1, 6.0*w1, 9.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 2.5*w1, 9.0*h1);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+    
+    //Draw the koala body.
+    cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+    cairo_move_to(cr, 8.5*w1, 6.25*h1);
+    cairo_curve_to(cr, 7.0*w1, 5.5*h1, 7.0*w1, 5.0*h1, 7.0*w1, 5.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.5*w1, 4.25*h1, 7.5*w1, 4.25*h1, 8.5*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 9.0*w1, 4.0*h1, 9.0*w1, 3.0*h1, 8.0*w1, 2.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.0*w1, 1.0*h1, 7.5*w1, 1.0*h1, 7.0*w1, 2.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.5*w1, 1.0*h1, 4.0*w1, 2.0*h1, 6.0*w1, 3.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.0*w1, 3.0*h1, 2.0*w1, 4.5*h1, 1.5*w1, 7.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 9.0*h1, 2.0*w1, 9.0*h1, 3.0*w1, 8.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.25*w1, 8.5*h1, 3.25*w1, 8.75*h1, 3.25*w1, 9.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.5*w1, 8.75*h1, 3.5*w1, 8.75*h1, 3.45*w1, 8.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.65*w1, 8.75*h1, 3.65*w1, 8.75*h1, 3.65*w1, 9.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.85*w1, 8.75*h1, 3.85*w1, 8.75*h1, 3.85*w1, 8.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.05*w1, 8.75*h1, 4.05*w1, 8.75*h1, 4.0*w1, 9.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.20*w1, 8.25*h1, 3.45*w1, 8.25*h1, 6.0*w1, 7.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.5*w1, 7.0*h1, 6.5*w1, 7.5*h1, 6.5*w1, 8.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.75*w1, 7.75*h1, 6.75*w1, 7.25*h1, 6.75*w1, 7.25*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.85*w1, 7.25*h1, 6.85*w1, 7.75*h1, 6.85*w1, 8.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.95*w1, 7.75*h1, 6.95*w1, 7.25*h1, 6.95*w1, 7.25*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.05*w1, 7.25*h1, 7.05*w1, 7.75*h1, 7.05*w1, 8.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.15*w1, 7.75*h1, 7.5*w1, 7.25*h1, 6.75*w1, 6.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.0*w1, 5.5*h1, 8.25*w1, 6.5*h1, 8.25*w1, 7.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.35*w1, 6.85*h1, 8.15*w1, 6.5*h1, 8.15*w1, 6.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.5*w1, 6.75*h1, 8.35*w1, 6.75*h1, 8.45*w1, 7.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.55*w1, 6.75*h1, 8.55*w1, 6.75*h1, 8.35*w1, 6.3*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.0*w1, 6.0*h1, 9.0*w1, 6.25*h1, 8.5*w1, 6.25*h1);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    //Draw the eye.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_arc(cr, 7.75*w1, 2.75*h1, 0.1*h1, 0.0, 2.0*G_PI);
+    cairo_fill(cr);
+
+    //Draw koala frown.
+    cairo_move_to(cr, 8.5*w1, 4.0*h1);
+    cairo_curve_to(cr, 8.45*w1, 3.85*h1, 8.15*w1, 3.75*h1, 8.0*w1, 3.75*h1);
+    cairo_stroke(cr);
+      
+  }
+
 static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpointer sounds)
 {
   gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
@@ -510,6 +597,12 @@ static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpoint
           stop_sounds(NULL, sounds);
           gtk_widget_queue_draw(widget);
         }
+    }
+
+  if((event->button.x)<2.0*width/10.0&&(event->button.y)>8.0*height/10.0) 
+    {
+      g_print("Koala Clicked\n");
+      //Needs a snooze machanism.
     }
   
   return FALSE;
