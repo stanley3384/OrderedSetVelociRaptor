@@ -2,7 +2,8 @@
 /*
     Put the circular_gradient_clock1.c and gstreamer_test2.c together to make an alarm clock.
 The alarm sounds are .ogg files in the program folder. The sounds are loaded at startup. You can
-get the barnyard making noise with this one.
+get the barnyard making noise with this one. When the sounds play, a green rooster will appear
+in the clock that you can click to stop the sounds.
 
     For some .ogg sounds to test out
     http://www.bigsoundbank.com 
@@ -45,12 +46,15 @@ struct s_pipeline
 }; 
 
 static GstTaskPool *pool;
+static GtkWidget *da;
 static GtkWidget *button1; 
 
 //For clock display
-static gboolean time_redraw(gpointer *data);
+static gboolean time_redraw(gpointer sounds);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_clock(cairo_t *cr, gdouble width, gdouble height);
+static void draw_rooster(cairo_t *cr, gdouble width, gdouble height);
+static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpointer sounds);
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void set_alarm_dialog(GtkWidget *widget, gpointer *data);
 //For alarm setup dialog and sounds.
@@ -123,9 +127,11 @@ int main(int argc, char **argv)
    pool=gst_task_pool_new();
    gst_task_pool_prepare(pool, NULL);
 
-   GtkWidget *da=gtk_drawing_area_new();
+   da=gtk_drawing_area_new();
    gtk_widget_set_hexpand(da, TRUE);
    gtk_widget_set_vexpand(da, TRUE);
+   gtk_widget_set_events(da, GDK_BUTTON_PRESS_MASK);
+   g_signal_connect(da, "button_press_event", G_CALLBACK(click_rooster_drawing), sounds); 
    g_signal_connect(da, "draw", G_CALLBACK(da_drawing), NULL);
 
    GtkWidget *menu1=gtk_menu_new();
@@ -153,8 +159,7 @@ int main(int argc, char **argv)
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
-   gpointer da_sounds[]={da, sounds};
-   g_timeout_add_seconds(5, (GSourceFunc)time_redraw, da_sounds);
+   g_timeout_add_seconds(5, (GSourceFunc)time_redraw, sounds);
 
    gtk_widget_show_all(window);
 
@@ -172,7 +177,7 @@ int main(int argc, char **argv)
 
    return 0;  
  }
-static gboolean time_redraw(gpointer *data)
+static gboolean time_redraw(gpointer sounds)
  {
    GTimeZone *time_zone=g_time_zone_new_local();
    GDateTime *date_time=g_date_time_new_now(time_zone);
@@ -182,14 +187,14 @@ static gboolean time_redraw(gpointer *data)
    g_print("Time %i %i Alarm %i %i %i Set %i\n", hour, minute, alarm_hour, alarm_minute, (gint)alarm_am, (gint)alarm_set);
    if(alarm_set&&alarm_hour==hour&&alarm_minute==minute&&!block_alarm)
      {
-       play_sound(NULL, data[1]);
+       play_sound(NULL, sounds);
        block_alarm=TRUE;
      };
    if(minute!=alarm_minute) block_alarm=FALSE;
    g_time_zone_unref(time_zone);
    g_date_time_unref(date_time);
 
-   gtk_widget_queue_draw(GTK_WIDGET(data[0]));
+   gtk_widget_queue_draw(da);
    return TRUE;
  }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
@@ -330,6 +335,7 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
    cairo_pattern_destroy(pattern4);
 
    //Set the clock text.
+   cairo_save(cr);
    gint i=0;
    gchar *hours[]={"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "CGC"};
    gdouble hour_start=-G_PI/2.0;
@@ -398,7 +404,116 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
    temp_sin=temp_sin*hour_radius;
    cairo_line_to(cr, temp_cos, temp_sin);
    cairo_stroke(cr);
+   cairo_restore(cr);
+
+   if(g_atomic_int_get(&sounds_left)>0)
+     {
+       cairo_scale(cr, 0.25, 0.25);
+       cairo_translate(cr, 31.0*w1, 31.0*h1);
+       draw_rooster(cr, width, height);
+     }
  }
+static void draw_rooster(cairo_t *cr, gdouble width, gdouble height)
+  {
+    //Layout for the drawing is a 10x10 rectangle.
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    //Draw the rooster body.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_move_to(cr, 8.0*w1, 3.0*h1);
+    cairo_curve_to(cr, 9.0*w1, 4.0*h1, 9.0*w1, 7.5*h1, 5.0*w1, 7.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.0*w1, 7.0*h1, 3.0*w1, 6.0*h1, 3.0*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.0*w1, 4.0*h1, 2.0*w1, 4.0*h1, 2.0*w1, 4.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 3.5*h1, 2.5*w1, 3.25*h1, 2.75*w1, 3.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 3.0*h1, 1.5*w1, 3.25*h1, 1.5*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 1.5*w1, 2.5*h1, 2.0*w1, 2.5*h1, 2.5*w1, 3.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.0*w1, 2.0*h1, 1.5*w1, 2.0*h1, 1.0*w1, 3.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 1.5*w1, 1.0*h1, 2.5*w1, 1.0*h1, 4.0*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 5.0*w1, 5.0*h1, 6.0*w1, 4.0*h1, 6.5*w1, 2.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 5.5*w1, 2.5*h1, 5.5*w1, 2.25*h1, 6.5*w1, 2.25*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 5.75*w1, 2.0*h1, 5.75*w1, 1.75*h1, 6.75*w1, 2.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.25*w1, 1.5*h1, 6.25*w1, 1.25*h1, 7.0*w1, 1.75*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.0*w1, 1.0*h1, 7.25*w1, 1.0*h1, 7.5*w1, 1.8*h1);
+    cairo_stroke_preserve(cr);    
+    cairo_curve_to(cr, 7.7*w1, 1.6*h1, 8.0*w1, 1.4*h1, 8.5*w1, 1.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.0*w1, 1.6*h1, 7.7*w1, 1.8*h1, 7.75*w1, 2.0*h1);
+    cairo_stroke_preserve(cr);
+
+    cairo_curve_to(cr, 7.7*w1, 2.0*h1, 8.0*w1, 1.8*h1, 8.5*w1, 2.15*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.25*w1, 2.15*h1, 8.15*w1, 2.05*h1, 7.85*w1, 2.15*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 8.4*w1, 2.5*h1, 8.5*w1, 2.7*h1, 8.0*w1, 3.0*h1);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    //First leg and foot.
+    cairo_move_to(cr, 5.0*w1, 7.0*h1);
+    cairo_line_to(cr, 5.5*w1, 8.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 5.0*w1, 8.5*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 5.5*w1, 8.5*h1);
+    cairo_line_to(cr, 6.0*w1, 8.3*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 5.5*w1, 8.5*h1);
+    cairo_line_to(cr, 6.2*w1, 8.6*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 5.5*w1, 8.5*h1);
+    cairo_line_to(cr, 6.0*w1, 8.9*h1);
+    cairo_stroke(cr);
+    //Second leg and foot.
+    cairo_move_to(cr, 5.5*w1, 7.0*h1);
+    cairo_line_to(cr, 6.75*w1, 8.25*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 6.25*w1, 8.25*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 6.75*w1, 8.25*h1);
+    cairo_line_to(cr, 7.25*w1, 8.05*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 6.75*w1, 8.25*h1);
+    cairo_line_to(cr, 7.45*w1, 8.35*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 6.75*w1, 8.25*h1);
+    cairo_line_to(cr, 7.25*w1, 8.65*h1);
+    cairo_stroke(cr);
+    
+    //Draw the eye.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_arc(cr, 7.25*w1, 1.85*h1, 0.07*h1, 0.0, 2.0*G_PI);
+    cairo_fill(cr);  
+  }
+static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpointer sounds)
+{
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
+  gdouble height=(gdouble)gtk_widget_get_allocated_width(widget);
+  
+  if((event->button.x)>8.0*width/10.0&&(event->button.y)>8.0*height/10.0) 
+    {
+      g_print("Rooster Clicked\n");
+      if(g_atomic_int_get(&sounds_left)>0)
+        {
+          stop_sounds(NULL, sounds);
+          gtk_widget_queue_draw(widget);
+        }
+    }
+  
+  return FALSE;
+}
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
@@ -596,9 +711,9 @@ static void add_sound_to_pool(GtkWidget *combo, gpointer data)
 static void stop_sounds(GtkWidget *button, gpointer *sounds)
   {
     gint i=0;
+    g_mutex_lock(&mutex);
     for(i=0;i<num_sounds;i++)
       {
-        g_mutex_lock(&mutex);
         if(((struct s_pipeline *)(sounds[i]))->pipeline!=NULL)
           {
             g_print("Stop Pipeline %i\n", i);
@@ -609,9 +724,9 @@ static void stop_sounds(GtkWidget *button, gpointer *sounds)
             sounds_left--;
             gst_task_pool_join(pool, ((struct s_pipeline *)(sounds[i]))->pool_id);
           }
-        g_mutex_unlock(&mutex);
-        gtk_widget_set_sensitive(button1, TRUE);
+        if(button1!=NULL) gtk_widget_set_sensitive(button1, TRUE);
       }
+    g_mutex_unlock(&mutex);
   }
 static void clear_pool(GtkWidget *button, gpointer data)
   {
@@ -687,6 +802,8 @@ static void play_sound(GtkWidget *button, gpointer *sounds)
     gint length=play_index->len;
     sounds_left=length;
     if(sounds_left!=0&&dialog_active) gtk_widget_set_sensitive(button, FALSE);
+
+    if(sounds_left>0) gtk_widget_queue_draw(da);
 
     for(i=0;i<length;i++)
       {

@@ -112,9 +112,10 @@ static void draw_rooster(GtkWidget *da, cairo_t *cr)
     cairo_stroke_preserve(cr);
     cairo_curve_to(cr, 8.0*w1, 1.6*h1, 7.7*w1, 1.8*h1, 7.75*w1, 2.0*h1);
     cairo_stroke_preserve(cr);
-    cairo_curve_to(cr, 7.7*w1, 2.0*h1, 8.0*w1, 1.8*h1, 8.5*w1, 1.75*h1);
+
+    cairo_curve_to(cr, 7.7*w1, 2.0*h1, 8.0*w1, 1.8*h1, 8.5*w1, 2.15*h1);
     cairo_stroke_preserve(cr);
-    cairo_curve_to(cr, 8.25*w1, 2.0*h1, 8.15*w1, 2.0*h1, 7.85*w1, 2.15*h1);
+    cairo_curve_to(cr, 8.25*w1, 2.15*h1, 8.15*w1, 2.05*h1, 7.85*w1, 2.15*h1);
     cairo_stroke_preserve(cr);
     cairo_curve_to(cr, 8.4*w1, 2.5*h1, 8.5*w1, 2.7*h1, 8.0*w1, 3.0*h1);
     cairo_close_path(cr);
