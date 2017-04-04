@@ -2,8 +2,9 @@
 /*
     Put the circular_gradient_clock1.c and gstreamer_test2.c together to make an alarm clock.
 The alarm sounds are .ogg files in the program folder. The sounds are loaded at startup. You can
-get the barnyard making noise with this one. When the sounds play, a green rooster will appear
-in the clock that you can click to stop the sounds.
+get the barnyard making noise with this one. When the sounds play and the alarm is set,
+a green rooster will appear in the clock that you can click to stop the sounds. If snooze is
+set a purple koala will appear. The snooze functionality isn't hooked up yet. 
 
     For some .ogg sounds to test out
     http://www.bigsoundbank.com 
@@ -34,6 +35,8 @@ static gboolean alarm_am=FALSE;
 static gboolean block_alarm=FALSE;
 static gboolean alarm_set=FALSE;
 static gboolean dialog_active=FALSE;
+static gint snooze_minutes=0;
+static gboolean snooze_set=FALSE;
 
 struct s_pipeline
 {
@@ -62,8 +65,10 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *data);
 static void close_dialog(GtkDialog *dialog, gint response_id, gpointer data);
 static gboolean draw_background_dialog(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void set_alarm_active(GtkWidget *widget, gpointer data);
+static void set_snooze_active(GtkWidget *widget, gpointer data);
 static void set_alarm_spin1(GtkSpinButton *spin_button, gpointer data);
 static void set_alarm_spin2(GtkSpinButton *spin_button, gpointer data);
+static void set_snooze_spin1(GtkSpinButton *spin_button, gpointer data);
 static void set_alarm_check(GtkWidget *widget, gpointer data);
 static void add_sound_to_pool(GtkWidget *combo, gpointer data);
 static void stop_sounds(GtkWidget *button, gpointer *sounds);
@@ -411,9 +416,9 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
      {
        cairo_scale(cr, 0.25, 0.25);
        cairo_translate(cr, 31.0*w1, 31.0*h1);
-       draw_rooster(cr, width, height);
+       if(alarm_set) draw_rooster(cr, width, height);
        cairo_translate(cr, -31.0*w1, 0.0*h1);
-       draw_koala(cr, width, height);
+       if(snooze_set) draw_koala(cr, width, height);
      }
  }
 static void draw_rooster(cairo_t *cr, gdouble width, gdouble height)
@@ -599,7 +604,7 @@ static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpoint
         }
     }
 
-  if((event->button.x)<2.0*width/10.0&&(event->button.y)>8.0*height/10.0) 
+  if(snooze_set&&(event->button.x)<2.0*width/10.0&&(event->button.y)>8.0*height/10.0) 
     {
       g_print("Koala Clicked\n");
       //Needs a snooze machanism.
@@ -616,7 +621,7 @@ static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
 static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
  {    
    GtkWidget *dialog=gtk_dialog_new_with_buttons("Clock Alarm", GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, "OK", GTK_RESPONSE_NONE, NULL);
-   gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 600);
+   gtk_window_set_default_size(GTK_WINDOW(dialog), 350, 400);
    GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
    g_signal_connect(dialog, "response", G_CALLBACK(close_dialog), NULL);
 
@@ -631,10 +636,10 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    else g_print("Can't set window transparency.\n");
    g_signal_connect(dialog, "draw", G_CALLBACK(draw_background_dialog), NULL);
 
-   G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
-   GtkWidget *action=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-   G_GNUC_END_IGNORE_DEPRECATIONS
-   g_object_set(G_OBJECT(action), "halign", GTK_ALIGN_CENTER, NULL);
+   //G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
+   //GtkWidget *action=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
+   //G_GNUC_END_IGNORE_DEPRECATIONS
+   //g_object_set(G_OBJECT(action), "halign", GTK_ALIGN_CENTER, NULL);
 
    GtkWidget *combo1=gtk_combo_box_text_new();
    gtk_widget_set_hexpand(combo1, TRUE);
@@ -700,41 +705,74 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    GtkWidget *spin2=gtk_spin_button_new(adj2, 1.0, 0);
 
    GtkWidget *check1=gtk_check_button_new_with_label("");
+   gtk_widget_set_hexpand(check1, TRUE);
+   gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
    GtkWidget *check1_label=gtk_bin_get_child(GTK_BIN(check1));
    gtk_label_set_markup(GTK_LABEL(check1_label), "<span foreground='yellow' size='x-large'>AM</span>");
 
    GtkWidget *check2=gtk_check_button_new_with_label("Set Alarm");
-   GtkWidget *check2_label=gtk_bin_get_child(GTK_BIN(check2));
-   gtk_label_set_markup(GTK_LABEL(check2_label), "<span foreground='yellow' size='x-large'> Set Alarm</span>");
    gtk_widget_set_hexpand(check2, TRUE);
    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
+   GtkWidget *check2_label=gtk_bin_get_child(GTK_BIN(check2));
+   gtk_label_set_markup(GTK_LABEL(check2_label), "<span foreground='blue' size='x-large'> Set Alarm</span>");
    g_signal_connect(check2, "clicked", G_CALLBACK(set_alarm_active), NULL);
 
    //Update the alarm when the spin buttons or am/pm is clicked.
    g_signal_connect(spin1, "value-changed", G_CALLBACK(set_alarm_spin1), NULL);
    g_signal_connect(spin2, "value-changed", G_CALLBACK(set_alarm_spin2), NULL);
    g_signal_connect(check1, "clicked", G_CALLBACK(set_alarm_check), NULL);
- 
-   GtkWidget *grid=gtk_grid_new();
-   gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
-   gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
-   gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
-   gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), label2, 0, 2, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), scroll, 0, 3, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), button2, 0, 5, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), button3, 0, 6, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), label4, 0, 7, 5, 1);
-   gtk_grid_attach(GTK_GRID(grid), label5, 0, 8, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), spin1, 1, 8, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label6, 2, 8, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), spin2, 3, 8, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), check1, 4, 8, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), check2, 0, 9, 5, 1);
 
-   gtk_container_add(GTK_CONTAINER(content_area), grid);
+   GtkWidget *label7=gtk_label_new("Snooze Time");
+   gtk_label_set_markup(GTK_LABEL(label7), "<span foreground='yellow' size='x-large'>Snooze Time</span>");
+
+   GtkWidget *label8=gtk_label_new("Minutes");
+   gtk_label_set_markup(GTK_LABEL(label8), "<span foreground='yellow' size='x-large'>Minutes</span>");
+
+   GtkAdjustment *adj3=gtk_adjustment_new(1.0, 1.0, 15.0, 1.0, 0.0, 0.0);
+   GtkWidget *spin3=gtk_spin_button_new(adj3, 1.0, 0);
+
+   GtkWidget *check3=gtk_check_button_new_with_label("Set Snooze");
+   gtk_widget_set_hexpand(check3, TRUE);
+   gtk_widget_set_halign(check3, GTK_ALIGN_CENTER);
+   GtkWidget *check3_label=gtk_bin_get_child(GTK_BIN(check3));
+   gtk_label_set_markup(GTK_LABEL(check3_label), "<span foreground='blue' size='x-large'> Set Snooze</span>");
+   g_signal_connect(check3, "clicked", G_CALLBACK(set_snooze_active), NULL);
+   g_signal_connect(spin3, "value-changed", G_CALLBACK(set_snooze_spin1), NULL);
+ 
+   GtkWidget *grid1=gtk_grid_new();
+   gtk_container_set_border_width(GTK_CONTAINER(grid1), 20);
+   gtk_grid_set_row_spacing(GTK_GRID(grid1), 10);
+   gtk_grid_set_column_spacing(GTK_GRID(grid1), 10);
+   gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), label2, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), scroll, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button1, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button2, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid1), button3, 0, 6, 1, 1);
+
+   GtkWidget *grid2=gtk_grid_new();
+   gtk_grid_set_row_spacing(GTK_GRID(grid2), 10);
+   gtk_container_set_border_width(GTK_CONTAINER(grid2), 20);
+   gtk_grid_attach(GTK_GRID(grid2), label4, 0, 0, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid2), label5, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid2), spin1, 1, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid2), label6, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid2), spin2, 1, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid2), check1, 0, 3, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid2), check2, 0, 4, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid2), label7, 0, 5, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid2), label8, 0, 6, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid2), spin3, 1, 6, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid2), check3, 0, 7, 2, 1);
+
+   GtkWidget *notebook=gtk_notebook_new();
+   GtkWidget *nb_label1=gtk_label_new("Sounds");
+   GtkWidget *nb_label2=gtk_label_new("Alarm");
+   gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid1, nb_label1);
+   gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid2, nb_label2);
+
+   gtk_container_add(GTK_CONTAINER(content_area), notebook);
 
    dialog_active=TRUE;
    gtk_widget_show_all(dialog);
@@ -755,6 +793,11 @@ static void set_alarm_active(GtkWidget *widget, gpointer data)
    if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) alarm_set=TRUE;
    else alarm_set=FALSE;     
  }
+static void set_snooze_active(GtkWidget *widget, gpointer data)
+ {
+   if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) snooze_set=TRUE;
+   else snooze_set=FALSE;     
+ }
 static void set_alarm_spin1(GtkSpinButton *spin_button, gpointer data)
  {
    gint spin1=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
@@ -766,6 +809,11 @@ static void set_alarm_spin2(GtkSpinButton *spin_button, gpointer data)
    gint spin2=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
    alarm_minute=spin2;
    block_alarm=FALSE;
+ }
+static void set_snooze_spin1(GtkSpinButton *spin_button, gpointer data)
+ {
+   gint spin3=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
+   snooze_minutes=spin3;
  }
 static void set_alarm_check(GtkWidget *widget, gpointer data)
  {
@@ -981,6 +1029,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
     }
    
     if(sounds_left==0&&dialog_active) gtk_widget_set_sensitive(button1, TRUE);
+    if(sounds_left==0) gtk_widget_queue_draw(da);
     return TRUE;
   }
 static void on_pad_added(GstElement *element, GstPad *pad, struct s_pipeline *p1)
