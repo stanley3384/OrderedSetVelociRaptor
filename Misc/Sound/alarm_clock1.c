@@ -35,7 +35,7 @@ static gboolean alarm_am=FALSE;
 static gboolean block_alarm=FALSE;
 static gboolean alarm_set=FALSE;
 static gboolean dialog_active=FALSE;
-static gint snooze_minutes=0;
+static gint snooze_minutes=1;
 static gboolean snooze_set=FALSE;
 
 struct s_pipeline
@@ -68,8 +68,8 @@ static void set_alarm_active(GtkWidget *widget, gpointer data);
 static void set_snooze_active(GtkWidget *widget, gpointer data);
 static void set_alarm_spin1(GtkSpinButton *spin_button, gpointer data);
 static void set_alarm_spin2(GtkSpinButton *spin_button, gpointer data);
-static void set_snooze_spin1(GtkSpinButton *spin_button, gpointer data);
-static void set_alarm_check(GtkWidget *widget, gpointer data);
+static void set_snooze_spin3(GtkSpinButton *spin_button, gpointer data);
+static void set_am_check(GtkWidget *widget, gpointer data);
 static void add_sound_to_pool(GtkWidget *combo, gpointer data);
 static void stop_sounds(GtkWidget *button, gpointer *sounds);
 static void clear_pool(GtkWidget *button, gpointer data);
@@ -342,6 +342,7 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
 
    //Set the clock text.
    cairo_save(cr);
+   cairo_translate(cr, width/2.0, height/2.0);
    gint i=0;
    gchar *hours[]={"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "CGC"};
    gdouble hour_start=-G_PI/2.0;
@@ -352,9 +353,8 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
    gdouble temp_sin=0;
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 20);
+   cairo_set_font_size(cr, 24*width/400.0);
    cairo_move_to(cr, 0.0, 0.0);
-   cairo_translate(cr, width/2.0, height/2.0);
    //Color 12 with blue for contrast with yellow. Other numbers are white.
    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
    for(i=0;i<12;i++)
@@ -389,7 +389,7 @@ static void draw_clock(cairo_t *cr, gdouble width, gdouble height)
 
    //Hour hand.
    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-   cairo_set_line_width(cr, 6.0);
+   cairo_set_line_width(cr, 6.0*width/400.0);
    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
    cairo_move_to(cr, 0.0, 0.0);
    temp_cos=cos(hour_start-(next_hour*hour));
@@ -636,11 +636,6 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
    else g_print("Can't set window transparency.\n");
    g_signal_connect(dialog, "draw", G_CALLBACK(draw_background_dialog), NULL);
 
-   //G_GNUC_BEGIN_IGNORE_DEPRECATIONS 
-   //GtkWidget *action=gtk_dialog_get_action_area(GTK_DIALOG(dialog));
-   //G_GNUC_END_IGNORE_DEPRECATIONS
-   //g_object_set(G_OBJECT(action), "halign", GTK_ALIGN_CENTER, NULL);
-
    GtkWidget *combo1=gtk_combo_box_text_new();
    gtk_widget_set_hexpand(combo1, TRUE);
 
@@ -697,30 +692,32 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
 
    GtkAdjustment *adj1=gtk_adjustment_new(1.0, 1.0, 12.0, 1.0, 0.0, 0.0);
    GtkWidget *spin1=gtk_spin_button_new(adj1, 1.0, 0);
+   gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin1), alarm_hour);
+   g_signal_connect(spin1, "value-changed", G_CALLBACK(set_alarm_spin1), NULL);
 
    GtkWidget *label6=gtk_label_new("Minute");
    gtk_label_set_markup(GTK_LABEL(label6), "<span foreground='yellow' size='x-large'>Minute</span>");
 
    GtkAdjustment *adj2=gtk_adjustment_new(1.0, 1.0, 60.0, 1.0, 0.0, 0.0);
    GtkWidget *spin2=gtk_spin_button_new(adj2, 1.0, 0);
+   gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin2), alarm_minute);
+   g_signal_connect(spin2, "value-changed", G_CALLBACK(set_alarm_spin2), NULL);
 
    GtkWidget *check1=gtk_check_button_new_with_label("");
+   if(alarm_am) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), TRUE);
    gtk_widget_set_hexpand(check1, TRUE);
    gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
    GtkWidget *check1_label=gtk_bin_get_child(GTK_BIN(check1));
    gtk_label_set_markup(GTK_LABEL(check1_label), "<span foreground='yellow' size='x-large'>AM</span>");
+   g_signal_connect(check1, "clicked", G_CALLBACK(set_am_check), NULL);
 
    GtkWidget *check2=gtk_check_button_new_with_label("Set Alarm");
+   if(alarm_set) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), TRUE);
    gtk_widget_set_hexpand(check2, TRUE);
    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
    GtkWidget *check2_label=gtk_bin_get_child(GTK_BIN(check2));
    gtk_label_set_markup(GTK_LABEL(check2_label), "<span foreground='blue' size='x-large'> Set Alarm</span>");
    g_signal_connect(check2, "clicked", G_CALLBACK(set_alarm_active), NULL);
-
-   //Update the alarm when the spin buttons or am/pm is clicked.
-   g_signal_connect(spin1, "value-changed", G_CALLBACK(set_alarm_spin1), NULL);
-   g_signal_connect(spin2, "value-changed", G_CALLBACK(set_alarm_spin2), NULL);
-   g_signal_connect(check1, "clicked", G_CALLBACK(set_alarm_check), NULL);
 
    GtkWidget *label7=gtk_label_new("Snooze Time");
    gtk_label_set_markup(GTK_LABEL(label7), "<span foreground='yellow' size='x-large'>Snooze Time</span>");
@@ -730,14 +727,16 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
 
    GtkAdjustment *adj3=gtk_adjustment_new(1.0, 1.0, 15.0, 1.0, 0.0, 0.0);
    GtkWidget *spin3=gtk_spin_button_new(adj3, 1.0, 0);
+   gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin3), snooze_minutes);
+   g_signal_connect(spin3, "value-changed", G_CALLBACK(set_snooze_spin3), NULL);
 
    GtkWidget *check3=gtk_check_button_new_with_label("Set Snooze");
+   if(snooze_set) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check3), TRUE);
    gtk_widget_set_hexpand(check3, TRUE);
    gtk_widget_set_halign(check3, GTK_ALIGN_CENTER);
    GtkWidget *check3_label=gtk_bin_get_child(GTK_BIN(check3));
    gtk_label_set_markup(GTK_LABEL(check3_label), "<span foreground='blue' size='x-large'> Set Snooze</span>");
    g_signal_connect(check3, "clicked", G_CALLBACK(set_snooze_active), NULL);
-   g_signal_connect(spin3, "value-changed", G_CALLBACK(set_snooze_spin1), NULL);
  
    GtkWidget *grid1=gtk_grid_new();
    gtk_container_set_border_width(GTK_CONTAINER(grid1), 20);
@@ -810,12 +809,13 @@ static void set_alarm_spin2(GtkSpinButton *spin_button, gpointer data)
    alarm_minute=spin2;
    block_alarm=FALSE;
  }
-static void set_snooze_spin1(GtkSpinButton *spin_button, gpointer data)
+static void set_snooze_spin3(GtkSpinButton *spin_button, gpointer data)
  {
    gint spin3=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
    snooze_minutes=spin3;
+   block_alarm=FALSE;
  }
-static void set_alarm_check(GtkWidget *widget, gpointer data)
+static void set_am_check(GtkWidget *widget, gpointer data)
  {
    if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) alarm_am=TRUE;
    else alarm_am=FALSE;
