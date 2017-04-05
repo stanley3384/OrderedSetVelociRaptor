@@ -4,7 +4,7 @@
 The alarm sounds are .ogg files in the program folder. The sounds are loaded at startup. You can
 get the barnyard making noise with this one. When the sounds play and the alarm is set,
 a green rooster will appear in the clock that you can click to stop the sounds. If snooze is
-set a purple koala will appear. The snooze functionality isn't hooked up yet. 
+set a purple koala will appear. 
 
     For some .ogg sounds to test out
     http://www.bigsoundbank.com 
@@ -34,9 +34,9 @@ static gint alarm_minute=1;
 static gboolean alarm_am=FALSE;
 static gboolean block_alarm=FALSE;
 static gboolean alarm_set=FALSE;
-static gboolean dialog_active=FALSE;
 static gint snooze_minutes=1;
 static gboolean snooze_set=FALSE;
+static gint snooze_count=0;
 
 struct s_pipeline
 {
@@ -191,12 +191,35 @@ static gboolean time_redraw(gpointer sounds)
    gint minute=g_date_time_get_minute(date_time);
    if(hour>12&&!alarm_am) hour=hour-12;
    g_print("Time %i %i Alarm %i %i %i Set %i\n", hour, minute, alarm_hour, alarm_minute, (gint)alarm_am, (gint)alarm_set);
+
+   //For the set alarm.
    if(alarm_set&&alarm_hour==hour&&alarm_minute==minute&&!block_alarm)
      {
        play_sound(NULL, sounds);
+       //Block the alarm for the rest of the minute it is set for.
        block_alarm=TRUE;
+       if(snooze_set) snooze_count++;
      };
+
+   //Turn off snooze at snooze_count>4. At snooze limit of 15min that is 1 hour of snoozing.
+   if(snooze_count>4) snooze_count=0;
+
+   //Account for snooze time.
+   if(snooze_count>0)
+     {
+       gint min=alarm_minute+(snooze_minutes*snooze_count);      
+       if(min>60) min=min-60;
+       g_print("Snooze min %i minute %i count %i\n", min, minute, snooze_count);
+       if(alarm_set&&snooze_set&&!block_alarm&&min==minute)
+         {
+           play_sound(NULL, sounds);
+           block_alarm=TRUE;
+           snooze_count++;
+         }
+     }
+ 
    if(minute!=alarm_minute) block_alarm=FALSE;
+   
    g_time_zone_unref(time_zone);
    g_date_time_unref(date_time);
 
@@ -599,6 +622,7 @@ static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpoint
       g_print("Rooster Clicked\n");
       if(g_atomic_int_get(&sounds_left)>0)
         {
+          snooze_count=0;
           stop_sounds(NULL, sounds);
           gtk_widget_queue_draw(widget);
         }
@@ -607,7 +631,11 @@ static gboolean click_rooster_drawing(GtkWidget *widget, GdkEvent *event, gpoint
   if(snooze_set&&(event->button.x)<2.0*width/10.0&&(event->button.y)>8.0*height/10.0) 
     {
       g_print("Koala Clicked\n");
-      //Needs a snooze machanism.
+      if(g_atomic_int_get(&sounds_left)>0)
+        {
+          stop_sounds(NULL, sounds);
+          gtk_widget_queue_draw(widget);
+        }
     }
   
   return FALSE;
@@ -773,13 +801,12 @@ static void set_alarm_dialog(GtkWidget *widget, gpointer *sounds)
 
    gtk_container_add(GTK_CONTAINER(content_area), notebook);
 
-   dialog_active=TRUE;
    gtk_widget_show_all(dialog);
  }
 static void close_dialog(GtkDialog *dialog, gint response_id, gpointer data)
  {
-   dialog_active=FALSE;
    gtk_widget_destroy(GTK_WIDGET(dialog));
+   button1=NULL;
  }
 static gboolean draw_background_dialog(GtkWidget *widget, cairo_t *cr, gpointer data)
  {
@@ -942,7 +969,7 @@ static void play_sound(GtkWidget *button, gpointer *sounds)
     //Start sound threads in pool.
     gint length=play_index->len;
     sounds_left=length;
-    if(sounds_left!=0&&dialog_active) gtk_widget_set_sensitive(button, FALSE);
+    if(sounds_left!=0&&button1!=NULL) gtk_widget_set_sensitive(button1, FALSE);
 
     if(sounds_left>0) gtk_widget_queue_draw(da);
 
@@ -1028,7 +1055,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, struct s_pipeline *p1)
         break;
     }
    
-    if(sounds_left==0&&dialog_active) gtk_widget_set_sensitive(button1, TRUE);
+    if(sounds_left==0&&button1!=NULL) gtk_widget_set_sensitive(button1, TRUE);
     if(sounds_left==0) gtk_widget_queue_draw(da);
     return TRUE;
   }
