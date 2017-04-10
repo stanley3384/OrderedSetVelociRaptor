@@ -20,6 +20,7 @@ static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
+static void check_colors(GtkWidget *widget, GtkWidget **colors);
 
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
@@ -27,8 +28,14 @@ static gint motion_id=0;
 static gdouble rect[]={0.0, 0.0, 0.0, 0.0, 0.0};
 //Starting control points for drawing a mesh.
 static gdouble mesh[]={1.0, 3.0, 3.0, 4.0, 3.0, 3.0, 4.0, 1.0};
-static gdouble mesh_combo=0.0;
-static gdouble tile_combo=0.0;
+//Combo row.
+static gint mesh_combo=0;
+static gint tile_combo=0;
+//Bezier curve control points.
+static gdouble c1[]={1.0, 0.0, 0.0, 1.0};
+static gdouble c2[]={1.0, 0.0, 1.0, 1.0};
+static gdouble c3[]={0.0, 1.0, 0.0, 1.0};
+static gdouble c4[]={0.0, 0.0, 1.0, 1.0};
 
 int main(int argc, char *argv[])
   {
@@ -36,7 +43,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Draw Mesh");
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 550);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_container_set_border_width(GTK_CONTAINER(window), 8);
@@ -69,10 +76,45 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
 
+    GtkWidget *label1=gtk_label_new(" C1 ");
+    GtkWidget *label2=gtk_label_new(" C2 ");
+    GtkWidget *label3=gtk_label_new(" C3 ");
+    GtkWidget *label4=gtk_label_new(" C4 ");
+
+    GtkWidget *entry1=gtk_entry_new();
+    gtk_widget_set_hexpand(entry1, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 0, 0, 255)");
+
+    GtkWidget *entry2=gtk_entry_new();
+    gtk_widget_set_hexpand(entry2, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry2), "rgba(255, 0, 255, 255)");
+
+    GtkWidget *entry3=gtk_entry_new();
+    gtk_widget_set_hexpand(entry3, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry3), "rgba(0, 255, 0, 255)");
+
+    GtkWidget *entry4=gtk_entry_new();
+    gtk_widget_set_hexpand(entry4, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry4), "rgba(0, 0, 255, 255)");
+
+    GtkWidget *button1=gtk_button_new_with_label("Update Colors");
+    gtk_widget_set_hexpand(button1, FALSE);
+    GtkWidget *colors[]={entry1, entry2, entry3, entry4, da};
+    g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
+    
     GtkWidget *grid=gtk_grid_new();
-    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 4, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo2, 2, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), label1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label2, 2, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry2, 3, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label3, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry3, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), label4, 2, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry4, 3, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 4, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -179,10 +221,11 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
         cairo_mesh_pattern_curve_to(pattern1, mesh[0]*w1+3.0*w1, mesh[1]*h1, mesh[2]*w1+3.0*w1, mesh[3]*h1, 5.0*w1, 5.0*h1);
         cairo_mesh_pattern_curve_to(pattern1, mesh[6]*w1, mesh[7]*h1+3.0*h1, mesh[4]*w1, mesh[5]*h1+3.0*h1, 2.0*w1, 5.0*h1);
        cairo_mesh_pattern_curve_to(pattern1, mesh[2]*w1, mesh[3]*h1, mesh[0]*w1, mesh[1]*h1, 2.0*w1, 2.0*h1);   
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, 1.0, 0.0, 0.0);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 1.0, 0.0, 1.0);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 0.0, 1.0, 0.0);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, 0.0, 0.0, 1.0);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, c1[0], c1[1], c1[2], c1[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, c2[0], c2[1], c2[2], c2[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, c3[0], c3[1], c3[2], c3[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, c4[0], c4[1], c4[2], c4[3]);
+
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
@@ -287,12 +330,55 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
   }
 static void combo1_changed(GtkComboBox *combo1, gpointer data)
   {
-    mesh_combo=(gdouble)gtk_combo_box_get_active(combo1);
+    mesh_combo=gtk_combo_box_get_active(combo1);
   }
 static void combo2_changed(GtkComboBox *combo2, gpointer data)
   {
-    tile_combo=(gdouble)gtk_combo_box_get_active(combo2);
+    tile_combo=gtk_combo_box_get_active(combo2);
     gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void check_colors(GtkWidget *widget, GtkWidget **colors)
+  {
+    gint i=0;
+    GdkRGBA rgba;
+
+    for(i=0;i<4;i++)
+      {
+        if(gdk_rgba_parse(&rgba, gtk_entry_get_text(GTK_ENTRY(colors[i]))))
+          {
+            switch(i)
+              {
+                case 0:
+                  c1[0]=rgba.red;
+                  c1[1]=rgba.green;
+                  c1[2]=rgba.blue;
+                  c1[3]=rgba.alpha;
+                  break;
+                case 1:
+                  c2[0]=rgba.red;
+                  c2[1]=rgba.green;
+                  c2[2]=rgba.blue;
+                  c2[3]=rgba.alpha;
+                  break;
+                case 2:
+                  c3[0]=rgba.red;
+                  c3[1]=rgba.green;
+                  c3[2]=rgba.blue;
+                  c3[3]=rgba.alpha;
+                  break;
+                case 3:
+                  c4[0]=rgba.red;
+                  c4[1]=rgba.green;
+                  c4[2]=rgba.blue;
+                  c4[3]=rgba.alpha;
+             }
+          }
+        else
+          {
+            g_print("Color string format error in c%i\n", i);
+          } 
+      }
+    gtk_widget_queue_draw(colors[4]);
   }
 
 
