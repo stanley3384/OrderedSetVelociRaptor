@@ -1,7 +1,7 @@
 
 /*
     Draw a mesh by moving the control points. Then draw the mesh into tiles. Similar to tensor_product1.c
-but you can draw the mesh dynamically. Draw a t-shirt with the mesh pattern.
+but you can draw the mesh dynamically. Draw a t-shirt and a fish with the mesh pattern.
 
     gcc -Wall draw_mesh1.c -o draw_mesh1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -15,6 +15,7 @@ but you can draw the mesh dynamically. Draw a t-shirt with the mesh pattern.
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void draw_mesh(cairo_t *cr, gdouble width, gdouble height);
 static void draw_t_shirt(cairo_t *cr, gdouble width, gdouble height);
+static void draw_fish(cairo_t *cr, gdouble width, gdouble height);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -27,6 +28,7 @@ static gint motion_id=0;
 //Coordinates for the drawing rectangle. Fifth number is color of rectangle.
 static gdouble rect[]={0.0, 0.0, 0.0, 0.0, 0.0};
 //Starting control points for drawing a mesh.
+
 static gdouble mesh[]={1.0, 3.0, 3.0, 4.0, 3.0, 3.0, 4.0, 1.0};
 //Combo row.
 static gint mesh_combo=0;
@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Tile Mesh 2x2");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Tile Mesh 4x4");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Draw t-shirt");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Draw Fish");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
 
@@ -175,7 +178,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
              cairo_translate(cr, -24.0*w1, 6.0*h1);
            }
         }
-      else
+      else if(tile_combo==3)
         {
           cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
           //The mesh might not cover the t-shirt. Shrink the shirt a little here.
@@ -197,6 +200,29 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
               cairo_translate(cr, -24.0*w1, 6.0*h1);
             }
          }
+      else
+        {
+          cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+          //The mesh might not cover the t-shirt. Shrink the shirt a little here.
+          cairo_save(cr);
+          cairo_scale(cr, 0.9, 0.9);
+          cairo_translate(cr, 0.5*w1, 0.5*h1);
+          draw_fish(cr, width, height);
+          cairo_restore(cr);
+          cairo_clip(cr);
+          cairo_scale(cr, 0.25, 0.25);
+          cairo_translate(cr, 6.0*w1, 6.0*h1);
+          for(i=0;i<4;i++)
+            {
+              for(j=0;j<4;j++)
+                {
+                  draw_mesh(cr, width, height);
+                  cairo_translate(cr, 6.0*w1, 0.0);
+                }
+              cairo_translate(cr, -24.0*w1, 6.0*h1);
+            }
+        }
+
     return TRUE;
   }
 static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
@@ -357,6 +383,54 @@ static void draw_t_shirt(cairo_t *cr, gdouble width, gdouble height)
     cairo_stroke_preserve(cr);
     cairo_curve_to(cr, 3.0*w1, 2.0*h1, 4.0*w1, 2.0*h1, 4.0*w1, 2.0*h1);
     cairo_close_path(cr);        
+  }
+static void draw_fish(cairo_t *cr, gdouble width, gdouble height)
+  {
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    //The fish.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 2);  
+    cairo_move_to(cr, 8.0*w1, 5.0*h1);
+    cairo_curve_to(cr, 7.5*w1, 5.65*h1, 7.5*w1, 5.65*h1, 6.5*w1, 6.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.5*w1, 6.25*h1, 6.5*w1, 6.25*h1, 6.25*w1, 6.75*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.25*w1, 6.25*h1, 6.25*w1, 6.25*h1, 6.1*w1, 6.1*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 5.0*w1, 6.25*h1, 5.0*w1, 6.25*h1, 4.0*w1, 6.1*h1);
+    cairo_stroke_preserve(cr);    
+    cairo_curve_to(cr, 3.65*w1, 6.75*h1, 3.65*w1, 6.75*h1, 3.25*w1, 7.0*h1);
+    cairo_stroke_preserve(cr);    
+    cairo_curve_to(cr, 3.5*w1, 6.65*h1, 3.5*w1, 6.65*h1, 3.6*w1, 6.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.25*w1, 5.75*h1, 3.25*w1, 5.75*h1, 2.5*w1, 5.25*h1);
+    cairo_stroke_preserve(cr);    
+    cairo_curve_to(cr, 2.25*w1, 6.0*h1, 2.25*w1, 6.0*h1, 2.0*w1, 6.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.2*w1, 5.0*h1, 2.2*w1, 5.0*h1, 2.0*w1, 3.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.25*w1, 4.0*h1, 2.25*w1, 4.0*h1, 2.5*w1, 4.75*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.25*w1, 4.25*h1, 3.25*w1, 4.25*h1, 3.6*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.5*w1, 3.25*h1, 3.5*w1, 3.25*h1, 3.25*w1, 3.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.65*w1, 3.25*h1, 3.65*w1, 3.25*h1, 4.0*w1, 3.9*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.5*w1, 3.75*h1, 4.5*w1, 3.75*h1, 5.0*w1, 3.75*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 5.25*w1, 3.5*h1, 5.75*w1, 3.5*h1, 6.0*w1, 2.75*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.25*w1, 3.0*h1, 6.25*w1, 3.0*h1, 6.5*w1, 3.65*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.5*w1, 4.0*h1, 7.5*w1, 4.0*h1, 8.0*w1, 4.7*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 7.0*w1, 4.9*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 8.0*w1, 5.0*h1);
+    cairo_close_path(cr);
   }
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
