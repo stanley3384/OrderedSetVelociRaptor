@@ -1,7 +1,8 @@
 
 /*
-    Draw a mesh by moving the control points. Then draw the mesh into tiles. Similar to tensor_product1.c
-but you can draw the mesh dynamically. Draw a t-shirt and a fish with the mesh pattern.
+    Draw a mesh that fits together like tiles by moving the control points. Then draw
+the mesh into grids of tiles. Similar to tensor_product1.c but you can draw the
+mesh dynamically. Draw a t-shirt and a fish with the mesh pattern tiled.
 
     gcc -Wall draw_mesh1.c -o draw_mesh1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -30,7 +31,10 @@ static gint motion_id=0;
 static gdouble rect[]={0.0, 0.0, 0.0, 0.0, 0.0};
 //Starting control points for drawing a mesh.
 
+//Control points for the "box" lines.
 static gdouble mesh[]={1.0, 3.0, 3.0, 4.0, 3.0, 3.0, 4.0, 1.0};
+//Inside control points P0, P1, P2, P3.
+static gdouble mesh_p[]={6.0, 3.0, 7.0, 3.0, 6.0, 4.0, 7.0, 4.0};
 //Combo row.
 static gint mesh_combo=0;
 static gint tile_combo=0;
@@ -75,10 +79,14 @@ int main(int argc, char *argv[])
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
     gtk_widget_set_vexpand(combo1, FALSE);
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Drag Point1");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Drag Point2");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Drag Point3");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Drag Point4");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Drag Point 1");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Drag Point 2");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Drag Point 3");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Drag Point 4");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Drag Point A");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Drag Point B");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Drag Point C");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 7, "8", "Drag Point D");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), NULL);
 
@@ -97,7 +105,7 @@ int main(int argc, char *argv[])
     gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'> C0 </span>");
     GtkWidget *label2=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'> C1 </span>");
-    GtkWidget *label3=gtk_label_new(" C2 ");
+    GtkWidget *label3=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label3), "<span font_weight='heavy'> C2 </span>");
     GtkWidget *label4=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label4), "<span font_weight='heavy'> C3 </span>");
@@ -264,29 +272,52 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
     gint j=0;
     gdouble w1=width/10.0;
     gdouble h1=height/10.0;
+    gdouble p1=(rect[2]/width)*10.0;
+    gdouble p2=(rect[3]/height)*10.0;
 
     //Save the mesh points.
     //g_print("x %f y %f x %f y %f\n", (rect[2]/width)*10.0, (rect[3]/height)*10.0, rect[2], rect[3]);
     if(mesh_combo==0)
       {
-        mesh[0]=(rect[2]/width)*10.0;
-        mesh[1]=(rect[3]/height)*10.0;
+        mesh[0]=p1;
+        mesh[1]=p2;
       }
     else if(mesh_combo==1)
       {
-        mesh[2]=(rect[2]/width)*10.0;
-        mesh[3]=(rect[3]/height)*10.0;
+        mesh[2]=p1;
+        mesh[3]=p2;
       }
     else if(mesh_combo==2)
       {
-        mesh[4]=(rect[2]/width)*10.0;
-        mesh[5]=(rect[3]/height)*10.0;
+        mesh[4]=p1;
+        mesh[5]=p2;
+      }
+    else if(mesh_combo==3)
+      {
+        mesh[6]=p1;
+        mesh[7]=p2;
+      }
+    //The inside control points.
+    else if(mesh_combo==4)
+      {
+        mesh_p[0]=p1;
+        mesh_p[1]=p2;
+      }
+    else if(mesh_combo==5)
+      {
+        mesh_p[2]=p1;
+        mesh_p[3]=p2;
+      }
+    else if(mesh_combo==6)
+      {
+        mesh_p[4]=p1;
+        mesh_p[5]=p2;
       }
     else
       {
-        mesh[6]=(rect[2]/width)*10.0;
-        mesh[7]=(rect[3]/height)*10.0;
-      }
+        mesh_p[6]=p1;
+        mesh_p[7]=p2;
+      } 
     cairo_set_line_width(cr, 4);
  
     //Four gradient patches.
@@ -307,7 +338,10 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
        cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, c1[0], c1[1], c1[2], c1[3]);
        cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, c2[0], c2[1], c2[2], c2[3]);
        cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, c3[0], c3[1], c3[2], c3[3]);
-
+       cairo_mesh_pattern_set_control_point(pattern1, 0, mesh_p[0]*w1-1.0*w1, mesh_p[1]*h1-1.0*h1);
+       cairo_mesh_pattern_set_control_point(pattern1, 1, mesh_p[2]*w1-2.0*w1, mesh_p[3]*h1-1.0*h1);
+       cairo_mesh_pattern_set_control_point(pattern1, 2, mesh_p[4]*w1-1.0*w1, mesh_p[5]*h1-2.0*h1);
+       cairo_mesh_pattern_set_control_point(pattern1, 3, mesh_p[6]*w1-2.0*w1, mesh_p[7]*h1-2.0*h1);
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
@@ -386,6 +420,18 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
         cairo_stroke(cr);
         cairo_move_to(cr, mesh[6]*width/10.0, mesh[7]*height/10.0);
         cairo_show_text(cr, "4");
+        cairo_stroke(cr);
+        cairo_move_to(cr, mesh_p[0]*width/10.0, mesh_p[1]*height/10.0);
+        cairo_show_text(cr, "A");
+        cairo_stroke(cr);
+        cairo_move_to(cr, mesh_p[2]*width/10.0, mesh_p[3]*height/10.0);
+        cairo_show_text(cr, "B");
+        cairo_stroke(cr);
+        cairo_move_to(cr, mesh_p[4]*width/10.0, mesh_p[5]*height/10.0);
+        cairo_show_text(cr, "C");
+        cairo_stroke(cr);
+        cairo_move_to(cr, mesh_p[6]*width/10.0, mesh_p[7]*height/10.0);
+        cairo_show_text(cr, "D");
         cairo_stroke(cr);
       }
   }
