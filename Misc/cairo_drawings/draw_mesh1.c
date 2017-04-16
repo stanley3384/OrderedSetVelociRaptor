@@ -338,10 +338,19 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
        cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, c1[0], c1[1], c1[2], c1[3]);
        cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, c2[0], c2[1], c2[2], c2[3]);
        cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, c3[0], c3[1], c3[2], c3[3]);
-       cairo_mesh_pattern_set_control_point(pattern1, 0, mesh_p[0]*w1-1.0*w1, mesh_p[1]*h1-1.0*h1);
-       cairo_mesh_pattern_set_control_point(pattern1, 1, mesh_p[2]*w1-2.0*w1, mesh_p[3]*h1-1.0*h1);
-       cairo_mesh_pattern_set_control_point(pattern1, 2, mesh_p[4]*w1-1.0*w1, mesh_p[5]*h1-2.0*h1);
-       cairo_mesh_pattern_set_control_point(pattern1, 3, mesh_p[6]*w1-2.0*w1, mesh_p[7]*h1-2.0*h1);
+       /*
+           From https://www.adobe.com/products/postscript/pdfs/PLRM.pdf P.286
+           Default positions of inside control points.
+           P11=S(1/3, 2/3)
+           P12=S(2/3, 2/3)
+           P21=S(1/3, 1/3)
+           P22=S(2/3, 1/3)
+           The labels A, B, C and D are a little different but in the same 1/3 and 2/3 positions.
+       */
+       cairo_mesh_pattern_set_control_point(pattern1, 0, mesh_p[0]*w1-3.0*w1, mesh_p[1]*h1);
+       cairo_mesh_pattern_set_control_point(pattern1, 1, mesh_p[2]*w1-3.0*w1, mesh_p[3]*h1);
+       cairo_mesh_pattern_set_control_point(pattern1, 2, mesh_p[4]*w1-3.0*w1, mesh_p[5]*h1);
+       cairo_mesh_pattern_set_control_point(pattern1, 3, mesh_p[6]*w1-3.0*w1, mesh_p[7]*h1);
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
