@@ -1,8 +1,8 @@
 
 /*
-    Draw a mesh that fits together like tiles by moving the control points. Then draw
-the mesh into grids of tiles. Similar to tensor_product1.c but you can draw the
-mesh dynamically. Draw a t-shirt and a fish with the mesh pattern tiled.
+    Draw a mesh that fits together like tiles. Be able to dynamically change the curves, colors and
+control points. Similar to tensor_product1.c but you can draw the mesh dynamically. 
+Draw a t-shirt and a fish with the tiled mesh pattern.
 
     gcc -Wall draw_mesh1.c -o draw_mesh1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -14,6 +14,11 @@ mesh dynamically. Draw a t-shirt and a fish with the mesh pattern tiled.
 #include<gtk/gtk.h>
 
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void draw_grids(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void draw_grid1(cairo_t *cr, gdouble width, gdouble height);
+static void draw_grid2(cairo_t *cr, gdouble width, gdouble height);
+static void draw_grid3(cairo_t *cr, gdouble width, gdouble height);
+static void draw_shapes(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void draw_mesh(cairo_t *cr, gdouble width, gdouble height);
 static void draw_t_shirt(cairo_t *cr, gdouble width, gdouble height);
 static void draw_fish(cairo_t *cr, gdouble width, gdouble height);
@@ -22,6 +27,7 @@ static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
+static void combo3_changed(GtkComboBox *combo3, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
 static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data);
 
@@ -38,6 +44,8 @@ static gdouble mesh_p[]={6.0, 3.0, 7.0, 3.0, 6.0, 4.0, 7.0, 4.0};
 //Combo row.
 static gint mesh_combo=0;
 static gint tile_combo=0;
+static gint drawing_combo=0;
+static gboolean grid_combo=TRUE;
 //Drawing background color.
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
 //Bezier curve control point colors.
@@ -93,13 +101,19 @@ int main(int argc, char *argv[])
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo2, TRUE);
     gtk_widget_set_vexpand(combo2, FALSE);
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Mesh");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Tile Mesh 2x2");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Tile Mesh 4x4");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Draw t-shirt");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Draw Fish");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Tiled Mesh");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Tiled Mesh 2x2");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Tiled Mesh 4x4");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Tiled Mesh 8x8");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
+
+    GtkWidget *combo3=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo3, TRUE);
+    gtk_widget_set_vexpand(combo3, FALSE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "Draw t-shirt");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Draw Fish");
+    g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), da);
 
     GtkWidget *label1=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'> C0 </span>");
@@ -139,6 +153,7 @@ int main(int argc, char *argv[])
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid), label5, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry5, 1, 1, 1, 1);
@@ -152,6 +167,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry4, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 7, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo3, 0, 8, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -177,12 +193,14 @@ int main(int argc, char *argv[])
   }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
-    gint i=0;
-    gint j=0;
+    if(grid_combo) draw_grids(widget, cr, data);
+    else draw_shapes(widget, cr, data);
+    return TRUE;
+  }
+static void draw_grids(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
-    gdouble w1=width/10.0;
-    gdouble h1=height/10.0;
 
     cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
     cairo_paint(cr);
@@ -193,78 +211,139 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
       }
     else if(tile_combo==1)
       {
-        cairo_scale(cr, 0.5, 0.5);
-        cairo_translate(cr, 2.0*w1, 2.0*h1);
-        for(i=0;i<2;i++)
+        draw_grid1(cr, width, height); 
+      }
+    else if(tile_combo==2)
+      {
+        draw_grid2(cr, width, height);
+      }
+    else
+      {
+        draw_grid3(cr, width, height);
+      }
+  }
+static void draw_grid1(cairo_t *cr, gdouble width, gdouble height)
+  {
+    gint i=0;
+    gint j=0;
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    cairo_scale(cr, 0.5, 0.5);
+    cairo_translate(cr, 2.0*w1, 2.0*h1);
+    for(i=0;i<2;i++)
+      {
+        for(j=0;j<2;j++)
           {
-            for(j=0;j<2;j++)
-              {
-                draw_mesh(cr, width, height);
-                cairo_translate(cr, 6.0*w1, 0.0);
-              }
-            cairo_translate(cr, -12.0*w1, 6.0*h1);
+            draw_mesh(cr, width, height);
+            cairo_translate(cr, 6.0*w1, 0.0);
+          }
+        cairo_translate(cr, -12.0*w1, 6.0*h1);
+      }
+  }
+static void draw_grid2(cairo_t *cr, gdouble width, gdouble height)
+  {
+    gint i=0;
+    gint j=0;
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    cairo_scale(cr, 0.25, 0.25);
+    cairo_translate(cr, 6.0*w1, 6.0*h1);
+    for(i=0;i<4;i++)
+      {
+        for(j=0;j<4;j++)
+          {
+            draw_mesh(cr, width, height);
+            cairo_translate(cr, 6.0*w1, 0.0);
+          }
+        cairo_translate(cr, -24.0*w1, 6.0*h1);
+      }
+  }
+static void draw_grid3(cairo_t *cr, gdouble width, gdouble height)
+  {
+    gint i=0;
+    gint j=0;
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    cairo_scale(cr, 0.125, 0.125);
+    cairo_translate(cr, 14.0*w1, 14.0*h1);
+    for(i=0;i<8;i++)
+      {
+        for(j=0;j<8;j++)
+          {
+            draw_mesh(cr, width, height);
+            cairo_translate(cr, 6.0*w1, 0.0);
+          }
+        cairo_translate(cr, -48.0*w1, 6.0*h1);
+      }
+  }
+static void draw_shapes(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
+    cairo_paint(cr);
+
+    if(drawing_combo==0)
+      {
+        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+        //The mesh might not cover the t-shirt. Shrink the shirt a little here.
+        cairo_save(cr);
+        cairo_scale(cr, 0.9, 0.9);
+        cairo_translate(cr, 0.5*w1, 0.5*h1);
+        draw_t_shirt(cr, width, height);
+        cairo_restore(cr);
+        cairo_clip(cr);
+
+        if(tile_combo==0)
+          {
+            draw_mesh(cr, width, height);
+          }
+        else if(tile_combo==1)
+          {
+            draw_grid1(cr, width, height); 
+          }
+        else if(tile_combo==2)
+          {
+            draw_grid2(cr, width, height);
+          }
+        else
+          {
+            draw_grid3(cr, width, height);
           }
        }
-     else if(tile_combo==2)
-       {
-         cairo_scale(cr, 0.25, 0.25);
-         cairo_translate(cr, 6.0*w1, 6.0*h1);
-         for(i=0;i<4;i++)
-           {
-             for(j=0;j<4;j++)
-               {
-                 draw_mesh(cr, width, height);
-                 cairo_translate(cr, 6.0*w1, 0.0);
-               }
-             cairo_translate(cr, -24.0*w1, 6.0*h1);
-           }
-        }
-      else if(tile_combo==3)
-        {
-          cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-          //The mesh might not cover the t-shirt. Shrink the shirt a little here.
-          cairo_save(cr);
-          cairo_scale(cr, 0.9, 0.9);
-          cairo_translate(cr, 0.5*w1, 0.5*h1);
-          draw_t_shirt(cr, width, height);
-          cairo_restore(cr);
-          cairo_clip(cr);
-          cairo_scale(cr, 0.25, 0.25);
-          cairo_translate(cr, 6.0*w1, 6.0*h1);
-          for(i=0;i<4;i++)
-            {
-              for(j=0;j<4;j++)
-                {
-                  draw_mesh(cr, width, height);
-                  cairo_translate(cr, 6.0*w1, 0.0);
-                }
-              cairo_translate(cr, -24.0*w1, 6.0*h1);
-            }
-         }
-      else
-        {
-          cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-          //The mesh might not cover the t-shirt. Shrink the shirt a little here.
-          cairo_save(cr);
-          cairo_scale(cr, 0.9, 0.9);
-          cairo_translate(cr, 0.5*w1, 0.5*h1);
-          draw_fish(cr, width, height);
-          cairo_restore(cr);
-          cairo_clip(cr);
-          cairo_scale(cr, 0.25, 0.25);
-          cairo_translate(cr, 6.0*w1, 6.0*h1);
-          for(i=0;i<4;i++)
-            {
-              for(j=0;j<4;j++)
-                {
-                  draw_mesh(cr, width, height);
-                  cairo_translate(cr, 6.0*w1, 0.0);
-                }
-              cairo_translate(cr, -24.0*w1, 6.0*h1);
-            }
-        }
+    else
+      {
+        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+        cairo_save(cr);
+        cairo_scale(cr, 0.9, 0.9);
+        cairo_translate(cr, 0.5*w1, 0.5*h1);
+        draw_fish(cr, width, height);
+        cairo_restore(cr);
+        cairo_clip(cr);
 
-    return TRUE;
+        if(tile_combo==0)
+          {
+            draw_mesh(cr, width, height);
+          }
+        else if(tile_combo==1)
+          {
+            draw_grid1(cr, width, height); 
+          }
+        else if(tile_combo==2)
+          {
+            draw_grid2(cr, width, height);
+          }
+        else
+          {
+            draw_grid3(cr, width, height);
+          }
+      }
   }
 static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
   {
@@ -360,7 +439,7 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
 
     cairo_set_line_width(cr, 6);    
     //Layout axis for drawing mesh.
-    if(tile_combo==0)
+    if(tile_combo==0&&grid_combo)
       {
         cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         cairo_rectangle(cr, 2.0*w1, 2.0*h1, 6.0*w1, 6.0*h1);
@@ -374,7 +453,7 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
       }
 
     //Add layout lines for initial drawing.
-     if(tile_combo==0)
+     if(tile_combo==0&&grid_combo)
       {
         //6 vertical Bezier curves over layout axis.
         cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
@@ -413,7 +492,7 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
         cairo_restore(cr);
       }
 
-    if(tile_combo==0)
+    if(tile_combo==0&&grid_combo)
       {
         cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, 12);    
@@ -548,6 +627,13 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data)
 static void combo2_changed(GtkComboBox *combo2, gpointer data)
   {
     tile_combo=gtk_combo_box_get_active(combo2);
+    grid_combo=TRUE;
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void combo3_changed(GtkComboBox *combo3, gpointer data)
+  {
+    drawing_combo=gtk_combo_box_get_active(combo3);
+    grid_combo=FALSE;
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void check_colors(GtkWidget *widget, GtkWidget **colors)
