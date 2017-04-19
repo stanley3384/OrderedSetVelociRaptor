@@ -4,8 +4,6 @@
 
 sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
---There are a couple of Python(version 2.7.3) test scripts in the Python folder. Some of them are from answers given on the GTK+ Forum. They might be helpful in figuring out a few things with Python and GTK+. If you are interested in automating LibreOffice apps with Python and GTK+ there is a short Writer and Calc example in there also.
-
 --If you are interested in deriving a new widget from a GTK+ drawing area there are a few examples in the above folders. There is a rocker "toggle" headlight switch, stepped progress bar, gauges and a circuit breaker switch widget. Some of my ideas for putting together a car UI.
 
 --In the encryption folder there are a couple of examples encrypting values into a SQLite database using a simple character shift, Twofish and Rijndael encryption. There is some test code using both the Mcrypt and the OpenSSL libraries.  
