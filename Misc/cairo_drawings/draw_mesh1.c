@@ -289,61 +289,32 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
     cairo_paint(cr);
 
-    if(drawing_combo==0)
-      {
-        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-        //The mesh might not cover the t-shirt. Shrink the shirt a little here.
-        cairo_save(cr);
-        cairo_scale(cr, 0.9, 0.9);
-        cairo_translate(cr, 0.5*w1, 0.5*h1);
-        draw_t_shirt(cr, width, height);
-        cairo_restore(cr);
-        cairo_clip(cr);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+    cairo_save(cr);
+    if(drawing_combo==0) draw_t_shirt(cr, width, height);
+    else draw_fish(cr, width, height);
+    cairo_restore(cr);
+    cairo_clip(cr);
 
-        if(tile_combo==0)
-          {
-            draw_mesh(cr, width, height);
-          }
-        else if(tile_combo==1)
-          {
-            draw_grid1(cr, width, height); 
-          }
-        else if(tile_combo==2)
-          {
-            draw_grid2(cr, width, height);
-          }
-        else
-          {
-            draw_grid3(cr, width, height);
-          }
-       }
+    //Scale the mesh a little try to cover the drawing.
+    cairo_scale(cr, 1.2, 1.2);
+    cairo_translate(cr, -0.8*w1, -0.8*h1);
+    if(tile_combo==0)
+      {
+        draw_mesh(cr, width, height);
+      }
+    else if(tile_combo==1)
+      {
+        draw_grid1(cr, width, height); 
+      }
+    else if(tile_combo==2)
+      {
+        draw_grid2(cr, width, height);
+      }
     else
       {
-        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-        cairo_save(cr);
-        cairo_scale(cr, 0.9, 0.9);
-        cairo_translate(cr, 0.5*w1, 0.5*h1);
-        draw_fish(cr, width, height);
-        cairo_restore(cr);
-        cairo_clip(cr);
-
-        if(tile_combo==0)
-          {
-            draw_mesh(cr, width, height);
-          }
-        else if(tile_combo==1)
-          {
-            draw_grid1(cr, width, height); 
-          }
-        else if(tile_combo==2)
-          {
-            draw_grid2(cr, width, height);
-          }
-        else
-          {
-            draw_grid3(cr, width, height);
-          }
-      }
+        draw_grid3(cr, width, height);
+      }      
   }
 static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
   {
