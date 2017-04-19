@@ -13,8 +13,8 @@
 
 gboolean draw_button1(GtkWidget *widget, cairo_t *cr, gpointer user_data)
   {
-    guint width = gtk_widget_get_allocated_width(GTK_WIDGET(widget));
-    guint height = gtk_widget_get_allocated_height(GTK_WIDGET(widget));
+    guint width=gtk_widget_get_allocated_width(GTK_WIDGET(widget));
+    guint height=gtk_widget_get_allocated_height(GTK_WIDGET(widget));
 
     if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
       {
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     gtk_window_set_title(GTK_WINDOW(window), "Toggle Button");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    GtkWidget *button1=gtk_toggle_button_new_with_label("button1");
+    GtkWidget *button1=gtk_toggle_button_new();
     gtk_widget_set_app_paintable(button1, TRUE);
     gtk_widget_set_hexpand(button1, TRUE);
     gtk_widget_set_vexpand(button1, TRUE);
