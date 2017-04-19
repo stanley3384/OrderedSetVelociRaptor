@@ -2,7 +2,7 @@
 /*
     Draw a mesh that fits together like tiles. Be able to dynamically change the curves, colors and
 control points. Similar to tensor_product1.c but you can draw the mesh dynamically. 
-Draw a t-shirt and a fish with the tiled mesh pattern.
+Draw a t-shirt, fish and butterfly with the tiled mesh pattern.
 
     gcc -Wall draw_mesh1.c -o draw_mesh1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -22,6 +22,7 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void draw_mesh(cairo_t *cr, gdouble width, gdouble height);
 static void draw_t_shirt(cairo_t *cr, gdouble width, gdouble height);
 static void draw_fish(cairo_t *cr, gdouble width, gdouble height);
+static void draw_butterfly(cairo_t *cr, gdouble width, gdouble height);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -113,6 +114,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_vexpand(combo3, FALSE);
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "Draw t-shirt");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Draw Fish");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 2, "3", "Draw Butterfly");
     g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), da);
 
     GtkWidget *label1=gtk_label_new(NULL);
@@ -292,7 +294,8 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
     cairo_save(cr);
     if(drawing_combo==0) draw_t_shirt(cr, width, height);
-    else draw_fish(cr, width, height);
+    else if(drawing_combo==1) draw_fish(cr, width, height);
+    else draw_butterfly(cr, width, height);
     cairo_restore(cr);
     cairo_clip(cr);
 
@@ -568,6 +571,48 @@ static void draw_fish(cairo_t *cr, gdouble width, gdouble height)
     cairo_line_to(cr, 7.0*w1, 4.9*h1);
     cairo_stroke_preserve(cr);
     cairo_line_to(cr, 8.0*w1, 5.0*h1);
+    cairo_close_path(cr);
+  }
+static void draw_butterfly(cairo_t *cr, gdouble width, gdouble height)
+  {
+    gdouble w1=width/10.0;
+    gdouble h1=height/10.0;
+
+    //The antenna.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_width(cr, 4);  
+    cairo_move_to(cr, 5.0*w1, 3.75*h1);
+    cairo_curve_to(cr, 5.5*w1, 2.5*h1, 5.5*w1, 2.5*h1, 6.0*w1, 2.5*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 5.0*w1, 3.75*h1);
+    cairo_curve_to(cr, 4.5*w1, 2.5*h1, 4.5*w1, 2.5*h1, 4.0*w1, 2.5*h1);
+    cairo_stroke(cr);
+
+    //The butterfly.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 2);  
+    cairo_move_to(cr, 5.25*w1, 6.0*h1);
+    cairo_curve_to(cr, 6.25*w1, 6.0*h1, 6.0*w1, 7.5*h1, 6.25*w1, 7.25*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.25*w1, 5.5*h1, 6.25*w1, 5.5*h1, 6.75*w1, 5.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.75*w1, 4.5*h1, 7.75*w1, 4.5*h1, 8.0*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 7.0*w1, 3.25*h1, 6.0*w1, 3.75*h1, 5.25*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 5.2*w1, 3.25*h1, 4.8*w1, 3.25*h1, 4.75*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+
+    cairo_curve_to(cr, 4.0*w1, 3.75*h1, 3.0*w1, 3.25*h1, 2.0*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 2.25*w1, 4.5*h1, 2.25*w1, 4.5*h1, 3.25*w1, 5.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.75*w1, 5.5*h1, 3.75*w1, 5.5*h1, 3.75*w1, 7.25*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.0*w1, 7.5*h1, 3.75*w1, 6.0*h1, 4.75*w1, 6.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 4.8*w1, 5.5*h1, 5.2*w1, 5.5*h1, 5.25*w1, 6.0*h1);
     cairo_close_path(cr);
   }
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data)
