@@ -31,11 +31,14 @@ static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void combo3_changed(GtkComboBox *combo3, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
 static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data);
+//About dialog and icon.
+static void about_dialog(GtkWidget *widget, gpointer data);
+static GdkPixbuf* draw_icon();
 
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
-//Coordinates for the drawing rectangle. Fifth number is color of rectangle.
-static gdouble rect[]={0.0, 0.0, 0.0, 0.0, 0.0};
+//Coordinates for the drawing rectangle.
+static gdouble rect[]={0.0, 0.0, 0.0, 0.0};
 //Starting control points for drawing a mesh.
 
 //Control points for the "box" lines.
@@ -73,6 +76,15 @@ int main(int argc, char *argv[])
         gtk_widget_set_visual(window, visual);
       }
     else g_print("Can't set window transparency.\n");
+
+    //Draw a 256x256 program icon. A butterfly with 2x2 mesh tiles.
+    grid_combo=FALSE;
+    rect[2]=0.1*256.0;
+    rect[3]=0.3*256.0;
+    GdkPixbuf *icon=draw_icon();
+    gtk_window_set_default_icon(icon);
+    grid_combo=TRUE;
+    
 
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE);
@@ -152,6 +164,17 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(button1, FALSE);
     GtkWidget *colors[]={entry1, entry2, entry3, entry4, entry5, window, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
+
+    GtkWidget *menu1=gtk_menu_new();
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Mesh Maker");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
@@ -170,6 +193,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 7, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), combo3, 0, 8, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 9, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -183,6 +207,7 @@ int main(int argc, char *argv[])
 
     gtk_widget_show_all(window);
 
+    //Set some initial values for the drawing area.
     gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
     rect[2]=0.1*width;
@@ -190,6 +215,8 @@ int main(int argc, char *argv[])
     gtk_widget_queue_draw(da);
 
     gtk_main();
+
+    g_object_unref(icon);
 
     return 0;
   }
@@ -721,6 +748,50 @@ static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_fill(cr);
     return FALSE;
   }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
+   
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Mesh Maker");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Tile a mesh and clip the pattern inside a drawing.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2017 C. Eric Cashon");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+//The butterfly program icon.
+static GdkPixbuf* draw_icon()
+  {
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface);
+    
+    //Paint the background.
+    cairo_set_source_rgb(cr, 0.5, 0.8, 1.0);
+    cairo_paint(cr);
+
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+    cairo_scale(cr, 1.5, 1.5);
+    //??? Didn't get the translation numbers figured out exactly here.
+    cairo_translate(cr, -42.0, -42.0);
+    cairo_save(cr);
+    draw_butterfly(cr, 256.0, 256.0);
+    cairo_restore(cr);
+    cairo_clip(cr);
+
+    draw_grid2(cr, 256.0, 256.0);
+
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    return icon;
+  }
+
 
 
 
