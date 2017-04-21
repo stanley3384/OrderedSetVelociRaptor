@@ -775,9 +775,12 @@ static GdkPixbuf* draw_icon()
     cairo_paint(cr);
 
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+    /*
+        Scale drawing 256*1.5=384. 128 extra pixels, half on each side of drawing.
+        Move the drawing back by 64 and scale.
+    */
+    cairo_translate(cr, -64.0, -64.0);
     cairo_scale(cr, 1.5, 1.5);
-    //??? Didn't get the translation numbers figured out exactly here.
-    cairo_translate(cr, -42.0, -42.0);
     cairo_save(cr);
     draw_butterfly(cr, 256.0, 256.0);
     cairo_restore(cr);
