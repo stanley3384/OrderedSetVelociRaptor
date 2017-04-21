@@ -29,6 +29,7 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void combo3_changed(GtkComboBox *combo3, gpointer data);
+static void combo4_changed(GtkComboBox *combo4, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
 static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data);
 //About dialog and icon.
@@ -50,6 +51,8 @@ static gint mesh_combo=0;
 static gint tile_combo=0;
 static gint drawing_combo=0;
 static gboolean grid_combo=TRUE;
+static gint scale_combo=3;
+static gboolean default_drawing=TRUE;
 //Drawing background color.
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
 //Bezier curve control point colors.
@@ -85,7 +88,6 @@ int main(int argc, char *argv[])
     gtk_window_set_default_icon(icon);
     grid_combo=TRUE;
     
-
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE);
     gtk_widget_set_vexpand(da, TRUE);
@@ -128,6 +130,18 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Draw Fish");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 2, "3", "Draw Butterfly");
     g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), da);
+
+    GtkWidget *combo4=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo4, TRUE);
+    gtk_widget_set_vexpand(combo4, FALSE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 0, "1", "Scale 0.5");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 1, "2", "Scale 0.75");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 2, "3", "Scale 0.875");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 3, "4", "Scale 1.0");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 4, "5", "Scale 1.125");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 5, "6", "Scale 1.25");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo4), 3);
+    g_signal_connect(combo4, "changed", G_CALLBACK(combo4_changed), da);
 
     GtkWidget *label1=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'> C0 </span>");
@@ -192,8 +206,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry4, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 7, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo3, 0, 8, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 9, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo4, 0, 8, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo3, 0, 9, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 10, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -222,6 +237,44 @@ int main(int argc, char *argv[])
   }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+
+    //Scale the drawing. Exclude "drawing mesh" from scaling.
+    if(!default_drawing)
+      {
+        if(scale_combo==0)
+          {
+            cairo_translate(cr, 0.25*width, 0.25*height);
+            cairo_scale(cr, 0.5, 0.5);
+          }
+        else if(scale_combo==1)
+          {
+            cairo_translate(cr, 0.125*width, 0.125*height);
+            cairo_scale(cr, 0.75, 0.75);
+          }
+        else if(scale_combo==2)
+          {
+            cairo_translate(cr, 0.0625*width, 0.0625*height);
+            cairo_scale(cr, 0.875, 0.875);
+          }
+        else if(scale_combo==4)
+          {
+            cairo_translate(cr, -0.0625*width, -0.0625*height);
+            cairo_scale(cr, 1.125, 1.125);
+          }
+        else if(scale_combo==5)
+          {
+            cairo_translate(cr, -0.125*width, -0.125*height);
+            cairo_scale(cr, 1.25, 1.25);
+          }
+        else
+          {
+            //Don't scale.
+          }
+          
+      }
+
     if(grid_combo) draw_grids(widget, cr, data);
     else draw_shapes(widget, cr, data);
     return TRUE;
@@ -670,13 +723,22 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data)
 static void combo2_changed(GtkComboBox *combo2, gpointer data)
   {
     tile_combo=gtk_combo_box_get_active(combo2);
+    if(tile_combo==0) default_drawing=TRUE;
+    else default_drawing=FALSE;
     grid_combo=TRUE;
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void combo3_changed(GtkComboBox *combo3, gpointer data)
   {
     drawing_combo=gtk_combo_box_get_active(combo3);
+    default_drawing=FALSE;
     grid_combo=FALSE;
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void combo4_changed(GtkComboBox *combo4, gpointer data)
+  {
+    scale_combo=gtk_combo_box_get_active(combo4);
+    if(tile_combo!=0) default_drawing=FALSE;
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void check_colors(GtkWidget *widget, GtkWidget **colors)
