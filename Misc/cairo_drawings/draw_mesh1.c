@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 3, "4", "Scale 1.0");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 4, "5", "Scale 1.125");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 5, "6", "Scale 1.25");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo4), 6, "7", "Scale 1.5");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo4), 3);
     g_signal_connect(combo4, "changed", G_CALLBACK(combo4_changed), da);
 
@@ -268,9 +269,14 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
             cairo_translate(cr, -0.125*width, -0.125*height);
             cairo_scale(cr, 1.25, 1.25);
           }
+        else if(scale_combo==6)
+          {
+            cairo_translate(cr, -0.25*width, -0.25*height);
+            cairo_scale(cr, 1.5, 1.5);
+          }
         else
           {
-            //Don't scale.
+            //Don't scale. scale_combo==3
           }
           
       }
