@@ -47,7 +47,7 @@ int main(int argc, char **argv)
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
-   g_timeout_add(200, (GSourceFunc)time_redraw, da);
+   g_timeout_add(500, (GSourceFunc)time_redraw, da);
 
    gtk_widget_show_all(window);
 
@@ -71,17 +71,32 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble w1=width/10.0;
    gdouble h1=height/10.0;
 
+   //Set background as transparent.
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
    cairo_paint(cr);
 
+   //A circle to clip the mesh in.
    cairo_arc(cr, width/2.0, height/2.0, 3.5*h1, 0.0, 2.0*G_PI);
    cairo_clip(cr);
 
-   gdouble advance=counter%12;
-   gdouble red=0.0+(advance*0.0833);
-   gdouble blue=1.0-(advance*0.0833);
+   //Adjust the color gradient slightly with the timer.
+   gdouble advance=counter%24;
+   gdouble red=0.0;
+   gdouble blue=1.0;
+   if(advance<12)
+     {
+       red=0.0+(advance*0.0833);
+       blue=1.0-(advance*0.0833);
+     }
+   else
+     {
+       red=1.0-((advance-12)*0.0833);
+       blue=0.0+((advance-12)*0.0833);
+     } 
    //g_print("%i %f %f %f\n", counter, advance, red, blue);
    counter++;
+
+   //Draw 12 gouraud shaded triangles in a circle.
    gdouble hour_start=-G_PI/2.0;
    gdouble next_hour=-G_PI/6.0;
    gdouble hour_radius=4.0*h1;
