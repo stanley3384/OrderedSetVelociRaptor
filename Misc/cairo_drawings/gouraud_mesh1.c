@@ -47,7 +47,7 @@ int main(int argc, char **argv)
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
-   g_timeout_add(500, (GSourceFunc)time_redraw, da);
+   g_timeout_add(100, (GSourceFunc)time_redraw, da);
 
    gtk_widget_show_all(window);
 
@@ -82,15 +82,18 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Adjust the color gradient slightly with the timer.
    gdouble advance=counter%24;
    gdouble red=0.0;
+   gdouble green=0.0;
    gdouble blue=1.0;
    if(advance<12)
      {
        red=0.0+(advance*0.0833);
+       green=0.0+(advance*0.0833);
        blue=1.0-(advance*0.0833);
      }
    else
      {
        red=1.0-((advance-12)*0.0833);
+       green=1.0-((advance-12)*0.0833);
        blue=0.0+((advance-12)*0.0833);
      } 
    //g_print("%i %f %f %f\n", counter, advance, red, blue);
@@ -99,6 +102,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //Draw 12 gouraud shaded triangles in a circle.
    gdouble hour_start=-G_PI/2.0;
    gdouble next_hour=-G_PI/6.0;
+   gdouble rotation=G_PI/24.0*advance;
    gdouble hour_radius=4.0*h1;
    gdouble temp_cos=0;
    gdouble temp_sin=0;
@@ -109,8 +113,8 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);  
    for(i=0;i<13;i++)
      {
-       temp_cos=cos(hour_start-(next_hour*i));
-       temp_sin=sin(hour_start-(next_hour*i));
+       temp_cos=cos(hour_start-(next_hour*i)+rotation);
+       temp_sin=sin(hour_start-(next_hour*i)+rotation);
        //The polar form of the equation for an ellipse to get the radius.
        hour_radius=((4.0*w1)*(4.0*h1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin*temp_sin) + ((4.0*h1)*(4.0*h1)*temp_cos*temp_cos));
        temp_cos=temp_cos*hour_radius;
@@ -122,10 +126,10 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
            cairo_mesh_pattern_begin_patch(pattern1);
            cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
            cairo_mesh_pattern_line_to(pattern1, temp_cos, temp_sin);
-           cairo_mesh_pattern_line_to(pattern1, 0.0, 2.5*h1);
+           cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
            cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.0, 1.0, 1.0, 1.0);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, red, 0.0, blue, 1.0);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 1.0, 1.0, 0.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, red, green, blue, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 0.0, 0.0, 1.0, 1.0);
            cairo_mesh_pattern_end_patch(pattern1);
            cairo_set_source(cr, pattern1);
            cairo_paint(cr);   
