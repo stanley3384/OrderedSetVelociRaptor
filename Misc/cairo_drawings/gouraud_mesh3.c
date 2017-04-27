@@ -47,7 +47,7 @@ int main(int argc, char **argv)
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
-   g_timeout_add(1000, (GSourceFunc)time_redraw, da);
+   g_timeout_add(400, (GSourceFunc)time_redraw, da);
 
    gtk_widget_show_all(window);
 
@@ -62,11 +62,16 @@ static gboolean time_redraw(gpointer da)
  }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
  {
-   static gint counter=0;
+   gint i=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
-   gdouble advance=counter%60;
-   counter++;
+   
+   //The seconds value.
+   GTimeZone *time_zone=g_time_zone_new_local();
+   GDateTime *date_time=g_date_time_new_now(time_zone);
+   gdouble seconds=(gdouble)g_date_time_get_second(date_time);
+   g_time_zone_unref(time_zone);
+   g_date_time_unref(date_time);
 
    //Layout for the drawing is a 10x10 rectangle.
    gdouble w1=width/10.0;
@@ -76,47 +81,94 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
    cairo_paint(cr);
 
-   //A circle to clip the mesh in.
-   cairo_arc(cr, width/2.0, height/2.0, 3.5*h1, 0.0, 2.0*G_PI);
-   cairo_clip(cr);
-
-   cairo_rectangle(cr, 1.0*w1, 1.0*h1, 9.0*w1, 9.0*h1);
-   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+   //Black inside.
+   cairo_save(cr);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+   cairo_translate(cr, width/2.0, height/2.0);
+   cairo_scale(cr, 4.0*w1, 4.0*h1);
+   cairo_arc(cr, 0.0, 0.0, 1.0, 0.0, 2.0*M_PI);
    cairo_fill(cr);
+   cairo_restore(cr);
 
-   //The sweeping line.
-   gdouble hour_start=-G_PI/2.0;
+   //The sweeping line and tick marks.
+   cairo_save(cr);
+   gdouble start=-G_PI/2.0;
    gdouble next_second=-G_PI/30.0;
-   gdouble hour_radius=4.0*h1;
-   gdouble temp_cos=0;
-   gdouble temp_sin=0;
+   gdouble line_radius1=0;
+   gdouble line_radius2=0;
+   gdouble temp_cos1=0;
+   gdouble temp_sin1=0;
+   gdouble temp_cos2=0;
+   gdouble temp_sin2=0;
    gdouble prev_cos=0;
    gdouble prev_sin=0;
-   cairo_move_to(cr, 0.0, 0.0);
    cairo_translate(cr, width/2.0, height/2.0);
-   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0); 
-   prev_cos=cos(hour_start-(next_second*(advance-5.0)));
-   prev_sin=sin(hour_start-(next_second*(advance-5.0)));
-   temp_cos=cos(hour_start-(next_second*advance));
-   temp_sin=sin(hour_start-(next_second*advance));
-   //The polar form of the equation for an ellipse to get the radius.
-   hour_radius=((4.0*w1)*(4.0*h1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin*temp_sin) + ((4.0*h1)*(4.0*h1)*temp_cos*temp_cos));
-   prev_cos=prev_cos*hour_radius;
-   prev_sin=prev_sin*hour_radius;
-   temp_cos=temp_cos*hour_radius;
-   temp_sin=temp_sin*hour_radius;
-   cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
-   cairo_mesh_pattern_begin_patch(pattern1);
-   cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
-   cairo_mesh_pattern_line_to(pattern1, temp_cos, temp_sin);
-   cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
-   cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.0, 0.0, 0.0, 1.0);
-   cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 1.0, 1.0, 1.0);
-   cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 0.0, 0.0, 0.0, 1.0);
-   cairo_mesh_pattern_end_patch(pattern1);
-   cairo_set_source(cr, pattern1);
-   cairo_paint(cr);   
-   cairo_pattern_destroy(pattern1);
+   cairo_set_line_width(cr, 2.0);
+   cairo_set_source_rgb(cr, 1.0, 1.0, 0.0); 
+   for(i=0;i<60;i++)
+     {
+       temp_cos1=cos(start-(next_second*i));
+       temp_sin1=sin(start-(next_second*i));
+       temp_cos2=temp_cos1;
+       temp_sin2=temp_sin1;
+       //The polar form of the equation for an ellipse to get the radius.
+       line_radius1=((3.6*w1)*(3.6*h1))/sqrt(((3.6*w1)*(3.6*w1)*temp_sin1*temp_sin1) + ((3.6*h1)*(3.6*h1)*temp_cos1*temp_cos1));
+       line_radius2=((4.0*w1)*(4.0*h1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin1*temp_sin1) + ((4.0*h1)*(4.0*h1)*temp_cos1*temp_cos1));
+       temp_cos1=temp_cos1*line_radius1;
+       temp_sin1=temp_sin1*line_radius1;
+       temp_cos2=temp_cos2*line_radius2;
+       temp_sin2=temp_sin2*line_radius2;
+       cairo_move_to(cr, temp_cos1, temp_sin1);
+       cairo_line_to(cr, temp_cos2, temp_sin2);
+       cairo_stroke(cr);
+       if(i==seconds)
+         {
+           //Extend outside the inside circle to fill the clip region. Cover with a outside ring.
+           line_radius1=((4.1*w1)*(4.1*h1))/sqrt(((4.1*w1)*(4.1*w1)*temp_sin1*temp_sin1) + ((4.1*h1)*(4.1*h1)*temp_cos1*temp_cos1));
+           prev_cos=prev_cos*line_radius1;
+           prev_sin=prev_sin*line_radius1;
+           temp_cos1=temp_cos1*line_radius1;
+           temp_sin1=temp_sin1*line_radius1;
+           cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+           cairo_mesh_pattern_begin_patch(pattern1);
+           cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
+           cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
+           cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 1.0, 1.0, 0.0, 0.7);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 1.0, 1.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 1.0, 1.0, 0.0, 0.7);
+           cairo_mesh_pattern_end_patch(pattern1);
+           cairo_set_source(cr, pattern1);
+           cairo_paint(cr);   
+           cairo_pattern_destroy(pattern1);
+           cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+         }
+       prev_cos=temp_cos1;
+       prev_sin=temp_sin1;
+    }
+   cairo_restore(cr);
+
+   //Black outside ring.
+   cairo_save(cr);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+   cairo_set_line_width(cr, .08);
+   cairo_translate(cr, width/2.0, height/2.0);
+   cairo_scale(cr, 4.0*w1, 4.0*h1);
+   cairo_arc(cr, 0.0, 0.0, 1.0, 0.0, 2.0*M_PI);
+   cairo_stroke(cr);
+   cairo_restore(cr);
+
+   //Draw the seconds
+   cairo_translate(cr, width/2.0, height/2.0);
+   cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_text_extents_t tick_extents;
+   cairo_set_font_size(cr, 40);
+   gchar *string=g_strdup_printf("%i", (gint)seconds);
+   cairo_text_extents(cr, string, &tick_extents);
+   cairo_move_to(cr, 0.0-tick_extents.width/2.0, 2.0*h1+tick_extents.height/2.0);
+   cairo_show_text(cr, string);
+   g_free(string);
         
    return FALSE;
  }
