@@ -1,7 +1,7 @@
 
 /*
     Test a pattern with Gouraud shading. Look at some different patterns to maybe put in
-the center of the circular_gradient_clock1.c.
+the center of the circular_gradient_clock1.c. A nice gem stone cut on this one.
 
     gcc -Wall gouraud_mesh2.c -o gouraud_mesh2 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -113,7 +113,8 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble prev_sin=0;
    cairo_move_to(cr, 0.0, 0.0);
    cairo_translate(cr, width/2.0, height/2.0);
-   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0); 
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   //Outside part of circle triangles. 
    for(i=0;i<13;i++)
      {
        temp_cos=cos(hour_start-(next_hour*i));
@@ -141,6 +142,44 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
                cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.0, 0.0, 0.0, 1.0);
                cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.75, 0.0, 0.75, 1.0);
                cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 1.0, 0.0, 1.0, 1.0);
+             }
+           cairo_mesh_pattern_end_patch(pattern1);
+           cairo_set_source(cr, pattern1);
+           cairo_paint(cr);   
+           cairo_pattern_destroy(pattern1);
+         }
+       prev_cos=temp_cos;
+       prev_sin=temp_sin;
+     }
+
+   //Inside part of circle triangles.
+   for(i=0;i<13;i++)
+     {
+       temp_cos=cos(hour_start-(next_hour*i));
+       temp_sin=sin(hour_start-(next_hour*i));
+       //The polar form of the equation for an ellipse to get the radius.
+       hour_radius=((2.0*w1)*(2.0*h1))/sqrt(((2.0*w1)*(2.0*w1)*temp_sin*temp_sin) + ((2.0*h1)*(2.0*h1)*temp_cos*temp_cos));
+       temp_cos=temp_cos*hour_radius;
+       temp_sin=temp_sin*hour_radius;
+       
+       if(i>0)
+         {
+           cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+           cairo_mesh_pattern_begin_patch(pattern1);
+           cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
+           cairo_mesh_pattern_line_to(pattern1, temp_cos, temp_sin);
+           cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
+           if(i<advance2)
+             {
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.0, 1.0, 1.0, 1.0);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 1.0, 1.0, 1.0);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 0.0, 0.0, 1.0, 1.0);
+             }
+           else //background colors
+             {
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.75, 0.0, 0.75, 1.0);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.75, 0.0, 0.75, 1.0);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 0.0, 0.0, 0.0, 1.0);
              }
            cairo_mesh_pattern_end_patch(pattern1);
            cairo_set_source(cr, pattern1);
