@@ -1,7 +1,7 @@
 
 /*
     Test a pattern with Gouraud shading. Look at some different patterns to maybe put in
-the center of the circular_gradient_clock1.c.
+the center of the circular_gradient_clock1.c. Makes a good clock on its own.
 
     gcc -Wall gouraud_mesh3.c -o gouraud_mesh3 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -69,7 +69,15 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    //The seconds value.
    GTimeZone *time_zone=g_time_zone_new_local();
    GDateTime *date_time=g_date_time_new_now(time_zone);
-   gdouble seconds=(gdouble)g_date_time_get_second(date_time);
+   gint hours=g_date_time_get_hour(date_time);
+   gint minutes=g_date_time_get_minute(date_time);
+   gint seconds=g_date_time_get_second(date_time);
+   gboolean pm=FALSE;
+   if(hours>12)
+     {
+       hours=hours-12;
+       pm=TRUE;
+     }
    g_time_zone_unref(time_zone);
    g_date_time_unref(date_time);
 
@@ -83,7 +91,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 
    //Black inside.
    cairo_save(cr);
-   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
    cairo_translate(cr, width/2.0, height/2.0);
    cairo_scale(cr, 4.0*w1, 4.0*h1);
    cairo_arc(cr, 0.0, 0.0, 1.0, 0.0, 2.0*M_PI);
@@ -104,7 +112,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble prev_sin=0;
    cairo_translate(cr, width/2.0, height/2.0);
    cairo_set_line_width(cr, 2.0);
-   cairo_set_source_rgb(cr, 1.0, 1.0, 0.0); 
+   cairo_set_source_rgb(cr, 1.0, 0.0, 1.0); 
    for(i=0;i<60;i++)
      {
        temp_cos1=cos(start-(next_second*i));
@@ -134,14 +142,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
            cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
            cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
            cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 1.0, 1.0, 0.0, 0.7);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 1.0, 1.0, 1.0);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 1.0, 1.0, 0.0, 0.7);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 1.0, 0.0, 1.0, 0.7);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 0.0, 1.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 1.0, 0.0, 1.0, 0.7);
            cairo_mesh_pattern_end_patch(pattern1);
            cairo_set_source(cr, pattern1);
            cairo_paint(cr);   
            cairo_pattern_destroy(pattern1);
-           cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+           cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
          }
        prev_cos=temp_cos1;
        prev_sin=temp_sin1;
@@ -163,10 +171,20 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 40);
-   gchar *string=g_strdup_printf("%i", (gint)seconds);
+   cairo_set_font_size(cr, 25*width/400);
+   gchar *string=NULL;
+   if(seconds<10)
+     {
+       if(pm) string=g_strdup_printf("%i:%i:0%i PM", hours, minutes, seconds);
+       else string=g_strdup_printf("%i:%i:0%i AM", hours, minutes, seconds);
+     }
+   else
+     {
+       if(pm) string=g_strdup_printf("%i:%i:%i PM", hours, minutes, seconds);
+       else string=g_strdup_printf("%i:%i:%i AM", hours, minutes, seconds);
+     }
    cairo_text_extents(cr, string, &tick_extents);
-   cairo_move_to(cr, 0.0-tick_extents.width/2.0, 2.0*h1+tick_extents.height/2.0);
+   cairo_move_to(cr, 0.0-tick_extents.width/2.0, 1.5*h1+tick_extents.height/2.0);
    cairo_show_text(cr, string);
    g_free(string);
         
