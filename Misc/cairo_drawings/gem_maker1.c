@@ -16,15 +16,18 @@ dynamically. Draw a couple different gems.
 
 static gboolean time_redraw(gpointer da);
 static gboolean start_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
-static void draw_gem(GtkWidget *da, cairo_t *cr, gpointer data);
+static void draw_gem(cairo_t *cr, gdouble width, gdouble height);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
 static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data);
+//About dialog and icon.
+static void about_dialog(GtkWidget *widget, gpointer data);
+static GdkPixbuf* draw_icon();
 
 GtkWidget *button1=NULL;
 //Count of drawn triangle sectors.
 static gint counter=0;
 //Drawing background color.
-static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
+static gdouble b1[]={0.0, 0.0, 0.0, 0.2};
 //Triangle control point colors.
 static gdouble t1_old[]={0.75, 0.0, 0.75, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 static gdouble t1_new[]={0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0};
@@ -49,6 +52,12 @@ int main(int argc, char *argv[])
         gtk_widget_set_visual(window, visual);
       }
     else g_print("Can't set window transparency.\n");
+
+    //Draw a 256x256 program icon.
+    counter=11;
+    GdkPixbuf *icon=draw_icon();
+    gtk_window_set_default_icon(icon);
+    counter=0;
     
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE);
@@ -56,23 +65,23 @@ int main(int argc, char *argv[])
     g_signal_connect(da, "draw", G_CALLBACK(start_drawing), NULL);    
 
     GtkWidget *label1=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'>Background </span>");
+    gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy' foreground='white'>Background </span>");
     GtkWidget *label2=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'> T1_1 </span>");
+    gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy' foreground='white'> T1_1 </span>");
     GtkWidget *label3=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label3), "<span font_weight='heavy'> T1_2 </span>");
+    gtk_label_set_markup(GTK_LABEL(label3), "<span font_weight='heavy' foreground='white'> T1_2 </span>");
     GtkWidget *label4=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label4), "<span font_weight='heavy'> T1_3 </span>");
+    gtk_label_set_markup(GTK_LABEL(label4), "<span font_weight='heavy' foreground='white'> T1_3 </span>");
     GtkWidget *label5=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label5), "<span font_weight='heavy'> T2_1 </span>");
+    gtk_label_set_markup(GTK_LABEL(label5), "<span font_weight='heavy' foreground='white'> T2_1 </span>");
     GtkWidget *label6=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label6), "<span font_weight='heavy'> T2_2 </span>");
+    gtk_label_set_markup(GTK_LABEL(label6), "<span font_weight='heavy' foreground='white'> T2_2 </span>");
     GtkWidget *label7=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label7), "<span font_weight='heavy'> T2_3 </span>");
+    gtk_label_set_markup(GTK_LABEL(label7), "<span font_weight='heavy' foreground='white'> T2_3 </span>");
 
     GtkWidget *entry1=gtk_entry_new();
     gtk_widget_set_hexpand(entry1, TRUE);
-    gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
+    gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(0, 0, 0, 0.2)");
 
     GtkWidget *entry2=gtk_entry_new();
     gtk_widget_set_hexpand(entry2, TRUE);
@@ -103,6 +112,17 @@ int main(int argc, char *argv[])
     GtkWidget *colors[]={entry1, entry2, entry3, entry4, entry5, entry6, entry7, window, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
     gtk_widget_set_sensitive(button1, FALSE);
+
+    GtkWidget *menu1=gtk_menu_new();
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Gem Maker");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
@@ -122,6 +142,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), label7, 0, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry7, 1, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 7, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), menu_bar, 0, 8, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -138,6 +159,8 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(window);
 
     gtk_main();
+
+    g_object_unref(icon);
 
     return 0;
   }
@@ -157,15 +180,16 @@ static gboolean time_redraw(gpointer da)
  }
 static gboolean start_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
   {
-    //Need scaling here.
-    draw_gem(da, cr, data);
-    return TRUE;
-  }
-static void draw_gem(GtkWidget *da, cairo_t *cr, gpointer data)
-  { 
-    gint i=0;
     gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+
+    //Need scaling here.
+    draw_gem(cr, width, height);
+    return TRUE;
+  }
+static void draw_gem(cairo_t *cr, gdouble width, gdouble height)
+  { 
+    gint i=0;
     gdouble advance=counter%12+1;
 
     //Layout for the drawing is a 10x10 rectangle.
@@ -375,5 +399,39 @@ static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_rectangle(cr, width, 0.0, 10, height);
     cairo_fill(cr);
     return FALSE;
+  }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
+   
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Gem Maker");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Draw a gem.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2017 C. Eric Cashon");
+   
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+//The butterfly program icon.
+static GdkPixbuf* draw_icon()
+  {
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface);
+    
+    //Paint the background transparent.
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+    cairo_paint(cr);
+
+    draw_gem(cr, 256.0, 256.0);
+
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface, 0, 0, 256, 256);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface); 
+    return icon;
   }
 
