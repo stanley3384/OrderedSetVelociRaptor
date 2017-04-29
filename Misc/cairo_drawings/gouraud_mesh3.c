@@ -173,10 +173,20 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_text_extents_t tick_extents;
    cairo_set_font_size(cr, 25*width/400);
    gchar *string=NULL;
+   if(seconds<10&&minutes<10)
+     {
+       if(pm) string=g_strdup_printf("%i:0%i:0%i PM", hours, minutes, seconds);
+       else string=g_strdup_printf("%i:0%i:0%i AM", hours, minutes, seconds);
+     }
    if(seconds<10)
      {
        if(pm) string=g_strdup_printf("%i:%i:0%i PM", hours, minutes, seconds);
        else string=g_strdup_printf("%i:%i:0%i AM", hours, minutes, seconds);
+     }
+   if(minutes<10)
+     {
+       if(pm) string=g_strdup_printf("%i:0%i:%i PM", hours, minutes, seconds);
+       else string=g_strdup_printf("%i:0%i:%i AM", hours, minutes, seconds);
      }
    else
      {
