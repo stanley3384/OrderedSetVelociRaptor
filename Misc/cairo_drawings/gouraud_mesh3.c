@@ -178,12 +178,12 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        if(pm) string=g_strdup_printf("%i:0%i:0%i PM", hours, minutes, seconds);
        else string=g_strdup_printf("%i:0%i:0%i AM", hours, minutes, seconds);
      }
-   if(seconds<10)
+   else if(seconds<10)
      {
        if(pm) string=g_strdup_printf("%i:%i:0%i PM", hours, minutes, seconds);
        else string=g_strdup_printf("%i:%i:0%i AM", hours, minutes, seconds);
      }
-   if(minutes<10)
+   else if(minutes<10)
      {
        if(pm) string=g_strdup_printf("%i:0%i:%i PM", hours, minutes, seconds);
        else string=g_strdup_printf("%i:0%i:%i AM", hours, minutes, seconds);
