@@ -17,8 +17,10 @@ at circular_gradient_clock1.c.
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections);
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
+static void toggle_fade(GtkToggleButton *check1, gpointer data);
 
 gint drawing_combo=0;
+gboolean fade=FALSE;
 
 int main(int argc, char **argv)
  {
@@ -26,7 +28,7 @@ int main(int argc, char **argv)
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Bezier Points");
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 450);
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 470);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -43,11 +45,16 @@ int main(int argc, char **argv)
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Clip Ring 4");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Clip Ring 8");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Clip Ring 16");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
    g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
+
+   GtkWidget *check1=gtk_check_button_new_with_label("Fade Color");
+   g_signal_connect(check1, "toggled", G_CALLBACK(toggle_fade), NULL);
    
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 1, 1);
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -117,6 +124,12 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    */
    gdouble w1=width/10.0;
    gdouble h1=height/10.0;
+
+   //For the mesh color fade.
+   gdouble green1=1.0;
+   gdouble green2=0.0;
+   gdouble blue1=0.0;
+   gdouble blue2=1.0;
    
    gdouble start=0.0;
    gdouble line_radius1=0;
@@ -168,7 +181,14 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        cairo_device_to_user_distance(cr, &control_points[4*i+2], &control_points[4*i+3]);
        cairo_restore(cr);               
         
-       //Draw the gradients.        
+       //Draw the gradients.
+       if(fade)
+         {
+           green1=1.0-(gdouble)i/(gdouble)sections;
+           blue1=0.0+(gdouble)i/(gdouble)sections;
+           green2=1.0-(gdouble)(i+1)/(gdouble)sections;
+           blue2=0.0+(gdouble)(i+1)/(gdouble)sections;
+         }        
        cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
        cairo_mesh_pattern_begin_patch(pattern1);
        cairo_mesh_pattern_move_to(pattern1, prev_cos2, prev_sin2);
@@ -176,10 +196,10 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, 0.0, 1.0, 0.0);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 0.0, 0.0, 1.0);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 0.0, 0.0, 1.0);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, 0.0, 1.0, 0.0);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, 0.0, green1, blue1);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 0.0, green2, blue2);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 0.0, green2, blue2);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, 0.0, green1, blue1);
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
@@ -211,6 +231,11 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data)
  {
    drawing_combo=gtk_combo_box_get_active(combo1);
    gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
+static void toggle_fade(GtkToggleButton *check1, gpointer data)
+ {
+   if(gtk_toggle_button_get_active(check1)) fade=TRUE;
+   else fade=FALSE;
  }
 
 
