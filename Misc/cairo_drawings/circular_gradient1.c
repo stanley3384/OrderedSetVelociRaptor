@@ -72,7 +72,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 
    //Background.
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-   cairo_paint(cr);
+   cairo_paint(cr); 
 
    if(drawing_combo==0) draw_circle(da, cr, -G_PI/2.0, 4);
    else if(drawing_combo==1) draw_circle(da, cr, -G_PI/4.0, 8);
@@ -118,6 +118,9 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble offset=-next_section/2.0;
    gdouble control_points[sections*4];
 
+   //Draw in the center.
+   cairo_translate(cr, width/2.0, height/2.0); 
+
    /*
      Layout for the drawing is a 10x10 rectangle. Problem with rotating control points
      and sections with a non-square drawing dynamically.
@@ -142,7 +145,6 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble prev_sin1=0.0;
    gdouble prev_cos2=4.0*w1;
    gdouble prev_sin2=0.0;
-   cairo_translate(cr, width/2.0, height/2.0);
    for(i=0;i<sections;i++)
      {
        temp_cos1=cos(start-(next_section*(i+1)));
@@ -163,8 +165,8 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
          https://en.wikipedia.org/wiki/Composite_B%C3%A9zier_curve#Approximating_circular_arcs 
          Swapping values needed for rotated points.
        */   
-       control_points[4*i+2]=(4.0*line_radius2-line_radius2*cos(G_PI/8.0))/3.0;
-       control_points[4*i+3]=((line_radius2-line_radius2*cos(G_PI/8.0))*(3.0*line_radius2-line_radius2*cos(G_PI/8.0)))/(3.0*line_radius2*sin(G_PI/8.0));
+       control_points[4*i+2]=(4.0*line_radius2-line_radius2*cos(offset))/3.0; 
+       control_points[4*i+3]=((line_radius2-line_radius2*cos(offset))*(3.0*line_radius2-line_radius2*cos(offset)))/(3.0*line_radius2*sin(offset));
        control_points[4*i]=control_points[4*i+2];
        control_points[4*i+1]=-control_points[4*i+3];      
        cairo_save(cr);
@@ -183,9 +185,9 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
         
        //Draw the gradients.
        if(fade)
-         {
-           green1=1.0-(gdouble)i/(gdouble)sections;
-           blue1=0.0+(gdouble)i/(gdouble)sections;
+         {    
+           green1=1.0-(gdouble)(i)/(gdouble)sections;
+           blue1=0.0+(gdouble)(i)/(gdouble)sections;
            green2=1.0-(gdouble)(i+1)/(gdouble)sections;
            blue2=0.0+(gdouble)(i+1)/(gdouble)sections;
          }        
