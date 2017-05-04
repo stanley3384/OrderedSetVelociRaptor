@@ -1,9 +1,7 @@
 
 /*   
-    Test getting some Bezier points with some gradients. Needs to be kept square. The Bezier
-curves can be clipped to get a good ring drawing. For a stretchy Bezier circle gradient look
-at circular_gradient_clock1.c. Rotating the control points on a non-circular drawing doesn't 
-work so well.
+    Test getting some Bezier points and drawing some gradients. The Bezier curves can be
+clipped to get a good ring drawing.
 
     gcc -Wall circular_gradient1.c -o circular_gradient1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -36,8 +34,8 @@ int main(int argc, char **argv)
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
    GtkWidget *da=gtk_drawing_area_new();
-   //Start the drawing square.
-   gtk_widget_set_size_request(da, 400, 400);
+   gtk_widget_set_hexpand(da, TRUE);
+   gtk_widget_set_vexpand(da, TRUE);
    g_signal_connect(da, "draw", G_CALLBACK(da_drawing), NULL);
 
    GtkWidget *combo1=gtk_combo_box_text_new();
@@ -141,12 +139,8 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    cairo_translate(cr, width/2.0, height/2.0);
    cairo_rotate(cr, r1); 
 
-   /*
-     Layout for the drawing is a 10x10 rectangle. Problem with rotating control points
-     and sections with a non-square drawing dynamically.
-   */
+   //Scale by width.
    gdouble w1=width/10.0;
-   gdouble h1=height/10.0;
 
    //For the mesh color fade.
    gdouble green1=1.0;
@@ -171,9 +165,9 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        temp_sin1=sin(start-(next_section*(i+1)));
        temp_cos2=temp_cos1;
        temp_sin2=temp_sin1;
-       //The polar form of the equation for an ellipse to get the radius.
-       line_radius1=((2.5*w1)*(2.5*h1))/sqrt(((2.5*w1)*(2.5*w1)*temp_sin1*temp_sin1) + ((2.5*h1)*(2.5*h1)*temp_cos1*temp_cos1));
-       line_radius2=((4.0*w1)*(4.0*h1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin1*temp_sin1) + ((4.0*h1)*(4.0*h1)*temp_cos1*temp_cos1));
+       //The polar form of the equation for an ellipse to get the radius. Radius based on width.
+       line_radius1=((2.5*w1)*(2.5*w1))/sqrt(((2.5*w1)*(2.5*w1)*temp_sin1*temp_sin1) + ((2.5*w1)*(2.5*w1)*temp_cos1*temp_cos1));
+       line_radius2=((4.0*w1)*(4.0*w1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin1*temp_sin1) + ((4.0*w1)*(4.0*w1)*temp_cos1*temp_cos1));
 
        temp_cos1=temp_cos1*line_radius1;
        temp_sin1=temp_sin1*line_radius1;
