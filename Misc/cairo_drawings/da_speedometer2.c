@@ -1,7 +1,7 @@
 
 /*
 
-    Test drawing for a speedometer or tachometer gauge with a gradient. Scale by width. This
+    Test drawing for a speedometer or tachometer gauge with a mesh gradient. This
 is using the circular_gradient1.c code with the gauge. The idea is to eventually add gradients
 to the adjustable gauge widget.
 
@@ -62,15 +62,17 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
   {
     gint width=gtk_widget_get_allocated_width(da);
     gint height=gtk_widget_get_allocated_height(da);
-    gdouble w1=width/10.0;
+    gdouble w1=0.0;
+
+    //Scale.
+    if(width<height) w1=width/10.0;
+    else w1=height/10.0;
     
     //Paint background.
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     cairo_paint(cr);
 
     cairo_translate(cr, width/2.0, height/2.0);
-    gdouble scale_x=(gdouble)width/400.0;
-    cairo_scale(cr, 1.0*scale_x, 1.0*scale_x);
 
     cairo_save(cr);
     draw_gradient(da, cr);
@@ -139,22 +141,18 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
 static void draw_gradient(GtkWidget *da, cairo_t *cr)
  {
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
-   gdouble w1=width/10.0;
+   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+   gdouble w1=0.0;
    gdouble r1=0; 
+
+   //Scale.
+   if(width<height) w1=width/10.0;
+   else w1=height/10.0;
 
    if(rotate_combo==0) r1=0;
    else if(rotate_combo==1) r1=G_PI/2.0;
    else if(rotate_combo==2) r1=G_PI;
    else r1=3.0*G_PI/2.0;
-
-   if(drawing_combo>2)
-     {
-       cairo_arc_negative(cr, 0.0, 0.0, 2.2*w1, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
-       cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*3.8*w1), sin(-4.0*G_PI/3.0)*3.8*w1);
-       cairo_arc(cr, 0.0, 0.0, 3.8*w1, -4.0*G_PI/3.0, -5.0*G_PI/3.0);
-       cairo_close_path(cr);
-       cairo_clip(cr);
-     }
 
    if(drawing_combo==0) draw_gradient_circle(da, cr, -G_PI/2.0, 4, r1);
    else if(drawing_combo==1) draw_gradient_circle(da, cr, -G_PI/4.0, 8, r1);
@@ -192,16 +190,19 @@ static void draw_gradient_circle(GtkWidget *da, cairo_t *cr, gdouble next_sectio
  {
    gint i=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
    gdouble rotation=-next_section;
    gdouble offset=-next_section/2.0;
    gdouble control_points[sections*4];
+   gdouble w1=0.0;
+
+   //Scale.
+   if(width<height) w1=width/10.0;
+   else w1=height/10.0;
 
    //Rotate drawing.
    cairo_rotate(cr, r1); 
  
-   //Scale drawing based on width.
-   gdouble w1=width/10.0;
-
    //For the mesh color fade.
    gdouble red1=0.0;
    gdouble red2=0.0;

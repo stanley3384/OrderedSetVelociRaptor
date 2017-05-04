@@ -79,8 +79,12 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
  {
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
-   gdouble w1=width/10.0;
    gdouble r1=0;
+   gdouble w1=0;
+
+   //Scale.
+   if(width<height) w1=width/10.0;
+   else w1=height/10.0;
 
    //Background.
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
@@ -134,13 +138,15 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble rotation=-next_section;
    gdouble offset=-next_section/2.0;
    gdouble control_points[sections*4];
+   gdouble w1=0;
+
+   //Scale.
+   if(width<height) w1=width/10.0;
+   else w1=height/10.0;
 
    //Draw in the center.
    cairo_translate(cr, width/2.0, height/2.0);
    cairo_rotate(cr, r1); 
-
-   //Scale by width.
-   gdouble w1=width/10.0;
 
    //For the mesh color fade.
    gdouble green1=1.0;
