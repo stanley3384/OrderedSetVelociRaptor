@@ -2,7 +2,8 @@
 /*   
     Test getting some Bezier points with some gradients. Needs to be kept square. The Bezier
 curves can be clipped to get a good ring drawing. For a stretchy Bezier circle gradient look
-at circular_gradient_clock1.c.
+at circular_gradient_clock1.c. Rotating the control points on a non-circular drawing doesn't 
+work so well.
 
     gcc -Wall circular_gradient1.c -o circular_gradient1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -15,11 +16,13 @@ at circular_gradient_clock1.c.
 #include<math.h>
 
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
-static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections);
+static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1);
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
+static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void toggle_fade(GtkToggleButton *check1, gpointer data);
 
 gint drawing_combo=0;
+gint rotate_combo=0;
 gboolean fade=FALSE;
 
 int main(int argc, char **argv)
@@ -28,7 +31,7 @@ int main(int argc, char **argv)
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Bezier Points");
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 470);
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 450);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -50,11 +53,21 @@ int main(int argc, char **argv)
 
    GtkWidget *check1=gtk_check_button_new_with_label("Fade Color");
    g_signal_connect(check1, "toggled", G_CALLBACK(toggle_fade), NULL);
+
+   GtkWidget *combo2=gtk_combo_box_text_new();
+   gtk_widget_set_hexpand(combo2, TRUE);
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Rotate 0");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Rotate pi/2");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Rotate pi");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Rotate 3*pi/2");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
+   g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
    
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo2, 0, 3, 1, 1);
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -69,20 +82,26 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
    gdouble w1=width/10.0;
+   gdouble r1=0;
 
    //Background.
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
    cairo_paint(cr); 
 
-   if(drawing_combo==0) draw_circle(da, cr, -G_PI/2.0, 4);
-   else if(drawing_combo==1) draw_circle(da, cr, -G_PI/4.0, 8);
-   else if(drawing_combo==2) draw_circle(da, cr, -G_PI/8.0, 16);
+   if(rotate_combo==0) r1=0;
+   else if(rotate_combo==1) r1=G_PI/2.0;
+   else if(rotate_combo==2) r1=G_PI;
+   else r1=3.0*G_PI/2.0;
+
+   if(drawing_combo==0) draw_circle(da, cr, -G_PI/2.0, 4, r1);
+   else if(drawing_combo==1) draw_circle(da, cr, -G_PI/4.0, 8, r1);
+   else if(drawing_combo==2) draw_circle(da, cr, -G_PI/8.0, 16, r1);
    else if(drawing_combo==3)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
-       draw_circle(da, cr, -G_PI/2.0, 4);
+       draw_circle(da, cr, -G_PI/2.0, 4, r1);
        cairo_restore(cr);
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);
@@ -92,7 +111,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
-       draw_circle(da, cr, -G_PI/4.0, 8);
+       draw_circle(da, cr, -G_PI/4.0, 8, r1);
        cairo_restore(cr);
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);  
@@ -102,14 +121,14 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
-       draw_circle(da, cr, -G_PI/8.0, 16);
+       draw_circle(da, cr, -G_PI/8.0, 16, r1);
        cairo_restore(cr);
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr); 
      }
    return FALSE;
  }
-static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections)
+static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1)
  {
    gint i=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
@@ -119,7 +138,8 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble control_points[sections*4];
 
    //Draw in the center.
-   cairo_translate(cr, width/2.0, height/2.0); 
+   cairo_translate(cr, width/2.0, height/2.0);
+   cairo_rotate(cr, r1); 
 
    /*
      Layout for the drawing is a 10x10 rectangle. Problem with rotating control points
@@ -179,9 +199,11 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
            cairo_move_to(cr, control_points[4*i+2], control_points[4*i+3]);
            cairo_show_text(cr, "X");
          }
+       cairo_rotate(cr, -r1); 
        cairo_device_to_user_distance(cr, &control_points[4*i], &control_points[4*i+1]);
        cairo_device_to_user_distance(cr, &control_points[4*i+2], &control_points[4*i+3]);
-       cairo_restore(cr);               
+       cairo_rotate(cr, r1); 
+       cairo_restore(cr);          
         
        //Draw the gradients.
        if(fade)
@@ -232,6 +254,11 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
 static void combo1_changed(GtkComboBox *combo1, gpointer data)
  {
    drawing_combo=gtk_combo_box_get_active(combo1);
+   gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
+static void combo2_changed(GtkComboBox *combo2, gpointer data)
+ {
+   rotate_combo=gtk_combo_box_get_active(combo2);
    gtk_widget_queue_draw(GTK_WIDGET(data));
  }
 static void toggle_fade(GtkToggleButton *check1, gpointer data)
