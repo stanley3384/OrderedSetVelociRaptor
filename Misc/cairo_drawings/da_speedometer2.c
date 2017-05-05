@@ -3,7 +3,8 @@
 
     Test drawing for a speedometer or tachometer gauge with a mesh gradient. This
 is using the circular_gradient1.c code with the gauge. The idea is to eventually add gradients
-to the adjustable gauge widget.
+to the adjustable gauge widget. With more trapezoids you don't need to use the bezier curves
+for the circle since you can clip directly out of the trapezoids.
 
     gcc -Wall da_speedometer2.c -o da_speedometer2 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -20,9 +21,17 @@ static gdouble needle=0.0;
 static gdouble scale_bottom=0.0;
 static gdouble scale_top=100.0;
 
-//Testing variables. See circular_gradient1.c to see what they do.
+/*
+  Testing variables. See circular_gradient1.c to better see what they do.
+  Test a color stop. This gets rounded down to the section.
+  Rotate the start of the color to match the gauge start. 
+*/
+static const gdouble color_start[]={1.0, 0.0, 1.0, 1.0};
+static const gdouble color_stop[]={1.0, 1.0, 0.0, 1.0};
+//Test from the UI.
+static gdouble cutoff1=75.0;
 static gint drawing_combo=3;
-static gint rotate_combo=G_PI/2.0;
+static gint rotate_combo=2;
 static gboolean fade=TRUE;
 
 static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data);
@@ -60,13 +69,15 @@ int main(int argc, char **argv)
   }
 static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
   {
-    gint width=gtk_widget_get_allocated_width(da);
-    gint height=gtk_widget_get_allocated_height(da);
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+    gdouble scale_text=0;
     gdouble w1=0.0;
 
     //Scale.
     if(width<height) w1=width/10.0;
     else w1=height/10.0;
+    scale_text=w1*10.0/400.0;
     
     //Paint background.
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
@@ -88,7 +99,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     gdouble temp=0;
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_text_extents_t tick_extents;
-    cairo_set_font_size(cr, 20);
+    cairo_set_font_size(cr, 20*scale_text);
     cairo_move_to(cr, 0, 0);
     for(i=0;i<11;i++)
       {
@@ -129,7 +140,7 @@ static gboolean draw_gage(GtkWidget *da, cairo_t *cr, gpointer data)
     //Text for needle value.
     cairo_text_extents_t extents1;
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 30);
+    cairo_set_font_size(cr, 30*scale_text);
     gchar *string1=g_strdup_printf("%3.2f", needle);
     cairo_text_extents(cr, string1, &extents1); 
     cairo_move_to(cr, -extents1.width/2, 3.0*w1+extents1.height/2);  
@@ -151,7 +162,8 @@ static void draw_gradient(GtkWidget *da, cairo_t *cr)
 
    if(rotate_combo==0) r1=0;
    else if(rotate_combo==1) r1=G_PI/2.0;
-   else if(rotate_combo==2) r1=G_PI;
+   else if(rotate_combo==2) r1=2.0*G_PI/3.0;
+   else if(rotate_combo==3) r1=G_PI;
    else r1=3.0*G_PI/2.0;
 
    if(drawing_combo==0) draw_gradient_circle(da, cr, -G_PI/2.0, 4, r1);
@@ -202,14 +214,6 @@ static void draw_gradient_circle(GtkWidget *da, cairo_t *cr, gdouble next_sectio
 
    //Rotate drawing.
    cairo_rotate(cr, r1); 
- 
-   //For the mesh color fade.
-   gdouble red1=0.0;
-   gdouble red2=0.0;
-   gdouble green1=1.0;
-   gdouble green2=0.0;
-   gdouble blue1=0.0;
-   gdouble blue2=1.0;
    
    gdouble start=0.0;
    gdouble line_radius1=0;
@@ -262,16 +266,37 @@ static void draw_gradient_circle(GtkWidget *da, cairo_t *cr, gdouble next_sectio
        cairo_rotate(cr, r1); 
        cairo_restore(cr);          
         
-       //Draw the gradients.
+       //Set up colors for the gradients.
+       gdouble color_start1[3];
+       gdouble color_stop1[3];
+       color_start1[0]=color_start[0];
+       color_start1[1]=color_start[1];
+       color_start1[2]=color_start[2];
+       color_stop1[0]=color_stop[0];
+       color_stop1[1]=color_stop[1];
+       color_stop1[2]=color_stop[2];
        if(fade)
          {   
-           red1=1.0; 
-           green1=0.0+(gdouble)(i)/(gdouble)sections;
-           blue1=1.0-(gdouble)(i)/(gdouble)sections;
-           red2=1.0;
-           green2=0.0+(gdouble)(i+1)/(gdouble)sections;
-           blue2=1.0-(gdouble)(i+1)/(gdouble)sections;
-         }        
+           gint stop=(gint)(cutoff1*(gdouble)sections/100.0);
+           if(i<stop)
+             { 
+               color_start1[1]=0.0+(gdouble)(i)/(gdouble)stop;
+               color_start1[2]=1.0-(gdouble)(i)/(gdouble)stop;
+               color_stop1[1]=0.0+(gdouble)(i+1)/(gdouble)stop;
+               color_stop1[2]=1.0-(gdouble)(i+1)/(gdouble)stop;
+             }
+           else
+             {
+               color_start1[0]=color_stop[0];
+               color_start1[1]=color_stop[1];
+               color_start1[2]=color_stop[2];
+               color_stop1[0]=color_stop[0];
+               color_stop1[1]=color_stop[1];
+               color_stop1[2]=color_stop[2];
+             }
+         }
+
+       //Draw the gradients.       
        cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
        cairo_mesh_pattern_begin_patch(pattern1);
        cairo_mesh_pattern_move_to(pattern1, prev_cos2, prev_sin2);
@@ -279,10 +304,10 @@ static void draw_gradient_circle(GtkWidget *da, cairo_t *cr, gdouble next_sectio
        cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, red1, green1, blue1);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, red2, green2, blue2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, red2, green2, blue2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, red1, green1, blue1);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, color_start1[0], color_start1[1], color_start1[2]);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2]);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2]);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, color_start1[0], color_start1[1], color_start1[2]);
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
