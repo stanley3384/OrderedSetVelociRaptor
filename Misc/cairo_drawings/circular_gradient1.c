@@ -17,11 +17,17 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1);
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
+static void combo3_changed(GtkComboBox *combo3, gpointer data);
 static void toggle_fade(GtkToggleButton *check1, gpointer data);
 
-gint drawing_combo=0;
-gint rotate_combo=0;
-gboolean fade=FALSE;
+//Test a color stop. This gets rounded down to the section.
+static const gdouble color_start[]={0.0, 1.0, 0.0, 1.0};
+static const gdouble color_stop[]={0.0, 0.0, 1.0, 1.0};
+//Test from the UI.
+static gdouble cutoff1=100.0;
+static gint drawing_combo=0;
+static gint rotate_combo=0;
+static gboolean fade=FALSE;
 
 int main(int argc, char **argv)
  {
@@ -29,7 +35,7 @@ int main(int argc, char **argv)
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Bezier Points");
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 450);
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 475);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -50,22 +56,34 @@ int main(int argc, char **argv)
    g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
 
    GtkWidget *check1=gtk_check_button_new_with_label("Fade Color");
-   g_signal_connect(check1, "toggled", G_CALLBACK(toggle_fade), NULL);
+   gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
+   g_signal_connect(check1, "toggled", G_CALLBACK(toggle_fade), da);
 
    GtkWidget *combo2=gtk_combo_box_text_new();
    gtk_widget_set_hexpand(combo2, TRUE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Rotate 0");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Rotate pi/2");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Rotate pi");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Rotate 3*pi/2");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Rotate 3*pi/4");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Rotate pi");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Rotate 3*pi/2");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
    g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
+
+   GtkWidget *combo3=gtk_combo_box_text_new();
+   gtk_widget_set_hexpand(combo2, TRUE);
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "Gradient Stop 100%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Gradient Stop 75%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 2, "3", "Gradient Stop 50%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 3, "4", "Gradient Stop 25%");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
+   g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), da);
    
    GtkWidget *grid=gtk_grid_new();
    gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 3, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo3, 0, 4, 1, 1);
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -92,7 +110,8 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 
    if(rotate_combo==0) r1=0;
    else if(rotate_combo==1) r1=G_PI/2.0;
-   else if(rotate_combo==2) r1=G_PI;
+   else if(rotate_combo==2) r1=3.0*G_PI/4.0;
+   else if(rotate_combo==3) r1=G_PI;
    else r1=3.0*G_PI/2.0;
 
    if(drawing_combo==0) draw_circle(da, cr, -G_PI/2.0, 4, r1);
@@ -147,12 +166,6 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    //Draw in the center.
    cairo_translate(cr, width/2.0, height/2.0);
    cairo_rotate(cr, r1); 
-
-   //For the mesh color fade.
-   gdouble green1=1.0;
-   gdouble green2=0.0;
-   gdouble blue1=0.0;
-   gdouble blue2=1.0;
    
    gdouble start=0.0;
    gdouble line_radius1=0;
@@ -205,14 +218,37 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        cairo_rotate(cr, r1); 
        cairo_restore(cr);          
         
-       //Draw the gradients.
+       //Set up colors for the gradients.
+       gdouble color_start1[3];
+       gdouble color_stop1[3];
+       color_start1[0]=color_start[0];
+       color_start1[1]=color_start[1];
+       color_start1[2]=color_start[2];
+       color_stop1[0]=color_stop[0];
+       color_stop1[1]=color_stop[1];
+       color_stop1[2]=color_stop[2];
        if(fade)
-         {    
-           green1=1.0-(gdouble)(i)/(gdouble)sections;
-           blue1=0.0+(gdouble)(i)/(gdouble)sections;
-           green2=1.0-(gdouble)(i+1)/(gdouble)sections;
-           blue2=0.0+(gdouble)(i+1)/(gdouble)sections;
-         }        
+         {   
+           gint stop=(gint)(cutoff1*(gdouble)sections/100.0);
+           if(i<stop)
+             { 
+               color_start1[1]=1.0-(gdouble)(i)/(gdouble)stop;
+               color_start1[2]=0.0+(gdouble)(i)/(gdouble)stop;
+               color_stop1[1]=1.0-(gdouble)(i+1)/(gdouble)stop;
+               color_stop1[2]=0.0+(gdouble)(i+1)/(gdouble)stop;
+             }
+           else
+             {
+               color_start1[0]=color_stop[0];
+               color_start1[1]=color_stop[1];
+               color_start1[2]=color_stop[2];
+               color_stop1[0]=color_stop[0];
+               color_stop1[1]=color_stop[1];
+               color_stop1[2]=color_stop[2];
+             }
+         }
+
+       //Draw the gradients.        
        cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
        cairo_mesh_pattern_begin_patch(pattern1);
        cairo_mesh_pattern_move_to(pattern1, prev_cos2, prev_sin2);
@@ -220,10 +256,10 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, 0.0, green1, blue1);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, 0.0, green2, blue2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, 0.0, green2, blue2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, 0.0, green1, blue1);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, color_start1[0], color_start1[1], color_start1[2]);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2]);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2]);
+       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, color_start1[0], color_start1[1], color_start1[2]);
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
@@ -261,16 +297,19 @@ static void combo2_changed(GtkComboBox *combo2, gpointer data)
    rotate_combo=gtk_combo_box_get_active(combo2);
    gtk_widget_queue_draw(GTK_WIDGET(data));
  }
+static void combo3_changed(GtkComboBox *combo3, gpointer data)
+ {
+   gint row=gtk_combo_box_get_active(combo3);
+   if(row==0) cutoff1=100.0;
+   else if(row==1) cutoff1=75.0;
+   else if(row==2) cutoff1=50.0;
+   else cutoff1=25.0;
+   gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
 static void toggle_fade(GtkToggleButton *check1, gpointer data)
  {
    if(gtk_toggle_button_get_active(check1)) fade=TRUE;
    else fade=FALSE;
+   gtk_widget_queue_draw(GTK_WIDGET(data));
  }
-
-
-
-
-
-
-
 
