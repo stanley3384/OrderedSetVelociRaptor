@@ -286,10 +286,10 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
        cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 0, color_start1[0], color_start1[1], color_start1[2]);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2]);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2]);
-       cairo_mesh_pattern_set_corner_color_rgb(pattern1, 3, color_start1[0], color_start1[1], color_start1[2]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
        cairo_mesh_pattern_end_patch(pattern1);
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
