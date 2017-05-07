@@ -19,11 +19,11 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void combo3_changed(GtkComboBox *combo3, gpointer data);
 static void toggle_fade(GtkToggleButton *check1, gpointer data);
+static void check_colors(GtkWidget *widget, GtkWidget **colors);
 
-//Test a color stop. This gets rounded down to the section.
-static const gdouble color_start[]={0.0, 1.0, 0.0, 1.0};
-static const gdouble color_stop[]={0.0, 0.0, 1.0, 1.0};
-//Test from the UI.
+//Test a colors to start and stop the gradient.
+static gdouble color_start[]={0.0, 1.0, 0.0, 1.0};
+static gdouble color_stop[]={0.0, 0.0, 1.0, 1.0};
 static gdouble cutoff1=100.0;
 static gint drawing_combo=0;
 static gint rotate_combo=0;
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Bezier Points");
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 475);
+   gtk_window_set_default_size(GTK_WINDOW(window), 400, 600);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -77,13 +77,38 @@ int main(int argc, char **argv)
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 3, "4", "Gradient Stop 25%");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
    g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), da);
+
+   GtkWidget *label1=gtk_label_new("Start Color");
+   gtk_widget_set_hexpand(label1, TRUE);
+
+   GtkWidget *label2=gtk_label_new("End Color");
+   gtk_widget_set_hexpand(label2, TRUE);
+
+   GtkWidget *entry1=gtk_entry_new();
+   gtk_widget_set_hexpand(entry1, TRUE);
+   gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(0, 255, 0, 1.0)");
+
+   GtkWidget *entry2=gtk_entry_new();
+   gtk_widget_set_hexpand(entry2, TRUE);
+   gtk_entry_set_text(GTK_ENTRY(entry2), "rgba(0, 0, 255, 1.0)");
+
+   GtkWidget *button1=gtk_button_new_with_label("Update Colors");
+   gtk_widget_set_halign(button1, GTK_ALIGN_CENTER);
+   gtk_widget_set_hexpand(button1, FALSE);
+   GtkWidget *colors[]={entry1, entry2, da};
+   g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
    
    GtkWidget *grid=gtk_grid_new();
-   gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo2, 0, 3, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo3, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo2, 0, 3, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo3, 0, 4, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), label1, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label2, 0, 6, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry2, 1, 6, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), button1, 0, 7, 2, 1);
    
    gtk_container_add(GTK_CONTAINER(window), grid);
 
@@ -221,6 +246,9 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        //Set up colors for the gradients.
        gdouble color_start1[3];
        gdouble color_stop1[3];
+       gdouble diff0=color_stop[0]-color_start[0];
+       gdouble diff1=color_stop[1]-color_start[1];
+       gdouble diff2=color_stop[2]-color_start[2];
        color_start1[0]=color_start[0];
        color_start1[1]=color_start[1];
        color_start1[2]=color_start[2];
@@ -232,10 +260,12 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
            gint stop=(gint)(cutoff1*(gdouble)sections/100.0);
            if(i<stop)
              { 
-               color_start1[1]=1.0-(gdouble)(i)/(gdouble)stop;
-               color_start1[2]=0.0+(gdouble)(i)/(gdouble)stop;
-               color_stop1[1]=1.0-(gdouble)(i+1)/(gdouble)stop;
-               color_stop1[2]=0.0+(gdouble)(i+1)/(gdouble)stop;
+               color_start1[0]=color_start[0]+(diff0*(gdouble)(i)/(gdouble)stop);
+               color_start1[1]=color_start[1]+(diff1*(gdouble)(i)/(gdouble)stop);
+               color_start1[2]=color_start[2]+(diff2*(gdouble)(i)/(gdouble)stop);
+               color_stop1[0]=color_start[0]+(diff0*(gdouble)(i+1)/(gdouble)stop);
+               color_stop1[1]=color_start[1]+(diff1*(gdouble)(i+1)/(gdouble)stop);
+               color_stop1[2]=color_start[2]+(diff2*(gdouble)(i+1)/(gdouble)stop);
              }
            else
              {
@@ -312,4 +342,37 @@ static void toggle_fade(GtkToggleButton *check1, gpointer data)
    else fade=FALSE;
    gtk_widget_queue_draw(GTK_WIDGET(data));
  }
+static void check_colors(GtkWidget *widget, GtkWidget **colors)
+  {
+    gint i=0;
+    GdkRGBA rgba;
+
+    for(i=0;i<2;i++)
+      {
+        if(gdk_rgba_parse(&rgba, gtk_entry_get_text(GTK_ENTRY(colors[i]))))
+          {
+            switch(i)
+              {
+                case 0:
+                  color_start[0]=rgba.red;
+                  color_start[1]=rgba.green;
+                  color_start[2]=rgba.blue;
+                  color_start[3]=rgba.alpha;
+                  break;
+                case 1:
+                  color_stop[0]=rgba.red;
+                  color_stop[1]=rgba.green;
+                  color_stop[2]=rgba.blue;
+                  color_stop[3]=rgba.alpha;
+                  break;
+             }
+          }
+        else
+          {
+            g_print("Color string format error in Entry %i\n", i);
+          } 
+      }
+
+    gtk_widget_queue_draw(colors[2]);
+  }
 
