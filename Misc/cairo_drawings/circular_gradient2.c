@@ -248,11 +248,16 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble prev_sin1=0.0;
    gdouble prev_cos2=4.0*w1;
    gdouble prev_sin2=0.0;
-   //Colors for gradients.
+   //Colors and slopes for gradients.
    gdouble color_start1[3];
    gdouble color_mid1[3];
    gdouble color_stop1[3];
-   gint stop=(gint)(mid_color_pos*(gdouble)sections/100.0);
+   gdouble diff0=0;
+   gdouble diff1=0;
+   gdouble diff2=0;
+   //Adjust stop and sections for incomplete rings.
+   gint stop=(gint)(mid_color_pos*(gdouble)sections/100.0)-skip_combo;
+   sections=sections-(2*skip_combo);
    for(i=0;i<sections;i++)
      {
        temp_cos1=cos(start-(next_section*(i+1)));
@@ -279,12 +284,13 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        color_stop1[1]=color_stop[1];
        color_stop1[2]=color_stop[2];
        if(fade)
-         {   
+         {  
+           //100 means there is no mid color in the drawing. Just draw start to end. 
            if(mid_color_pos==100)
              {
-               gdouble diff0=color_stop[0]-color_start[0];
-               gdouble diff1=color_stop[1]-color_start[1];
-               gdouble diff2=color_stop[2]-color_start[2];
+               diff0=color_stop[0]-color_start[0];
+               diff1=color_stop[1]-color_start[1];
+               diff2=color_stop[2]-color_start[2];
                color_start1[0]=color_start[0]+(diff0*(gdouble)(i)/(gdouble)sections);
                color_start1[1]=color_start[1]+(diff1*(gdouble)(i)/(gdouble)sections);
                color_start1[2]=color_start[2]+(diff2*(gdouble)(i)/(gdouble)sections);
@@ -294,9 +300,9 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
              }
            else if(i<stop)
              { 
-               gdouble diff0=color_mid[0]-color_start[0];
-               gdouble diff1=color_mid[1]-color_start[1];
-               gdouble diff2=color_mid[2]-color_start[2];
+               diff0=color_mid[0]-color_start[0];
+               diff1=color_mid[1]-color_start[1];
+               diff2=color_mid[2]-color_start[2];
                color_start1[0]=color_start[0]+(diff0*(gdouble)(i)/(gdouble)stop);
                color_start1[1]=color_start[1]+(diff1*(gdouble)(i)/(gdouble)stop);
                color_start1[2]=color_start[2]+(diff2*(gdouble)(i)/(gdouble)stop);
@@ -306,9 +312,9 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
              }
            else
              { 
-               gdouble diff0=color_stop[0]-color_mid[0];
-               gdouble diff1=color_stop[1]-color_mid[1];
-               gdouble diff2=color_stop[2]-color_mid[2];
+               diff0=color_stop[0]-color_mid[0];
+               diff1=color_stop[1]-color_mid[1];
+               diff2=color_stop[2]-color_mid[2];
                color_mid1[0]=color_mid[0]+(diff0*(gdouble)(i-stop)/(gdouble)(sections-stop));
                color_mid1[1]=color_mid[1]+(diff1*(gdouble)(i-stop)/(gdouble)(sections-stop));
                color_mid1[2]=color_mid[2]+(diff2*(gdouble)(i-stop)/(gdouble)(sections-stop));
@@ -318,47 +324,41 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
              }
          }
 
-       /*
-         Draw the gradients. Can skip the drawing of a trapezoid for example a gauge might
-         not want a full circle.
-       */
-       if(i>=skip_combo&&i<=sections-skip_combo-1)
-         {       
-           cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
-           cairo_mesh_pattern_begin_patch(pattern1);
-           cairo_mesh_pattern_move_to(pattern1, prev_cos2, prev_sin2);
-           cairo_mesh_pattern_line_to(pattern1, temp_cos2, temp_sin2);
-           cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
-           cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
-           cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
-           if(mid_color_pos==100)
-             {
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-             }
-           else if(i<stop)
-             {
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-             }
-           else
-             {
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-             }
-           cairo_mesh_pattern_end_patch(pattern1);
-           cairo_set_source(cr, pattern1);
-           cairo_paint(cr);
-           cairo_pattern_destroy(pattern1);
-         }          
+       //Draw the gradients.    
+       cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+       cairo_mesh_pattern_begin_patch(pattern1);
+       cairo_mesh_pattern_move_to(pattern1, prev_cos2, prev_sin2);
+       cairo_mesh_pattern_line_to(pattern1, temp_cos2, temp_sin2);
+       cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
+       cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
+       cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
+       if(mid_color_pos==100)
+         {
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+         }
+       else if(i<stop)
+         {
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+         }
+       else
+         {
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+         }
+       cairo_mesh_pattern_end_patch(pattern1);
+       cairo_set_source(cr, pattern1);
+       cairo_paint(cr);
+       cairo_pattern_destroy(pattern1);         
 
-       //Polygon
+       //Trapezoid polygon
        if(drawing_combo<3)
          {
            cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
