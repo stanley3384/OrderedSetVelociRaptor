@@ -256,8 +256,8 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble diff1=0;
    gdouble diff2=0;
    //Adjust stop and sections for incomplete rings.
-   gint stop=(gint)(mid_color_pos*(gdouble)sections/100.0)-skip_combo;
    sections=sections-(2*skip_combo);
+   gint stop=(gint)(mid_color_pos*(gdouble)sections/100.0);
    for(i=0;i<sections;i++)
      {
        temp_cos1=cos(start-(next_section*(i+1)));
