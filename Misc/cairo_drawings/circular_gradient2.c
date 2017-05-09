@@ -57,9 +57,11 @@ int main(int argc, char **argv)
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Draw 4 Sections");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Draw 8 Sections");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Draw 16 Sections");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Clip Ring 4");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Clip Ring 8");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Clip Ring 16");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Draw 32 Sections");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Clip Ring 4");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Clip Ring 8");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Clip Ring 16");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 7, "8", "Clip Ring 32");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
    g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
 
@@ -182,7 +184,8 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    if(drawing_combo==0) draw_circle(da, cr, -G_PI/2.0, 4, r1);
    else if(drawing_combo==1) draw_circle(da, cr, -G_PI/4.0, 8, r1);
    else if(drawing_combo==2) draw_circle(da, cr, -G_PI/8.0, 16, r1);
-   else if(drawing_combo==3)
+   else if(drawing_combo==3) draw_circle(da, cr, -G_PI/16.0, 32, r1);
+   else if(drawing_combo==4)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
@@ -192,7 +195,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);
      }
-   else if(drawing_combo==4)
+   else if(drawing_combo==5)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
@@ -202,12 +205,22 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);  
      }
-   else
+   else if(drawing_combo==6)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
        draw_circle(da, cr, -G_PI/8.0, 16, r1);
+       cairo_restore(cr);
+       cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
+       cairo_fill(cr); 
+     }
+   else
+     {
+       cairo_save(cr);
+       cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
+       cairo_clip(cr);
+       draw_circle(da, cr, -G_PI/16.0, 32, r1);
        cairo_restore(cr);
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr); 
@@ -359,10 +372,10 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        cairo_pattern_destroy(pattern1);         
 
        //Trapezoid polygon
-       if(drawing_combo<3)
+       if(drawing_combo<4)
          {
-           cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-           cairo_set_line_width(cr, 4.0); 
+           cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+           cairo_set_line_width(cr, 3.0); 
            cairo_move_to(cr, prev_cos1, prev_sin1);
            cairo_line_to(cr, temp_cos1, temp_sin1);
            cairo_stroke_preserve(cr);
