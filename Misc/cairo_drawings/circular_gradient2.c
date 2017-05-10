@@ -21,11 +21,13 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void combo3_changed(GtkComboBox *combo3, gpointer data);
 static void combo4_changed(GtkComboBox *combo4, gpointer data);
+static void combo5_changed(GtkComboBox *combo5, gpointer data);
+static void combo6_changed(GtkComboBox *combo6, gpointer data);
 static void toggle_fade(GtkToggleButton *check1, gpointer data);
 static void time_drawing(GtkToggleButton *check2, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
 
-//Test a colors to start and stop the gradients. Set by UI entries.
+//Test colors to start and stop the gradients. Set by UI entries.
 static gdouble color_start[]={0.0, 1.0, 0.0, 1.0};
 static gdouble color_mid[]={1.0, 1.0, 0.0, 1.0};
 static gdouble color_stop[]={0.0, 0.0, 1.0, 1.0};
@@ -36,6 +38,8 @@ static gint rotate_combo=0;
 static gint skip_combo=0;
 static gboolean fade=FALSE;
 static gboolean time_it=FALSE;
+static gdouble inside_radius=2;
+static gdouble outside_radius=4;
 
 int main(int argc, char **argv)
  {
@@ -100,6 +104,22 @@ int main(int argc, char **argv)
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo4), 0);
    g_signal_connect(combo4, "changed", G_CALLBACK(combo4_changed), da);
 
+   GtkWidget *combo5=gtk_combo_box_text_new();
+   gtk_widget_set_hexpand(combo5, TRUE);
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo5), 0, "1", "Inside Radius 1.0");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo5), 1, "2", "Inside Radius 2.0");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo5), 2, "3", "Inside Radius 3.0");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo5), 1);
+   g_signal_connect(combo5, "changed", G_CALLBACK(combo5_changed), da);
+
+   GtkWidget *combo6=gtk_combo_box_text_new();
+   gtk_widget_set_hexpand(combo6, TRUE);
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 0, "1", "Outside Radius 4.0");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 1, "2", "Outside Radius 4.5");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo6), 2, "3", "Outside Radius 5.0");
+   gtk_combo_box_set_active(GTK_COMBO_BOX(combo6), 0);
+   g_signal_connect(combo6, "changed", G_CALLBACK(combo6_changed), da);
+
    GtkWidget *label1=gtk_label_new("Start Color");
    gtk_widget_set_hexpand(label1, TRUE);
 
@@ -135,14 +155,16 @@ int main(int argc, char **argv)
    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 2, 2, 1);
    gtk_grid_attach(GTK_GRID(grid), combo3, 0, 3, 2, 1);
    gtk_grid_attach(GTK_GRID(grid), combo4, 0, 4, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), check2, 0, 5, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), label1, 0, 6, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry1, 1, 6, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label2, 0, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry2, 1, 7, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label3, 0, 8, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry3, 1, 8, 1, 1);   
-   gtk_grid_attach(GTK_GRID(grid), button1, 0, 9, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo5, 0, 5, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo6, 0, 6, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), check2, 0, 7, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), label1, 0, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry1, 1, 8, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label2, 0, 9, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry2, 1, 9, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label3, 0, 10, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry3, 1, 10, 1, 1);   
+   gtk_grid_attach(GTK_GRID(grid), button1, 0, 11, 2, 1);
 
    GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
    gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -188,41 +210,41 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    else if(drawing_combo==4)
      {
        cairo_save(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
        draw_circle(da, cr, -G_PI/2.0, 4, r1);
        cairo_restore(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);
      }
    else if(drawing_combo==5)
      {
        cairo_save(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
        draw_circle(da, cr, -G_PI/4.0, 8, r1);
        cairo_restore(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);  
      }
    else if(drawing_combo==6)
      {
        cairo_save(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
        draw_circle(da, cr, -G_PI/8.0, 16, r1);
        cairo_restore(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr); 
      }
    else
      {
        cairo_save(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 3.8*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
        draw_circle(da, cr, -G_PI/16.0, 32, r1);
        cairo_restore(cr);
-       cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
+       cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr); 
      }
 
@@ -257,10 +279,12 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble temp_sin1=0;
    gdouble temp_cos2=0;
    gdouble temp_sin2=0;
-   gdouble prev_cos1=2.5*w1;
+   gdouble prev_cos1=inside_radius*w1;
    gdouble prev_sin1=0.0;
-   gdouble prev_cos2=4.0*w1;
+   gdouble prev_cos2=outside_radius*w1;
    gdouble prev_sin2=0.0;
+   const gdouble ir=inside_radius*w1;
+   const gdouble or=outside_radius*w1;
    //Colors and slopes for gradients.
    gdouble color_start1[3];
    gdouble color_mid1[3];
@@ -277,9 +301,10 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        temp_sin1=sin(start-(next_section*(i+1)));
        temp_cos2=temp_cos1;
        temp_sin2=temp_sin1;
+
        //The polar form of the equation for an ellipse to get the radius. Radius based on width.
-       line_radius1=((2.5*w1)*(2.5*w1))/sqrt(((2.5*w1)*(2.5*w1)*temp_sin1*temp_sin1) + ((2.5*w1)*(2.5*w1)*temp_cos1*temp_cos1));
-       line_radius2=((4.0*w1)*(4.0*w1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin1*temp_sin1) + ((4.0*w1)*(4.0*w1)*temp_cos1*temp_cos1));
+       line_radius1=((ir)*(ir))/sqrt(((ir)*(ir)*temp_sin1*temp_sin1)+((ir)*(ir)*temp_cos1*temp_cos1));
+       line_radius2=((or)*(or))/sqrt(((or)*(or)*temp_sin1*temp_sin1) + ((or)*(or)*temp_cos1*temp_cos1));
 
        temp_cos1=temp_cos1*line_radius1;
        temp_sin1=temp_sin1*line_radius1;
@@ -415,6 +440,16 @@ static void combo3_changed(GtkComboBox *combo3, gpointer data)
 static void combo4_changed(GtkComboBox *combo4, gpointer data)
  {
    skip_combo=gtk_combo_box_get_active(combo4);
+   gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
+static void combo5_changed(GtkComboBox *combo5, gpointer data)
+ {
+   inside_radius=gtk_combo_box_get_active(combo5)+1;
+   gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
+static void combo6_changed(GtkComboBox *combo6, gpointer data)
+ {
+   outside_radius=gtk_combo_box_get_active(combo6)+4;
    gtk_widget_queue_draw(GTK_WIDGET(data));
  }
 static void toggle_fade(GtkToggleButton *check1, gpointer data)
