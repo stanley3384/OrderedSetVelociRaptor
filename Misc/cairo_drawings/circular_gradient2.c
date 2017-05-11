@@ -17,6 +17,7 @@ number on a arc.
 
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1);
+static void draw_gradient(cairo_t *cr, gdouble x1, gdouble y1, gdouble x2, gdouble y2, gdouble x3, gdouble y3, gdouble x4, gdouble y4, gdouble color_start1[], gdouble color_mid1[], gdouble color_stop1[], gint gradient_id);
 static void combo1_changed(GtkComboBox *combo1, gpointer data);
 static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void combo3_changed(GtkComboBox *combo3, gpointer data);
@@ -26,6 +27,8 @@ static void combo6_changed(GtkComboBox *combo6, gpointer data);
 static void toggle_fade(GtkToggleButton *check1, gpointer data);
 static void time_drawing(GtkToggleButton *check2, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
+static void cycle_mid_color(GtkWidget *widget, GtkWidget *widgets[]);
+static gboolean animate_color(GtkWidget *widgets[]);
 
 //Test colors to start and stop the gradients. Set by UI entries.
 static gdouble color_start[]={0.0, 1.0, 0.0, 1.0};
@@ -40,6 +43,8 @@ static gboolean fade=FALSE;
 static gboolean time_it=FALSE;
 static gdouble inside_radius=2;
 static gdouble outside_radius=4;
+//During timer save mid_color_pos.
+static gdouble mid_color_saved=0;
 
 int main(int argc, char **argv)
  {
@@ -90,9 +95,10 @@ int main(int argc, char **argv)
    GtkWidget *combo3=gtk_combo_box_text_new();
    gtk_widget_set_hexpand(combo3, TRUE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "No Mid Color");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Mid Color Stop 75%");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 2, "3", "Mid Color Stop 50%");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 3, "4", "Mid Color Stop 25%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Mid Color Stop 90%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 2, "3", "Mid Color Stop 75%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 3, "4", "Mid Color Stop 50%");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 4, "5", "Mid Color Stop 25%");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
    g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), da);
 
@@ -146,6 +152,12 @@ int main(int argc, char **argv)
    gtk_widget_set_hexpand(button1, FALSE);
    GtkWidget *colors[]={entry1, entry2, entry3, da};
    g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
+
+   GtkWidget *button2=gtk_button_new_with_label("Cycle Mid Color");
+   gtk_widget_set_halign(button2, GTK_ALIGN_CENTER);
+   gtk_widget_set_hexpand(button2, FALSE);
+   GtkWidget *widgets[]={button2, da};
+   g_signal_connect(button2, "clicked", G_CALLBACK(cycle_mid_color), widgets);
    
    GtkWidget *grid=gtk_grid_new();
    gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
@@ -165,6 +177,7 @@ int main(int argc, char **argv)
    gtk_grid_attach(GTK_GRID(grid), label3, 0, 10, 1, 1);
    gtk_grid_attach(GTK_GRID(grid), entry3, 1, 10, 1, 1);   
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 11, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), button2, 0, 12, 2, 1);
 
    GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
    gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -292,9 +305,20 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
    gdouble diff0=0;
    gdouble diff1=0;
    gdouble diff2=0;
+   gdouble diff3=0;
+   gdouble diff4=0;
+   gdouble diff5=0;
    //Adjust stop and sections for incomplete rings.
    sections=sections-(2*skip_combo);
-   gint stop=(gint)(mid_color_pos*(gdouble)sections/100.0);
+   //For when a trapezoid needs to be split when the gradient color is inside the trapezoid.
+   gdouble split_trap=(mid_color_pos/100.0)*sections;
+   gdouble split_trap_int, split_trap_frac;  
+   split_trap_frac=modf(split_trap, &split_trap_int);
+   gdouble trap_cos1=0;
+   gdouble trap_sin1=0;
+   gdouble trap_cos2=0;
+   gdouble trap_sin2=0;
+
    for(i=0;i<sections;i++)
      {
        temp_cos1=cos(start-(next_section*(i+1)));
@@ -336,65 +360,83 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
                color_stop1[1]=color_start[1]+(diff1*(gdouble)(i+1)/(gdouble)sections);
                color_stop1[2]=color_start[2]+(diff2*(gdouble)(i+1)/(gdouble)sections);
              }
-           else if(i<stop)
+           else if(i<split_trap_int)
              { 
                diff0=color_mid[0]-color_start[0];
                diff1=color_mid[1]-color_start[1];
                diff2=color_mid[2]-color_start[2];
-               color_start1[0]=color_start[0]+(diff0*(gdouble)(i)/(gdouble)stop);
-               color_start1[1]=color_start[1]+(diff1*(gdouble)(i)/(gdouble)stop);
-               color_start1[2]=color_start[2]+(diff2*(gdouble)(i)/(gdouble)stop);
-               color_mid1[0]=color_start[0]+(diff0*(gdouble)(i+1)/(gdouble)stop);
-               color_mid1[1]=color_start[1]+(diff1*(gdouble)(i+1)/(gdouble)stop);
-               color_mid1[2]=color_start[2]+(diff2*(gdouble)(i+1)/(gdouble)stop);
+               color_start1[0]=color_start[0]+(diff0*(gdouble)(i)/split_trap);
+               color_start1[1]=color_start[1]+(diff1*(gdouble)(i)/split_trap);
+               color_start1[2]=color_start[2]+(diff2*(gdouble)(i)/split_trap);
+               color_mid1[0]=color_start[0]+(diff0*(gdouble)(i+1)/split_trap);
+               color_mid1[1]=color_start[1]+(diff1*(gdouble)(i+1)/split_trap);
+               color_mid1[2]=color_start[2]+(diff2*(gdouble)(i+1)/split_trap);
+             }
+           else if(split_trap_int==i)
+             { 
+               diff0=color_mid[0]-color_start[0];
+               diff1=color_mid[1]-color_start[1];
+               diff2=color_mid[2]-color_start[2];
+               diff3=color_stop[0]-color_mid[0];
+               diff4=color_stop[1]-color_mid[1];
+               diff5=color_stop[2]-color_mid[2];
+               color_start1[0]=color_start[0]+(diff0*(gdouble)(i)/(gdouble)split_trap);
+               color_start1[1]=color_start[1]+(diff1*(gdouble)(i)/(gdouble)split_trap);
+               color_start1[2]=color_start[2]+(diff2*(gdouble)(i)/(gdouble)split_trap);
+
+               color_mid1[0]=color_start[0]+(diff0*((gdouble)i+split_trap_frac)/split_trap);
+               color_mid1[1]=color_start[1]+(diff1*((gdouble)i+split_trap_frac)/split_trap);
+               color_mid1[2]=color_start[2]+(diff2*((gdouble)i+split_trap_frac)/split_trap);
+
+               color_stop1[0]=color_mid[0]+(diff3*(1.0-split_trap_frac)/((gdouble)sections-split_trap));
+               color_stop1[1]=color_mid[1]+(diff4*(1.0-split_trap_frac)/((gdouble)sections-split_trap));
+               color_stop1[2]=color_mid[2]+(diff5*(1.0-split_trap_frac)/((gdouble)sections-split_trap));
              }
            else
              { 
                diff0=color_stop[0]-color_mid[0];
                diff1=color_stop[1]-color_mid[1];
                diff2=color_stop[2]-color_mid[2];
-               color_mid1[0]=color_mid[0]+(diff0*(gdouble)(i-stop)/(gdouble)(sections-stop));
-               color_mid1[1]=color_mid[1]+(diff1*(gdouble)(i-stop)/(gdouble)(sections-stop));
-               color_mid1[2]=color_mid[2]+(diff2*(gdouble)(i-stop)/(gdouble)(sections-stop));
-               color_stop1[0]=color_mid[0]+(diff0*(gdouble)(i+1-stop)/(gdouble)(sections-stop));
-               color_stop1[1]=color_mid[1]+(diff1*(gdouble)(i+1-stop)/(gdouble)(sections-stop));
-               color_stop1[2]=color_mid[2]+(diff2*(gdouble)(i+1-stop)/(gdouble)(sections-stop));
+               color_mid1[0]=color_mid[0]+(diff0*((gdouble)i-split_trap)/((gdouble)sections-split_trap));
+               color_mid1[1]=color_mid[1]+(diff1*((gdouble)i-split_trap)/((gdouble)sections-split_trap));
+               color_mid1[2]=color_mid[2]+(diff2*((gdouble)i-split_trap)/((gdouble)sections-split_trap));
+               color_stop1[0]=color_mid[0]+(diff0*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
+               color_stop1[1]=color_mid[1]+(diff1*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
+               color_stop1[2]=color_mid[2]+(diff2*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
              }
          }
 
-       //Draw the gradients.    
-       cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
-       cairo_mesh_pattern_begin_patch(pattern1);
-       cairo_mesh_pattern_move_to(pattern1, prev_cos2, prev_sin2);
-       cairo_mesh_pattern_line_to(pattern1, temp_cos2, temp_sin2);
-       cairo_mesh_pattern_line_to(pattern1, temp_cos1, temp_sin1);
-       cairo_mesh_pattern_line_to(pattern1, prev_cos1, prev_sin1);
-       cairo_mesh_pattern_line_to(pattern1, prev_cos2, prev_sin2);
        if(mid_color_pos==100)
          {
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+           draw_gradient(cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 0);
+         } 
+       else if(i<split_trap_int)
+         {  
+           draw_gradient(cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 1);
          }
-       else if(i<stop)
+       else if(mid_color_pos<100&&(gint)split_trap_int==i)
          {
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
-         }
+           trap_cos1=prev_cos1+split_trap_frac*(temp_cos1-prev_cos1);
+           trap_sin1=prev_sin1+split_trap_frac*(temp_sin1-prev_sin1);
+           trap_cos2=prev_cos2+split_trap_frac*(temp_cos2-prev_cos2);
+           trap_sin2=prev_sin2+split_trap_frac*(temp_sin2-prev_sin2);
+           draw_gradient(cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, trap_cos1, trap_sin1, trap_cos2, trap_sin2, color_start1, color_mid1, color_stop1, 1);
+           draw_gradient(cr, trap_cos1, trap_sin1, trap_cos2, trap_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 2);
+         } 
        else
          {
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
-           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
-         }
-       cairo_mesh_pattern_end_patch(pattern1);
-       cairo_set_source(cr, pattern1);
-       cairo_paint(cr);
-       cairo_pattern_destroy(pattern1);         
+           draw_gradient(cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 2);
+         }   
+
+       //The trapezoid that gets split.
+       if(mid_color_pos<100&&(gint)split_trap_int==i)
+         {
+           cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+           cairo_set_line_width(cr, 3.0); 
+           cairo_move_to(cr, trap_cos1, trap_sin1);
+           cairo_line_to(cr, trap_cos2, trap_sin2);
+           cairo_stroke(cr);
+         }        
 
        //Trapezoid polygon
        if(drawing_combo<4)
@@ -418,6 +460,46 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
        prev_sin2=temp_sin2;
      }
  }
+static void draw_gradient(cairo_t *cr, gdouble x1, gdouble y1, gdouble x2, gdouble y2, gdouble x3, gdouble y3, gdouble x4, gdouble y4, gdouble color_start1[], gdouble color_mid1[], gdouble color_stop1[], gint gradient_id)
+ {
+   //Draw the gradients.    
+   cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+   cairo_mesh_pattern_begin_patch(pattern1);
+   cairo_mesh_pattern_move_to(pattern1, x2, y2);
+   cairo_mesh_pattern_line_to(pattern1, x4, y4);
+   cairo_mesh_pattern_line_to(pattern1, x3, y3);
+   cairo_mesh_pattern_line_to(pattern1, x1, y1);
+   cairo_mesh_pattern_line_to(pattern1, x2, y2);
+
+   //Draw the gradient across the whole arc.
+   if(gradient_id==0)
+     {
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+     }
+   //Draw the gradient to the mid point.
+   else if(gradient_id==1)
+     {
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start[3]);
+     }
+   //Draw the gradient from the mid point to the end.
+   else
+     {
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop[3]);
+       cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_mid1[0], color_mid1[1], color_mid1[2], color_mid[3]);
+     }
+   cairo_mesh_pattern_end_patch(pattern1);
+   cairo_set_source(cr, pattern1);
+   cairo_paint(cr);
+   cairo_pattern_destroy(pattern1); 
+ }
 static void combo1_changed(GtkComboBox *combo1, gpointer data)
  {
    drawing_combo=gtk_combo_box_get_active(combo1);
@@ -432,8 +514,9 @@ static void combo3_changed(GtkComboBox *combo3, gpointer data)
  {
    gint row=gtk_combo_box_get_active(combo3);
    if(row==0) mid_color_pos=100.0;
-   else if(row==1) mid_color_pos=75.0;
-   else if(row==2) mid_color_pos=50.0;
+   else if(row==1) mid_color_pos=90.0;
+   else if(row==2) mid_color_pos=75.0;
+   else if(row==3) mid_color_pos=50.0;
    else mid_color_pos=25.0;
    gtk_widget_queue_draw(GTK_WIDGET(data));
  }
@@ -502,4 +585,27 @@ static void check_colors(GtkWidget *widget, GtkWidget **colors)
 
     gtk_widget_queue_draw(colors[3]);
   }
+static void cycle_mid_color(GtkWidget *widget, GtkWidget *widgets[])
+  {
+    gtk_widget_set_sensitive(widget, FALSE);
+    mid_color_saved=mid_color_pos;
+    mid_color_pos=0;
+    g_timeout_add(100, (GSourceFunc)animate_color, widgets);
+  }
+static gboolean animate_color(GtkWidget *widgets[])
+ {
+   if(mid_color_pos<100)
+     {
+       mid_color_pos++;
+       gtk_widget_queue_draw(widgets[1]);
+       return TRUE;
+     }
+   else
+     {
+       mid_color_pos=mid_color_saved;
+       gtk_widget_queue_draw(widgets[1]);
+       gtk_widget_set_sensitive(widgets[0], TRUE);
+       return FALSE;
+     }
+ }
 
