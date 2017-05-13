@@ -1,9 +1,8 @@
 
 /*   
     Remove the Bezier curves from circular_gradient1.c and just use the trapezoids to draw the ring.
-A little easier and it should work fine if you have enough trapezoids to approximate a ring. Still
-a problem of mapping a discrete radian angle from the trapezoids with gradients to a continuous
-number on a arc.
+A little easier and it should work fine if you have enough trapezoids to approximate a ring. Testing 
+some gradient drawings to use in the adjustable gauge widget.
 
     gcc -Wall circular_gradient2.c -o circular_gradient2 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -66,11 +65,13 @@ int main(int argc, char **argv)
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Draw 4 Sections");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Draw 8 Sections");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Draw 16 Sections");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Draw 32 Sections");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Clip Ring 4");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Clip Ring 8");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Clip Ring 16");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 7, "8", "Clip Ring 32");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Draw 24 Sections");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Draw 32 Sections");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Clip Ring 4");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Clip Ring 8");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 7, "8", "Clip Ring 16");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 8, "9", "Clip Ring 24");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 9, "10", "Clip Ring 32");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
    g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
 
@@ -86,9 +87,10 @@ int main(int argc, char **argv)
    gtk_widget_set_hexpand(combo2, TRUE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Rotate 0");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Rotate pi/2");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Rotate 3*pi/4");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Rotate pi");
-   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Rotate 3*pi/2");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Rotate 2*pi/3");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Rotate 3*pi/4");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Rotate pi");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 5, "6", "Rotate 3*pi/2");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
    g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
 
@@ -212,15 +214,19 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
 
    if(rotate_combo==0) r1=0;
    else if(rotate_combo==1) r1=G_PI/2.0;
-   else if(rotate_combo==2) r1=3.0*G_PI/4.0;
-   else if(rotate_combo==3) r1=G_PI;
+   else if(rotate_combo==2) r1=2.0*G_PI/3.0;
+   else if(rotate_combo==3) r1=3.0*G_PI/4.0;
+   else if(rotate_combo==4) r1=G_PI;
    else r1=3.0*G_PI/2.0;
 
    if(drawing_combo==0) draw_circle(da, cr, -G_PI/2.0, 4, r1);
    else if(drawing_combo==1) draw_circle(da, cr, -G_PI/4.0, 8, r1);
    else if(drawing_combo==2) draw_circle(da, cr, -G_PI/8.0, 16, r1);
-   else if(drawing_combo==3) draw_circle(da, cr, -G_PI/16.0, 32, r1);
-   else if(drawing_combo==4)
+
+   else if(drawing_combo==3) draw_circle(da, cr, -G_PI/12.0, 24, r1);
+
+   else if(drawing_combo==4) draw_circle(da, cr, -G_PI/16.0, 32, r1);
+   else if(drawing_combo==5)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
@@ -230,7 +236,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);
      }
-   else if(drawing_combo==5)
+   else if(drawing_combo==6)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
@@ -240,12 +246,22 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr);  
      }
-   else if(drawing_combo==6)
+   else if(drawing_combo==7)
      {
        cairo_save(cr);
        cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
        cairo_clip(cr);
        draw_circle(da, cr, -G_PI/8.0, 16, r1);
+       cairo_restore(cr);
+       cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
+       cairo_fill(cr); 
+     }
+   else if(drawing_combo==8)
+     {
+       cairo_save(cr);
+       cairo_arc(cr, width/2.0, height/2.0, (outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
+       cairo_clip(cr);
+       draw_circle(da, cr, -G_PI/12.0, 24, r1);
        cairo_restore(cr);
        cairo_arc(cr, width/2.0, height/2.0, (inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr); 
@@ -439,7 +455,7 @@ static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint s
          }        
 
        //Trapezoid polygon
-       if(drawing_combo<4)
+       if(drawing_combo<5)
          {
            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
            cairo_set_line_width(cr, 3.0); 
