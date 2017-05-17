@@ -974,7 +974,8 @@ static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sect
   gdouble prev_sin2=0.0;
   const gdouble ir=priv->inside_radius*w1;
   const gdouble or=priv->outside_radius*w1;
-  gdouble mid_color_pos=priv->first_cutoff;
+  //Standardize on a 0-100 scale.
+  gdouble mid_color_pos=fabs((priv->first_cutoff-priv->scale_bottom)/(priv->scale_top-priv->scale_bottom))*100.0;
 
   //Colors and slopes for gradients.
   gdouble color_start1[3];
