@@ -53,8 +53,14 @@ void adjustable_gauge_set_scale_bottom(AdjustableGauge *da, gdouble scale_bottom
 gdouble adjustable_gauge_get_scale_bottom(AdjustableGauge *da);
 void adjustable_gauge_set_scale_top(AdjustableGauge *da, gdouble scale_top);
 gdouble adjustable_gauge_get_scale_top(AdjustableGauge *da);
+void adjustable_gauge_set_inside_radius(AdjustableGauge *da, gdouble inside_radius);
+gdouble adjustable_gauge_get_inside_radius(AdjustableGauge *da);
+void adjustable_gauge_set_outside_radius(AdjustableGauge *da, gdouble outside_radius);
+gdouble adjustable_gauge_get_outside_radius(AdjustableGauge *da);
 void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name);
 gint adjustable_gauge_get_drawing(AdjustableGauge *da);
+void adjustable_gauge_set_draw_gradient(AdjustableGauge *da, gboolean draw_gradient);
+gboolean adjustable_gauge_get_draw_gradient(AdjustableGauge *da);
 //Set and get colors.
 void adjustable_gauge_set_background(AdjustableGauge *da, const gchar *background_string);
 const gchar* adjustable_gauge_get_background(AdjustableGauge *da);

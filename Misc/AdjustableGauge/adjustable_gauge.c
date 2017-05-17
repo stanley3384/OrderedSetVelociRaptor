@@ -22,7 +22,10 @@ struct _AdjustableGaugePrivate
   gdouble needle;
   gdouble scale_bottom;
   gdouble scale_top;
+  gdouble inside_radius;
+  gdouble outside_radius;
   gint gauge_drawing_name;
+  gboolean draw_gradient;
   //colors
   gchar *background_string;
   gchar *text_color_string;
@@ -46,7 +49,10 @@ enum
   NEEDLE,
   SCALE_BOTTOM,
   SCALE_TOP,
+  INSIDE_RADIUS,
+  OUTSIDE_RADIUS,
   GAUGE_DRAWING_NAME,
+  DRAW_GRADIENT,
   //color properties
   BACKGROUND,
   TEXT_COLOR,
@@ -63,7 +69,12 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
 static void adjustable_gauge_init(AdjustableGauge *da);
 static gboolean adjustable_gauge_draw(GtkWidget *widget, cairo_t *cr);
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr);
+static void voltage_arc_solid(GtkWidget *da, cairo_t *cr);
 static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr);
+static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr);
+//Draw arcs with a gradient.
+static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1);
+static void draw_arc_gradient(GtkWidget *da, cairo_t *cr, gdouble x1, gdouble y1, gdouble x2, gdouble y2, gdouble x3, gdouble y3, gdouble x4, gdouble y4, gdouble color_start1[], gdouble color_mid1[], gdouble color_stop1[], gint gradient_id);
 static void adjustable_gauge_finalize(GObject *gobject);
 
 G_DEFINE_TYPE(AdjustableGauge, adjustable_gauge, GTK_TYPE_DRAWING_AREA)
@@ -96,7 +107,13 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
 
   g_object_class_install_property(gobject_class, SCALE_TOP, g_param_spec_double("scale_top", "scale_top", "scale_top", 0, 1, 0, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, INSIDE_RADIUS, g_param_spec_double("inside_radius", "inside_radius", "inside_radius", 0, 1, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, OUTSIDE_RADIUS, g_param_spec_double("outside_radius", "outside_radius", "outside_radius", 0, 1, 0, G_PARAM_READWRITE));
+
   g_object_class_install_property(gobject_class, SCALE_TOP, g_param_spec_int("gauge_drawing_name", "gauge_drawing_name", "gauge_drawing_name", 0, 1, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, DRAW_GRADIENT, g_param_spec_boolean("draw_gradient", "draw_gradient", "draw_gradient", FALSE, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, BACKGROUND, g_param_spec_string("background", "background", "background", NULL, G_PARAM_READWRITE));
 
@@ -133,8 +150,17 @@ static void adjustable_gauge_set_property(GObject *object, guint prop_id, const 
     case SCALE_TOP:
       adjustable_gauge_set_scale_top(da, g_value_get_double(value));
       break; 
+    case INSIDE_RADIUS:
+      adjustable_gauge_set_inside_radius(da, g_value_get_double(value));
+      break; 
+    case OUTSIDE_RADIUS:
+      adjustable_gauge_set_outside_radius(da, g_value_get_double(value));
+      break; 
     case GAUGE_DRAWING_NAME:
       adjustable_gauge_set_drawing(da, g_value_get_int(value));
+      break;
+    case DRAW_GRADIENT:
+      adjustable_gauge_set_draw_gradient(da, g_value_get_boolean(value));
       break;
     case BACKGROUND:
       adjustable_gauge_set_background(da, g_value_get_string(value));
@@ -254,6 +280,34 @@ void adjustable_gauge_set_scale_top(AdjustableGauge *da, gdouble scale_top)
       g_warning("The top of the scale is out of range.");
     }
 } 
+void adjustable_gauge_set_inside_radius(AdjustableGauge *da, gdouble inside_radius)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  if(inside_radius>=3.0&&inside_radius<=5.0)
+    {
+      priv->inside_radius=inside_radius;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+   else
+    {
+      g_warning("Inside radius values 3.0<=x<=5.0.");
+    }
+} 
+void adjustable_gauge_set_outside_radius(AdjustableGauge *da, gdouble outside_radius)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  if(outside_radius>=1.0&&outside_radius<3.0)
+    {
+      priv->outside_radius=outside_radius;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+   else
+    {
+      g_warning("Outside radius values 1.0<=x<3.0.");
+    }
+} 
 void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -266,6 +320,21 @@ void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name)
    else
     {
       priv->gauge_drawing_name=0;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+}
+void adjustable_gauge_set_draw_gradient(AdjustableGauge *da, gboolean draw_gradient)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  if(draw_gradient==TRUE)
+    {
+      priv->draw_gradient=draw_gradient;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+   else
+    {
+      priv->draw_gradient=FALSE;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
 }
@@ -411,8 +480,17 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
     case SCALE_TOP:
       g_value_set_double(value, priv->scale_top);
       break;
+    case INSIDE_RADIUS:
+      g_value_set_double(value, priv->inside_radius);
+      break;
+    case OUTSIDE_RADIUS:
+      g_value_set_double(value, priv->outside_radius);
+      break;
     case GAUGE_DRAWING_NAME:
       g_value_set_int(value, priv->gauge_drawing_name);
+      break;
+    case DRAW_GRADIENT:
+      g_value_set_boolean(value, priv->draw_gradient);
       break;
     case BACKGROUND:
       g_value_set_string(value, priv->background_string);
@@ -461,10 +539,25 @@ gdouble adjustable_gauge_get_scale_top(AdjustableGauge *da)
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   return priv->scale_top;
 }
+gdouble adjustable_gauge_get_inside_radius(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->inside_radius;
+}
+gdouble adjustable_gauge_get_outside_radius(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->outside_radius;
+}
 gint adjustable_gauge_get_drawing(AdjustableGauge *da)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   return priv->gauge_drawing_name;
+}
+gboolean adjustable_gauge_get_draw_gradient(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->draw_gradient;
 }
 const gchar* adjustable_gauge_get_background(AdjustableGauge *da)
 {
@@ -506,7 +599,10 @@ static void adjustable_gauge_init(AdjustableGauge *da)
   priv->needle=0.0;
   priv->scale_bottom=0.0;
   priv->scale_top=100.0;
+  priv->inside_radius=2.0;
+  priv->outside_radius=4.0;
   priv->gauge_drawing_name=0;
+  priv->draw_gradient=FALSE;
 
   //Set the initial colors.
   priv->background[0]=0.0;
@@ -557,55 +653,53 @@ static gboolean adjustable_gauge_draw(GtkWidget *da, cairo_t *cr)
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+  gdouble scale_text=0;
+  gdouble w1=0;
 
-  gint width=gtk_widget_get_allocated_width(da);
-  gint height=gtk_widget_get_allocated_height(da);
-  gint center_x=width/2;
-  gint center_y=height/2;
-  //Original drawing 400x400.
-  gdouble scale_y=(gdouble)height/400.0;
+  //Scale.
+  if(width<height)
+    {
+      scale_text=width/400.0;
+      w1=(gdouble)width/10.0;
+    }
+  else
+    {
+      scale_text=height/400.0;
+      w1=(gdouble)height/10.0;
+    }
+
+  gdouble inside=(priv->inside_radius+0.2)*w1;
+  gdouble outside=(priv->outside_radius-0.2)*w1;
+  gdouble middle=(priv->inside_radius+0.5*(priv->outside_radius-priv->inside_radius))*w1;
     
   cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
   cairo_paint(cr);
 
   //transforms
-  cairo_translate(cr, center_x, center_y+(50*scale_y));
-  cairo_scale(cr, 1.30*scale_y, 1.30*scale_y);
+  cairo_translate(cr, width/2.0, height/2.0);
 
-  //Green underneath 
-  cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
-  cairo_set_line_width(cr, 3.0);
-  cairo_arc_negative(cr, 0, 0, 100, 23.0*G_PI/12.0, 13.0*G_PI/12.0);
-  cairo_line_to(cr, -(cos(G_PI/12.0)*150), -sin(G_PI/12.0)*150);
-  cairo_arc(cr, 0, 0, 150, 13.0*G_PI/12.0, 23.0*G_PI/12.0);
-  cairo_close_path(cr);
-  cairo_fill(cr);
-  cairo_stroke(cr);
+  if(priv->draw_gradient)
+    {
+      cairo_save(cr);
+      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_clip(cr);
+      draw_arc(da, cr, -G_PI/12.0, 10, G_PI+G_PI/12);
+      cairo_restore(cr);
+      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_fill(cr); 
+    }
+  else
+    {
+      voltage_arc_solid(da, cr);
+    }
 
   //Difference of top and bottom used to standardize values.
   gdouble diff=priv->scale_top-priv->scale_bottom;
 
-  //Draw yellow next. Standardized on 13 to 23 scale.
-  gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
-   cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
-  cairo_arc_negative(cr, 0, 0, 100, 23.0*G_PI/12.0, standard_first_cutoff*G_PI/12.0);
-  cairo_arc(cr, 0, 0, 150, standard_first_cutoff*G_PI/12.0, 23.0*G_PI/12.0);
-  cairo_close_path(cr);
-  cairo_fill(cr);
-  cairo_stroke(cr);
-
-  //Draw red top. Standardized on 13 to 23 scale.
-  gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
-   cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
-  cairo_arc_negative(cr, 0, 0, 100, 23.0*G_PI/12.0, standard_second_cutoff*G_PI/12.0);
-  cairo_arc(cr, 0, 0, 150, standard_second_cutoff*G_PI/12.0, 23.0*G_PI/12.0);
-  cairo_close_path(cr);
-  cairo_fill(cr);
-  cairo_stroke(cr);
-
   //Needle line between 1 and 11. Standardize needle on this scale.
   gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*10.0)+1.0;
-  //g_print("N %f St %f T %f B %f diff %f\n", needle, standard_needle, scale_top, scale_bottom, diff);
   if(priv->needle>priv->scale_top)
     {
       g_print("Gauge overload %f!\n", priv->needle);
@@ -618,64 +712,215 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
     }
   cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
   cairo_move_to(cr, 0, 0);
-  cairo_line_to(cr, -(cos(standard_needle*G_PI/12.0)*150), -sin(standard_needle*G_PI/12.0)*150);
+  cairo_line_to(cr, -cos(standard_needle*G_PI/12.0)*outside, -sin(standard_needle*G_PI/12.0)*outside);
   cairo_stroke(cr);
 
   //Text for needle value.
    cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
   cairo_text_extents_t extents1;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-  cairo_set_font_size(cr, 46);
+  cairo_set_font_size(cr, 46*scale_text);
   gchar *string1=g_strdup_printf("%3.2f", priv->needle);
   cairo_text_extents(cr, string1, &extents1); 
-  cairo_move_to(cr, -extents1.width/2, 40.0+extents1.height/2);  
+  cairo_move_to(cr, -extents1.width/2, 0.5*inside+extents1.height/2);  
   cairo_show_text(cr, string1);
   g_free(string1);
 
   //Text for bottom end scale value.
   cairo_text_extents_t extents2;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-  cairo_set_font_size(cr, 22);
+  cairo_set_font_size(cr, 22*scale_text);
   gchar *string2=g_strdup_printf("%3.2f", priv->scale_bottom);
   cairo_text_extents(cr, string2, &extents2); 
-  cairo_move_to(cr, -extents2.width/2-125, extents2.height/2-10);  
+  cairo_move_to(cr, -extents2.width/2-middle, extents2.height/2);  
   cairo_show_text(cr, string2);
   g_free(string2);
 
   //Text for top end scale value.
   cairo_text_extents_t extents3;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-  cairo_set_font_size(cr, 22);
+  cairo_set_font_size(cr, 22*scale_text);
   gchar *string3=g_strdup_printf("%3.2f", priv->scale_top);
   cairo_text_extents(cr, string3, &extents3); 
-  cairo_move_to(cr, -extents3.width/2+125, extents3.height/2-10);  
+  cairo_move_to(cr, -extents3.width/2+middle, extents3.height/2);  
   cairo_show_text(cr, string3);
   g_free(string3);
 
+}
+static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+  gdouble w1=0;
+
+  //Scale.
+  if(width<height) w1=(gdouble)width/10.0;
+  else w1=(gdouble)height/10.0;
+
+  gdouble inside=(priv->inside_radius+0.2)*w1;
+  gdouble outside=(priv->outside_radius-0.2)*w1;
+
+  //Green underneath 
+  cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
+  cairo_set_line_width(cr, 3.0);
+  cairo_arc_negative(cr, 0, 0, inside, 23.0*G_PI/12.0, 13.0*G_PI/12.0);
+  cairo_line_to(cr, -(cos(G_PI/12.0)*outside), -sin(G_PI/12.0)*outside);
+  cairo_arc(cr, 0, 0, outside, 13.0*G_PI/12.0, 23.0*G_PI/12.0);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_stroke(cr);
+
+  //Difference of top and bottom used to standardize values.
+  gdouble diff=priv->scale_top-priv->scale_bottom;
+
+  //Draw yellow next. Standardized on 13 to 23 scale.
+  gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
+   cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
+  cairo_arc_negative(cr, 0, 0, inside, 23.0*G_PI/12.0, standard_first_cutoff*G_PI/12.0);
+  cairo_arc(cr, 0, 0, outside, standard_first_cutoff*G_PI/12.0, 23.0*G_PI/12.0);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_stroke(cr);
+
+  //Draw red top. Standardized on 13 to 23 scale.
+  gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
+   cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
+  cairo_arc_negative(cr, 0, 0, inside, 23.0*G_PI/12.0, standard_second_cutoff*G_PI/12.0);
+  cairo_arc(cr, 0, 0, outside, standard_second_cutoff*G_PI/12.0, 23.0*G_PI/12.0);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_stroke(cr);
 }
 static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
 
-  gint width=gtk_widget_get_allocated_width(da);
-  gint height=gtk_widget_get_allocated_height(da);
-  gint center_x=width/2;
-  gint center_y=height/2;
-  gdouble scale_y=(gdouble)height/400.0;
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+  gdouble scale_text=0;
+  gdouble w1=0;
     
   cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
   cairo_paint(cr);
 
-  //transforms
-  cairo_translate(cr, center_x, center_y+(scale_y));
-  cairo_scale(cr, 1.10*scale_y, 1.10*scale_y);
+  //Scale.
+  if(width<height)
+    {
+      scale_text=width/400.0;
+      w1=(gdouble)width/10.0;
+    }
+  else
+    {
+      w1=(gdouble)height/10.0;
+      scale_text=height/400.0;
+    }
+
+  //Move to center.
+  cairo_translate(cr, width/2.0, height/2.0);
+
+  if(priv->draw_gradient)
+    {
+      cairo_save(cr);
+      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_clip(cr);
+      draw_arc(da, cr, -G_PI/12.0, 20, 2.0*G_PI/3.0);
+      cairo_restore(cr);
+      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_fill(cr); 
+    }
+  else
+    {
+      speedometer_arc_solid(da, cr);
+    }
+
+  gdouble diff=priv->scale_top-priv->scale_bottom;
+  gdouble tick_radius1=(priv->inside_radius+0.65*(priv->outside_radius-priv->inside_radius))*w1;
+  gdouble tick_radius2=(priv->inside_radius+0.75*(priv->outside_radius-priv->inside_radius))*w1;
+  gdouble text_radius=(priv->inside_radius+0.4*(priv->outside_radius-priv->inside_radius))*w1;
+  gdouble needle_radius=(priv->inside_radius+0.25*(priv->outside_radius-priv->inside_radius))*w1;
+  
+  //Set large tick marks.
+  gint i=0;
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
+  gdouble tenth_scale=diff/10.0;
+  gdouble tick_mark=(5.0*G_PI/3.0)/10.0;
+  gdouble temp=0;
+  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+  cairo_text_extents_t tick_extents;
+  cairo_set_font_size(cr, 20*scale_text);
+  cairo_set_line_width(cr, 3.0);
+  cairo_move_to(cr, 0, 0);
+  for(i=0;i<11;i++)
+    {
+      temp=(gdouble)i*tick_mark;
+      cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*tick_radius1, -sin((4.0*G_PI/3.0)-temp)*tick_radius1);
+      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1);
+      cairo_stroke(cr);
+      //String values at large tick marks.
+      gchar *tick_string=g_strdup_printf("%i", (gint)(priv->scale_bottom+(gdouble)i*tenth_scale));
+      cairo_text_extents(cr, tick_string, &tick_extents);
+      cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*text_radius)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*text_radius)+tick_extents.height/2.0);
+      cairo_show_text(cr, tick_string);
+      g_free(tick_string);
+      //Reset position to the center.
+      cairo_move_to(cr, 0, 0);
+    }
+
+  //Set small tick marks.
+  cairo_set_line_width(cr, 2.0);
+  gdouble half_tick=tick_mark/2.0;
+  cairo_move_to(cr, 0, 0);
+  for(i=0;i<10;i++)
+    {
+      temp=(gdouble)i*tick_mark+half_tick;
+      cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*tick_radius2, -sin((4.0*G_PI/3.0)-temp)*tick_radius2);
+      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1);
+      cairo_stroke(cr);
+      cairo_move_to(cr, 0, 0);
+    }
+
+  //The needle line.
+  cairo_set_line_width(cr, 3.0);
+  cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
+  cairo_move_to(cr, 0, 0);
+  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*needle_radius, -sin((4.0*G_PI/3.0)-standard_needle)*needle_radius);
+  cairo_stroke(cr);
+    
+  //Text for needle value.
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
+  cairo_text_extents_t extents1;
+  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+  cairo_set_font_size(cr, 30*scale_text);
+  gchar *string1=g_strdup_printf("%i", (gint)priv->needle);
+  cairo_text_extents(cr, string1, &extents1); 
+  cairo_move_to(cr, -extents1.width/2, tick_radius1+extents1.height/2);  
+  cairo_show_text(cr, string1);
+  g_free(string1);
+
+}
+static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+  gdouble w1=0;
+
+  //Scale.
+  if(width<height) w1=(gdouble)width/10.0;
+  else w1=(gdouble)height/10.0;
+
+  gdouble inside=(priv->inside_radius+0.2)*w1;
+  gdouble outside=(priv->outside_radius-0.2)*w1;
 
   //Green underneath 
    cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
   cairo_set_line_width(cr, 3.0);
-  cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
-  cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*150), sin(-4.0*G_PI/3.0)*150);
-  cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0, -5.0*G_PI/3.0);
+  cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
+  cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*outside), sin(-4.0*G_PI/3.0)*outside);
+  cairo_arc(cr, 0, 0, outside, -4.0*G_PI/3.0, -5.0*G_PI/3.0);
   cairo_close_path(cr);
   cairo_fill(cr);
   cairo_stroke(cr);
@@ -685,8 +930,8 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Yellow next.
   gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
    cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
-  cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
-  cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_first_cutoff, -5.0*G_PI/3.0);
+  cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
+  cairo_arc(cr, 0, 0, outside, -4.0*G_PI/3.0+standard_first_cutoff, -5.0*G_PI/3.0);
   cairo_close_path(cr);
   cairo_fill(cr);
   cairo_stroke(cr);
@@ -694,70 +939,207 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Red top.
   gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
    cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
-  cairo_arc_negative(cr, 0, 0, 80, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
-  cairo_arc(cr, 0, 0, 150, -4.0*G_PI/3.0+standard_second_cutoff, -5.0*G_PI/3.0);
+  cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
+  cairo_arc(cr, 0, 0, outside, -4.0*G_PI/3.0+standard_second_cutoff, -5.0*G_PI/3.0);
   cairo_close_path(cr);
   cairo_fill(cr);
-  cairo_stroke(cr);
+  cairo_stroke(cr);  
+}
+static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
 
-  //Set large tick marks.
   gint i=0;
-  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
-  gdouble tenth_scale=diff/10.0;
-  gdouble tick_mark=(5.0*G_PI/3.0)/10.0;
-  gdouble temp=0;
-  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-  cairo_text_extents_t tick_extents;
-  cairo_set_font_size(cr, 20);
-  cairo_move_to(cr, 0, 0);
-  for(i=0;i<11;i++)
+  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+  gdouble w1=0;
+
+  //Scale. Keep square.
+  if(width<height) w1=width/10.0;
+  else w1=height/10.0;
+
+  cairo_rotate(cr, r1); 
+   
+  //Draw the trapezoids and paint them with a gradient.
+  gdouble start=0.0;
+  gdouble line_radius1=0;
+  gdouble line_radius2=0;
+  gdouble temp_cos1=0;
+  gdouble temp_sin1=0;
+  gdouble temp_cos2=0;
+  gdouble temp_sin2=0;
+  gdouble prev_cos1=priv->inside_radius*w1;
+  gdouble prev_sin1=0.0;
+  gdouble prev_cos2=priv->outside_radius*w1;
+  gdouble prev_sin2=0.0;
+  const gdouble ir=priv->inside_radius*w1;
+  const gdouble or=priv->outside_radius*w1;
+  gdouble mid_color_pos=priv->first_cutoff;
+
+  //Colors and slopes for gradients.
+  gdouble color_start1[3];
+  gdouble color_mid1[3];
+  gdouble color_stop1[3];
+  gdouble diff0=0;
+  gdouble diff1=0;
+  gdouble diff2=0;
+  gdouble diff3=0;
+  gdouble diff4=0;
+  gdouble diff5=0;
+
+  //For when a trapezoid needs to be split when the gradient color is inside the trapezoid.
+  gdouble split_trap=(mid_color_pos/100.0)*sections;
+  gdouble split_trap_int, split_trap_frac;  
+  split_trap_frac=modf(split_trap, &split_trap_int);
+  gdouble trap_cos1=0;
+  gdouble trap_sin1=0;
+  gdouble trap_cos2=0;
+  gdouble trap_sin2=0;
+
+  for(i=0;i<sections;i++)
     {
-      temp=(gdouble)i*tick_mark;
-      cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*140, -sin((4.0*G_PI/3.0)-temp)*140);
-      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*150, -sin((4.0*G_PI/3.0)-temp)*150);
-      cairo_stroke(cr);
-      //String values at large tick marks.
-      gchar *tick_string=g_strdup_printf("%i", (gint)(priv->scale_bottom+(gdouble)i*tenth_scale));
-      cairo_text_extents(cr, tick_string, &tick_extents);
-      cairo_move_to(cr, (cos((4.0*G_PI/3.0)-temp)*115)-tick_extents.width/2.0, (-sin((4.0*G_PI/3.0)-temp)*115)+tick_extents.height/2.0);
-      cairo_show_text(cr, tick_string);
-      g_free(tick_string);
-      //Reset position to the center.
-      cairo_move_to(cr, 0, 0);
-    }
+      temp_cos1=cos(start-(next_section*(i+1)));
+      temp_sin1=sin(start-(next_section*(i+1)));
+      temp_cos2=temp_cos1;
+      temp_sin2=temp_sin1;
 
-  //Set small tick marks.
-  cairo_set_line_width(cr, 3.0);
-  gdouble half_tick=tick_mark/2.0;
-  cairo_move_to(cr, 0, 0);
-  for(i=0;i<10;i++)
+      //The polar form of the equation for an ellipse to get the radius. Radius based on width.
+      line_radius1=((ir)*(ir))/sqrt(((ir)*(ir)*temp_sin1*temp_sin1)+((ir)*(ir)*temp_cos1*temp_cos1));
+      line_radius2=((or)*(or))/sqrt(((or)*(or)*temp_sin1*temp_sin1) + ((or)*(or)*temp_cos1*temp_cos1));
+
+      temp_cos1=temp_cos1*line_radius1;
+      temp_sin1=temp_sin1*line_radius1;
+      temp_cos2=temp_cos2*line_radius2;
+      temp_sin2=temp_sin2*line_radius2;
+
+      //100 means there is no mid color in the drawing. Just draw start to end.
+      if(mid_color_pos==100)
+        {
+          diff0=priv->arc_color3[0]-priv->arc_color1[0];
+          diff1=priv->arc_color3[1]-priv->arc_color1[1];
+          diff2=priv->arc_color3[2]-priv->arc_color1[2];
+          color_start1[0]=priv->arc_color1[0]+(diff0*(gdouble)(i)/(gdouble)sections);
+          color_start1[1]=priv->arc_color1[1]+(diff1*(gdouble)(i)/(gdouble)sections);
+          color_start1[2]=priv->arc_color1[2]+(diff2*(gdouble)(i)/(gdouble)sections);
+          color_stop1[0]=priv->arc_color1[0]+(diff0*(gdouble)(i+1)/(gdouble)sections);
+          color_stop1[1]=priv->arc_color1[1]+(diff1*(gdouble)(i+1)/(gdouble)sections);
+          color_stop1[2]=priv->arc_color1[2]+(diff2*(gdouble)(i+1)/(gdouble)sections);
+        }
+      else if(i<split_trap_int)
+        { 
+          diff0=priv->arc_color2[0]-priv->arc_color1[0];
+          diff1=priv->arc_color2[1]-priv->arc_color1[1];
+          diff2=priv->arc_color2[2]-priv->arc_color1[2];
+          color_start1[0]=priv->arc_color1[0]+(diff0*(gdouble)(i)/split_trap);
+          color_start1[1]=priv->arc_color1[1]+(diff1*(gdouble)(i)/split_trap);
+          color_start1[2]=priv->arc_color1[2]+(diff2*(gdouble)(i)/split_trap);
+          color_mid1[0]=priv->arc_color1[0]+(diff0*(gdouble)(i+1)/split_trap);
+          color_mid1[1]=priv->arc_color1[1]+(diff1*(gdouble)(i+1)/split_trap);
+          color_mid1[2]=priv->arc_color1[2]+(diff2*(gdouble)(i+1)/split_trap);
+        }
+      else if(split_trap_int==i)
+        { 
+          diff0=priv->arc_color2[0]-priv->arc_color1[0];
+          diff1=priv->arc_color2[1]-priv->arc_color1[1];
+          diff2=priv->arc_color2[2]-priv->arc_color1[2];
+          diff3=priv->arc_color3[0]-priv->arc_color2[0];
+          diff4=priv->arc_color3[1]-priv->arc_color2[1];
+          diff5=priv->arc_color3[2]-priv->arc_color2[2];
+          color_start1[0]=priv->arc_color1[0]+(diff0*(gdouble)(i)/(gdouble)split_trap);
+          color_start1[1]=priv->arc_color1[1]+(diff1*(gdouble)(i)/(gdouble)split_trap);
+          color_start1[2]=priv->arc_color1[2]+(diff2*(gdouble)(i)/(gdouble)split_trap);
+
+          color_mid1[0]=priv->arc_color1[0]+(diff0*((gdouble)i+split_trap_frac)/split_trap);
+          color_mid1[1]=priv->arc_color1[1]+(diff1*((gdouble)i+split_trap_frac)/split_trap);
+          color_mid1[2]=priv->arc_color1[2]+(diff2*((gdouble)i+split_trap_frac)/split_trap);
+
+          color_stop1[0]=priv->arc_color2[0]+(diff3*(1.0-split_trap_frac)/((gdouble)sections-split_trap));
+          color_stop1[1]=priv->arc_color2[1]+(diff4*(1.0-split_trap_frac)/((gdouble)sections-split_trap));
+          color_stop1[2]=priv->arc_color2[2]+(diff5*(1.0-split_trap_frac)/((gdouble)sections-split_trap));
+        }
+      else
+        { 
+          diff0=priv->arc_color3[0]-priv->arc_color2[0];
+          diff1=priv->arc_color3[1]-priv->arc_color2[1];
+          diff2=priv->arc_color3[2]-priv->arc_color2[2];
+          color_mid1[0]=priv->arc_color2[0]+(diff0*((gdouble)i-split_trap)/((gdouble)sections-split_trap));
+          color_mid1[1]=priv->arc_color2[1]+(diff1*((gdouble)i-split_trap)/((gdouble)sections-split_trap));
+          color_mid1[2]=priv->arc_color2[2]+(diff2*((gdouble)i-split_trap)/((gdouble)sections-split_trap));
+          color_stop1[0]=priv->arc_color2[0]+(diff0*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
+          color_stop1[1]=priv->arc_color2[1]+(diff1*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
+          color_stop1[2]=priv->arc_color2[2]+(diff2*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
+        }
+
+       if(mid_color_pos==100)
+         {
+           draw_arc_gradient(da, cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 0);
+         } 
+       else if(i<split_trap_int)
+         {  
+           draw_arc_gradient(da, cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 1);
+         }
+       else if(mid_color_pos<100&&(gint)split_trap_int==i)
+         {
+           trap_cos1=prev_cos1+split_trap_frac*(temp_cos1-prev_cos1);
+           trap_sin1=prev_sin1+split_trap_frac*(temp_sin1-prev_sin1);
+           trap_cos2=prev_cos2+split_trap_frac*(temp_cos2-prev_cos2);
+           trap_sin2=prev_sin2+split_trap_frac*(temp_sin2-prev_sin2);
+           draw_arc_gradient(da, cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, trap_cos1, trap_sin1, trap_cos2, trap_sin2, color_start1, color_mid1, color_stop1, 1);
+           draw_arc_gradient(da, cr, trap_cos1, trap_sin1, trap_cos2, trap_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 2);
+         } 
+       else
+         {
+           draw_arc_gradient(da, cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 2);
+         }     
+      
+       //Save previous values.
+       prev_cos1=temp_cos1;
+       prev_sin1=temp_sin1;
+       prev_cos2=temp_cos2;
+       prev_sin2=temp_sin2;
+     }
+}
+static void draw_arc_gradient(GtkWidget *da, cairo_t *cr, gdouble x1, gdouble y1, gdouble x2, gdouble y2, gdouble x3, gdouble y3, gdouble x4, gdouble y4, gdouble color_start1[], gdouble color_mid1[], gdouble color_stop1[], gint gradient_id)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  //Draw the gradients.    
+  cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+  cairo_mesh_pattern_begin_patch(pattern1);
+  cairo_mesh_pattern_move_to(pattern1, x2, y2);
+  cairo_mesh_pattern_line_to(pattern1, x4, y4);
+  cairo_mesh_pattern_line_to(pattern1, x3, y3);
+  cairo_mesh_pattern_line_to(pattern1, x1, y1);
+  cairo_mesh_pattern_line_to(pattern1, x2, y2);
+
+  //Draw the gradient across the whole arc.
+  if(gradient_id==0)
     {
-      temp=(gdouble)i*tick_mark+half_tick;
-      cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*145, -sin((4.0*G_PI/3.0)-temp)*145);
-      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*150, -sin((4.0*G_PI/3.0)-temp)*150);
-      cairo_stroke(cr);
-      cairo_move_to(cr, 0, 0);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], priv->arc_color1[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], priv->arc_color3[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], priv->arc_color3[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], priv->arc_color1[3]);
     }
-
-  //The needle line.
-  cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
-  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-  gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
-  cairo_move_to(cr, 0, 0);
-  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*90, -sin((4.0*G_PI/3.0)-standard_needle)*90);
-  cairo_stroke(cr);
-    
-  //Text for needle value.
-  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
-  cairo_text_extents_t extents1;
-  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-  cairo_set_font_size(cr, 30);
-  gchar *string1=g_strdup_printf("%i", (gint)priv->needle);
-  cairo_text_extents(cr, string1, &extents1); 
-  cairo_move_to(cr, -extents1.width/2, 140.0+extents1.height/2);  
-  cairo_show_text(cr, string1);
-  g_free(string1);
-
+  //Draw the gradient to the mid point.
+  else if(gradient_id==1)
+    {
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], priv->arc_color1[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_mid1[0], color_mid1[1], color_mid1[2], priv->arc_color2[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_mid1[0], color_mid1[1], color_mid1[2], priv->arc_color2[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], priv->arc_color1[3]);
+    }
+  //Draw the gradient from the mid point to the end.
+  else
+    {
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_mid1[0], color_mid1[1], color_mid1[2], priv->arc_color2[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], priv->arc_color3[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], priv->arc_color3[3]);
+      cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_mid1[0], color_mid1[1], color_mid1[2], priv->arc_color2[3]);
+    }
+  cairo_mesh_pattern_end_patch(pattern1);
+  cairo_set_source(cr, pattern1);
+  cairo_paint(cr);
+  cairo_pattern_destroy(pattern1);   
 }
 static void adjustable_gauge_finalize(GObject *object)
 { 

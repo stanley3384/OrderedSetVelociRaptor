@@ -2,7 +2,9 @@
 /*
 
     Another test program for the adjustable gauge widget. Add the critter_icons.c code for
-the critter drawings and to test some speeds. Use a GdkFrameClock for smooth animation.
+the critter drawings and to test some speeds. Use a GdkFrameClock for smooth animation. Drawing
+a gradient takes longer than a solid color so the the gradient might not work with the frame
+clock.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauges.c -o gauges `pkg-config --cflags --libs gtk+-3.0` -lm
 

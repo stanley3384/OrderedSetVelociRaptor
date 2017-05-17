@@ -7,14 +7,16 @@ range of the scale.
 gauge. The range is not enforced.  They can go above 10,000 or below -10,000 but the number formatting
 in the speedometer gets out of place. Also the speedometer numbers are displayed as ints and
 the voltage gauge is displayed as a float with two decimal places. These things can easily be 
-changed if need be. 
+changed if need be.
+    The gauges can be set with a gradient or with solid colors. The draw time for gradients is
+longer so they might not be suitable for using with a frame clock. 
     The start for this widget can be found in da_gauge1.c and da_speedometer1.c in the
 cairo_drawings folder. When setting properties, make sure to set the range or top and
 bottom values first.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 
-    Tested on Ubuntu14.04, GTK3.10.
+    Tested on Ubuntu16.04, GTK3.18.
 
     C. Eric Cashon
 
@@ -32,6 +34,7 @@ static void change_settings(GtkWidget *button, GtkWidget *widgets[])
   gdouble needle=atof(gtk_entry_get_text(GTK_ENTRY(widgets[3])));
   gdouble bottom=atof(gtk_entry_get_text(GTK_ENTRY(widgets[4])));
   gdouble top=atof(gtk_entry_get_text(GTK_ENTRY(widgets[5])));
+  gboolean check=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widgets[7]));
 
   g_print("%f %f %f %f %f\n", cutoff1, cutoff2, needle, bottom, top);
 
@@ -51,6 +54,7 @@ static void change_settings(GtkWidget *button, GtkWidget *widgets[])
   adjustable_gauge_set_first_cutoff(ADJUSTABLE_GAUGE(widgets[0]), cutoff1);
   adjustable_gauge_set_second_cutoff(ADJUSTABLE_GAUGE(widgets[0]), cutoff2);
   adjustable_gauge_set_needle(ADJUSTABLE_GAUGE(widgets[0]), needle);
+  adjustable_gauge_set_draw_gradient(ADJUSTABLE_GAUGE(widgets[0]), check);
   
 }
 int main(int argc, char *argv[])
@@ -60,12 +64,15 @@ int main(int argc, char *argv[])
   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(window), "Adjustable Gauge");
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-  gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+  gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
 
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   GtkWidget *gauge=adjustable_gauge_new();
-  
+  adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge), "rgba(255, 255, 255, 1.0)");
+  adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge), "rgba(0, 0, 0, 1.0)");
+  adjustable_gauge_set_needle_color(ADJUSTABLE_GAUGE(gauge), "rgba(0, 0, 0, 1.0)");
+
   /*Test setting some colors in the gauge.
   adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge), "rgba(255, 0, 255, 1.0)");
   adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge), "rgba(255, 255, 0, 1.0)");
@@ -122,25 +129,34 @@ int main(int argc, char *argv[])
   GtkWidget *button=gtk_button_new_with_label("Change Settings");
   gtk_widget_set_hexpand(button, TRUE);
 
-  GtkWidget *widgets[]={gauge, cutoff1_entry, cutoff2_entry, needle_entry, bottom_entry, top_entry, combo};
+  GtkWidget *check1=gtk_check_button_new_with_label("Color Gradient");
+  gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
+
+  GtkWidget *widgets[]={gauge, cutoff1_entry, cutoff2_entry, needle_entry, bottom_entry, top_entry, combo, check1};
   g_signal_connect(button, "clicked", G_CALLBACK(change_settings), widgets);
 
   GtkWidget *grid=gtk_grid_new();
-  gtk_grid_attach(GTK_GRID(grid), gauge, 0, 0, 4, 4);
-  gtk_grid_attach(GTK_GRID(grid), cutoff1_label, 0, 4, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), cutoff1_entry, 1, 4, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), cutoff2_label, 2, 4, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), cutoff2_entry, 3, 4, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), needle_label, 0, 5, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), needle_entry, 1, 5, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), bottom_label, 0, 6, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), bottom_entry, 1, 6, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), top_label, 2, 6, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), top_entry, 3, 6, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), combo, 1, 7, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), button, 0, 8, 6, 1);
+  gtk_grid_attach(GTK_GRID(grid), cutoff1_label, 0, 0, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), cutoff1_entry, 1, 0, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), cutoff2_label, 0, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), cutoff2_entry, 1, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), needle_label, 0, 2, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), needle_entry, 1, 2, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), bottom_label, 0, 3, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), bottom_entry, 1, 3, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), top_label, 0, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), top_entry, 1, 4, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), combo, 0, 5, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), check1, 0, 6, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), button, 0, 7, 2, 1);
 
-  gtk_container_add(GTK_CONTAINER(window), grid);
+  GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+  gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
+  gtk_paned_pack2(GTK_PANED(paned1), gauge, TRUE, TRUE);
+  gtk_paned_set_position(GTK_PANED(paned1), 300);
+   
+  gtk_container_add(GTK_CONTAINER(window), paned1);
+
   gtk_widget_show_all(window);
 
   gtk_main();
