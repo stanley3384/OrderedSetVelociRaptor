@@ -1,6 +1,10 @@
 
 
---These are a couple of simple gauge widgets derived from a GTK drawing area widget. There are a couple of properties that can be set such as the needle position and bounds. To set different colors and text position the code can easily be changed.
+--This is a simple gauge widget derived from a GTK drawing area widget. There is a "voltage" and "speedometer" gauge to choose from. The colors can be drawn with a gradient or as solid colors.
+
+Gauge Properties
+
+![ScreenShot](/Misc/AdjustableGauge/gauge1.png)
 
 
 Gauges
