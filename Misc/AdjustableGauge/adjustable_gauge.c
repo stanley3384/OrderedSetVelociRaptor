@@ -284,28 +284,28 @@ void adjustable_gauge_set_inside_radius(AdjustableGauge *da, gdouble inside_radi
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
 
-  if(inside_radius>=3.0&&inside_radius<=5.0)
+  if(inside_radius>=1.0&&inside_radius<=3.0)
     {
       priv->inside_radius=inside_radius;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
    else
     {
-      g_warning("Inside radius values 3.0<=x<=5.0.");
+      g_warning("Inside radius values 1.0<=x<=3.0.");
     }
 } 
 void adjustable_gauge_set_outside_radius(AdjustableGauge *da, gdouble outside_radius)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
 
-  if(outside_radius>=1.0&&outside_radius<3.0)
+  if(outside_radius>=3.0&&outside_radius<=5.0)
     {
       priv->outside_radius=outside_radius;
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
    else
     {
-      g_warning("Outside radius values 1.0<=x<3.0.");
+      g_warning("Outside radius values 3.0<=x<=5.0.");
     }
 } 
 void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name)
