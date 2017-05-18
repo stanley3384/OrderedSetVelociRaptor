@@ -1,19 +1,17 @@
 
 /*
 
-    An adjustable gauge widget. There are two cutoff points that can be set along with the 
-range of the scale.
+    An adjustable gauge widget.
     There are two types of gauges. One is called a voltage gauge and the other is a speedometer 
 gauge. The range is not enforced.  They can go above 10,000 or below -10,000 but the number formatting
 in the speedometer gets out of place. Also the speedometer numbers are displayed as ints and
 the voltage gauge is displayed as a float with two decimal places. These things can easily be 
 changed if need be.
     The gauges can be set with a gradient or with solid colors. The draw time for gradients is
-longer so they might not be suitable for using with a frame clock. With a gradient, the second cutoff
-point is ignored.
+longer so they might not be suitable for using with a frame clock.
     The start for this widget can be found in da_gauge1.c, da_speedometer1.c and circular_gradient2.c
-in the cairo_drawings folder. When setting properties, make sure to set the range or top and
-bottom values first. The widget still needs some work but it is getting there.
+in the cairo_drawings folder. When setting properties, make sure to set the top and
+bottom range to accomadate the other property values.
 
     gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
 

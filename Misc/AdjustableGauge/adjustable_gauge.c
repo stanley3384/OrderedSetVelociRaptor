@@ -1,10 +1,8 @@
 
 /*
-
     For use with adjustable_gauge_main.c. Look in adjustable_gauge_main.c for more information.
 
     C. Eric Cashon
-
 */
 
 #include<gtk/gtk.h>
@@ -698,7 +696,10 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Difference of top and bottom used to standardize values.
   gdouble diff=priv->scale_top-priv->scale_bottom;
 
-  //Needle line between 1 and 11. Standardize needle on this scale.
+  /*
+    Needle line between 1 and 11. Standardize needle on this scale because it goes from sections
+    1-11 of the upper 12 half of a 24 section circle.
+  */
   gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*10.0)+1.0;
   if(priv->needle>priv->scale_top)
     {
@@ -774,7 +775,7 @@ static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
   //Difference of top and bottom used to standardize values.
   gdouble diff=priv->scale_top-priv->scale_bottom;
 
-  //Draw yellow next. Standardized on 13 to 23 scale.
+  //Draw yellow next. Standardized on 13 to 23 scale. The upper 12 half of a 24 section circle.
   gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
    cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
   cairo_arc_negative(cr, 0, 0, inside, 23.0*G_PI/12.0, standard_first_cutoff*G_PI/12.0);
@@ -783,7 +784,7 @@ static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
   cairo_fill(cr);
   cairo_stroke(cr);
 
-  //Draw red top. Standardized on 13 to 23 scale.
+  //Draw red top. Standardized on 13 to 23 scale. The upper 12 half of a 24 section circle.
   gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*10.0)+13.0;
    cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
   cairo_arc_negative(cr, 0, 0, inside, 23.0*G_PI/12.0, standard_second_cutoff*G_PI/12.0);
@@ -834,6 +835,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
       speedometer_arc_solid(da, cr);
     }
 
+  //Position variables for tick marks and text.
   gdouble diff=priv->scale_top-priv->scale_bottom;
   gdouble tick_radius1=(priv->inside_radius+0.65*(priv->outside_radius-priv->inside_radius))*w1;
   gdouble tick_radius2=(priv->inside_radius+0.75*(priv->outside_radius-priv->inside_radius))*w1;
@@ -899,7 +901,6 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_move_to(cr, -extents1.width/2, tick_radius1+extents1.height/2);  
   cairo_show_text(cr, string1);
   g_free(string1);
-
 }
 static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
 {
@@ -912,10 +913,11 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
   if(width<height) w1=(gdouble)width/10.0;
   else w1=(gdouble)height/10.0;
 
+  //Inside outside radius of arc.
   gdouble inside=(priv->inside_radius+0.2)*w1;
   gdouble outside=(priv->outside_radius-0.2)*w1;
 
-  //Green underneath 
+  //Green default value underneath 
    cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
   cairo_set_line_width(cr, 3.0);
   cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
@@ -927,7 +929,7 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
 
   gdouble diff=priv->scale_top-priv->scale_bottom;
 
-  //Yellow next.
+  //Yellow default value next.
   gdouble standard_first_cutoff=(((priv->first_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
    cairo_set_source_rgba(cr, priv->arc_color2[0], priv->arc_color2[1], priv->arc_color2[2], priv->arc_color2[3]);
   cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_first_cutoff);
@@ -936,7 +938,7 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
   cairo_fill(cr);
   cairo_stroke(cr);
 
-  //Red top.
+  //Red default value top.
   gdouble standard_second_cutoff=(((priv->second_cutoff-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
    cairo_set_source_rgba(cr, priv->arc_color3[0], priv->arc_color3[1], priv->arc_color3[2], priv->arc_color3[3]);
   cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0+standard_second_cutoff);
@@ -958,6 +960,7 @@ static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sect
   if(width<height) w1=width/10.0;
   else w1=height/10.0;
 
+  //Rotate from x=1, y=0 position in unit circle.
   cairo_rotate(cr, r1); 
    
   //Draw the trapezoids and paint them with a gradient.
@@ -1013,7 +1016,10 @@ static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sect
       temp_cos2=temp_cos2*line_radius2;
       temp_sin2=temp_sin2*line_radius2;
 
-      //100 means there is no mid color in the drawing. Just draw start to end.
+      /*
+        Set the colors for the 4 corners of the trapezoid.
+        100 means there is no mid color in the drawing. Just draw start to end.
+      */
       if(mid_color_pos==100)
         {
           diff0=priv->arc_color3[0]-priv->arc_color1[0];
@@ -1071,6 +1077,7 @@ static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sect
           color_stop1[2]=priv->arc_color2[2]+(diff2*((gdouble)i-split_trap+1.0)/((gdouble)sections-split_trap));
         }
 
+       //Draw the trapezoid or ring gradient.
        if(mid_color_pos==100)
          {
            draw_arc_gradient(da, cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 0);
@@ -1085,6 +1092,7 @@ static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sect
            trap_sin1=prev_sin1+split_trap_frac*(temp_sin1-prev_sin1);
            trap_cos2=prev_cos2+split_trap_frac*(temp_cos2-prev_cos2);
            trap_sin2=prev_sin2+split_trap_frac*(temp_sin2-prev_sin2);
+           //Draw before and after the split in the trapezoid.
            draw_arc_gradient(da, cr, prev_cos1, prev_sin1, prev_cos2, prev_sin2, trap_cos1, trap_sin1, trap_cos2, trap_sin2, color_start1, color_mid1, color_stop1, 1);
            draw_arc_gradient(da, cr, trap_cos1, trap_sin1, trap_cos2, trap_sin2, temp_cos1, temp_sin1, temp_cos2, temp_sin2, color_start1, color_mid1, color_stop1, 2);
          } 
