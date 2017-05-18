@@ -20,6 +20,7 @@ static void combo2_changed(GtkComboBox *combo2, gpointer data);
 static void combo3_changed(GtkComboBox *combo3, gpointer data);
 static void toggle_fade(GtkToggleButton *check1, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
+static void time_drawing(GtkToggleButton *check2, gpointer data);
 
 //Test a colors to start and stop the gradient.
 static gdouble color_start[]={0.0, 1.0, 0.0, 1.0};
@@ -28,6 +29,7 @@ static gdouble cutoff1=100.0;
 static gint drawing_combo=0;
 static gint rotate_combo=0;
 static gboolean fade=FALSE;
+static gboolean time_it=FALSE;
 
 int main(int argc, char **argv)
  {
@@ -35,7 +37,7 @@ int main(int argc, char **argv)
 
    GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title(GTK_WINDOW(window), "Bezier Points");
-   gtk_window_set_default_size(GTK_WINDOW(window), 400, 600);
+   gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -97,20 +99,31 @@ int main(int argc, char **argv)
    gtk_widget_set_hexpand(button1, FALSE);
    GtkWidget *colors[]={entry1, entry2, da};
    g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
+
+   GtkWidget *check2=gtk_check_button_new_with_label("Time Drawing");
+   gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
+   g_signal_connect(check2, "toggled", G_CALLBACK(time_drawing), NULL);
    
    GtkWidget *grid=gtk_grid_new();
-   gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo2, 0, 3, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), combo3, 0, 4, 2, 1);
-   gtk_grid_attach(GTK_GRID(grid), label1, 0, 5, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), label2, 0, 6, 1, 1);
-   gtk_grid_attach(GTK_GRID(grid), entry2, 1, 6, 1, 1);
+   gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
+   gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+   gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), check1, 0, 1, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo2, 0, 2, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), combo3, 0, 3, 2, 1);
+   gtk_grid_attach(GTK_GRID(grid), label1, 0, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry1, 1, 4, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), entry2, 1, 5, 1, 1);
+   gtk_grid_attach(GTK_GRID(grid), check2, 0, 6, 2, 1);
    gtk_grid_attach(GTK_GRID(grid), button1, 0, 7, 2, 1);
+
+   GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+   gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
+   gtk_paned_pack2(GTK_PANED(paned1), da, TRUE, TRUE);
+   gtk_paned_set_position(GTK_PANED(paned1), 300);
    
-   gtk_container_add(GTK_CONTAINER(window), grid);
+   gtk_container_add(GTK_CONTAINER(window), paned1);
 
    gtk_widget_show_all(window);
 
@@ -124,6 +137,9 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
    gdouble r1=0;
    gdouble w1=0;
+   GTimer *timer=NULL;
+ 
+   if(time_it==TRUE) timer=g_timer_new();
 
    //Scale.
    if(width<height) w1=width/10.0;
@@ -172,6 +188,13 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
        cairo_arc(cr, width/2.0, height/2.0, 2.7*w1, 0.0, 2.0*G_PI);
        cairo_fill(cr); 
      }
+
+   if(time_it==TRUE) 
+     {
+       g_print("Draw Time %f\n", g_timer_elapsed(timer, NULL));
+       g_timer_destroy(timer);
+     }
+
    return FALSE;
  }
 static void draw_circle(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1)
@@ -374,5 +397,10 @@ static void check_colors(GtkWidget *widget, GtkWidget **colors)
       }
 
     gtk_widget_queue_draw(colors[2]);
+  }
+static void time_drawing(GtkToggleButton *check2, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(check2)) time_it=TRUE;
+    else time_it=FALSE;
   }
 
