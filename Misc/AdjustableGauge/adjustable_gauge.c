@@ -668,8 +668,26 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
       w1=(gdouble)height/10.0;
     }
 
-  gdouble inside=(priv->inside_radius+0.2)*w1;
-  gdouble outside=(priv->outside_radius-0.2)*w1;
+  /*
+    What value will fail to clip the 24 trapezoids to a circular ring? Check and see.
+    Get the unit circle points at pi/12 times the outside radius. Get the points on a line
+    half way between those points and (outside_radius, 0.0). Use that to get the radius
+    from there back to the origin. Just use a 0.1 clip adjustment.
+ 
+  gdouble unit_x=priv->outside_radius*w1*(1.0-(1.0-(1+sqrt(3.0))/(2.0*sqrt(2.0))));
+  gdouble unit_y=priv->outside_radius*w1*((sqrt(3.0)-1.0)/(2.0*sqrt(2.0)));
+  gdouble trap_half_x=priv->outside_radius*w1-(0.5*(priv->outside_radius*w1-unit_x));
+  gdouble trap_half_y=0.5*unit_y;
+  gdouble trap_half_r=sqrt(trap_half_x*trap_half_x+trap_half_y*trap_half_y);
+  gint i=0;
+  for(i=0;i<10;i++)
+    {
+      g_print("%i clip%f <= trap%f <= circle%f\n", i, (priv->outside_radius-(gdouble)i/10.0)*w1, trap_half_r, priv->outside_radius*w1);
+    }
+  */
+
+  gdouble inside=(priv->inside_radius+0.1)*w1;
+  gdouble outside=(priv->outside_radius-0.1)*w1;
   gdouble middle=(priv->inside_radius+0.5*(priv->outside_radius-priv->inside_radius))*w1;
     
   cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
@@ -681,11 +699,11 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   if(priv->draw_gradient)
     {
       cairo_save(cr);
-      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.1)*w1, 0.0, 2.0*G_PI);
       cairo_clip(cr);
       draw_arc(da, cr, -G_PI/12.0, 10, G_PI+G_PI/12);
       cairo_restore(cr);
-      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.1)*w1, 0.0, 2.0*G_PI);
       cairo_fill(cr); 
     }
   else
@@ -759,8 +777,8 @@ static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
   if(width<height) w1=(gdouble)width/10.0;
   else w1=(gdouble)height/10.0;
 
-  gdouble inside=(priv->inside_radius+0.2)*w1;
-  gdouble outside=(priv->outside_radius-0.2)*w1;
+  gdouble inside=(priv->inside_radius+0.1)*w1;
+  gdouble outside=(priv->outside_radius-0.1)*w1;
 
   //Green underneath 
   cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
@@ -823,11 +841,11 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   if(priv->draw_gradient)
     {
       cairo_save(cr);
-      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.1)*w1, 0.0, 2.0*G_PI);
       cairo_clip(cr);
       draw_arc(da, cr, -G_PI/12.0, 20, 2.0*G_PI/3.0);
       cairo_restore(cr);
-      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.2)*w1, 0.0, 2.0*G_PI);
+      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.1)*w1, 0.0, 2.0*G_PI);
       cairo_fill(cr); 
     }
   else
@@ -857,7 +875,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
     {
       temp=(gdouble)i*tick_mark;
       cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*tick_radius1, -sin((4.0*G_PI/3.0)-temp)*tick_radius1);
-      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1);
+      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.1)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.1)*w1);
       cairo_stroke(cr);
       //String values at large tick marks.
       gchar *tick_string=g_strdup_printf("%i", (gint)(priv->scale_bottom+(gdouble)i*tenth_scale));
@@ -877,7 +895,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
     {
       temp=(gdouble)i*tick_mark+half_tick;
       cairo_move_to(cr, cos((4.0*G_PI/3.0)-temp)*tick_radius2, -sin((4.0*G_PI/3.0)-temp)*tick_radius2);
-      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.2)*w1);
+      cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.1)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.1)*w1);
       cairo_stroke(cr);
       cairo_move_to(cr, 0, 0);
     }
@@ -914,8 +932,8 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
   else w1=(gdouble)height/10.0;
 
   //Inside outside radius of arc.
-  gdouble inside=(priv->inside_radius+0.2)*w1;
-  gdouble outside=(priv->outside_radius-0.2)*w1;
+  gdouble inside=(priv->inside_radius+0.1)*w1;
+  gdouble outside=(priv->outside_radius-0.1)*w1;
 
   //Green default value underneath 
    cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
