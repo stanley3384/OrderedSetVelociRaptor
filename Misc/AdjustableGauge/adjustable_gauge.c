@@ -772,17 +772,26 @@ static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
   gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
   gdouble w1=0;
+  gdouble scale_text=0;
 
   //Scale.
-  if(width<height) w1=(gdouble)width/10.0;
-  else w1=(gdouble)height/10.0;
+  if(width<height)
+    {
+      scale_text=width/400.0;
+      w1=(gdouble)width/10.0;
+    }  
+  else
+    {
+      scale_text=height/400.0;
+      w1=(gdouble)height/10.0;
+    }
 
   gdouble inside=(priv->inside_radius+0.1)*w1;
   gdouble outside=(priv->outside_radius-0.1)*w1;
 
   //Green underneath 
   cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
-  cairo_set_line_width(cr, 3.0);
+  cairo_set_line_width(cr, 3.0*scale_text);
   cairo_arc_negative(cr, 0, 0, inside, 23.0*G_PI/12.0, 13.0*G_PI/12.0);
   cairo_line_to(cr, -(cos(G_PI/12.0)*outside), -sin(G_PI/12.0)*outside);
   cairo_arc(cr, 0, 0, outside, 13.0*G_PI/12.0, 23.0*G_PI/12.0);
@@ -858,7 +867,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   gdouble tick_radius1=(priv->inside_radius+0.65*(priv->outside_radius-priv->inside_radius))*w1;
   gdouble tick_radius2=(priv->inside_radius+0.75*(priv->outside_radius-priv->inside_radius))*w1;
   gdouble text_radius=(priv->inside_radius+0.4*(priv->outside_radius-priv->inside_radius))*w1;
-  gdouble needle_radius=(priv->inside_radius+0.25*(priv->outside_radius-priv->inside_radius))*w1;
+  gdouble needle_radius=(priv->inside_radius+0.15*(priv->outside_radius-priv->inside_radius))*w1;
   
   //Set large tick marks.
   gint i=0;
@@ -869,7 +878,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
   cairo_text_extents_t tick_extents;
   cairo_set_font_size(cr, 20*scale_text);
-  cairo_set_line_width(cr, 3.0);
+  cairo_set_line_width(cr, 3.0*scale_text);
   cairo_move_to(cr, 0, 0);
   for(i=0;i<11;i++)
     {
@@ -888,7 +897,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
     }
 
   //Set small tick marks.
-  cairo_set_line_width(cr, 2.0);
+  cairo_set_line_width(cr, 2.0*scale_text);
   gdouble half_tick=tick_mark/2.0;
   cairo_move_to(cr, 0, 0);
   for(i=0;i<10;i++)
@@ -901,7 +910,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
     }
 
   //The needle line.
-  cairo_set_line_width(cr, 3.0);
+  cairo_set_line_width(cr, 3.0*scale_text);
   cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
   gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
@@ -926,10 +935,19 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
   gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
   gdouble w1=0;
+  gdouble scale_text=0;
 
   //Scale.
-  if(width<height) w1=(gdouble)width/10.0;
-  else w1=(gdouble)height/10.0;
+  if(width<height)
+    {
+      scale_text=width/400.0;
+      w1=(gdouble)width/10.0;
+    }
+  else
+    {
+      scale_text=height/400.0;
+      w1=(gdouble)height/10.0;
+    }
 
   //Inside outside radius of arc.
   gdouble inside=(priv->inside_radius+0.1)*w1;
@@ -937,7 +955,7 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
 
   //Green default value underneath 
    cairo_set_source_rgba(cr, priv->arc_color1[0], priv->arc_color1[1], priv->arc_color1[2], priv->arc_color1[3]);
-  cairo_set_line_width(cr, 3.0);
+  cairo_set_line_width(cr, 3.0*scale_text);
   cairo_arc_negative(cr, 0, 0, inside, -5.0*G_PI/3.0, -4.0*G_PI/3.0);
   cairo_line_to(cr, (cos(-4.0*G_PI/3.0)*outside), sin(-4.0*G_PI/3.0)*outside);
   cairo_arc(cr, 0, 0, outside, -4.0*G_PI/3.0, -5.0*G_PI/3.0);
