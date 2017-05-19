@@ -694,7 +694,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_paint(cr);
 
   //transforms
-  cairo_translate(cr, width/2.0, height/2.0);
+  cairo_translate(cr, width/2.0, 5.0*height/8.0);
 
   if(priv->draw_gradient)
     {
