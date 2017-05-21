@@ -67,9 +67,11 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
 static void adjustable_gauge_init(AdjustableGauge *da);
 static gboolean adjustable_gauge_draw(GtkWidget *widget, cairo_t *cr);
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr);
-static void voltage_arc_solid(GtkWidget *da, cairo_t *cr);
+static void adjustable_voltage_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1);
+static void voltage_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1);
 static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr);
-static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr);
+static void adjustable_speedometer_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1);
+static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1);
 //Draw arcs with a gradient.
 static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1);
 static void draw_arc_gradient(GtkWidget *da, cairo_t *cr, gdouble x1, gdouble y1, gdouble x2, gdouble y2, gdouble x3, gdouble y3, gdouble x4, gdouble y4, gdouble color_start1[], gdouble color_mid1[], gdouble color_stop1[], gint gradient_id);
@@ -643,11 +645,13 @@ GtkWidget* adjustable_gauge_new()
 static gboolean adjustable_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
-
   if(priv->gauge_drawing_name==VOLTAGE_GAUGE) adjustable_voltage_gauge_draw(da, cr);
   else adjustable_speedometer_gauge_draw(da, cr);
   return FALSE;
 }
+/*
+  Put the moving needle and changing text for the voltage gauge in this function.
+*/
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -668,48 +672,14 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
       w1=(gdouble)height/10.0;
     }
 
-  /*
-    What value will fail to clip the 24 trapezoids to a circular ring? Check and see.
-    Get the unit circle points at pi/12 times the outside radius. Get the points on a line
-    half way between those points and (outside_radius, 0.0). Use that to get the radius
-    from there back to the origin. Just use a 0.1 clip adjustment.
- 
-  gdouble unit_x=priv->outside_radius*w1*(1.0-(1.0-(1+sqrt(3.0))/(2.0*sqrt(2.0))));
-  gdouble unit_y=priv->outside_radius*w1*((sqrt(3.0)-1.0)/(2.0*sqrt(2.0)));
-  gdouble trap_half_x=priv->outside_radius*w1-(0.5*(priv->outside_radius*w1-unit_x));
-  gdouble trap_half_y=0.5*unit_y;
-  gdouble trap_half_r=sqrt(trap_half_x*trap_half_x+trap_half_y*trap_half_y);
-  gint i=0;
-  for(i=0;i<10;i++)
-    {
-      g_print("%i clip%f <= trap%f <= circle%f\n", i, (priv->outside_radius-(gdouble)i/10.0)*w1, trap_half_r, priv->outside_radius*w1);
-    }
-  */
+  //Move the voltage gauge a little below center.
+  cairo_translate(cr, width/2.0, 5.0*height/8.0);
+
+  //Constant gauge background if window isn't resized or properties aren't changed.
+  adjustable_voltage_gauge_background(da, cr, scale_text, w1);
 
   gdouble inside=(priv->inside_radius+0.1)*w1;
   gdouble outside=(priv->outside_radius-0.1)*w1;
-  gdouble middle=(priv->inside_radius+0.5*(priv->outside_radius-priv->inside_radius))*w1;
-    
-  cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
-  cairo_paint(cr);
-
-  //transforms
-  cairo_translate(cr, width/2.0, 5.0*height/8.0);
-
-  if(priv->draw_gradient)
-    {
-      cairo_save(cr);
-      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.1)*w1, 0.0, 2.0*G_PI);
-      cairo_clip(cr);
-      draw_arc(da, cr, -G_PI/12.0, 10, G_PI+G_PI/12);
-      cairo_restore(cr);
-      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.1)*w1, 0.0, 2.0*G_PI);
-      cairo_fill(cr); 
-    }
-  else
-    {
-      voltage_arc_solid(da, cr);
-    }
 
   //Difference of top and bottom used to standardize values.
   gdouble diff=priv->scale_top-priv->scale_bottom;
@@ -744,8 +714,50 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_move_to(cr, -extents1.width/2, 0.5*inside+extents1.height/2);  
   cairo_show_text(cr, string1);
   g_free(string1);
+}
+static void adjustable_voltage_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  /*
+    What value will fail to clip the 24 trapezoids to a circular ring? Check and see.
+    Get the unit circle points at pi/12 times the outside radius. Get the points on a line
+    half way between those points and (outside_radius, 0.0). Use that to get the radius
+    from there back to the origin. Just use a 0.1 clip adjustment.
+ 
+  gdouble unit_x=priv->outside_radius*w1*(1.0-(1.0-(1+sqrt(3.0))/(2.0*sqrt(2.0))));
+  gdouble unit_y=priv->outside_radius*w1*((sqrt(3.0)-1.0)/(2.0*sqrt(2.0)));
+  gdouble trap_half_x=priv->outside_radius*w1-(0.5*(priv->outside_radius*w1-unit_x));
+  gdouble trap_half_y=0.5*unit_y;
+  gdouble trap_half_r=sqrt(trap_half_x*trap_half_x+trap_half_y*trap_half_y);
+  gint i=0;
+  for(i=0;i<10;i++)
+    {
+      g_print("%i clip%f <= trap%f <= circle%f\n", i, (priv->outside_radius-(gdouble)i/10.0)*w1, trap_half_r, priv->outside_radius*w1);
+    }
+  */
+
+  gdouble middle=(priv->inside_radius+0.5*(priv->outside_radius-priv->inside_radius))*w1;
+    
+  cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
+  cairo_paint(cr);
+
+  if(priv->draw_gradient)
+    {
+      cairo_save(cr);
+      cairo_arc(cr, 0.0, 0.0, (priv->outside_radius-0.1)*w1, 0.0, 2.0*G_PI);
+      cairo_clip(cr);
+      draw_arc(da, cr, -G_PI/12.0, 10, G_PI+G_PI/12);
+      cairo_restore(cr);
+      cairo_arc(cr, 0.0, 0.0, (priv->inside_radius+0.1)*w1, 0.0, 2.0*G_PI);
+      cairo_fill(cr); 
+    }
+  else
+    {
+      voltage_arc_solid(da, cr, scale_text, w1);
+    }
 
   //Text for bottom end scale value.
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
   cairo_text_extents_t extents2;
   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size(cr, 22*scale_text);
@@ -764,28 +776,10 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_move_to(cr, -extents3.width/2+middle, extents3.height/2);  
   cairo_show_text(cr, string3);
   g_free(string3);
-
 }
-static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
+static void voltage_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
-  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
-  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
-  gdouble w1=0;
-  gdouble scale_text=0;
-
-  //Scale.
-  if(width<height)
-    {
-      scale_text=width/400.0;
-      w1=(gdouble)width/10.0;
-    }  
-  else
-    {
-      scale_text=height/400.0;
-      w1=(gdouble)height/10.0;
-    }
-
   gdouble inside=(priv->inside_radius+0.1)*w1;
   gdouble outside=(priv->outside_radius-0.1)*w1;
 
@@ -820,6 +814,9 @@ static void voltage_arc_solid(GtkWidget *da, cairo_t *cr)
   cairo_fill(cr);
   cairo_stroke(cr);
 }
+/*
+  Put the moving needle and changing text for the speedometer in this function.
+*/
 static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -828,9 +825,6 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
   gdouble scale_text=0;
   gdouble w1=0;
-    
-  cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
-  cairo_paint(cr);
 
   //Scale.
   if(width<height)
@@ -847,6 +841,40 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   //Move to center.
   cairo_translate(cr, width/2.0, height/2.0);
 
+  //Constant gauge background if window isn't resized or properties aren't changed.
+  adjustable_speedometer_gauge_background(da, cr, scale_text, w1);
+
+  gdouble diff=priv->scale_top-priv->scale_bottom;
+  gdouble needle_radius=(priv->inside_radius+0.15*(priv->outside_radius-priv->inside_radius))*w1;
+  gdouble tick_radius1=(priv->inside_radius+0.65*(priv->outside_radius-priv->inside_radius))*w1;
+
+  //The needle line.
+  cairo_set_line_width(cr, 3.0*scale_text);
+  cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
+  cairo_move_to(cr, 0, 0);
+  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*needle_radius, -sin((4.0*G_PI/3.0)-standard_needle)*needle_radius);
+  cairo_stroke(cr);
+    
+  //Text for needle value.
+  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
+  cairo_text_extents_t extents1;
+  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+  cairo_set_font_size(cr, 30*scale_text);
+  gchar *string1=g_strdup_printf("%i", (gint)priv->needle);
+  cairo_text_extents(cr, string1, &extents1); 
+  cairo_move_to(cr, -extents1.width/2, tick_radius1+extents1.height/2);  
+  cairo_show_text(cr, string1);
+  g_free(string1);
+}
+static void adjustable_speedometer_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
+  cairo_paint(cr);
+
   if(priv->draw_gradient)
     {
       cairo_save(cr);
@@ -859,7 +887,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
     }
   else
     {
-      speedometer_arc_solid(da, cr);
+      speedometer_arc_solid(da, cr, scale_text, w1);
     }
 
   //Position variables for tick marks and text.
@@ -867,7 +895,6 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   gdouble tick_radius1=(priv->inside_radius+0.65*(priv->outside_radius-priv->inside_radius))*w1;
   gdouble tick_radius2=(priv->inside_radius+0.75*(priv->outside_radius-priv->inside_radius))*w1;
   gdouble text_radius=(priv->inside_radius+0.4*(priv->outside_radius-priv->inside_radius))*w1;
-  gdouble needle_radius=(priv->inside_radius+0.15*(priv->outside_radius-priv->inside_radius))*w1;
   
   //Set large tick marks.
   gint i=0;
@@ -907,47 +934,11 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
       cairo_line_to(cr, cos((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.1)*w1, -sin((4.0*G_PI/3.0)-temp)*(priv->outside_radius-0.1)*w1);
       cairo_stroke(cr);
       cairo_move_to(cr, 0, 0);
-    }
-
-  //The needle line.
-  cairo_set_line_width(cr, 3.0*scale_text);
-  cairo_set_source_rgba(cr, priv->needle_color[0], priv->needle_color[1], priv->needle_color[2], priv->needle_color[3]);
-  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-  gdouble standard_needle=(((priv->needle-priv->scale_bottom)/diff)*(5.0*G_PI/3.0));
-  cairo_move_to(cr, 0, 0);
-  cairo_line_to(cr, cos((4.0*G_PI/3.0)-standard_needle)*needle_radius, -sin((4.0*G_PI/3.0)-standard_needle)*needle_radius);
-  cairo_stroke(cr);
-    
-  //Text for needle value.
-  cairo_set_source_rgba(cr, priv->text_color[0], priv->text_color[1], priv->text_color[2], priv->text_color[3]);
-  cairo_text_extents_t extents1;
-  cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-  cairo_set_font_size(cr, 30*scale_text);
-  gchar *string1=g_strdup_printf("%i", (gint)priv->needle);
-  cairo_text_extents(cr, string1, &extents1); 
-  cairo_move_to(cr, -extents1.width/2, tick_radius1+extents1.height/2);  
-  cairo_show_text(cr, string1);
-  g_free(string1);
+    }  
 }
-static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr)
+static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
-  gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
-  gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
-  gdouble w1=0;
-  gdouble scale_text=0;
-
-  //Scale.
-  if(width<height)
-    {
-      scale_text=width/400.0;
-      w1=(gdouble)width/10.0;
-    }
-  else
-    {
-      scale_text=height/400.0;
-      w1=(gdouble)height/10.0;
-    }
 
   //Inside outside radius of arc.
   gdouble inside=(priv->inside_radius+0.1)*w1;
