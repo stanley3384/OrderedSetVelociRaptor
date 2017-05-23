@@ -6,7 +6,7 @@ the critter drawings and to test some speeds. Use a GdkFrameClock for smooth ani
     This is for use with the threaded version of adjustable_gauge.c. It sets all the gauges
 to draw gradients.
 
-    gcc -Wall -Werror adjustable_gauge.c adjustable_gauges.c -o gauges `pkg-config --cflags --libs gtk+-3.0` -lm
+    gcc -Wall -Werror adjustable_gauge2.c adjustable_gauges2.c -o gauges2 `pkg-config --cflags --libs gtk+-3.0` -lm
 
     Tested on Ubuntu16.04 and GTK3.18.
 
@@ -15,7 +15,7 @@ to draw gradients.
 */
 
 #include <gtk/gtk.h>
-#include "adjustable_gauge.h"
+#include "adjustable_gauge2.h"
 
 //The frame clock id's.
 static guint tick_id1=0;

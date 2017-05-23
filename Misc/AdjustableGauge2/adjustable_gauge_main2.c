@@ -16,7 +16,7 @@ longer so they might not be suitable for using with a frame clock.
 in the cairo_drawings folder. When setting properties, make sure to set the top and
 bottom range to accomadate the other property values.
 
-    gcc -Wall -Werror adjustable_gauge.c adjustable_gauge_main.c -o gauge `pkg-config gtk+-3.0 --cflags --libs` -lm
+    gcc -Wall -Werror adjustable_gauge2.c adjustable_gauge_main2.c -o gauge2 `pkg-config gtk+-3.0 --cflags --libs` -lm
 
     Tested on Ubuntu16.04, GTK3.18.
 
@@ -25,7 +25,7 @@ bottom range to accomadate the other property values.
 */
 
 #include<gtk/gtk.h>
-#include "adjustable_gauge.h"
+#include "adjustable_gauge2.h"
 #include<stdlib.h>
 
 static void change_settings(GtkWidget *button, GtkWidget *widgets[]);

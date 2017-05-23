@@ -1,6 +1,6 @@
 
 /*
-    For use with adjustable_gauge_main.c. Look in adjustable_gauge_main.c for more information.
+    For use with adjustable_gauge_main2.c. Look in adjustable_gauge_main2.c for more information.
     This is the threaded version.
 
     C. Eric Cashon
@@ -8,7 +8,7 @@
 
 #include<gtk/gtk.h>
 #include<math.h>
-#include "adjustable_gauge.h"
+#include "adjustable_gauge2.h"
 
 #define ADJUSTABLE_GAUGE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), ADJUSTABLE_GAUGE_TYPE, AdjustableGaugePrivate))
 
