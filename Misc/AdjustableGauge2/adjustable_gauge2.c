@@ -746,7 +746,7 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_translate(cr, (gdouble)width/2.0, 5.0*(gdouble)height/8.0);
 
   //Draw the needle position and changing number.
-  adjustable_voltage_gauge_moving(da, cr, scale_text, w1);  
+  if(!priv->resize) adjustable_voltage_gauge_moving(da, cr, scale_text, w1);  
 }
 static void adjustable_voltage_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
 {
@@ -925,7 +925,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
   cairo_translate(cr, width/2.0, height/2.0);
 
   //Draw the needle position and changing number.
-  adjustable_speedometer_gauge_moving(da, cr, scale_text, w1);
+  if(!priv->resize) adjustable_speedometer_gauge_moving(da, cr, scale_text, w1);
 }
 static void adjustable_speedometer_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
 {
