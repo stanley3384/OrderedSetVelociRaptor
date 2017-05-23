@@ -80,6 +80,11 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass);
 static void adjustable_gauge_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void adjustable_gauge_init(AdjustableGauge *da);
+/*
+    Separate gauge drawing into background and moving components. The background is the part of the 
+    drawing that doesn't change except for window resizes and property changes. The moving parts are
+    the needle and dynamic numbers.
+*/
 static gboolean adjustable_gauge_draw(GtkWidget *widget, cairo_t *cr);
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr);
 static void adjustable_voltage_gauge_background(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1);
@@ -92,9 +97,15 @@ static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text
 //Draw arcs with a gradient.
 static void draw_arc(GtkWidget *da, cairo_t *cr, gdouble next_section, gint sections, gdouble r1);
 static void draw_arc_gradient(GtkWidget *da, cairo_t *cr, gdouble x1, gdouble y1, gdouble x2, gdouble y2, gdouble x3, gdouble y3, gdouble x4, gdouble y4, gdouble color_start1[], gdouble color_mid1[], gdouble color_stop1[], gint gradient_id);
-//Finalize.
+/*
+    Use a worker thread for background redraws. If a background property changes other than the needle
+    setting or a window resize occurs, redraw. That way when drawing with a frame clock, only the needle and
+    dynamic numbers need to be redrawn. The background surface is reused.
+*/
+static void thread_check_for_redraw(GtkWidget *da, cairo_t *cr);
 static gpointer thread_draw_new_surface(GtkWidget *da);
 static gboolean thread_join(GtkWidget *da);
+//Finalize.
 static void adjustable_gauge_finalize(GObject *object);
 
 G_DEFINE_TYPE(AdjustableGauge, adjustable_gauge, GTK_TYPE_DRAWING_AREA)
@@ -728,38 +739,8 @@ static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
       w1=(gdouble)height/10.0;
     }
 
-  //Check if background needs to be redrawn.
-  if(priv->resize&&!priv->thread_active)
-      {
-        cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
-        cairo_paint(cr);
-        if(priv->thread!=NULL)
-          {
-            g_thread_unref(priv->thread);
-            priv->thread_active=TRUE;
-            priv->resize=FALSE;
-            priv->thread=g_thread_new("thread1", (GThreadFunc)thread_draw_new_surface, da);
-          }
-        else
-          {
-            priv->thread_active=TRUE;
-            priv->resize=FALSE;
-            priv->thread=g_thread_new("thread1", (GThreadFunc)thread_draw_new_surface, da);
-          }
-      }
-    else
-      {
-        if(priv->surface!=NULL&&!priv->thread_active)
-          {
-            cairo_set_source_surface(cr, priv->surface, 0, 0);
-            cairo_paint(cr);
-          }
-        else
-          {
-            cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
-            cairo_paint(cr);
-          }
-      }
+  //See if the background needs to be redrawn.
+  thread_check_for_redraw(da, cr);  
 
   //Move the voltage gauge a little below center.
   cairo_translate(cr, (gdouble)width/2.0, 5.0*(gdouble)height/8.0);
@@ -937,39 +918,9 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
       w1=(gdouble)height/10.0;
     }
 
-  //Check if background needs to be redrawn.
-  if(priv->resize&&!priv->thread_active)
-      {
-        cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
-        cairo_paint(cr);
-        if(priv->thread!=NULL)
-          {
-            g_thread_unref(priv->thread);
-            priv->thread_active=TRUE;
-            priv->resize=FALSE;
-            priv->thread=g_thread_new("thread1", (GThreadFunc)thread_draw_new_surface, da);
-          }
-        else
-          {
-            priv->thread_active=TRUE;
-            priv->resize=FALSE;
-            priv->thread=g_thread_new("thread1", (GThreadFunc)thread_draw_new_surface, da);
-          }
-      }
-    else
-      {
-        if(priv->surface!=NULL&&!priv->thread_active)
-          {
-            cairo_set_source_surface(cr, priv->surface, 0, 0);
-            cairo_paint(cr);
-          }
-        else
-          {
-            cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
-            cairo_paint(cr);
-          }
-      }
-
+  //See if the background needs to be redrawn.
+  thread_check_for_redraw(da, cr);
+  
   //Move to center.
   cairo_translate(cr, width/2.0, height/2.0);
 
@@ -1311,6 +1262,43 @@ static void draw_arc_gradient(GtkWidget *da, cairo_t *cr, gdouble x1, gdouble y1
   cairo_set_source(cr, pattern1);
   cairo_paint(cr);
   cairo_pattern_destroy(pattern1);   
+}
+static void thread_check_for_redraw(GtkWidget *da, cairo_t *cr)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+
+  //Check if background needs to be redrawn.
+  if(priv->resize&&!priv->thread_active)
+      {
+        cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
+        cairo_paint(cr);
+        if(priv->thread!=NULL)
+          {
+            g_thread_unref(priv->thread);
+            priv->thread_active=TRUE;
+            priv->resize=FALSE;
+            priv->thread=g_thread_new("thread1", (GThreadFunc)thread_draw_new_surface, da);
+          }
+        else
+          {
+            priv->thread_active=TRUE;
+            priv->resize=FALSE;
+            priv->thread=g_thread_new("thread1", (GThreadFunc)thread_draw_new_surface, da);
+          }
+      }
+    else
+      {
+        if(priv->surface!=NULL&&!priv->thread_active)
+          {
+            cairo_set_source_surface(cr, priv->surface, 0, 0);
+            cairo_paint(cr);
+          }
+        else
+          {
+            cairo_set_source_rgba(cr, priv->background[0], priv->background[1], priv->background[2], priv->background[3]);
+            cairo_paint(cr);
+          }
+      }  
 }
 static gpointer thread_draw_new_surface(GtkWidget *da)
 {
