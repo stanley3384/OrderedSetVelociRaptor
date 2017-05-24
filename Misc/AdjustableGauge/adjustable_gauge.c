@@ -916,7 +916,7 @@ static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
       cairo_text_extents_t extents2;
       cairo_set_font_size(cr, 20*scale_text);
       cairo_text_extents(cr, priv->units_text_string, &extents2); 
-      cairo_move_to(cr, -extents2.width/2, 1.1*extents2.height+(tick_radius1+extents1.height/2));  
+      cairo_move_to(cr, -extents2.width/2, 2.0*extents2.height+(tick_radius1+extents1.height/2));  
       cairo_show_text(cr, priv->units_text_string);
     }
 }

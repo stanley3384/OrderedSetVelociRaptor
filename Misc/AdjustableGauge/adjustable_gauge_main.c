@@ -86,6 +86,12 @@ int main(int argc, char *argv[])
   gtk_entry_set_width_chars(GTK_ENTRY(top_entry), 4);
   gtk_entry_set_text(GTK_ENTRY(top_entry), "100");
 
+  GtkWidget *units_label=gtk_label_new("Units");
+  gtk_widget_set_hexpand(units_label, TRUE);
+
+  GtkWidget *units_entry=gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(units_entry), "");
+
   GtkWidget *combo1=gtk_combo_box_text_new();
   gtk_widget_set_hexpand(combo1, TRUE);
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Inside Radius 1.0");
@@ -133,7 +139,7 @@ int main(int argc, char *argv[])
   GtkWidget *button1=gtk_button_new_with_label("Change Settings");
   gtk_widget_set_hexpand(button1, TRUE);
 
-  GtkWidget *widgets[]={gauge, cutoff1_entry, cutoff2_entry, needle_entry, bottom_entry, top_entry, start_entry, mid_entry, end_entry, combo1, combo2, combo3, check1};
+  GtkWidget *widgets[]={gauge, cutoff1_entry, cutoff2_entry, needle_entry, bottom_entry, top_entry, start_entry, mid_entry, end_entry, units_entry, combo1, combo2, combo3, check1};
   g_signal_connect(button1, "clicked", G_CALLBACK(change_settings), widgets);
 
   GtkWidget *button2=gtk_button_new_with_label("Animate 0-100");
@@ -143,7 +149,7 @@ int main(int argc, char *argv[])
   g_signal_connect(button2, "clicked", G_CALLBACK(animate), widgets2);
 
   GtkWidget *grid=gtk_grid_new();
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
   gtk_grid_attach(GTK_GRID(grid), cutoff1_label, 0, 0, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), cutoff1_entry, 1, 0, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), cutoff2_label, 0, 1, 1, 1);
@@ -160,12 +166,14 @@ int main(int argc, char *argv[])
   gtk_grid_attach(GTK_GRID(grid), mid_entry, 1, 6, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), end_label, 0, 7, 1, 1);
   gtk_grid_attach(GTK_GRID(grid), end_entry, 1, 7, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), combo1, 0, 8, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), combo2, 0, 9, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), combo3, 0, 10, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), check1, 0, 11, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), button1, 0, 12, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), button2, 0, 13, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), units_label, 0, 8, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), units_entry, 1, 8, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), combo1, 0, 9, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), combo2, 0, 10, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), combo3, 0, 11, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), check1, 0, 12, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), button1, 0, 13, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid), button2, 0, 14, 2, 1);
 
   GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -190,10 +198,11 @@ static void change_settings(GtkWidget *button, GtkWidget *widgets[])
   gchar *start=g_strdup(gtk_entry_get_text(GTK_ENTRY(widgets[6])));
   gchar *mid=g_strdup(gtk_entry_get_text(GTK_ENTRY(widgets[7])));
   gchar *end=g_strdup(gtk_entry_get_text(GTK_ENTRY(widgets[8])));
-  gint inside=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[9]));
-  gint outside=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[10]));
-  gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[11]));
-  gboolean check=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widgets[12]));
+  gchar *units=g_strdup(gtk_entry_get_text(GTK_ENTRY(widgets[9])));
+  gint inside=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[10]));
+  gint outside=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[11]));
+  gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(widgets[12]));
+  gboolean check=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widgets[13]));
 
   //Check the combos.
   if(inside==0) adjustable_gauge_set_inside_radius(ADJUSTABLE_GAUGE(widgets[0]), 1.0);
@@ -206,6 +215,9 @@ static void change_settings(GtkWidget *button, GtkWidget *widgets[])
 
   if(type==0) adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(widgets[0]), VOLTAGE_GAUGE);
   else adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(widgets[0]), SPEEDOMETER_GAUGE);
+
+  adjustable_gauge_set_units_text(ADJUSTABLE_GAUGE(widgets[0]), units);  
+  g_free(units);
 
   //Set colors.
   adjustable_gauge_set_arc_color1(ADJUSTABLE_GAUGE(widgets[0]), start);
