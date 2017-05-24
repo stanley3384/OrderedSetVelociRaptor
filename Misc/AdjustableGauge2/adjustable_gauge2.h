@@ -61,6 +61,8 @@ void adjustable_gauge_set_drawing(AdjustableGauge *da, gint drawing_name);
 gint adjustable_gauge_get_drawing(AdjustableGauge *da);
 void adjustable_gauge_set_draw_gradient(AdjustableGauge *da, gboolean draw_gradient);
 gboolean adjustable_gauge_get_draw_gradient(AdjustableGauge *da);
+void adjustable_gauge_set_units_text(AdjustableGauge *da, const gchar *unit_text_string);
+const gchar* adjustable_gauge_get_units_text(AdjustableGauge *da);
 //Set and get colors.
 void adjustable_gauge_set_background(AdjustableGauge *da, const gchar *background_string);
 const gchar* adjustable_gauge_get_background(AdjustableGauge *da);

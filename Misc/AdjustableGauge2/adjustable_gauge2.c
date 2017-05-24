@@ -25,6 +25,7 @@ struct _AdjustableGaugePrivate
   gdouble outside_radius;
   gint gauge_drawing_name;
   gboolean draw_gradient;
+  gchar *units_text_string;
   //colors
   gchar *background_string;
   gchar *text_color_string;
@@ -59,6 +60,7 @@ enum
   OUTSIDE_RADIUS,
   GAUGE_DRAWING_NAME,
   DRAW_GRADIENT,
+  UNITS_TEXT,
   //color properties
   BACKGROUND,
   TEXT_COLOR,
@@ -146,6 +148,8 @@ static void adjustable_gauge_class_init(AdjustableGaugeClass *klass)
 
   g_object_class_install_property(gobject_class, DRAW_GRADIENT, g_param_spec_boolean("draw_gradient", "draw_gradient", "draw_gradient", FALSE, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, UNITS_TEXT, g_param_spec_string("units_text", "units_text", "units_text", NULL, G_PARAM_READWRITE));
+
   g_object_class_install_property(gobject_class, BACKGROUND, g_param_spec_string("background", "background", "background", NULL, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, TEXT_COLOR, g_param_spec_string("text_color", "text_color", "text_color", NULL, G_PARAM_READWRITE));
@@ -206,6 +210,9 @@ static void adjustable_gauge_set_property(GObject *object, guint prop_id, const 
       break;
     case DRAW_GRADIENT:
       adjustable_gauge_set_draw_gradient(da, g_value_get_boolean(value));
+      break;
+    case UNITS_TEXT:
+      adjustable_gauge_set_units_text(da, g_value_get_string(value));
       break;
     case BACKGROUND:
       adjustable_gauge_set_background(da, g_value_get_string(value));
@@ -393,6 +400,22 @@ void adjustable_gauge_set_draw_gradient(AdjustableGauge *da, gboolean draw_gradi
       gtk_widget_queue_draw(GTK_WIDGET(da));
     }
 }
+void adjustable_gauge_set_units_text(AdjustableGauge *da, const gchar *units_text_string)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  
+  if(units_text_string!=NULL)
+    {
+      //Limit the size of the string if it is greater than 20.      
+      g_free(priv->units_text_string);
+      priv->units_text_string=g_strndup(units_text_string, 20);
+    }
+  else
+    {
+      g_free(priv->units_text_string);
+      priv->units_text_string=NULL;
+    }
+} 
 void adjustable_gauge_set_background(AdjustableGauge *da, const gchar *background_string)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -547,6 +570,9 @@ static void adjustable_gauge_get_property(GObject *object, guint prop_id, GValue
     case DRAW_GRADIENT:
       g_value_set_boolean(value, priv->draw_gradient);
       break;
+    case UNITS_TEXT:
+      g_value_set_string(value, priv->units_text_string);
+      break;
     case BACKGROUND:
       g_value_set_string(value, priv->background_string);
       break;
@@ -614,6 +640,11 @@ gboolean adjustable_gauge_get_draw_gradient(AdjustableGauge *da)
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   return priv->draw_gradient;
 }
+const gchar* adjustable_gauge_get_units_text_string(AdjustableGauge *da)
+{
+  AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
+  return priv->units_text_string;
+}
 const gchar* adjustable_gauge_get_background(AdjustableGauge *da)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -662,6 +693,7 @@ static void adjustable_gauge_init(AdjustableGauge *da)
   priv->thread=NULL;
   priv->surface=NULL;
   priv->thread_active=FALSE;
+  priv->units_text_string=NULL;
 
   //Set the initial colors.
   priv->background[0]=0.0;
@@ -708,9 +740,6 @@ static gboolean adjustable_gauge_draw(GtkWidget *da, cairo_t *cr)
   else adjustable_speedometer_gauge_draw(da, cr);
   return FALSE;
 }
-/*
-  Put the moving needle and changing text for the voltage gauge in this function.
-*/
 static void adjustable_voltage_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -849,6 +878,16 @@ static void adjustable_voltage_gauge_moving(GtkWidget *da, cairo_t *cr, gdouble 
   cairo_move_to(cr, -extents1.width/2, 0.5*inside+extents1.height/2);  
   cairo_show_text(cr, string1);
   g_free(string1);
+
+  //Text for units. This isn't moving but it uses the above extents.
+  if(priv->units_text_string!=NULL)
+    {
+      cairo_text_extents_t extents2;
+      cairo_set_font_size(cr, 20*scale_text);
+      cairo_text_extents(cr, priv->units_text_string, &extents2); 
+      cairo_move_to(cr, -extents2.width/2, extents2.height+(0.6*inside+extents1.height/2));  
+      cairo_show_text(cr, priv->units_text_string);
+    }
 }
 static void voltage_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
 {
@@ -887,9 +926,6 @@ static void voltage_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gd
   cairo_fill(cr);
   cairo_stroke(cr);
 }
-/*
-  Put the moving needle and changing text for the speedometer in this function.
-*/
 static void adjustable_speedometer_gauge_draw(GtkWidget *da, cairo_t *cr)
 {
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
@@ -1021,6 +1057,16 @@ static void adjustable_speedometer_gauge_moving(GtkWidget *da, cairo_t *cr, gdou
   cairo_move_to(cr, -extents1.width/2, tick_radius1+extents1.height/2);  
   cairo_show_text(cr, string1);
   g_free(string1);
+
+  //Text for units. This isn't moving but it uses the above extents.
+  if(priv->units_text_string!=NULL)
+    {
+      cairo_text_extents_t extents2;
+      cairo_set_font_size(cr, 20*scale_text);
+      cairo_text_extents(cr, priv->units_text_string, &extents2); 
+      cairo_move_to(cr, -extents2.width/2, 1.1*extents2.height+(tick_radius1+extents1.height/2));  
+      cairo_show_text(cr, priv->units_text_string);
+    }
 }
 static void speedometer_arc_solid(GtkWidget *da, cairo_t *cr, gdouble scale_text, gdouble w1)
 {
@@ -1368,6 +1414,7 @@ static void adjustable_gauge_finalize(GObject *object)
   AdjustableGauge *da=ADJUSTABLE_GAUGE(object);
   AdjustableGaugePrivate *priv=ADJUSTABLE_GAUGE_GET_PRIVATE(da);
   
+  g_free(priv->units_text_string);
   g_free(priv->background_string);
   g_free(priv->text_color_string);
   g_free(priv->arc_color_string1);

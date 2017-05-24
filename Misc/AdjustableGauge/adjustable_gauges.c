@@ -67,6 +67,7 @@ int main(int argc, char **argv)
        
     GtkWidget *gauge1=adjustable_gauge_new();
     adjustable_gauge_set_drawing(ADJUSTABLE_GAUGE(gauge1), SPEEDOMETER_GAUGE);
+    adjustable_gauge_set_units_text(ADJUSTABLE_GAUGE(gauge1), "mph");
     adjustable_gauge_set_background(ADJUSTABLE_GAUGE(gauge1), "rgba(255, 255, 255, 1.0)");
     adjustable_gauge_set_text_color(ADJUSTABLE_GAUGE(gauge1), "rgba(0, 0, 0, 1.0)");
     adjustable_gauge_set_needle_color(ADJUSTABLE_GAUGE(gauge1), "rgba(0, 0, 0, 1.0)");
@@ -88,6 +89,7 @@ int main(int argc, char **argv)
     adjustable_gauge_set_second_cutoff(ADJUSTABLE_GAUGE(gauge2), 180.0); 
   
     GtkWidget *gauge3=adjustable_gauge_new();
+    adjustable_gauge_set_units_text(ADJUSTABLE_GAUGE(gauge3), "volts");
     gtk_widget_set_hexpand(gauge3, TRUE);
     gtk_widget_set_vexpand(gauge3, TRUE);
     adjustable_gauge_set_scale_bottom(ADJUSTABLE_GAUGE(gauge3), 20.0);
