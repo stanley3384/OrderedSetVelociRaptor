@@ -4,7 +4,7 @@
 in the launcher and the icon in the about dialog. This way there isn't a seperate icon file 
 to go with the program. It is already part of the program.
 
-    Compiled with Ubuntu14.04 and GTK3.10.
+    Compiled with Ubuntu16.04 and GTK3.18.
 
     gcc -Wall cairo_icon1.c -o cairo_icon1 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(window);
 
     gtk_main();
+
+    g_object_unref(icon);
+
     return 0;   
   }
 static GdkPixbuf* draw_icon()
@@ -58,7 +61,7 @@ static GdkPixbuf* draw_icon()
     cairo_t *cr=cairo_create(surface);
     
     //Paint the background.
-    cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+    cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
     cairo_paint(cr);
 
     //A green icon border.
@@ -94,6 +97,7 @@ static GdkPixbuf* draw_icon()
 static void about_dialog(GtkWidget *widget, gpointer data)
   {
     GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
     //Null will add the program icon to the logo.
     gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
     gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Cairo Icon");
