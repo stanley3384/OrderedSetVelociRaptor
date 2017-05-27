@@ -71,6 +71,7 @@ static void draw_charger(GtkWidget *da, cairo_t *cr)
     //Layout for the drawing is a 10x10 rectangle.
     gdouble w1=width/10.0;
     gdouble h1=height/10.0;
+    gdouble scale_line=width/400.0;
   
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_paint(cr);
@@ -88,7 +89,7 @@ static void draw_charger(GtkWidget *da, cairo_t *cr)
     cairo_stroke(cr);
     
     //Draw the base
-    cairo_set_line_width(cr, 3.0);
+    cairo_set_line_width(cr, 3.0*scale_line);
     cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
     cairo_move_to(cr, 2.5*w1, 8.5*h1);
     cairo_line_to(cr, 7.5*w1, 8.5*h1);
@@ -103,7 +104,7 @@ static void draw_charger(GtkWidget *da, cairo_t *cr)
     cairo_fill(cr);
 
     //Draw the middle rectangle that is filled.
-    cairo_set_line_width(cr, 14.0);
+    cairo_set_line_width(cr, 14.0*scale_line);
     cairo_move_to(cr, 3.0*w1, 8.5*h1);
     cairo_line_to(cr, 3.0*w1, 4.0*h1);
     cairo_stroke_preserve(cr);
@@ -114,7 +115,9 @@ static void draw_charger(GtkWidget *da, cairo_t *cr)
     cairo_close_path(cr);
     cairo_fill(cr);
 
-    //Draw the top rectangle that is open.
+    //Top rectangle background.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, 3.0*w1, 4.0*h1);
     cairo_line_to(cr, 3.0*w1, 1.5*h1);
     cairo_stroke_preserve(cr);
@@ -125,9 +128,75 @@ static void draw_charger(GtkWidget *da, cairo_t *cr)
     cairo_curve_to(cr, 6.6*w1, 1.0*h1, 6.9*w1, 1.1*h1, 7.0*w1, 1.5*h1);
     cairo_stroke_preserve(cr);
     cairo_line_to(cr, 7.0*w1, 4.0*h1);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    //Gradient in the top rectangle.
+    cairo_pattern_t *pattern1=cairo_pattern_create_linear(3.0*w1, 1.0*h1, 3.0*w1, 4.0*h1); 
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 0.0, 0.0, 1.0, 1.0); 
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.1, 1.0, 1.0, 0.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.2, 0.0, 0.0, 1.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.3, 1.0, 1.0, 0.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.4, 0.0, 0.0, 1.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 1.0); 
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.6, 0.0, 0.0, 1.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.7, 1.0, 1.0, 0.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.8, 0.0, 0.0, 1.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.9, 1.0, 1.0, 0.0, 1.0);
+    cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 0.0, 1.0, 1.0);      
+    cairo_set_source(cr, pattern1);    
+    cairo_rectangle(cr, 3.3*w1, 1.0*h1, 0.5*w1, 3.0*h1);
+    cairo_fill(cr);
+    cairo_rectangle(cr, 3.9*w1, 1.0*h1, 0.5*w1, 3.0*h1);
+    cairo_fill(cr);
+    cairo_rectangle(cr, 4.5*w1, 1.0*h1, 0.5*w1, 3.0*h1);
+    cairo_fill(cr);
+    cairo_rectangle(cr, 5.1*w1, 1.0*h1, 0.5*w1, 3.0*h1);
+    cairo_fill(cr);
+    cairo_rectangle(cr, 5.7*w1, 1.0*h1, 0.5*w1, 3.0*h1);
+    cairo_fill(cr);
+    cairo_rectangle(cr, 6.3*w1, 1.0*h1, 0.5*w1, 3.0*h1);
+    cairo_fill(cr);
+    cairo_pattern_destroy(pattern1);
+
+    //Draw the top rectangle outline.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 14.0*scale_line);
+    cairo_move_to(cr, 3.0*w1, 3.5*h1);
+    cairo_line_to(cr, 3.0*w1, 1.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.1*w1, 1.1*h1, 3.4*w1, 1.0*h1, 3.5*w1, 1.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 6.5*w1, 1.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.6*w1, 1.0*h1, 6.9*w1, 1.1*h1, 7.0*w1, 1.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 7.0*w1, 3.5*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 6.9*w1, 3.9*h1, 6.6*w1, 4.0*h1, 6.5*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_line_to(cr, 3.5*w1, 4.0*h1);
+    cairo_stroke_preserve(cr);
+    cairo_curve_to(cr, 3.4*w1, 4.0*h1, 3.1*w1, 3.9*h1, 3.0*w1, 3.5*h1);
     cairo_stroke(cr);
 
+    //fill gap between bottom and top rectangle.
+    cairo_move_to(cr, 3.0*w1, 4.0*h1);
+    cairo_line_to(cr, 3.0*w1, 3.5*h1);
+    cairo_stroke(cr);
+    cairo_move_to(cr, 7.0*w1, 4.0*h1);
+    cairo_line_to(cr, 7.0*w1, 3.5*h1);
+    cairo_stroke(cr);
+
+    //Rectangle on the side of the battery.
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 1.0);
+    cairo_rectangle(cr, 6.75*w1, 2.25*h1, 0.25*w1, 0.5*h1);
+    cairo_fill(cr);
+
     //Draw the hose.
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 14.0*scale_line);
     cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
     cairo_move_to(cr, 7.0*w1, 4.5*h1);
     cairo_curve_to(cr, 7.75*w1, 4.5*h1, 7.75*w1, 4.5*h1, 7.75*w1, 7.5*h1);
@@ -140,7 +209,7 @@ static void draw_charger(GtkWidget *da, cairo_t *cr)
     cairo_stroke(cr);
 
     //Draw the handle.
-    cairo_set_line_width(cr, 8.0);
+    cairo_set_line_width(cr, 8.0*scale_line);
     cairo_move_to(cr, 8.75*w1, 3.25*h1);
     cairo_curve_to(cr, 8.0*w1, 3.5*h1, 8.0*w1, 3.5*h1, 8.25*w1, 2.75*h1);
     cairo_stroke(cr);
