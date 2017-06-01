@@ -1,6 +1,6 @@
 
 /*
-    Draw a few gears.
+    Draw a few gears and give them a spin.
 
     gcc -Wall gears1.c -o gears1 `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -13,8 +13,14 @@
 #include<math.h>
 
 static gint drawing_id=0;
+static gdouble rotate1=G_PI/2.0;
+static gdouble rotate2=G_PI/2.0;
+static gdouble rotate3=G_PI/2.0;
+static gdouble rotate4=G_PI/2.0+G_PI/12.0;
+static guint tick_id=0;
 
 static void combo_changed(GtkComboBox *combo_box, gpointer data);
+static gboolean animate_gears(GtkWidget *da, GdkFrameClock *frame_clock, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_gears(GtkWidget *da, cairo_t *cr);
 static void gear(cairo_t *cr, gdouble w1);
@@ -55,9 +61,30 @@ int main(int argc, char *argv[])
 static void combo_changed(GtkComboBox *combo_box, gpointer data)
   {
     gint combo_id=gtk_combo_box_get_active(combo_box);
-    if(combo_id==0) drawing_id=0;
-    else drawing_id=1;
-    gtk_widget_queue_draw(GTK_WIDGET(data));
+    if(combo_id==0)
+      {
+        drawing_id=0;
+        if(tick_id!=0)
+          {
+            gtk_widget_remove_tick_callback(GTK_WIDGET(data), tick_id);
+            tick_id=0;
+          }
+        gtk_widget_queue_draw(GTK_WIDGET(data));
+      }
+    else
+      {
+        drawing_id=1;
+        tick_id=gtk_widget_add_tick_callback(GTK_WIDGET(data), (GtkTickCallback)animate_gears, NULL, NULL);
+      }
+  }
+static gboolean animate_gears(GtkWidget *da, GdkFrameClock *frame_clock, gpointer data)
+  {
+    rotate1+=G_PI/256.0;
+    rotate2+=G_PI/128.0;
+    rotate3-=G_PI/64.0;
+    rotate4+=G_PI/64.0;
+    gtk_widget_queue_draw(GTK_WIDGET(da));
+    return G_SOURCE_CONTINUE;
   }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
   {
@@ -109,6 +136,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         cairo_set_line_width(cr, 5.0);
         cairo_translate(cr, 3.0*w1, 3.0*h1);
+        cairo_rotate(cr, rotate1);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1);
         cairo_restore(cr);
@@ -117,7 +145,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
         cairo_set_line_width(cr, 5.0);
         cairo_translate(cr, 7.0*w1, 3.0*h1);
-        cairo_rotate(cr, G_PI/12.0);
+        cairo_rotate(cr, rotate2);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1);
         cairo_restore(cr);
@@ -126,6 +154,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
         cairo_set_line_width(cr, 5.0);
         cairo_translate(cr, 3.0*w1, 7.0*h1);
+        cairo_rotate(cr, rotate3);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1);
         cairo_restore(cr);
@@ -134,7 +163,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
         cairo_set_line_width(cr, 5.0);
         cairo_translate(cr, 7.0*w1, 7.0*h1);
-        cairo_rotate(cr, G_PI/12.0);
+        cairo_rotate(cr, rotate4);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1);
         cairo_restore(cr);       
