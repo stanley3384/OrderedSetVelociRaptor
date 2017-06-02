@@ -144,7 +144,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_save(cr);
         cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 3.0*w1, 3.0*h1);
+        cairo_translate(cr, 3.0*width/10.0, 3.0*height/10.0);
         cairo_rotate(cr, rotate1);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
@@ -155,7 +155,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_save(cr);
         cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
         cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 7.0*w1, 3.0*h1);
+        cairo_translate(cr, 7.0*width/10.0, 3.0*height/10.0);
         cairo_rotate(cr, rotate2);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
@@ -166,7 +166,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_save(cr);
         cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
         cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 3.0*w1, 7.0*h1);
+        cairo_translate(cr, 3.0*width/10.0, 7.0*height/10.0);
         cairo_rotate(cr, rotate3);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
@@ -177,7 +177,7 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
         cairo_save(cr);
         cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
         cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 7.0*w1, 7.0*h1);
+        cairo_translate(cr, 7.0*width/10.0, 7.0*height/10.0);
         cairo_rotate(cr, rotate4);
         cairo_scale(cr, 0.5, 0.5); 
         gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
