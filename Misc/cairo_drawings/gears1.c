@@ -1,6 +1,6 @@
 
 /*
-    Draw a few gears and give them a spin.
+    Draw a few gears and give them a spin. Then try to synchonize them.
 
     gcc -Wall gears1.c -o gears1 `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -16,14 +16,22 @@ static gint drawing_id=0;
 static gdouble rotate1=G_PI/2.0;
 static gdouble rotate2=G_PI/2.0;
 static gdouble rotate3=G_PI/2.0;
-static gdouble rotate4=G_PI/2.0+G_PI/12.0;
+static gdouble rotate4=G_PI/2.0+G_PI/6.0;
+//Synchronization for three gears drawing.
+static gdouble sync2=0;
+static gdouble sync3=0;
+static gdouble sync4=0;
+//ID for the frame clock.
 static guint tick_id=0;
 
 static void combo_changed(GtkComboBox *combo_box, gpointer data);
 static gboolean animate_gears(GtkWidget *da, GdkFrameClock *frame_clock, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_gears(GtkWidget *da, cairo_t *cr);
-static void gear(cairo_t *cr, gdouble w1, gdouble inside_radius, gdouble outside_radius, gint teeth, gdouble bevel);
+static void gear(cairo_t *cr, gdouble w1, gdouble inside_radius, gdouble outside_radius, gint teeth, gdouble bevel, gboolean fill);
+static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1);
+static void gears2(cairo_t *cr, gdouble width, gdouble height, gdouble w1);
+static void gears3(cairo_t *cr, gdouble width, gdouble height, gdouble w1);
 
 int main(int argc, char *argv[])
   {
@@ -43,6 +51,7 @@ int main(int argc, char *argv[])
     GtkWidget *combo=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "Gear");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "Gears");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "Sync Gears");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
     gtk_widget_set_hexpand(combo, TRUE);
     g_signal_connect(combo, "changed", G_CALLBACK(combo_changed), da);  
@@ -60,6 +69,11 @@ int main(int argc, char *argv[])
   }
 static void combo_changed(GtkComboBox *combo_box, gpointer data)
   {
+    //Reset rotation.
+    rotate1=G_PI/2.0;
+    rotate2=G_PI/2.0;
+    rotate3=G_PI/2.0;
+    rotate4=G_PI/2.0+G_PI/6.0;
     gint combo_id=gtk_combo_box_get_active(combo_box);
     if(combo_id==0)
       {
@@ -71,24 +85,49 @@ static void combo_changed(GtkComboBox *combo_box, gpointer data)
           }
         gtk_widget_queue_draw(GTK_WIDGET(data));
       }
-    else
+    else if(combo_id==1) drawing_id=1;
+    else drawing_id=2;
+
+    if(drawing_id>0)
       {
-        drawing_id=1;
+        gtk_widget_remove_tick_callback(GTK_WIDGET(data), tick_id);
         tick_id=gtk_widget_add_tick_callback(GTK_WIDGET(data), (GtkTickCallback)animate_gears, NULL, NULL);
       }
   }
 static gboolean animate_gears(GtkWidget *da, GdkFrameClock *frame_clock, gpointer data)
   {
-    rotate1+=G_PI/256.0;
-    rotate2+=G_PI/128.0;
-    rotate3-=G_PI/64.0;
-    rotate4+=G_PI/64.0;
+    /*
+    //Compare with the timer values.
+    static gint64 last_time=0;
+    gint64 counter=gdk_frame_clock_get_frame_counter(frame_clock);
+    gint64 current_time=gdk_frame_clock_get_frame_time(frame_clock);
+    g_print("Frame %lld, %f\n", counter, (gdouble)(current_time-last_time)*0.000001);
+    last_time=current_time;
+    */
+
+    if(drawing_id==1)
+      {
+        rotate1+=G_PI/256.0;
+        rotate2+=G_PI/128.0;
+        rotate3-=G_PI/64.0;
+        rotate4+=G_PI/64.0;
+      }
+    else
+      {
+        rotate2+=G_PI/128.0*sync2;
+        rotate3-=G_PI/128.0*sync3;
+        rotate4+=G_PI/128.0*sync4;
+      }
+   
     gtk_widget_queue_draw(GTK_WIDGET(da));
     return G_SOURCE_CONTINUE;
   }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
   {
-    draw_gears(da, cr); 
+    //GTimer *timer=g_timer_new();
+    draw_gears(da, cr);
+    //g_print("%f\n", g_timer_elapsed(timer, NULL));
+    //g_timer_destroy(timer); 
     return FALSE;
   }
 static void draw_gears(GtkWidget *da, cairo_t *cr)
@@ -120,74 +159,13 @@ static void draw_gears(GtkWidget *da, cairo_t *cr)
     cairo_line_to(cr, 5.0*width/10.0, 9.0*height/10.0);
     cairo_stroke(cr); 
 
-    //Some gear variables.
-    gdouble inside_radius=3.2*w1;
-    gdouble outside_radius=4.0*w1;
-    gint teeth=12;
-    gdouble bevel=G_PI/36;
-
     //Draw the gear or gears.
-    if(drawing_id==0)
-      {
-        cairo_save(cr);
-        cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-        cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, width/2.0, height/2.0); 
-        gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
-        cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
-        cairo_stroke(cr); 
-        cairo_restore(cr);
-      } 
-    else
-      {
-        //Draw some gears.
-        cairo_save(cr);
-        cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-        cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 3.0*width/10.0, 3.0*height/10.0);
-        cairo_rotate(cr, rotate1);
-        cairo_scale(cr, 0.5, 0.5); 
-        gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
-        cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
-        cairo_stroke(cr); 
-        cairo_restore(cr);
-
-        cairo_save(cr);
-        cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-        cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 7.0*width/10.0, 3.0*height/10.0);
-        cairo_rotate(cr, rotate2);
-        cairo_scale(cr, 0.5, 0.5); 
-        gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
-        cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
-        cairo_stroke(cr); 
-        cairo_restore(cr);
-
-        cairo_save(cr);
-        cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-        cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 3.0*width/10.0, 7.0*height/10.0);
-        cairo_rotate(cr, rotate3);
-        cairo_scale(cr, 0.5, 0.5); 
-        gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
-        cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
-        cairo_stroke(cr); 
-        cairo_restore(cr);
-
-        cairo_save(cr);
-        cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-        cairo_set_line_width(cr, 5.0);
-        cairo_translate(cr, 7.0*width/10.0, 7.0*height/10.0);
-        cairo_rotate(cr, rotate4);
-        cairo_scale(cr, 0.5, 0.5); 
-        gear(cr, w1, inside_radius, outside_radius, teeth, bevel);
-        cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
-        cairo_stroke(cr); 
-        cairo_restore(cr);       
-      } 
+    if(drawing_id==0) gears1(cr, width, height, w1); 
+    else if(drawing_id==1) gears2(cr, width, height, w1);
+    else gears3(cr, width, height, w1);
  
   }
-static void gear(cairo_t *cr, gdouble w1, gdouble inside_radius, gdouble outside_radius, gint teeth, gdouble bevel)
+static void gear(cairo_t *cr, gdouble w1, gdouble inside_radius, gdouble outside_radius, gint teeth, gdouble bevel, gboolean fill)
   {
     gint i=0;
     gdouble step=-G_PI*2.0/teeth;
@@ -234,5 +212,138 @@ static void gear(cairo_t *cr, gdouble w1, gdouble inside_radius, gdouble outside
         cairo_stroke_preserve(cr);                          
      }
     cairo_close_path(cr);
+    if(fill) cairo_fill(cr); 
+    else cairo_stroke(cr);
+  }
+static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1)
+  {
+    //Some gear variables for the gear.
+    gdouble inside_radius=3.2*w1;
+    gdouble outside_radius=4.0*w1;
+    gint teeth=12;
+    gdouble bevel=G_PI/36;
+    gboolean fill=FALSE;
+
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, width/2.0, height/2.0); 
+    gear(cr, w1, inside_radius, outside_radius, teeth, bevel, fill);
+    cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
     cairo_stroke(cr); 
+    cairo_restore(cr);
+  }
+static void gears2(cairo_t *cr, gdouble width, gdouble height, gdouble w1)
+  {
+    //Some gear variables for the gears.
+    gdouble inside_radius=3.2*w1;
+    gdouble outside_radius=4.0*w1;
+    gint teeth=12;
+    gdouble bevel=G_PI/36;
+    gboolean fill=FALSE;
+
+    //Draw some gears.
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 3.0*width/10.0, 3.0*height/10.0);
+    cairo_rotate(cr, rotate1);
+    cairo_scale(cr, 0.5, 0.5); 
+    gear(cr, w1, inside_radius, outside_radius, teeth, bevel, fill);
+    cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
+    cairo_stroke(cr); 
+    cairo_restore(cr);
+
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 7.0*width/10.0, 3.0*height/10.0);
+    cairo_rotate(cr, rotate2);
+    cairo_scale(cr, 0.5, 0.5); 
+    gear(cr, w1, inside_radius, outside_radius, teeth, bevel, fill);
+    cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
+    cairo_stroke(cr); 
+    cairo_restore(cr);
+
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 3.0*width/10.0, 7.0*height/10.0);
+    cairo_rotate(cr, rotate3);
+    cairo_scale(cr, 0.5, 0.5); 
+    gear(cr, w1, inside_radius, outside_radius, teeth, bevel, fill);
+    cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
+    cairo_stroke(cr); 
+    cairo_restore(cr);
+
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 7.0*width/10.0, 7.0*height/10.0);
+    cairo_rotate(cr, rotate4);
+    cairo_scale(cr, 0.5, 0.5); 
+    gear(cr, w1, inside_radius, outside_radius, teeth, bevel, fill);
+    cairo_arc(cr, 0.0, 0.0, 2.5*w1, 0, 2*G_PI);
+    cairo_stroke(cr); 
+    cairo_restore(cr);     
+  }
+static void gears3(cairo_t *cr, gdouble width, gdouble height, gdouble w1)
+  {
+    //Some gear variables for the gears.
+    gdouble inside_radius=3.2*w1;
+    gdouble outside_radius=4.0*w1;
+
+    //Sync the gears.
+    sync2=1.2;
+    sync3=1.0;
+    sync4=2.0;
+
+    //Draw some different sized gears.
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 3.0*w1, 3.7*w1);
+    cairo_rotate(cr, rotate2);
+    cairo_scale(cr, 0.375, 0.375); 
+    gear(cr, w1, 3.0*w1, outside_radius, 10, G_PI/30.0, TRUE);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_arc(cr, 0.0, 0.0, 1.0*w1, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_move_to(cr, 0.0, 1.0*w1);
+    cairo_line_to(cr, 0.0, outside_radius);
+    cairo_stroke(cr); 
+    cairo_restore(cr);
+
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 3.0*w1, 7.0*w1);
+    cairo_rotate(cr, rotate3);
+    cairo_scale(cr, 0.5, 0.5); 
+    gear(cr, w1, inside_radius, outside_radius, 12, G_PI/48, TRUE);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_arc(cr, 0.0, 0.0, 1.5*w1, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_move_to(cr, 0.0, 1.5*w1);
+    cairo_line_to(cr, 0.0, outside_radius);
+    cairo_stroke(cr);  
+    cairo_restore(cr);
+
+    cairo_save(cr);
+    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    cairo_set_line_width(cr, 5.0);
+    cairo_translate(cr, 5.75*w1, 7.0*w1);
+    cairo_rotate(cr, rotate4);
+    cairo_scale(cr, 0.25, 0.25); 
+    gear(cr, w1, 2.8*w1, outside_radius, 6, G_PI/16.0, TRUE);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_arc(cr, 0.0, 0.0, 1.5*w1, 0, 2*G_PI);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); 
+    cairo_move_to(cr, 0.0, 1.5*w1);
+    cairo_line_to(cr, 0.0, outside_radius);
+    cairo_stroke(cr); 
+    cairo_restore(cr); 
   }
