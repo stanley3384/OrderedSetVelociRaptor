@@ -96,15 +96,18 @@ static void combo_changed(GtkComboBox *combo_box, gpointer data)
   }
 static gboolean animate_gears(GtkWidget *da, GdkFrameClock *frame_clock, gpointer data)
   {
-    /*
-    //Compare with the timer values.
-    static gint64 last_time=0;
-    gint64 counter=gdk_frame_clock_get_frame_counter(frame_clock);
-    gint64 current_time=gdk_frame_clock_get_frame_time(frame_clock);
-    g_print("Frame %lld, %f\n", counter, (gdouble)(current_time-last_time)*0.000001);
-    last_time=current_time;
-    */
-
+    //Check frame rate.
+    gint64 frame=gdk_frame_clock_get_frame_counter(frame_clock);
+    if(frame%60==0&&frame>0)
+      {
+        gint64 current_time=gdk_frame_clock_get_frame_time(frame_clock);
+        gint64 start = gdk_frame_clock_get_history_start(frame_clock);
+        gint64 history_len=frame-start;
+        GdkFrameTimings *previous_timings=gdk_frame_clock_get_timings(frame_clock, frame-history_len);
+        gint64 previous_frame_time=gdk_frame_timings_get_frame_time(previous_timings);
+        g_print("Frame %lld, %f fps\n", frame, (gdouble)(history_len)*G_USEC_PER_SEC/(gdouble)(current_time-previous_frame_time));
+      }
+   
     if(drawing_id==1)
       {
         rotate1+=G_PI/256.0;

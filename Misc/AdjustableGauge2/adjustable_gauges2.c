@@ -174,6 +174,18 @@ static gboolean tick_draw(GtkWidget *widget, GdkFrameClock *frame_clock, GtkWidg
   {
     gint i=0;
 
+    //Check frame rate.
+    gint64 frame=gdk_frame_clock_get_frame_counter(frame_clock);
+    if(frame%60==0&&frame>0)
+      {
+        gint64 current_time=gdk_frame_clock_get_frame_time(frame_clock);
+        gint64 start = gdk_frame_clock_get_history_start(frame_clock);
+        gint64 history_len=frame-start;
+        GdkFrameTimings *previous_timings=gdk_frame_clock_get_timings(frame_clock, frame-history_len);
+        gint64 previous_frame_time=gdk_frame_timings_get_frame_time(previous_timings);
+        g_print("Frame %lld, %f fps\n", frame, (gdouble)(history_len)*G_USEC_PER_SEC/(gdouble)(current_time-previous_frame_time));
+      }
+
     needle1=needle1+needle_speed;
     needle2=needle2+needle_speed;
     needle3=needle3+needle_speed;

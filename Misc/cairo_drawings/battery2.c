@@ -75,13 +75,16 @@ static gboolean draw_battery(GtkWidget *da, GdkFrameClock *frame_clock, GtkWidge
  {
    if(animate>1.0)
      {
-       if(animate>=4.02&&animate<=4.07)
+       //Check frame rate.
+       gint64 frame=gdk_frame_clock_get_frame_counter(frame_clock);
+       if(frame%60==0&&frame>0)
          {
-           gint64 base_time=gdk_frame_clock_get_frame_time(frame_clock);
-           gint64 refresh=0;
-           gint64 presentation=0;           
-           gdk_frame_clock_get_refresh_info(frame_clock, base_time, &refresh, &presentation);
-           g_print("Frame Clock %lld, %f, %lld\n", base_time, .000001*(gdouble)refresh, presentation);
+           gint64 current_time=gdk_frame_clock_get_frame_time(frame_clock);
+           gint64 start = gdk_frame_clock_get_history_start(frame_clock);
+           gint64 history_len=frame-start;
+           GdkFrameTimings *previous_timings=gdk_frame_clock_get_timings(frame_clock, frame-history_len);
+           gint64 previous_frame_time=gdk_frame_timings_get_frame_time(previous_timings);
+           g_print("Frame %lld, %f fps\n", frame, (gdouble)(history_len)*G_USEC_PER_SEC/(gdouble)(current_time-previous_frame_time));
          }
        animate-=0.05;
        gtk_widget_queue_draw(widgets[1]);
