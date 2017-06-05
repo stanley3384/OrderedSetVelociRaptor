@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     green_coords=g_array_sized_new(FALSE, TRUE, sizeof(gdouble), 80);
     blue_coords=g_array_sized_new(FALSE, TRUE, sizeof(gdouble), 96);
     red_coords=g_array_sized_new(FALSE, TRUE, sizeof(gdouble), 48);
-    gear_coords(green_coords, 3.2, 4.0, 10, G_PI/30.0);
+    gear_coords(green_coords, 3.0, 4.0, 10, G_PI/30.0);
     gear_coords(blue_coords, 3.2, 4.0, 12, G_PI/48.0);
     gear_coords(red_coords, 2.8, 4.0, 6, G_PI/16.0);
 
