@@ -1,6 +1,7 @@
 
 /*
-    Test drawing a gear with a few variables.
+    Test drawing a gear with a few variables. Draw cartesian coordinates and circular coordinates
+as part of the layout to help setup the gear drawing.
 
     gcc -Wall gears2.c -o gears2 `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -26,6 +27,8 @@ struct gear_vars{
 
 //ID for the frame clock.
 static guint tick_id=0;
+//Show circular coordinates with the rectangular coordinates.
+static gboolean show_circular_coords=FALSE;
 
 static void update_gear(GtkWidget *button1, gpointer entries[]);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, struct gear_vars *g1);
@@ -34,6 +37,7 @@ static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1, struc
 static void gear(cairo_t *cr, gdouble w1, struct gear_vars *g1);
 static void spin_gear(GtkToggleButton *button, gpointer g2[]);
 static gboolean animate_gear(GtkWidget *da, GdkFrameClock *frame_clock, gpointer g2[]);
+static void circular_coordinates(GtkToggleButton *button, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -119,6 +123,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry5, FALSE);
     gtk_entry_set_text(GTK_ENTRY(entry5), "rgba(0, 0, 255, 1.0)");
 
+    GtkWidget *check2=gtk_check_button_new_with_label("Show Circular Cordinates pi/30");
+    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
+    g_signal_connect(check2, "toggled", G_CALLBACK(circular_coordinates), NULL);  
+
     GtkWidget *label7=gtk_label_new("Rotate Angle PI* ");
     gtk_widget_set_hexpand(label7, TRUE);
 
@@ -158,6 +166,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry6, 1, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 8, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), button2, 0, 9, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), check2, 0, 10, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -280,7 +289,8 @@ static void draw_gears(GtkWidget *da, cairo_t *cr, struct gear_vars *g1)
     //Draw the gear or gears.
     gears1(cr, width, height, w1, g1); 
 
-    //Layout axis for drawing.
+    //Cartesian coordinates for drawing.
+    gint i=0;
     cairo_set_line_width(cr, 1.0);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_rectangle(cr, width/10.0, height/10.0, 8.0*width/10.0, 8.0*height/10.0);
@@ -291,6 +301,34 @@ static void draw_gears(GtkWidget *da, cairo_t *cr, struct gear_vars *g1)
     cairo_move_to(cr, 5.0*width/10.0, 1.0*height/10.0);
     cairo_line_to(cr, 5.0*width/10.0, 9.0*height/10.0);
     cairo_stroke(cr); 
+
+    //Circular coordinates with marks at each second or pi/30.
+    if(show_circular_coords)
+      {
+        cairo_translate(cr, width/2.0, height/2.0);
+        cairo_arc(cr, 0.0, 0.0, 4.0*w1, 0.0, 2.0*M_PI);
+        cairo_stroke(cr);
+        gdouble start=-G_PI/2.0;
+        gdouble next_second=-G_PI/30.0;
+        gdouble temp_cos1=0;
+        gdouble temp_sin1=0;
+        gdouble temp_cos2=0;
+        gdouble temp_sin2=0;
+        for(i=0;i<60;i++)
+          {
+            temp_cos1=cos(start-(next_second*i));
+            temp_sin1=sin(start-(next_second*i));
+            temp_cos2=temp_cos1;
+            temp_sin2=temp_sin1;
+            temp_cos1=temp_cos1*3.6*w1;
+            temp_sin1=temp_sin1*3.6*w1;
+            temp_cos2=temp_cos2*4.0*w1;
+            temp_sin2=temp_sin2*4.0*w1;
+            cairo_move_to(cr, temp_cos1, temp_sin1);
+            cairo_line_to(cr, temp_cos2, temp_sin2);
+            cairo_stroke(cr);
+         }
+    }
   }
 static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1, struct gear_vars *g1)
   {
@@ -298,8 +336,12 @@ static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1, struc
     cairo_set_source_rgb(cr, g1->fill_color[0], g1->fill_color[1], g1->fill_color[2]);
     cairo_set_line_width(cr, 5.0);
     cairo_translate(cr, width/2.0, height/2.0);
-    cairo_rotate(cr, g1->rotation); 
+    cairo_rotate(cr, g1->rotation);
+
+    //Draw the gear. 
     gear(cr, w1, g1);
+
+    //Draw the inside circle of the gear.
     cairo_arc(cr, 0.0, 0.0, g1->spindle_radius*w1, 0, 2*G_PI);
     if(g1->fill)
       {
@@ -396,5 +438,10 @@ static gboolean animate_gear(GtkWidget *da, GdkFrameClock *frame_clock, gpointer
     gtk_widget_queue_draw(GTK_WIDGET(g2[1]));
 
     return G_SOURCE_CONTINUE;
+  }
+static void circular_coordinates(GtkToggleButton *button, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(button)) show_circular_coords=TRUE;
+    else show_circular_coords=FALSE;
   }
 
