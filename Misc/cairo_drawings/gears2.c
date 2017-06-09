@@ -23,6 +23,7 @@ struct gear_vars{
   gboolean fill;
   gdouble fill_color[4];
   gdouble rotation;
+  gboolean draw_bezier;
 }gear_vars;
 
 //ID for the frame clock.
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Draw Gear");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);
+    gtk_window_set_default_size(GTK_WINDOW(window), 850, 450);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     struct gear_vars g1;
@@ -60,7 +61,8 @@ int main(int argc, char *argv[])
     g1.fill_color[1]=0.0;
     g1.fill_color[2]=1.0;
     g1.fill_color[3]=1.0;
-    g1.rotation=0;    
+    g1.rotation=0; 
+    g1.draw_bezier=FALSE;   
 
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE);
@@ -134,10 +136,13 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry6, FALSE);
     gtk_entry_set_text(GTK_ENTRY(entry6), "0");
 
+    GtkWidget *check3=gtk_check_button_new_with_label("Draw Bezier");
+    gtk_widget_set_halign(check3, GTK_ALIGN_CENTER);
+
     GtkWidget *button1=gtk_button_new_with_label("Update Gear");
     gtk_widget_set_halign(button1, GTK_ALIGN_CENTER);
     gtk_widget_set_hexpand(button1, FALSE);
-    gpointer entries[]={entry1, entry2, entry3, entry4, combo1, check1, entry5, entry6, &g1, da};
+    gpointer entries[]={entry1, entry2, entry3, entry4, combo1, check1, entry5, entry6, check3, &g1, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(update_gear), entries); 
 
     GtkWidget *button2=gtk_toggle_button_new_with_label("Spin Gear"); 
@@ -164,9 +169,10 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), entry5, 1, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), label7, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry6, 1, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 8, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), button2, 0, 9, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), check2, 0, 10, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), check3, 0, 8, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 9, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 10, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), check2, 0, 11, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -191,9 +197,11 @@ static void update_gear(GtkWidget *button1, gpointer entries[])
     gint bevel=gtk_combo_box_get_active(GTK_COMBO_BOX(entries[4]));
     gboolean color_fill=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entries[5]));
     gdouble rotation=atof(gtk_entry_get_text(GTK_ENTRY(entries[7])));
+    gboolean bezier=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(entries[8]));
 
-    //gboolean from check box.
-    ((struct gear_vars*)entries[8])->fill=color_fill;
+    //gboolean from check boxes.
+    ((struct gear_vars*)entries[9])->fill=color_fill;
+    ((struct gear_vars*)entries[9])->draw_bezier=bezier;
     
     //Check and update numbers as a group.
     if(inside_radius>=outside_radius||inside_radius<0||inside_radius>=5.0)
@@ -218,33 +226,33 @@ static void update_gear(GtkWidget *button1, gpointer entries[])
       }
     if(numbers_ok)
       {
-        ((struct gear_vars*)entries[8])->inside_radius=inside_radius;
-        ((struct gear_vars*)entries[8])->outside_radius=outside_radius;
-        ((struct gear_vars*)entries[8])->spindle_radius=spindle_radius;
-        ((struct gear_vars*)entries[8])->teeth=teeth;
-        ((struct gear_vars*)entries[8])->rotation=-rotation*G_PI;
+        ((struct gear_vars*)entries[9])->inside_radius=inside_radius;
+        ((struct gear_vars*)entries[9])->outside_radius=outside_radius;
+        ((struct gear_vars*)entries[9])->spindle_radius=spindle_radius;
+        ((struct gear_vars*)entries[9])->teeth=teeth;
+        ((struct gear_vars*)entries[9])->rotation=-rotation*G_PI;
       }
 
     //Bevel settings.
     switch(bevel)
       {
         case 0:
-          ((struct gear_vars*)entries[8])->bevel=G_PI/16.0;
+          ((struct gear_vars*)entries[9])->bevel=G_PI/16.0;
           break;
         case 1:
-          ((struct gear_vars*)entries[8])->bevel=G_PI/24.0;
+          ((struct gear_vars*)entries[9])->bevel=G_PI/24.0;
           break;
         case 2:
-          ((struct gear_vars*)entries[8])->bevel=G_PI/30.0;
+          ((struct gear_vars*)entries[9])->bevel=G_PI/30.0;
           break;
         case 3:
-          ((struct gear_vars*)entries[8])->bevel=G_PI/36.0;
+          ((struct gear_vars*)entries[9])->bevel=G_PI/36.0;
           break;
         case 4:
-          ((struct gear_vars*)entries[8])->bevel=G_PI/40.0;
+          ((struct gear_vars*)entries[9])->bevel=G_PI/40.0;
           break;
         case 5:
-          ((struct gear_vars*)entries[8])->bevel=G_PI/46.0;
+          ((struct gear_vars*)entries[9])->bevel=G_PI/46.0;
           break;
         default: g_print("Bevel out of range.\n");
       }
@@ -252,14 +260,14 @@ static void update_gear(GtkWidget *button1, gpointer entries[])
     //Color setting.             
     if(gdk_rgba_parse(&rgba, gtk_entry_get_text(GTK_ENTRY(entries[6]))))
       {
-        ((struct gear_vars*)entries[8])->fill_color[0]=rgba.red;
-        ((struct gear_vars*)entries[8])->fill_color[1]=rgba.green;
-        ((struct gear_vars*)entries[8])->fill_color[2]=rgba.blue;
-        ((struct gear_vars*)entries[8])->fill_color[3]=rgba.alpha;
+        ((struct gear_vars*)entries[9])->fill_color[0]=rgba.red;
+        ((struct gear_vars*)entries[9])->fill_color[1]=rgba.green;
+        ((struct gear_vars*)entries[9])->fill_color[2]=rgba.blue;
+        ((struct gear_vars*)entries[9])->fill_color[3]=rgba.alpha;
       }
     else g_print("Color out of range.\n");
 
-    gtk_widget_queue_draw(GTK_WIDGET(entries[9]));   
+    gtk_widget_queue_draw(GTK_WIDGET(entries[10]));   
   }
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, struct gear_vars *g1)
   {
@@ -377,31 +385,54 @@ static void gear(cairo_t *cr, gdouble w1, struct gear_vars *g1)
     gdouble inside_cos2=0;
     gdouble inside_sin2=0;
     //Draw the gear teeth.
-    for(i=0;i<(g1->teeth);i++)
+    outside_cos1=cos(outside_start1-(step*i))*(g1->outside_radius)*w1;
+    outside_sin1=sin(outside_start1-(step*i))*(g1->outside_radius)*w1;                
+    cairo_move_to(cr, outside_cos1, outside_sin1);
+    if(!g1->draw_bezier)
       {
-        outside_cos1=cos(outside_start1-(step*i))*(g1->outside_radius)*w1;
-        outside_sin1=sin(outside_start1-(step*i))*(g1->outside_radius)*w1;                
-        if(i==0) cairo_move_to(cr, outside_cos1, outside_sin1);
-        else
+        for(i=0;i<(g1->teeth);i++)
           {
-            cairo_line_to(cr, outside_cos1, outside_sin1);
-            cairo_stroke_preserve(cr);
-          }
-
-        outside_cos2=cos(outside_start2-(step*i))*(g1->outside_radius)*w1;
-        outside_sin2=sin(outside_start2-(step*i))*(g1->outside_radius)*w1;                
-        cairo_line_to(cr, outside_cos2, outside_sin2);
-        cairo_stroke_preserve(cr);   
+            outside_cos2=cos(outside_start2-(step*i))*(g1->outside_radius)*w1;
+            outside_sin2=sin(outside_start2-(step*i))*(g1->outside_radius)*w1;                
+            cairo_line_to(cr, outside_cos2, outside_sin2);
+            cairo_stroke_preserve(cr);   
          
-        inside_cos1=cos(inside_start1-(step*i))*(g1->inside_radius)*w1;
-        inside_sin1=sin(inside_start1-(step*i))*(g1->inside_radius)*w1;
-        cairo_line_to(cr, inside_cos1, inside_sin1);
-        cairo_stroke_preserve(cr); 
+            inside_cos1=cos(inside_start1-(step*i))*(g1->inside_radius)*w1;
+            inside_sin1=sin(inside_start1-(step*i))*(g1->inside_radius)*w1;
+            cairo_line_to(cr, inside_cos1, inside_sin1);
+            cairo_stroke_preserve(cr); 
 
-        inside_cos2=cos(inside_start2-(step*i))*(g1->inside_radius)*w1;
-        inside_sin2=sin(inside_start2-(step*i))*(g1->inside_radius)*w1;
-        cairo_line_to(cr, inside_cos2, inside_sin2);
-        cairo_stroke_preserve(cr);                          
+            inside_cos2=cos(inside_start2-(step*i))*(g1->inside_radius)*w1;
+            inside_sin2=sin(inside_start2-(step*i))*(g1->inside_radius)*w1;
+            cairo_line_to(cr, inside_cos2, inside_sin2);
+            cairo_stroke_preserve(cr); 
+
+            outside_cos1=cos(outside_start1-(step*(i+1)))*(g1->outside_radius)*w1;
+            outside_sin1=sin(outside_start1-(step*(i+1)))*(g1->outside_radius)*w1;   
+            cairo_line_to(cr, outside_cos1, outside_sin1);
+            cairo_stroke_preserve(cr);                           
+         }
+      }
+    else
+      {
+        for(i=0;i<(g1->teeth);i++)
+          {              
+            outside_cos2=cos(outside_start2-(step*i))*(g1->outside_radius)*w1;
+            outside_sin2=sin(outside_start2-(step*i))*(g1->outside_radius)*w1;                
+            cairo_line_to(cr, outside_cos2, outside_sin2);
+            cairo_stroke_preserve(cr);   
+         
+            inside_cos1=cos(inside_start1-(step*i))*(g1->inside_radius)*w1;
+            inside_sin1=sin(inside_start1-(step*i))*(g1->inside_radius)*w1;
+
+            inside_cos2=cos(inside_start2-(step*i))*(g1->inside_radius)*w1;
+            inside_sin2=sin(inside_start2-(step*i))*(g1->inside_radius)*w1;
+
+            outside_cos1=cos(outside_start1-(step*(i+1)))*(g1->outside_radius)*w1;
+            outside_sin1=sin(outside_start1-(step*(i+1)))*(g1->outside_radius)*w1;   
+            cairo_curve_to(cr, inside_cos1, inside_sin1, inside_cos2, inside_sin2, outside_cos1, outside_sin1);
+            cairo_stroke_preserve(cr);                   
+         }
      }
     cairo_close_path(cr);
     if(g1->fill) cairo_fill(cr); 
