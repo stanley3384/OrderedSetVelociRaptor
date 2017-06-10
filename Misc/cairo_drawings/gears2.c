@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Pi/36.0");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Pi/40.0");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Pi/46.0");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "0.0");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 3);
 
     GtkWidget *check1=gtk_check_button_new_with_label("Color Fill");
@@ -253,6 +254,9 @@ static void update_gear(GtkWidget *button1, gpointer entries[])
           break;
         case 5:
           ((struct gear_vars*)entries[9])->bevel=G_PI/46.0;
+          break;
+        case 6:
+          ((struct gear_vars*)entries[9])->bevel=0.0;
           break;
         default: g_print("Bevel out of range.\n");
       }
