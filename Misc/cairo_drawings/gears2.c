@@ -371,17 +371,17 @@ static void gear(cairo_t *cr, gdouble w1, struct gear_vars *g1)
     gdouble step=-G_PI*2.0/(g1->teeth);
 
     //Outside points.
-    gdouble outside_start1=-G_PI/2.0-(g1->bevel);
+    gdouble outside_start1=-(g1->bevel);
     gdouble outside_cos1=0;
     gdouble outside_sin1=0;
-    gdouble outside_start2=-G_PI/2.0+(g1->bevel);
+    gdouble outside_start2=(g1->bevel);
     gdouble outside_cos2=0;
     gdouble outside_sin2=0;
     //Inside points.
-    gdouble inside_start1=-G_PI/2.0+G_PI/(g1->teeth)-(g1->bevel);
+    gdouble inside_start1=G_PI/(g1->teeth)-(g1->bevel);
     gdouble inside_cos1=0;
     gdouble inside_sin1=0;
-    gdouble inside_start2=-G_PI/2.0+G_PI/(g1->teeth)+(g1->bevel);
+    gdouble inside_start2=G_PI/(g1->teeth)+(g1->bevel);
     gdouble inside_cos2=0;
     gdouble inside_sin2=0;
     //Draw the gear teeth.
