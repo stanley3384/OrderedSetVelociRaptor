@@ -19,11 +19,18 @@ struct point{
   gdouble y;
 }points;
 
+struct controls{
+  gdouble x1;
+  gdouble y1;
+  gdouble x2;
+  gdouble y2;
+}controls;
+
 static void check_smooth(GtkToggleButton *check1, gpointer data);
 static void button_clicked(GtkWidget *button, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data);
-static void control_points_from_coords(gdouble firstControlPoints[][2], gdouble secondControlPoints[][2]);
+static GArray* control_points_from_coords(GArray *dataPoints);
 
 static GRand *rand1=NULL;
 static GArray *coords=NULL;
@@ -159,39 +166,50 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
         start_y=p1.y;        
       }
 
-    gint count=coords->len-1;
-    gdouble firstControlPoints[count][2];
-    gdouble secondControlPoints[count][2];
-    control_points_from_coords(firstControlPoints, secondControlPoints);
+    GArray *controlPoints=NULL;
+    if(draw_smooth) controlPoints=control_points_from_coords(coords);
 
     //Draw the squiggley.
     gdouble red=0.0;
     gdouble green=0.0;
     gdouble blue=1.0;
-    struct point c1;
-    struct point c2;
     cairo_set_line_width(cr, 3.0);
-    for(i=0;i<points-1;i++)
+    struct point d1;
+    struct point d2;
+    struct controls c1;   
+    if(draw_smooth)
       {
-        c1=g_array_index(coords, struct point, i);
-        c2=g_array_index(coords, struct point, i+1);
-        diff=c1.y-c2.y;
-
-        //Test rectangles with only a few curves. top=3.
-        //cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-        //cairo_rectangle(cr, start_x, start_y, (x1-start_x), (y1-start_y));
-        //cairo_stroke(cr);
- 
-        red+=2.0/points;
-        blue-=2.0/points;
-        cairo_set_source_rgb(cr, red, green, blue);
-        cairo_move_to(cr, c1.x, c1.y);
-        if(draw_smooth) cairo_curve_to(cr, firstControlPoints[i][0], firstControlPoints[i][1], secondControlPoints[i][0], secondControlPoints[i][1], c2.x, c2.y);
-        //Curve with the control points at the corners of the rectangle.
-        else cairo_curve_to(cr, c1.x, c1.y-diff, c2.x, c2.y+diff, c2.x, c2.y);
-        cairo_stroke(cr);
+        for(i=0;i<points-1;i++)
+          {
+            red+=2.0/points;
+            blue-=2.0/points;
+            cairo_set_source_rgb(cr, red, green, blue);
+            d1=g_array_index(coords, struct point, i);
+            d2=g_array_index(coords, struct point, i+1);
+            c1=g_array_index(controlPoints, struct controls, i);
+            cairo_move_to(cr, d1.x, d1.y);
+            if(draw_smooth) cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
+            cairo_stroke(cr);
+         }
       } 
+    else
+      {
+        for(i=0;i<points-1;i++)
+          {
+            red+=2.0/points;
+            blue-=2.0/points;
+            cairo_set_source_rgb(cr, red, green, blue);
+            d1=g_array_index(coords, struct point, i);
+            d2=g_array_index(coords, struct point, i+1);
+            diff=d1.y-d2.y;
+            cairo_move_to(cr, d1.x, d1.y);
+            //Curve with the control points at the corners of the rectangle.
+            cairo_curve_to(cr, d1.x, d1.y-diff, d2.x, d2.y+diff, d2.x, d2.y);
+            cairo_stroke(cr);
+         }
+      }
 
+    if(controlPoints!=NULL) g_array_free(controlPoints, TRUE);
   }
 /*
     This is some exellent work done by Ramsundar Shandilya. Note the following for the original work
@@ -224,20 +242,22 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
     SOFTWARE.
 
     This is a translation of the original Swift code to C. First time looking at Swift for
-    me so there are some things that should be done better. Just tried to get things working here.
-    Need to go back through and get some arrays off of the stack and set up the function call better. 
+    me so there are some things that could be done better. There are a few arrays on the stack. 
 */
-static void control_points_from_coords(gdouble firstControlPoints[][2], gdouble secondControlPoints[][2])
+static GArray* control_points_from_coords(GArray *dataPoints)
   {  
-    gint i=0;      
+    gint i=0;
+    GArray *controlPoints=NULL;      
     //Number of Segments
-    gint count=coords->len-1;
+    gint count=dataPoints->len-1;
+    gdouble firstControlPoints[count][2];
+    gdouble secondControlPoints[count][2];
         
     //P0, P1, P2, P3 are the points for each segment, where P0 & P3 are the knots and P1, P2 are the control points.
     if(count==1)
       {
-        struct point P0=g_array_index(coords, struct point, 0);
-        struct point P3=g_array_index(coords, struct point, 1);
+        struct point P0=g_array_index(dataPoints, struct point, 0);
+        struct point P3=g_array_index(dataPoints, struct point, 1);
 
         //Calculate First Control Point
         //3P1 = 2P0 + P3
@@ -276,8 +296,8 @@ static void control_points_from_coords(gdouble firstControlPoints[][2], gdouble 
    
         for(i=0;i<count;i++)
           {
-            P0=g_array_index(coords, struct point, i);
-            P3=g_array_index(coords, struct point, i+1);
+            P0=g_array_index(dataPoints, struct point, i);
+            P3=g_array_index(dataPoints, struct point, i+1);
 
             if(i==0)
               {
@@ -353,7 +373,7 @@ static void control_points_from_coords(gdouble firstControlPoints[][2], gdouble 
           {
             if(i==count-1)
               {
-                P3=g_array_index(coords, struct point, i+1);
+                P3=g_array_index(dataPoints, struct point, i+1);
                 P1_x=firstControlPoints[0][0];
                 P1_y=firstControlPoints[0][1];
 
@@ -365,7 +385,7 @@ static void control_points_from_coords(gdouble firstControlPoints[][2], gdouble 
               }
             else
               {
-                P3=g_array_index(coords, struct point, i+1);                
+                P3=g_array_index(dataPoints, struct point, i+1);                
                 P1_x=firstControlPoints[i+1][0];
                 P1_y=firstControlPoints[i+1][1];
 
@@ -377,8 +397,21 @@ static void control_points_from_coords(gdouble firstControlPoints[][2], gdouble 
               }
 
           }
+       
+        controlPoints=g_array_new(FALSE, FALSE, sizeof(struct controls));
+        struct controls cp;
+        for(i=0;i<count;i++)
+          {
+            cp.x1=firstControlPoints[i][0];
+            cp.y1=firstControlPoints[i][1];
+            cp.x2=secondControlPoints[i][0];
+            cp.y2=secondControlPoints[i][1];
+            g_array_append_val(controlPoints, cp);
+          }
 
      }
+
+    return controlPoints;
   }
 
 
