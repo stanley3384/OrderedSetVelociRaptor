@@ -1,7 +1,8 @@
 
 /*
-    Test code for drawing squiggles. It will draw a continuous squiggle and a smooth and continuous
-squiggle. 
+    Test code for drawing squiggles and smooth curves. It will draw a continuous squiggle
+ and a smooth and continuous squiggle. Test the smoothing function with arrays on
+ the heap and stack.
 
     gcc -Wall squiggles1.c -o squiggles1 `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -26,19 +27,18 @@ struct controls{
   gdouble y2;
 }controls;
 
-static void check_smooth(GtkToggleButton *check1, gpointer data);
-static void check_heap(GtkToggleButton *check2, gpointer data);
+static void combo_changed(GtkComboBox *combo1, gpointer data);
 static void button_clicked(GtkWidget *button, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data);
+static void load_random_points(GArray *dataPoints, gint points, gdouble width, gdouble height);
 static GArray* control_points_from_coords(GArray *dataPoints);
 static GArray* control_points_from_coords2(GArray *dataPoints);
 
 static GRand *rand1=NULL;
 static GArray *coords=NULL;
 
-gboolean draw_smooth=FALSE;
-gboolean use_heap=FALSE;
+gint combo_row=0;
 
 int main(int argc, char *argv[])
   {
@@ -58,15 +58,20 @@ int main(int argc, char *argv[])
     gtk_widget_set_vexpand(da, TRUE);
     g_signal_connect(da, "draw", G_CALLBACK(da_drawing), NULL);
 
-    GtkWidget *check1=gtk_check_button_new_with_label("Smooth and Continuous");
-    gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
-    g_signal_connect(check1, "toggled", G_CALLBACK(check_smooth), NULL);
+    GtkWidget *combo1=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo1, TRUE);
+    gtk_widget_set_vexpand(combo1, FALSE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Squggles");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Smooth Squiggles Stack");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Smooth Squiggles Heap");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Smooth Squiggles Wave Stack");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Smooth Squiggles Wave Heap");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Smooth Squiggles Circle Stack");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Smooth Squiggles Circle Heap");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
+    g_signal_connect(combo1, "changed", G_CALLBACK(combo_changed), NULL);
 
-    GtkWidget *check2=gtk_check_button_new_with_label("Arrays on Heap");
-    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
-    g_signal_connect(check2, "toggled", G_CALLBACK(check_heap), NULL);
-
-    GtkWidget *button1=gtk_button_new_with_label("Redraw");
+    GtkWidget *button1=gtk_button_new_with_label("Draw");
     gtk_widget_set_hexpand(button1, TRUE);
     gtk_widget_set_vexpand(button1, FALSE);
     g_signal_connect(button1, "clicked", G_CALLBACK(button_clicked), da);
@@ -75,9 +80,8 @@ int main(int argc, char *argv[])
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);    
     gtk_grid_attach(GTK_GRID(grid), da, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), check2, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 1, 1);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
     gtk_widget_show_all(window);
@@ -89,15 +93,9 @@ int main(int argc, char *argv[])
 
     return 0;
   }
-static void check_smooth(GtkToggleButton *check1, gpointer data)
+static void combo_changed(GtkComboBox *combo1, gpointer data)
   {
-    if(gtk_toggle_button_get_active(check1)) draw_smooth=TRUE;
-    else draw_smooth=FALSE;
-  }
-static void check_heap(GtkToggleButton *check2, gpointer data)
-  {
-    if(gtk_toggle_button_get_active(check2)) use_heap=TRUE;
-    else use_heap=FALSE;
+    combo_row=gtk_combo_box_get_active(combo1);
   }
 static void button_clicked(GtkWidget *button, gpointer data)
   {
@@ -110,6 +108,7 @@ static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data)
   }
 static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
   {
+    gint i=0;
     gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
     //Layout for the drawing is a 10x10 rectangle.
@@ -131,12 +130,128 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
     cairo_line_to(cr, 5.0*w1, 9.0*h1);
     cairo_stroke(cr); 
 
+    //Clear the array.
     g_array_remove_range(coords, 0, coords->len);
+ 
+    gint points=0;
+    struct point p1;
+    if(combo_row<3)
+      { 
+        //Some random points
+        points=100;
+        load_random_points(coords, points, width, height);
+      }
+    else if(combo_row==3||combo_row==4)
+      {
+        //Test a wave
+        points=9;
+        p1.x=1.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=2.0*w1;
+        p1.y=1.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=3.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=4.0*w1;
+        p1.y=9.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=5.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=6.0*w1;
+        p1.y=1.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=7.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=8.0*w1;
+        p1.y=9.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=9.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+      }
+    else
+      {
+        //A five point circle or ellipse.
+        points=5;
+        p1.x=1.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=5.0*w1;
+        p1.y=1.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=9.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=5.0*w1;
+        p1.y=9.0*h1;
+        g_array_append_val(coords, p1);
+        p1.x=1.0*w1;
+        p1.y=5.0*h1;
+        g_array_append_val(coords, p1);
+      }
 
+    //Get the control points from the coordinates.
+    GArray *controlPoints=NULL;
+    if(combo_row!=0)
+      {
+        if(combo_row==1) controlPoints=control_points_from_coords(coords);
+        else if(combo_row==2) controlPoints=control_points_from_coords2(coords);
+        else if(combo_row==3) controlPoints=control_points_from_coords(coords);
+        else if(combo_row==4) controlPoints=control_points_from_coords2(coords);
+        else if(combo_row==5) controlPoints=control_points_from_coords(coords);
+        else controlPoints=control_points_from_coords2(coords);
+      }
+
+    //Draw the squiggley.
+    gdouble red=0.0;
+    gdouble green=0.0;
+    gdouble blue=1.0;
+    cairo_set_line_width(cr, 3.0);
+    struct point d1;
+    struct point d2;
+    struct controls c1;   
+    if(combo_row!=0)
+      {
+        for(i=0;i<points-1;i++)
+          {
+            red+=2.0/points;
+            blue-=2.0/points;
+            cairo_set_source_rgb(cr, red, green, blue);
+            d1=g_array_index(coords, struct point, i);
+            d2=g_array_index(coords, struct point, i+1);
+            c1=g_array_index(controlPoints, struct controls, i);
+            cairo_move_to(cr, d1.x, d1.y);
+            cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
+            cairo_stroke(cr);
+         }
+      } 
+    else
+      {
+        gdouble diff=0;
+        for(i=0;i<points-1;i++)
+          {
+            red+=2.0/points;
+            blue-=2.0/points;
+            cairo_set_source_rgb(cr, red, green, blue);
+            d1=g_array_index(coords, struct point, i);
+            d2=g_array_index(coords, struct point, i+1);
+            diff=d1.y-d2.y;
+            cairo_move_to(cr, d1.x, d1.y);
+            //Curve with the control points at the corners of the rectangle.
+            cairo_curve_to(cr, d1.x, d1.y-diff, d2.x, d2.y+diff, d2.x, d2.y);
+            cairo_stroke(cr);
+         }
+      }
+
+    if(controlPoints!=NULL) g_array_free(controlPoints, TRUE);
+  }
+static void load_random_points(GArray *dataPoints, gint points, gdouble width, gdouble height)
+  {
     gint i=0;
-    //Change the number of points to test.  
-    gint points=100;
-    gdouble diff=0;
     struct point p1;
     gdouble back_x=width;
     gdouble back_y=height;
@@ -167,65 +282,12 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
             if(fabs(p1.y-start_y)/height<0.3&&!loop) break;
             else loop=TRUE;           
           }
-        //g_print("%f %f\n", p1.x, p1.y);
         g_array_append_val(coords, p1);
         back_x=start_x;
         back_y=start_y;
         start_x=p1.x;
         start_y=p1.y;        
       }
-
-    GArray *controlPoints=NULL;
-    if(draw_smooth)
-      {
-        GTimer *timer=g_timer_new();
-        if(use_heap) controlPoints=control_points_from_coords2(coords);
-        else controlPoints=control_points_from_coords(coords);
-        g_print("Time %f\n", g_timer_elapsed(timer, NULL));
-        g_timer_destroy(timer);
-      }
-
-    //Draw the squiggley.
-    gdouble red=0.0;
-    gdouble green=0.0;
-    gdouble blue=1.0;
-    cairo_set_line_width(cr, 3.0);
-    struct point d1;
-    struct point d2;
-    struct controls c1;   
-    if(draw_smooth)
-      {
-        for(i=0;i<points-1;i++)
-          {
-            red+=2.0/points;
-            blue-=2.0/points;
-            cairo_set_source_rgb(cr, red, green, blue);
-            d1=g_array_index(coords, struct point, i);
-            d2=g_array_index(coords, struct point, i+1);
-            c1=g_array_index(controlPoints, struct controls, i);
-            cairo_move_to(cr, d1.x, d1.y);
-            if(draw_smooth) cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
-            cairo_stroke(cr);
-         }
-      } 
-    else
-      {
-        for(i=0;i<points-1;i++)
-          {
-            red+=2.0/points;
-            blue-=2.0/points;
-            cairo_set_source_rgb(cr, red, green, blue);
-            d1=g_array_index(coords, struct point, i);
-            d2=g_array_index(coords, struct point, i+1);
-            diff=d1.y-d2.y;
-            cairo_move_to(cr, d1.x, d1.y);
-            //Curve with the control points at the corners of the rectangle.
-            cairo_curve_to(cr, d1.x, d1.y-diff, d2.x, d2.y+diff, d2.x, d2.y);
-            cairo_stroke(cr);
-         }
-      }
-
-    if(controlPoints!=NULL) g_array_free(controlPoints, TRUE);
   }
 /*
     This is some exellent work done by Ramsundar Shandilya. Note the following for the original work
@@ -391,8 +453,8 @@ static GArray* control_points_from_coords(GArray *dataPoints)
             if(i==count-1)
               {
                 P3=g_array_index(dataPoints, struct point, i+1);
-                P1_x=firstControlPoints[0][0];
-                P1_y=firstControlPoints[0][1];
+                P1_x=firstControlPoints[i][0];
+                P1_y=firstControlPoints[i][1];
 
                 controlPointX=(P3.x+P1_x)/2.0;
                 controlPointY=(P3.y+P1_y)/2.0;
@@ -561,8 +623,8 @@ static GArray* control_points_from_coords2(GArray *dataPoints)
             if(i==count-1)
               {
                 P3=g_array_index(dataPoints, struct point, i+1);
-                P1_x=(*(fCP));
-                P1_y=(*(fCP+1));
+                P1_x=(*(fCP+i*2));
+                P1_y=(*(fCP+i*2+1));
 
                 controlPointX=(P3.x+P1_x)/2.0;
                 controlPointY=(P3.y+P1_y)/2.0;
