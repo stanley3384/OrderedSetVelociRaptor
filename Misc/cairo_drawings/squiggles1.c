@@ -3,6 +3,8 @@
     Test code for drawing squiggles and smooth curves. It will draw a continuous squiggle
  and a smooth and continuous squiggle. Test the smoothing function with arrays on
  the heap and stack.
+    For the smoothing function, the basic idea is to send the coordinates for the data points
+and get a set of control points returned that you can draw with.
 
     gcc -Wall squiggles1.c -o squiggles1 `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -61,7 +63,7 @@ int main(int argc, char *argv[])
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
     gtk_widget_set_vexpand(combo1, FALSE);
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Squggles");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Squiggles");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Smooth Squiggles Stack");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Smooth Squiggles Heap");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Smooth Squiggles Wave Stack");
@@ -218,8 +220,8 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
       {
         for(i=0;i<points-1;i++)
           {
-            red+=2.0/points;
-            blue-=2.0/points;
+            red+=1.0/(gdouble)(points-1);
+            blue-=1.0/(gdouble)(points-1);
             cairo_set_source_rgb(cr, red, green, blue);
             d1=g_array_index(coords, struct point, i);
             d2=g_array_index(coords, struct point, i+1);
@@ -234,8 +236,8 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
         gdouble diff=0;
         for(i=0;i<points-1;i++)
           {
-            red+=2.0/points;
-            blue-=2.0/points;
+            red+=1.0/(gdouble)(points-1);
+            blue-=1.0/(gdouble)(points-1);
             cairo_set_source_rgb(cr, red, green, blue);
             d1=g_array_index(coords, struct point, i);
             d2=g_array_index(coords, struct point, i+1);
