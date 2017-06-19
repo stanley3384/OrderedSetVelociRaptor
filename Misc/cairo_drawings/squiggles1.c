@@ -34,8 +34,8 @@ static void button_clicked(GtkWidget *button, gpointer data);
 static gboolean da_drawing(GtkWidget *da, cairo_t *cr, gpointer data);
 static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data);
 static void load_random_points(GArray *dataPoints, gint points, gdouble width, gdouble height);
-static GArray* control_points_from_coords(GArray *dataPoints);
-static GArray* control_points_from_coords2(GArray *dataPoints);
+static GArray* control_points_from_coords(const GArray *dataPoints);
+static GArray* control_points_from_coords2(const GArray *dataPoints);
 
 static GRand *rand1=NULL;
 static GArray *coords=NULL;
@@ -68,8 +68,10 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Smooth Squiggles Heap");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Smooth Squiggles Wave Stack");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Smooth Squiggles Wave Heap");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Smooth Squiggles Circle Stack");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Smooth Squiggles Circle Heap");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Smooth Squiggles Circle 4 Points");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Smooth Squiggles Circle 8 Points");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 7, "8", "Smooth Squiggles Circle 16 Points");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 8, "9", "Smooth Squiggles Circle 24 Points");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo_changed), NULL);
 
@@ -177,23 +179,29 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
       }
     else
       {
-        //A five point circle or ellipse.
-        points=5;
-        p1.x=1.0*w1;
-        p1.y=5.0*h1;
-        g_array_append_val(coords, p1);
-        p1.x=5.0*w1;
-        p1.y=1.0*h1;
-        g_array_append_val(coords, p1);
-        p1.x=9.0*w1;
-        p1.y=5.0*h1;
-        g_array_append_val(coords, p1);
-        p1.x=5.0*w1;
-        p1.y=9.0*h1;
-        g_array_append_val(coords, p1);
-        p1.x=1.0*w1;
-        p1.y=5.0*h1;
-        g_array_append_val(coords, p1);
+        //Reference circle.
+        if(w1>h1) w1=h1;
+        cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+        cairo_set_line_width(cr, 3.0);
+        cairo_arc (cr, width/2.0, height/2.0, 4.0*w1, 0.0, 2.0*G_PI);
+        cairo_stroke(cr);
+        //The smooth circle points.
+        if(combo_row==5) points=5;
+        else if(combo_row==6) points=9;
+        else if(combo_row==7) points=17;
+        else points=25;
+        cairo_translate(cr, width/2.0, height/2.0);
+        struct point circle;
+        for(i=0;i<points-1;i++)
+          {
+            circle.x=cos(2.0*G_PI*i/(points-1.0))*4.0*w1;
+            circle.y=sin(2.0*G_PI*i/(points-1.0))*4.0*w1;
+            g_array_append_val(coords, circle);
+          }
+        //close the circle.
+        circle.x=4.0*w1;
+        circle.y=0.0;
+        g_array_append_val(coords, circle);
       }
 
     //Get the control points from the coordinates.
@@ -204,7 +212,6 @@ static void draw_squiggles(GtkWidget *da, cairo_t *cr, gpointer data)
         else if(combo_row==2) controlPoints=control_points_from_coords2(coords);
         else if(combo_row==3) controlPoints=control_points_from_coords(coords);
         else if(combo_row==4) controlPoints=control_points_from_coords2(coords);
-        else if(combo_row==5) controlPoints=control_points_from_coords(coords);
         else controlPoints=control_points_from_coords2(coords);
       }
 
@@ -324,7 +331,7 @@ static void load_random_points(GArray *dataPoints, gint points, gdouble width, g
     This is a translation of the original Swift code to C. The first control_points_from_coords()
     uses arrays on the stack. Version 2 control_points_from_coords2() puts the arrays on the heap. 
 */
-static GArray* control_points_from_coords(GArray *dataPoints)
+static GArray* control_points_from_coords(const GArray *dataPoints)
   {  
     g_print("Arrays on Stack\n");
     gint i=0;
@@ -494,7 +501,7 @@ static GArray* control_points_from_coords(GArray *dataPoints)
 
     return controlPoints;
   }
-static GArray* control_points_from_coords2(GArray *dataPoints)
+static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
     g_print("Arrays on Heap\n");
     gint i=0;
