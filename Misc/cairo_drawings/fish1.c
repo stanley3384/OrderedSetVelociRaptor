@@ -1,7 +1,8 @@
 
 /* 
-    //Test drawing with generated control points. Draw a fish and a spiral. Getting the control
-points to draw the curves makes it much easier to draw something like a spiral.
+    Test drawing with generated control points. Draw a fish and a spiral. Getting the control
+points to draw the curves makes it much easier to draw something like a spiral or animating
+a spiral.
 
     gcc -Wall fish1.c -o fish1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -26,7 +27,11 @@ struct controls{
 }controls;
 
 static gint combo_row=0;
+static guint timer_id=0;
+static gdouble translate=1;
+
 static void combo_changed(GtkComboBox *combo, gpointer data);
+static gboolean animate_spiral(gpointer data);
 static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data);
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
@@ -50,6 +55,7 @@ int main(int argc, char **argv)
    gtk_widget_set_vexpand(combo1, FALSE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Draw Fish");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Draw Spiral");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Animate Spiral");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
    g_signal_connect(combo1, "changed", G_CALLBACK(combo_changed), da);
    
@@ -68,7 +74,32 @@ int main(int argc, char **argv)
 static void combo_changed(GtkComboBox *combo, gpointer data)
  {
    combo_row=gtk_combo_box_get_active(combo);
-   gtk_widget_queue_draw(GTK_WIDGET(data)); 
+
+   if(combo_row==2)
+     {
+       timer_id=g_timeout_add(100, (GSourceFunc)animate_spiral, data);
+     }
+   else
+     {
+       if(timer_id!=0)
+         {
+
+           g_source_remove(timer_id); 
+           timer_id=0;
+           translate=1;
+         }
+     }
+   gtk_widget_queue_draw(GTK_WIDGET(data));
+ }
+static gboolean animate_spiral(gpointer data)
+ {   
+   static gboolean backwards=FALSE;
+   if(translate>21) backwards=TRUE;
+   if(translate<1) backwards=FALSE;
+   gtk_widget_queue_draw(GTK_WIDGET(data));  
+   if(backwards)translate--; 
+   else translate++;  
+   return TRUE;
  }
 static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
  {
@@ -78,6 +109,8 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
    gdouble w1=width/10.0;
    gdouble h1=height/10.0;
+
+   //GTimer *timer=g_timer_new();
 
    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
    cairo_paint(cr);
@@ -129,16 +162,15 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
        p1.y=5.0*h1;
        g_array_append_val(coords, p1);
      }
-   else //Some points for a spiral.
+   else if(combo_row==1) //Some points for a spiral.
      {
+       cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
        cairo_translate(cr, width/2.0, height/2.0);
        gdouble temp_x=0;
        gdouble temp_y=0;
        gdouble radius=4.0;
        gdouble circle_points[]={0, G_PI/4.0, G_PI/2.0, 3.0*G_PI/4.0, G_PI, 5.0*G_PI/4.0, 3.0*G_PI/2.0, 7.0*G_PI/4.0};
        gdouble spirals=10;
-       cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-       cairo_set_line_width(cr, 3.0);
        for(i=0;i<spirals;i++)
          {
            for(j=0; j<8; j++)
@@ -152,6 +184,32 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
              }
          }
      }
+   else //Animate the spiral.
+     {
+       cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+       cairo_move_to(cr, 1.0*w1, 9.0*h1);
+       cairo_line_to(cr, (1.0+translate/3.0)*w1, 9.0*h1);
+       cairo_stroke(cr);
+       cairo_translate(cr, (1.0+translate/3.0)*w1, 8.0*h1);
+       gdouble temp_x=0;
+       gdouble temp_y=0;
+       gdouble radius=1.0;
+       gdouble circle_points[]={-3.0*G_PI/2.0, -7.0*G_PI/4.0, 0, -G_PI/4.0, -G_PI/2.0, -3.0*G_PI/4.0, -G_PI, -5.0*G_PI/4.0};
+       gdouble spirals=3;
+       for(i=0;i<spirals;i++)
+         {           
+           for(j=0;j<8;j++)
+             {
+               temp_x=radius*cos(circle_points[j]);
+               temp_y=radius*sin(circle_points[j]);
+               p1.x=temp_x*w1;
+               p1.y=temp_y*h1;
+               g_array_append_val(coords, p1);
+               radius-=.05;
+              }
+         }
+      
+     }
 
    //Get the control points.
    GArray *controlPoints=control_points_from_coords2(coords);
@@ -159,8 +217,13 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
    //Draw the curves.
    struct point d1;
    struct point d2;
-   struct controls c1;   
-   for(i=0;i<coords->len-1;i++)
+   struct controls c1; 
+   gint length=coords->len-1;
+   if(combo_row==2)
+     {
+       length=length-translate;
+     }
+   for(i=0;i<length;i++)
      {
        d1=g_array_index(coords, struct point, i);
        d2=g_array_index(coords, struct point, i+1);
@@ -178,6 +241,10 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
    
    g_array_free(coords, TRUE);
    g_array_free(controlPoints, TRUE);
+
+   //g_print("Time %f\n", g_timer_elapsed(timer, NULL));
+   //g_timer_destroy(timer);
+
    return FALSE;
  }
 static GArray* control_points_from_coords2(const GArray *dataPoints)
