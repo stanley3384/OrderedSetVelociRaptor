@@ -77,7 +77,7 @@ static void combo_changed(GtkComboBox *combo, gpointer data)
 
    if(combo_row==2)
      {
-       timer_id=g_timeout_add(100, (GSourceFunc)animate_spiral, data);
+       timer_id=g_timeout_add(200, (GSourceFunc)animate_spiral, data);
      }
    else
      {
@@ -94,7 +94,7 @@ static void combo_changed(GtkComboBox *combo, gpointer data)
 static gboolean animate_spiral(gpointer data)
  {   
    static gboolean backwards=FALSE;
-   if(translate>21) backwards=TRUE;
+   if(translate>22) backwards=TRUE;
    if(translate<1) backwards=FALSE;
    gtk_widget_queue_draw(GTK_WIDGET(data));  
    if(backwards)translate--; 
@@ -170,7 +170,7 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
        gdouble temp_y=0;
        gdouble radius=4.0;
        gdouble circle_points[]={0, G_PI/4.0, G_PI/2.0, 3.0*G_PI/4.0, G_PI, 5.0*G_PI/4.0, 3.0*G_PI/2.0, 7.0*G_PI/4.0};
-       gdouble spirals=10;
+       gint spirals=10;
        for(i=0;i<spirals;i++)
          {
            for(j=0; j<8; j++)
@@ -187,15 +187,25 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
    else //Animate the spiral.
      {
        cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+
+       //Calculate length of spiral and translate the spiral.
+       gdouble theta_start=(3.0*(2.0*G_PI));
+       gdouble theta=((3.0-(translate*1.0/8.0))*(2.0*G_PI));
+       gdouble a=1.0/(theta_start-(translate*1.0/8.0)*G_PI);
+       gdouble spiral_start=0.5*(1.0/theta_start)*(theta_start*sqrt(1.0+theta_start*theta_start)+log(1.0+sqrt(1.0+theta_start*theta_start)));
+       gdouble spiral_length=0.5*a*(theta*sqrt(1.0+theta*theta)+log(1.0+sqrt(1.0+theta*theta)));
+       gdouble move_x=spiral_start-spiral_length;
+
        cairo_move_to(cr, 1.0*w1, 9.0*h1);
-       cairo_line_to(cr, (1.0+translate/3.0)*w1, 9.0*h1);
+       cairo_line_to(cr, 1.0*w1+(move_x*w1), 9.0*h1);
        cairo_stroke(cr);
-       cairo_translate(cr, (1.0+translate/3.0)*w1, 8.0*h1);
+       cairo_translate(cr, 1.0*w1+move_x*w1, 8.0*h1);
+
        gdouble temp_x=0;
        gdouble temp_y=0;
        gdouble radius=1.0;
        gdouble circle_points[]={-3.0*G_PI/2.0, -7.0*G_PI/4.0, 0, -G_PI/4.0, -G_PI/2.0, -3.0*G_PI/4.0, -G_PI, -5.0*G_PI/4.0};
-       gdouble spirals=3;
+       gint spirals=3;
        for(i=0;i<spirals;i++)
          {           
            for(j=0;j<8;j++)
@@ -205,7 +215,7 @@ static gboolean draw_fish(GtkWidget *da, cairo_t *cr, gpointer data)
                p1.x=temp_x*w1;
                p1.y=temp_y*h1;
                g_array_append_val(coords, p1);
-               radius-=.05;
+               radius-=(1.0/3.0)/8.0;
               }
          }
       
