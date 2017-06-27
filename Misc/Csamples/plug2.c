@@ -5,6 +5,8 @@ plug2.c and socket2.c files need to be compiled and then run socket2.
 
     gcc -Wall plug2.c -o plug2 `pkg-config --cflags --libs gtk+-3.0`
 
+    Tested on Ubuntu16.04 and GTK3.18
+
     C. Eric Cashon
 */
 
@@ -12,6 +14,12 @@ plug2.c and socket2.c files need to be compiled and then run socket2.
 #include<gtk/gtkx.h>
 #include<stdio.h>
 
+static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
+    cairo_paint(cr);
+    return FALSE;
+  } 
 static void on_embed(GtkPlug *plug, gpointer data)
   {
     g_print("Plug Embedded\n"); 
@@ -40,6 +48,17 @@ int main(int argc, char *argv[])
     gtk_widget_set_size_request(plug, 200, 100);
     g_signal_connect(plug, "embedded", G_CALLBACK(on_embed), NULL);
 
+    gtk_widget_set_app_paintable(plug, TRUE);
+    //Try to set transparency of main window.
+    if(gtk_widget_is_composited(plug))
+      {
+        GdkScreen *screen=gtk_widget_get_screen(plug);  
+        GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual(plug, visual);
+      }
+    else g_print("Can't set window transparency.\n");
+    g_signal_connect(plug, "draw", G_CALLBACK(draw_background), NULL);
+  
     GtkWidget *label=gtk_label_new("");
     gchar *markup=NULL;
     if(argc>1)
@@ -68,7 +87,7 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(plug);
 
     //Broadcast plug id. 
-    g_timeout_add(500, (GSourceFunc)send_out, plug);
+    g_timeout_add(1000, (GSourceFunc)send_out, plug);
 
     gtk_main();
     

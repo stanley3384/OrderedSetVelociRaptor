@@ -5,6 +5,8 @@ plug2.c and socket2.c files need to be compiled and then run socket2.
 
    gcc -Wall socket2.c -o socket2 `pkg-config --cflags --libs gtk+-3.0`
 
+   Tested on Ubuntu16.04 and GTK3.18
+
    C. Eric Cashon
 
 */
@@ -22,7 +24,28 @@ static void add_plug(GtkWidget *widget, gpointer *data);
 static gboolean watch_out_channel(GIOChannel *channel, GIOCondition cond, gpointer *data);
 static void quit_program(GtkWidget *widget, gpointer data);
 static void change_color(GtkComboBox *combo, gpointer data);
- 
+
+static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
+    cairo_paint(cr);
+    return FALSE;
+  } 
+static gboolean draw_background2(GtkWidget *widget, cairo_t *cr, gpointer data)
+  {
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+
+    cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 0.5);
+    cairo_paint(cr);
+
+    cairo_set_line_width(cr, 3.0);
+    cairo_set_source_rgba(cr, 1.0, 0.0, 1.0, 1.0);
+    cairo_rectangle(cr, width/10.0, height/10.0, 8.0*width/10.0, 8.0*height/10.0);
+    cairo_stroke(cr);
+    
+    return FALSE;
+  } 
 int main(int argc, char *argv[])
   {
     gtk_init(&argc, &argv);
@@ -30,16 +53,39 @@ int main(int argc, char *argv[])
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Socket");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
+    gtk_window_set_default_size(GTK_WINDOW(window), 200, 300);
+
+    gtk_widget_set_app_paintable(window, TRUE);
+    //Try to set transparency of main window.
+    if(gtk_widget_is_composited(window))
+      {
+        GdkScreen *screen=gtk_widget_get_screen(window);  
+        GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual(window, visual);
+      }
+    else g_print("Can't set window transparency.\n");
+    g_signal_connect(window, "draw", G_CALLBACK(draw_background), NULL); 
 
     GtkWidget *grid=gtk_grid_new();
     gtk_container_add(GTK_CONTAINER(window), grid);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
 
     GtkWidget *socket=gtk_socket_new();
     gtk_widget_set_size_request(socket, 200, 175);
     gtk_grid_attach(GTK_GRID(grid), socket, 0, 0, 1, 1);
     g_signal_connect(socket, "plug-added", G_CALLBACK(plug_added), NULL);
-    g_signal_connect(socket, "plug-removed", G_CALLBACK(plug_removed), NULL); 
+    g_signal_connect(socket, "plug-removed", G_CALLBACK(plug_removed), NULL);
+
+    gtk_widget_set_app_paintable(socket, TRUE);
+    //Try to set transparency of main window.
+    if(gtk_widget_is_composited(socket))
+      {
+        GdkScreen *screen=gtk_widget_get_screen(socket);  
+        GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
+        gtk_widget_set_visual(socket, visual);
+      }
+    else g_print("Can't set window transparency.\n");
+    g_signal_connect(socket, "draw", G_CALLBACK(draw_background2), NULL); 
 
     GString *plug_color=g_string_new("red");
     g_signal_connect(window, "destroy", G_CALLBACK(quit_program), plug_color);
@@ -52,13 +98,13 @@ int main(int argc, char *argv[])
 
     GtkWidget *combo=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo, TRUE);
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "red");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "green");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "blue");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 0, "1", "red plug label");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 1, "2", "green plug label");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo), 2, "3", "blue plug label");
     gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo), "1");
     g_signal_connect(combo, "changed", G_CALLBACK(change_color), plug_color);
     gtk_grid_attach(GTK_GRID(grid), combo, 0, 2, 1, 1);
-    
+
     gtk_widget_show_all(window);
 
     gtk_main();
