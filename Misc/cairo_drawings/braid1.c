@@ -173,7 +173,8 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
 
    //Draw the curves.
    gint draw_order=-1;
-   cairo_set_line_width(cr, 7.0);
+   cairo_set_line_width(cr, 15.0);
+   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
    gint half1=2*rotations;
    gint half2=inc/2;    
    for(i=0;i<half1;i++)
