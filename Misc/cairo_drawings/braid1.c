@@ -1,6 +1,7 @@
 
 /* 
-    Test code for drawing a braid or a weave. Draw two sin curves over and under each other.
+    Test code for drawing a braid or a weave with three strands. Use a smoothing function to
+get the control points for the sine and cosine curves to be braided.
 
     gcc -Wall braid1.c -o braid1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -31,6 +32,9 @@ static gdouble translate=0;
 static void combo_changed(GtkComboBox *combo, gpointer data);
 static gboolean animate_braid(gpointer data);
 static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data);
+static void draw_coords1(cairo_t *cr, GArray *coords1, GArray *control1, gint i, gint half2);
+static void draw_coords2(cairo_t *cr, GArray *coords2, GArray *control2, gint i, gint half2);
+static void draw_coords3(cairo_t *cr, GArray *coords3, GArray *control3, gint i, gint half2);
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
 int main(int argc, char **argv)
@@ -124,26 +128,31 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_line_to(cr, 5.0*w1, 9.0*h1);
    cairo_stroke(cr); 
 
-   //Sketch a few points for a braid.
+   //Sketch a few points for a braid. The smoothing function will take care of the control points.
    gint rotations=3;
    gint inc=8;
    struct point p1;
    GArray *coords1=g_array_new(FALSE, FALSE, sizeof(struct point));
    GArray *coords2=g_array_new(FALSE, FALSE, sizeof(struct point));
+   GArray *coords3=g_array_new(FALSE, FALSE, sizeof(struct point));
    if(combo_row==0||combo_row==1)
      {
-       gdouble sind=1.0;
+       gdouble sind1=1.0;
+       gdouble sind2=0.0;
        for(i=0;i<rotations;i++)
          {
            for(j=0;j<inc;j++)
              {         
                p1.x=(((gdouble)(i*inc+j)/(gdouble)rotations)+1.0)*w1;
-               p1.y=(5.0-sind)*h1;
+               p1.y=(5.0-sind1)*h1;
                g_array_append_val(coords1, p1);
-               p1.y=(5.0+sind)*h1;
+               p1.y=(5.0+sind1)*h1;
                g_array_append_val(coords2, p1);
+               p1.y=(5.0+sind2)*h1;
+               g_array_append_val(coords3, p1);
                //g_print("%i %f %f %f\n", i*inc+j, p1.x/w1, p1.y/h1, sind);  
-               sind=sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
+               sind1=sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
+               sind2=sin(G_PI*2.0*((gdouble)j+1)/inc);
              }
          } 
        p1.x=9.0*w1;
@@ -151,92 +160,122 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
        g_array_append_val(coords1, p1);
        p1.x=9.0*w1;
        p1.y=6.0*h1;
-       g_array_append_val(coords2, p1);       
+       g_array_append_val(coords2, p1); 
+       p1.x=9.0*w1;
+       p1.y=5.0*h1;
+       g_array_append_val(coords3, p1);       
      }  
 
    //Get the control points.
    GArray *control1=control_points_from_coords2(coords1);
    GArray *control2=control_points_from_coords2(coords2);
+   GArray *control3=control_points_from_coords2(coords3);
 
    //Draw the curves.
-   struct point d1;
-   struct point d2;
-   struct controls c1; 
-   gboolean flip=FALSE;
+   gint draw_order=-1;
    cairo_set_line_width(cr, 7.0);
    gint half1=2*rotations;
-   gint half2=inc/2; 
-   gint index=0;  
+   gint half2=inc/2;    
    for(i=0;i<half1;i++)
      {
-       if(flip) flip=FALSE;
-       else flip=TRUE;
-       if(flip)
+       draw_order++;
+       if(draw_order>2) draw_order=0;
+       //Braid order 1 to 3, 2 to 1, 3 to 2.
+       switch(draw_order)
          {
-           for(j=0;j<half2;j++)
-             {
-               index=i*half2+j;
-               if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
-               else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-               d1=g_array_index(coords1, struct point, index);
-               d2=g_array_index(coords1, struct point, index+1);
-               c1=g_array_index(control1, struct controls, index);
-               cairo_move_to(cr, d1.x, d1.y);
-               cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
-               cairo_stroke(cr);
-             }
-           for(j=0;j<half2;j++)
-             {
-               index=i*half2+j;
-               if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-               else cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-               d1=g_array_index(coords2, struct point, index);
-               d2=g_array_index(coords2, struct point, index+1);
-               c1=g_array_index(control2, struct controls, index);
-               cairo_move_to(cr, d1.x, d1.y);
-               cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
-               cairo_stroke(cr);
-             } 
-         }
-       else
-         {
-           for(j=0;j<half2;j++)
-             {
-               index=i*half2+j;
-               if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-               else cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-               d1=g_array_index(coords2, struct point, index);
-               d2=g_array_index(coords2, struct point, index+1);
-               c1=g_array_index(control2, struct controls, index);
-               cairo_move_to(cr, d1.x, d1.y);
-               cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
-               cairo_stroke(cr);
-             }
-           for(j=0;j<half2;j++)
-             {
-               index=i*half2+j;
-               if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
-               else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-               d1=g_array_index(coords1, struct point, index);
-               d2=g_array_index(coords1, struct point, index+1);
-               c1=g_array_index(control1, struct controls, index);
-               cairo_move_to(cr, d1.x, d1.y);
-               cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
-               cairo_stroke(cr);
-             } 
+           case 0:
+             draw_coords1(cr, coords1, control1, i, half2);
+             draw_coords2(cr, coords2, control2, i, half2);
+             draw_coords3(cr, coords3, control3, i, half2);
+             break;
+           case 1:
+             draw_coords3(cr, coords3, control3, i, half2);
+             draw_coords1(cr, coords1, control1, i, half2);
+             draw_coords2(cr, coords2, control2, i, half2);
+             break;
+           case 2:
+             draw_coords2(cr, coords2, control2, i, half2);
+             draw_coords3(cr, coords3, control3, i, half2);
+             draw_coords1(cr, coords1, control1, i, half2);
+             break;
          }          
      }
    
    g_array_free(coords1, TRUE);
    g_array_free(coords2, TRUE);
+   g_array_free(coords3, TRUE);
    g_array_free(control1, TRUE);
    g_array_free(control2, TRUE);
+   g_array_free(control3, TRUE);
 
    //g_print("Time %f\n", g_timer_elapsed(timer, NULL));
    //g_timer_destroy(timer);
 
    return FALSE;
  }
+static void draw_coords1(cairo_t *cr, GArray *coords1, GArray *control1, gint i, gint half2)
+  {
+    gint j=0;
+    gint index=0;
+    struct point d1;
+    struct point d2;
+    struct controls c1; 
+
+    for(j=0;j<half2;j++)
+      {
+        index=i*half2+j;
+        if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+        else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+        d1=g_array_index(coords1, struct point, index);
+        d2=g_array_index(coords1, struct point, index+1);
+        c1=g_array_index(control1, struct controls, index);
+        cairo_move_to(cr, d1.x, d1.y);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
+        cairo_stroke(cr);
+      }
+  }
+static void draw_coords2(cairo_t *cr, GArray *coords2, GArray *control2, gint i, gint half2)
+  {
+    gint j=0;
+    gint index=0;
+    struct point d1;
+    struct point d2;
+    struct controls c1; 
+
+    for(j=0;j<half2;j++)
+      {
+        index=i*half2+j;
+        if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+        else cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+        d1=g_array_index(coords2, struct point, index);
+        d2=g_array_index(coords2, struct point, index+1);
+        c1=g_array_index(control2, struct controls, index);
+        cairo_move_to(cr, d1.x, d1.y);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
+        cairo_stroke(cr);
+      }
+  }
+static void draw_coords3(cairo_t *cr, GArray *coords3, GArray *control3, gint i, gint half2)
+  {
+    gint j=0;
+    gint index=0;
+    struct point d1;
+    struct point d2;
+    struct controls c1; 
+
+    for(j=0;j<half2;j++)
+      {
+        index=i*half2+j;
+        if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+        else cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+        d1=g_array_index(coords3, struct point, index);
+        d2=g_array_index(coords3, struct point, index+1);
+        c1=g_array_index(control3, struct controls, index);
+        cairo_move_to(cr, d1.x, d1.y);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, d2.x, d2.y);
+        cairo_stroke(cr);
+      }
+  }
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
     gint i=0;
