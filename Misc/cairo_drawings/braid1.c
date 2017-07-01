@@ -1,7 +1,8 @@
 
 /* 
     Test code for drawing a braid or a weave with three strands. Use a smoothing function to
-get the control points for the sine and cosine curves to be braided.
+get the control points for the sine and cosine curves to be braided. Draw a linear braid and
+a circular braid.
 
     gcc -Wall braid1.c -o braid1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -57,6 +58,8 @@ int main(int argc, char **argv)
    gtk_widget_set_vexpand(combo1, FALSE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Draw Braid");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Animate Braid");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Circular Braid");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Animate Circular Braid");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
    g_signal_connect(combo1, "changed", G_CALLBACK(combo_changed), da);
    
@@ -76,9 +79,13 @@ static void combo_changed(GtkComboBox *combo, gpointer data)
  {
    combo_row=gtk_combo_box_get_active(combo);
 
-   if(combo_row==1)
+   if(combo_row==1||combo_row==3)
      {
-       timer_id=g_timeout_add(100, (GSourceFunc)animate_braid, data);
+       translate=0;
+       if(timer_id==0)
+         {
+           timer_id=g_timeout_add(100, (GSourceFunc)animate_braid, data);
+         }
      }
    else
      {
@@ -95,8 +102,16 @@ static void combo_changed(GtkComboBox *combo, gpointer data)
 static gboolean animate_braid(gpointer data)
  {   
    static gboolean backwards=FALSE;
-   if(translate>22) backwards=TRUE;
-   if(translate<1) backwards=FALSE;
+   if(combo_row==1)
+     {
+       if(translate>22) backwards=TRUE;
+       if(translate<1) backwards=FALSE;
+     }
+   else
+     {
+       backwards=FALSE;
+       if(translate>46) translate=0;       
+     }
    gtk_widget_queue_draw(GTK_WIDGET(data));  
    if(backwards)translate--; 
    else translate++;  
@@ -135,6 +150,7 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
    GArray *coords1=g_array_new(FALSE, FALSE, sizeof(struct point));
    GArray *coords2=g_array_new(FALSE, FALSE, sizeof(struct point));
    GArray *coords3=g_array_new(FALSE, FALSE, sizeof(struct point));
+   //The linear braids.
    if(combo_row==0||combo_row==1)
      {
        gdouble sind1=1.0;
@@ -166,6 +182,42 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
        g_array_append_val(coords3, p1);       
      }  
 
+   //Try a circular braid.
+   if(combo_row==2||combo_row==3)
+     {
+       rotations=6;
+       inc=8;
+       gdouble sind1=1.0;
+       gdouble sind2=0.0;
+       for(i=0;i<rotations;i++)
+         {
+           for(j=0;j<inc;j++)
+             {         
+               p1.x=(3.0-sind1)*w1*cos((i*inc+j)*G_PI/24.0);
+               p1.y=(3.0-sind1)*h1*sin((i*inc+j)*G_PI/24.0);
+               g_array_append_val(coords1, p1);
+               p1.x=(3.0+sind1)*w1*cos((i*inc+j)*G_PI/24.0);
+               p1.y=(3.0+sind1)*h1*sin((i*inc+j)*G_PI/24.0);
+               g_array_append_val(coords2, p1);
+               p1.x=(3.0+sind2)*w1*cos((i*inc+j)*G_PI/24.0);
+               p1.y=(3.0+sind2)*h1*sin((i*inc+j)*G_PI/24.0);
+               g_array_append_val(coords3, p1);  
+               sind1=sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
+               sind2=sin(G_PI*2.0*((gdouble)j+1)/inc);
+             }
+         } 
+       p1.x=2.0*w1;
+       p1.y=0.0;
+       g_array_append_val(coords1, p1);
+       p1.x=4.0*w1;
+       p1.y=0.0;
+       g_array_append_val(coords2, p1); 
+       p1.x=3.0*w1;
+       p1.y=0.0;
+       g_array_append_val(coords3, p1);    
+       cairo_translate(cr, width/2.0, height/2.0);
+     }
+   
    //Get the control points.
    GArray *control1=control_points_from_coords2(coords1);
    GArray *control2=control_points_from_coords2(coords2);
@@ -225,7 +277,7 @@ static void draw_coords1(cairo_t *cr, GArray *coords1, GArray *control1, gint i,
     for(j=0;j<half2;j++)
       {
         index=i*half2+j;
-        if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+        if(translate==index&&(combo_row==1||combo_row==3)) cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
         else cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
         d1=g_array_index(coords1, struct point, index);
         d2=g_array_index(coords1, struct point, index+1);
@@ -246,7 +298,7 @@ static void draw_coords2(cairo_t *cr, GArray *coords2, GArray *control2, gint i,
     for(j=0;j<half2;j++)
       {
         index=i*half2+j;
-        if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+        if(translate==index&&(combo_row==1||combo_row==3)) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
         else cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
         d1=g_array_index(coords2, struct point, index);
         d2=g_array_index(coords2, struct point, index+1);
@@ -267,7 +319,7 @@ static void draw_coords3(cairo_t *cr, GArray *coords3, GArray *control3, gint i,
     for(j=0;j<half2;j++)
       {
         index=i*half2+j;
-        if(translate==index&&combo_row==1) cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+        if(translate==index&&(combo_row==1||combo_row==3)) cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
         else cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
         d1=g_array_index(coords3, struct point, index);
         d2=g_array_index(coords3, struct point, index+1);
