@@ -167,8 +167,8 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
                p1.y=(5.0+sind2)*h1;
                g_array_append_val(coords3, p1);
                //g_print("%i %f %f %f\n", i*inc+j, p1.x/w1, p1.y/h1, sind);  
-               sind1=sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
-               sind2=sin(G_PI*2.0*((gdouble)j+1)/inc);
+               sind1=(1.0+(gdouble)translate/23.0)*sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
+               sind2=(1.0+(gdouble)translate/23.0)*sin(G_PI*2.0*((gdouble)j+1)/inc);
              }
          } 
        p1.x=9.0*w1;
@@ -202,8 +202,8 @@ static gboolean draw_braid(GtkWidget *da, cairo_t *cr, gpointer data)
                p1.x=(3.0+sind2)*w1*cos((i*inc+j)*G_PI/24.0);
                p1.y=(3.0+sind2)*h1*sin((i*inc+j)*G_PI/24.0);
                g_array_append_val(coords3, p1);  
-               sind1=sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
-               sind2=sin(G_PI*2.0*((gdouble)j+1)/inc);
+               sind1=(1.0+(gdouble)translate/47.0)*sin(G_PI*2.0*((gdouble)j+1)/inc+G_PI/2.0);
+               sind2=(1.0+(gdouble)translate/47.0)*sin(G_PI*2.0*((gdouble)j+1)/inc);
              }
          } 
        p1.x=2.0*w1;
