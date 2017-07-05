@@ -112,6 +112,7 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
 
    //GTimer *timer=g_timer_new();
 
+   //Paint background.
    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
    cairo_paint(cr);
 
@@ -127,13 +128,13 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_line_to(cr, 5.0*w1, 9.0*h1);
    cairo_stroke(cr); 
 
-   //Points for a circular wave.
+   //Points for a circular wave. Made of 96 total pieces.
    gint rotations=12;
-   gint inc=8;
+   gint pieces=8;
    gint index=0;
    struct point p1;
-   GArray *coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), rotations*inc);
-   GArray *coords2=g_array_sized_new(FALSE, FALSE, sizeof(struct point), rotations*inc);
+   GArray *coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), rotations*pieces);
+   GArray *coords2=g_array_sized_new(FALSE, FALSE, sizeof(struct point), rotations*pieces);
    if(combo_row==0||combo_row==1)
      {
        gint move1=0;
@@ -141,9 +142,9 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
        gdouble sind1=-0.25;
        for(i=0;i<rotations;i++)
          {
-           for(j=0;j<inc;j++)
+           for(j=0;j<pieces;j++)
              {   
-               index=i*inc+j;      
+               index=i*pieces+j;      
                p1.x=(4.0-sind1)*w1*cos((index)*G_PI/48.0);
                p1.y=(4.0-sind1)*h1*sin((index)*G_PI/48.0);
                g_array_append_val(coords1, p1);
@@ -155,10 +156,10 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
                  {
                    move1=(gint)translate-3;
                    move2=(gint)translate+1;
-                   if(move1<index&&index<move2) sind1=(0.05)*sin(G_PI*2.0*((gdouble)j+1)/inc-G_PI/2.0);
-                   else sind1=(0.25)*sin(G_PI*2.0*((gdouble)j+1)/inc-G_PI/2.0);
+                   if(move1<index&&index<move2) sind1=(0.05)*sin(G_PI*2.0*((gdouble)j+1)/pieces-G_PI/2.0);
+                   else sind1=(0.25)*sin(G_PI*2.0*((gdouble)j+1)/pieces-G_PI/2.0);
                  }
-               else sind1=(0.25)*sin(G_PI*2.0*((gdouble)j+1)/inc-G_PI/2.0);
+               else sind1=(0.25)*sin(G_PI*2.0*((gdouble)j+1)/pieces-G_PI/2.0);
              }
          } 
        p1.x=4.25*w1;
@@ -172,23 +173,24 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
    //Get the control points.
    GArray *control1=control_points_from_coords2(coords1);
    GArray *control2=control_points_from_coords2(coords2);
+
+   //Draw from the center.
+   cairo_translate(cr, width/2.0, height/2.0);
     
    //Draw the curves.
-   cairo_translate(cr, width/2.0, height/2.0);
    struct point outside1;
    struct point outside2;
    struct point inside1;
    struct point inside2;
    struct controls c1;
-   struct controls c2;
-   gint half1=2*rotations;
-   gint half2=inc/2;    
-   for(i=0;i<half1;i++)
+   struct controls c2;   
+   for(i=0;i<rotations;i++)
      {
-       for(j=0;j<half2;j++)
+       for(j=0;j<pieces;j++)
          {
-           index=i*half2+j;
+           index=i*pieces+j;
            if(index<translate) cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+           else if(translate==index) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
            else cairo_set_source_rgb(cr, 0.0, 0.5, 1.0);
            outside1=g_array_index(coords1, struct point, index);
            outside2=g_array_index(coords1, struct point, index+1);
@@ -226,11 +228,22 @@ static GArray* control_points_from_coords2(const GArray *dataPoints)
     GArray *controlPoints=NULL;      
     //Number of Segments
     gint count=dataPoints->len-1;
-    gdouble *fCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
-    gdouble *sCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+    gdouble *fCP=NULL;
+    gdouble *sCP=NULL;
+
+    if(count>0)
+      {
+        fCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+        sCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+      }
         
     //P0, P1, P2, P3 are the points for each segment, where P0 & P3 are the knots and P1, P2 are the control points.
-    if(count==1)
+    if(count<1)
+      {
+        //Return NULL.
+        controlPoints=NULL;
+      }
+    else if(count==1)
       {
         struct point P0=g_array_index(dataPoints, struct point, 0);
         struct point P3=g_array_index(dataPoints, struct point, 1);
@@ -391,8 +404,9 @@ static GArray* control_points_from_coords2(const GArray *dataPoints)
         g_free(c);
      }
 
-    g_free(fCP);
-    g_free(sCP);
+    if(fCP!=NULL) g_free(fCP);
+    if(sCP!=NULL) g_free(sCP);
+
     return controlPoints;
   }
 
