@@ -54,6 +54,7 @@ int main(int argc, char **argv)
    gtk_widget_set_vexpand(combo1, FALSE);
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Circular Wave");
    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Animate Circular Wave");
+   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Animate Circular Gradient Wave");
    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
    g_signal_connect(combo1, "changed", G_CALLBACK(combo_changed), da);
    
@@ -73,7 +74,7 @@ static void combo_changed(GtkComboBox *combo, gpointer data)
  {
    combo_row=gtk_combo_box_get_active(combo);
 
-   if(combo_row==1)
+   if(combo_row==1||combo_row==2)
      {
        translate=0;
        if(timer_id==0)
@@ -131,11 +132,12 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
    //Points for a circular wave. Made of 96 total pieces.
    gint rotations=12;
    gint pieces=8;
+   gint total=rotations*pieces;
    gint index=0;
    struct point p1;
-   GArray *coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), rotations*pieces);
-   GArray *coords2=g_array_sized_new(FALSE, FALSE, sizeof(struct point), rotations*pieces);
-   if(combo_row==0||combo_row==1)
+   GArray *coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), total);
+   GArray *coords2=g_array_sized_new(FALSE, FALSE, sizeof(struct point), total);
+   if(combo_row==0||combo_row==1||combo_row==2)
      {
        gint move1=0;
        gint move2=0;
@@ -178,6 +180,8 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_translate(cr, width/2.0, height/2.0);
     
    //Draw the curves.
+   gdouble color_start1[4];
+   gdouble color_stop1[4];
    struct point outside1;
    struct point outside2;
    struct point inside1;
@@ -188,10 +192,8 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
      {
        for(j=0;j<pieces;j++)
          {
+           //Get points for the segment.
            index=i*pieces+j;
-           if(index<translate) cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-           else if(translate==index) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-           else cairo_set_source_rgb(cr, 0.0, 0.5, 1.0);
            outside1=g_array_index(coords1, struct point, index);
            outside2=g_array_index(coords1, struct point, index+1);
            c1=g_array_index(control1, struct controls, index);
@@ -199,16 +201,64 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
            inside2=g_array_index(coords2, struct point, index+1);
            c2=g_array_index(control2, struct controls, index);
 
-           cairo_move_to(cr, outside1.x, outside1.y);
-           cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, outside2.x, outside2.y);
-           cairo_stroke_preserve(cr);
-           cairo_line_to(cr, inside2.x, inside2.y);
-           cairo_stroke_preserve(cr);
-           cairo_curve_to(cr, c2.x2, c2.y2, c2.x1, c2.y1, inside1.x, inside1.y);
-           cairo_stroke_preserve(cr);
-           cairo_line_to(cr, outside1.x, outside1.y);
-           cairo_close_path(cr);
-           cairo_fill(cr);
+           //Draw solid colors
+           if(combo_row==0||combo_row==1)
+             {
+               if(index<translate) cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+               else if(translate==index) cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+               else cairo_set_source_rgb(cr, 0.0, 0.5, 1.0);
+               cairo_move_to(cr, outside1.x, outside1.y);
+               cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, outside2.x, outside2.y);
+               cairo_stroke_preserve(cr);
+               cairo_line_to(cr, inside2.x, inside2.y);
+               cairo_stroke_preserve(cr);
+               cairo_curve_to(cr, c2.x2, c2.y2, c2.x1, c2.y1, inside1.x, inside1.y);
+               cairo_stroke_preserve(cr);
+               cairo_line_to(cr, outside1.x, outside1.y);
+               cairo_close_path(cr);
+               cairo_fill(cr);
+             }
+           //Draw gradients.
+           else
+             {
+               if(index<translate)
+                 {
+                   color_start1[0]=0.0;
+                   color_start1[1]=(gdouble)index/translate;
+                   color_start1[2]=1.0-((gdouble)index)/translate;
+                   color_start1[3]=1.0;
+                   color_stop1[0]=0.0;
+                   color_stop1[1]=((gdouble)index+1.0)/translate;
+                   color_stop1[2]=1.0-((gdouble)index+1.0)/translate;
+                   color_stop1[3]=1.0;
+                 }
+               else
+                 {
+                   color_start1[0]=(gdouble)index/(gdouble)total;
+                   color_start1[1]=1.0-((gdouble)index)/(gdouble)total;
+                   color_start1[2]=0.0;
+                   color_start1[3]=1.0;
+                   color_stop1[0]=((gdouble)index+1.0)/(gdouble)total;
+                   color_stop1[1]=1.0-((gdouble)index+1.0)/(gdouble)total;
+                   color_stop1[2]=0.0;
+                   color_stop1[3]=1.0;
+                 }
+               cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+               cairo_mesh_pattern_begin_patch(pattern1);
+               cairo_mesh_pattern_move_to(pattern1, outside1.x, outside1.y);
+               cairo_mesh_pattern_curve_to(pattern1, c1.x1, c1.y1, c1.x2, c1.y2, outside2.x, outside2.y);
+               cairo_mesh_pattern_line_to(pattern1, inside2.x, inside2.y);
+               cairo_mesh_pattern_curve_to(pattern1, c2.x2, c2.y2, c2.x1, c2.y1, inside1.x, inside1.y);
+               cairo_mesh_pattern_line_to(pattern1, outside1.x, outside1.y);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, color_start1[0], color_start1[1], color_start1[2], color_start1[3]);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, color_stop1[0], color_stop1[1], color_stop1[2], color_stop1[3]);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, color_stop1[0], color_stop1[1], color_stop1[2], color_stop1[3]);
+               cairo_mesh_pattern_set_corner_color_rgba(pattern1, 3, color_start1[0], color_start1[1], color_start1[2], color_start1[3]);
+               cairo_mesh_pattern_end_patch(pattern1);
+               cairo_set_source(cr, pattern1);
+               cairo_paint(cr);
+               cairo_pattern_destroy(pattern1);     
+             }
          }      
      }
    
