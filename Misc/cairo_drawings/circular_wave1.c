@@ -272,6 +272,39 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
 
    return FALSE;
  }
+/*
+    This is some exellent work done by Ramsundar Shandilya. Note the following for the original work
+    and the rational behind it.
+    
+    https://medium.com/@ramshandilya/draw-smooth-curves-through-a-set-of-points-in-ios-34f6d73c8f9
+
+    https://github.com/Ramshandilya/Bezier
+
+    The MIT License (MIT)
+
+    Copyright (c) 2015 Ramsundar Shandilya
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+  
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    This is a translation of the original Swift code to C. It makes the function easy to use with GTK+,
+    cairo and glib.
+*/
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
     gint i=0;

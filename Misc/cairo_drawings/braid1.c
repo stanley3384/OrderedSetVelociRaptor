@@ -329,17 +329,61 @@ static void draw_coords3(cairo_t *cr, GArray *coords3, GArray *control3, gint i,
         cairo_stroke(cr);
       }
   }
+/*
+    This is some exellent work done by Ramsundar Shandilya. Note the following for the original work
+    and the rational behind it.
+    
+    https://medium.com/@ramshandilya/draw-smooth-curves-through-a-set-of-points-in-ios-34f6d73c8f9
+
+    https://github.com/Ramshandilya/Bezier
+
+    The MIT License (MIT)
+
+    Copyright (c) 2015 Ramsundar Shandilya
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+  
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    This is a translation of the original Swift code to C. It makes the function easy to use with GTK+,
+    cairo and glib.
+*/
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
     gint i=0;
     GArray *controlPoints=NULL;      
     //Number of Segments
     gint count=dataPoints->len-1;
-    gdouble *fCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
-    gdouble *sCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+    gdouble *fCP=NULL;
+    gdouble *sCP=NULL;
+
+    if(count>0)
+      {
+        fCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+        sCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+      }
         
     //P0, P1, P2, P3 are the points for each segment, where P0 & P3 are the knots and P1, P2 are the control points.
-    if(count==1)
+    if(count<1)
+      {
+        //Return NULL.
+        controlPoints=NULL;
+      }
+    else if(count==1)
       {
         struct point P0=g_array_index(dataPoints, struct point, 0);
         struct point P3=g_array_index(dataPoints, struct point, 1);
@@ -500,8 +544,9 @@ static GArray* control_points_from_coords2(const GArray *dataPoints)
         g_free(c);
      }
 
-    g_free(fCP);
-    g_free(sCP);
+    if(fCP!=NULL) g_free(fCP);
+    if(sCP!=NULL) g_free(sCP);
+
     return controlPoints;
   }
 
