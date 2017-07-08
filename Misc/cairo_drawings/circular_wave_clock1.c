@@ -1,6 +1,7 @@
 
 /* 
-    Make a circular wave clock out of circular_wave1.c.   
+    Make a circular wave clock out of circular_wave1.c. Have the seconds move with the squiggle part
+of the wave.  
  
     gcc -Wall circular_wave_clock1.c -o circular_wave_clock1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -99,7 +100,7 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
    cairo_line_to(cr, 5.0*w1, 9.0*h1);
    cairo_stroke(cr); 
 
-   //Points for a circular wave. Made of 96 total pieces.
+   //Points for a circular wave clock. Made of 120 total segments.
    gint rotations=12;
    gint pieces=10;
    gint total=rotations*pieces;
@@ -170,7 +171,7 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
            inside2=g_array_index(coords2, struct point, index+1);
            c2=g_array_index(control2, struct controls, index);
 
-           //Draw gradients.
+           //Draw gradient for the segment.
            if(index<translate)
              {
                color_start1[0]=0.0;
@@ -193,7 +194,6 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
                color_stop1[2]=((gdouble)index+1.0)/(gdouble)total;
                color_stop1[3]=1.0;
              }
-
            cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
            cairo_mesh_pattern_begin_patch(pattern1);
            cairo_mesh_pattern_move_to(pattern1, outside1.x, outside1.y);
