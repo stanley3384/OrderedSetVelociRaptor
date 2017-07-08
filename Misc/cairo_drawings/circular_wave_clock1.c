@@ -117,8 +117,8 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
        for(j=0;j<pieces;j++)
          {   
            index=i*pieces+j;      
-           p1.x=(4.0-sind1)*w1*cos((index)*G_PI/60.0-G_PI/2.0);
-           p1.y=(4.0-sind1)*h1*sin((index)*G_PI/60.0-G_PI/2.0);
+           p1.x=(4.25-sind1)*w1*cos((index)*G_PI/60.0-G_PI/2.0);
+           p1.y=(4.25-sind1)*h1*sin((index)*G_PI/60.0-G_PI/2.0);
            g_array_append_val(coords1, p1);
            p1.x=(2.5-sind1)*w1*cos((index)*G_PI/60.0-G_PI/2.0);
            p1.y=(2.5-sind1)*h1*sin((index)*G_PI/60.0-G_PI/2.0);
@@ -135,7 +135,7 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
          }
      } 
    p1.x=0.0;
-   p1.y=-4.25*h1;
+   p1.y=-4.5*h1;
    g_array_append_val(coords1, p1);
    p1.x=0.0;
    p1.y=-2.75*h1;
@@ -177,22 +177,22 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
                color_start1[0]=0.0;
                color_start1[1]=(gdouble)index/translate;
                color_start1[2]=1.0-((gdouble)index)/translate;
-               color_start1[3]=1.0;
+               color_start1[3]=0.7;
                color_stop1[0]=0.0;
                color_stop1[1]=((gdouble)index+1.0)/translate;
                color_stop1[2]=1.0-((gdouble)index+1.0)/translate;
-               color_stop1[3]=1.0;
+               color_stop1[3]=0.7;
              }
            else
              {
                color_start1[0]=0.0;
                color_start1[1]=1.0-((gdouble)index)/(gdouble)total;
                color_start1[2]=((gdouble)index)/(gdouble)total;
-               color_start1[3]=1.0;
+               color_start1[3]=0.7;
                color_stop1[0]=0.0;
                color_stop1[1]=1.0-((gdouble)index+1.0)/(gdouble)total;
                color_stop1[2]=((gdouble)index+1.0)/(gdouble)total;
-               color_stop1[3]=1.0;
+               color_stop1[3]=0.7;
              }
            cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
            cairo_mesh_pattern_begin_patch(pattern1);
