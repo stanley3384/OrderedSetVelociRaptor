@@ -148,7 +148,7 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
    //Draw from the center.
    cairo_translate(cr, width/2.0, height/2.0);
     
-   //Draw the curves.
+   //Draw the curves and gradients.
    gint translate=2*second;
    gdouble color_start1[4];
    gdouble color_stop1[4];
@@ -208,9 +208,17 @@ static gboolean draw_circular_wave(GtkWidget *da, cairo_t *cr, gpointer data)
            cairo_mesh_pattern_end_patch(pattern1);
            cairo_set_source(cr, pattern1);
            cairo_paint(cr);
-           cairo_pattern_destroy(pattern1);     
+           cairo_pattern_destroy(pattern1);
+
+           //Draw inside line so it can be closed and filled.
+           cairo_curve_to(cr, c2.x1, c2.y1, c2.x2, c2.y2, inside2.x, inside2.y);
+           cairo_stroke_preserve(cr);                
          }      
      }
+
+   //Fill inside of clock.
+   cairo_set_source_rgba(cr, 0.0, 0.3, 1.0, 0.7);
+   cairo_fill(cr);
    
    g_array_free(coords1, TRUE);
    g_array_free(coords2, TRUE);
