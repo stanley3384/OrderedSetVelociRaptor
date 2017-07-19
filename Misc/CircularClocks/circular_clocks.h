@@ -46,6 +46,8 @@ GtkWidget* circular_clocks_new();
 
 void circular_clocks_set_clock(CircularClocks *da, gint clock);
 gint circular_clocks_get_clock(CircularClocks *da);
+void circular_clocks_set_background_color(CircularClocks *da, const gchar *bc_string);
+const gchar* circular_clocks_get_background_color(CircularClocks *da);
 
 G_END_DECLS
 

@@ -46,12 +46,16 @@ struct _CircularClocksPrivate
   guint current_second;
   guint timer_id;
   struct gear_vars *g1;
+  //Background color.
+  gchar *bc_string;
+  gdouble bc[4];
 };
 
 enum
 {
   PROP_0,
   CLOCK_NAME,
+  BACKGROUND_COLOR
 };
 
 //Private functions.
@@ -99,6 +103,8 @@ static void circular_clocks_class_init(CircularClocksClass *klass)
   g_type_class_add_private(klass, sizeof(CircularClocksPrivate));
 
   g_object_class_install_property(gobject_class, CLOCK_NAME, g_param_spec_int("clock_name", "clock_name", "clock_name", 0, 1, 0, G_PARAM_READWRITE));
+
+   g_object_class_install_property(gobject_class, BACKGROUND_COLOR, g_param_spec_string("background_color", "background_color", "background_color", NULL, G_PARAM_READWRITE));
 }
 //Needed for g_object_set().
 static void circular_clocks_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
@@ -109,6 +115,9 @@ static void circular_clocks_set_property(GObject *object, guint prop_id, const G
   {
     case CLOCK_NAME:
       circular_clocks_set_clock(da, g_value_get_int(value));
+      break;
+    case BACKGROUND_COLOR:
+      circular_clocks_set_background_color(da, g_value_get_string(value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -139,6 +148,25 @@ void circular_clocks_set_clock(CircularClocks *da, gint clock_name)
       g_warning("Pick a valid clock. GRADIENT_CLOCK, WAVE_CLOCK, BRAID_CLOCK, GEAR_CLOCK or GOURAUD_MESH_CLOCK.");
     }
 }
+void circular_clocks_set_background_color(CircularClocks *da, const gchar *bc_string)
+{
+  CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+
+  GdkRGBA rgba;
+  if(gdk_rgba_parse(&rgba, bc_string))
+    {
+      priv->bc[0]=rgba.red;
+      priv->bc[1]=rgba.green;
+      priv->bc[2]=rgba.blue;
+      priv->bc[3]=rgba.alpha;
+      if(priv->bc_string!=NULL) g_free(priv->bc_string);
+      priv->bc_string=g_strdup(bc_string); 
+    }
+  else
+    {
+      g_warning("background color string not set.\n");
+    } 
+}
 static void circular_clocks_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
   CircularClocks *da=CIRCULAR_CLOCKS(object);
@@ -149,6 +177,9 @@ static void circular_clocks_get_property(GObject *object, guint prop_id, GValue 
     case CLOCK_NAME:
       g_value_set_int(value, priv->clock_name);
       break;
+    case BACKGROUND_COLOR:
+      g_value_set_string(value, priv->bc_string);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
   }
@@ -157,6 +188,11 @@ gint circular_clocks_get_clock(CircularClocks *da)
 {
   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
   return priv->clock_name;
+}
+const gchar* circular_clocks_get_background_color(CircularClocks *da)
+{
+  CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+  return priv->bc_string;
 }
 static void circular_clocks_init(CircularClocks *da)
 {
@@ -168,6 +204,11 @@ static void circular_clocks_init(CircularClocks *da)
   priv->current_second=0;
   //Initialize the timer for the gradient clock.
   priv->timer_id=g_timeout_add_seconds(3, (GSourceFunc)animate_clock, da);
+  //Initialize background color to white.
+  priv->bc[0]=1.0;
+  priv->bc[1]=1.0;
+  priv->bc[2]=1.0;
+  priv->bc[3]=1.0;
 
   //Initialize variables for gear clock.
   priv->g1=g_new(struct gear_vars, 1);
@@ -214,6 +255,7 @@ static gboolean animate_clock(gpointer da)
    
   return TRUE;
 }
+//Start of the clock drawing code.
 static gboolean circular_clocks_draw(GtkWidget *da, cairo_t *cr)
 {
   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
@@ -227,6 +269,8 @@ static gboolean circular_clocks_draw(GtkWidget *da, cairo_t *cr)
 }
 static void draw_gradient_clock(GtkWidget *da, cairo_t *cr)
  {
+   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+  
    /*
      From http://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves
      So for 4 points it is (4/3)*tan(pi/8) = 4*(sqrt(2)-1)/3 = 0.552284749831
@@ -240,7 +284,7 @@ static void draw_gradient_clock(GtkWidget *da, cairo_t *cr)
    gdouble h1=height/10.0;
 
    //Draw background.
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+   cairo_set_source_rgba(cr, priv->bc[0], priv->bc[1], priv->bc[2], priv->bc[3]);
    cairo_paint(cr);
 
    //Blue outside ring.
@@ -429,6 +473,8 @@ static void draw_gradient_clock(GtkWidget *da, cairo_t *cr)
  }
 static void draw_wave_clock(GtkWidget *da, cairo_t *cr)
  {
+   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+
    gint i=0;
    gint j=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
@@ -448,7 +494,7 @@ static void draw_wave_clock(GtkWidget *da, cairo_t *cr)
    if(hour>12) hour=hour-12;
 
    //Paint background.
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+   cairo_set_source_rgba(cr, priv->bc[0], priv->bc[1], priv->bc[2], priv->bc[3]);
    cairo_paint(cr);
 
    //Points for a circular wave clock. Made of 120 total segments.
@@ -632,6 +678,8 @@ static void draw_wave_clock(GtkWidget *da, cairo_t *cr)
  }
 static void draw_braid_clock(GtkWidget *da, cairo_t *cr)
  {
+   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+
    gint i=0;
    gint j=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
@@ -651,7 +699,7 @@ static void draw_braid_clock(GtkWidget *da, cairo_t *cr)
    if(hour>12) hour=hour-12;
 
    //Paint background.
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+   cairo_set_source_rgba(cr, priv->bc[0], priv->bc[1], priv->bc[2], priv->bc[3]);
    cairo_paint(cr);
 
    //Points for a circular braid clock.
@@ -856,6 +904,8 @@ static void draw_coords3(cairo_t *cr, GArray *coords3, GArray *control3, gint i,
 
 static void draw_gear_clock(GtkWidget *da, cairo_t *cr, struct gear_vars *g1)
  {
+   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+
    gint i=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
@@ -874,7 +924,7 @@ static void draw_gear_clock(GtkWidget *da, cairo_t *cr, struct gear_vars *g1)
    if(hour>12) hour=hour-12;
 
    //Paint background.
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+   cairo_set_source_rgba(cr, priv->bc[0], priv->bc[1], priv->bc[2], priv->bc[3]);
    cairo_paint(cr);
 
    //Keep the gear drawing circular.
@@ -978,7 +1028,7 @@ static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1, gint 
     cairo_arc(cr, 0.0, 0.0, g1->spindle_radius*w1, 0, 2*G_PI);
     if(g1->fill)
       {
-        cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+        cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
         cairo_fill(cr);
       }
     else cairo_stroke(cr);
@@ -1066,6 +1116,8 @@ static void gear(cairo_t *cr, gdouble w1, struct gear_vars *g1)
   }
 static void draw_gouraud_mesh_clock(GtkWidget *da, cairo_t *cr)
  {
+   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+
    gint i=0;
    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
    gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
@@ -1090,7 +1142,7 @@ static void draw_gouraud_mesh_clock(GtkWidget *da, cairo_t *cr)
    gdouble h1=height/10.0;
 
    //Set background.
-   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+   cairo_set_source_rgba(cr, priv->bc[0], priv->bc[1], priv->bc[2], priv->bc[3]);
    cairo_paint(cr);
 
    //Black inside.
