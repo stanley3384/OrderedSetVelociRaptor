@@ -412,7 +412,7 @@ static void draw_gradient_clock(GtkWidget *da, cairo_t *cr)
    gdouble temp_sin=0;
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 20);
+   cairo_set_font_size(cr, 20*width/400.0);
    cairo_move_to(cr, 0.0, 0.0);
    cairo_translate(cr, width/2.0, height/2.0);
    //Color 12 with blue for contrast with yellow. Other numbers are white.
@@ -632,7 +632,7 @@ static void draw_wave_clock(GtkWidget *da, cairo_t *cr)
    gdouble temp_sin=0;
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 20);
+   cairo_set_font_size(cr, 20*width/400.0);
    cairo_move_to(cr, 0.0, 0.0);
    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
    for(i=0;i<12;i++)
@@ -794,7 +794,7 @@ static void draw_braid_clock(GtkWidget *da, cairo_t *cr)
    gdouble temp_sin=0;
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 20);
+   cairo_set_font_size(cr, 20*width/400.0);
    cairo_move_to(cr, 0.0, 0.0);
    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
    for(i=0;i<12;i++)
@@ -969,7 +969,7 @@ static void draw_gear_clock(GtkWidget *da, cairo_t *cr, struct gear_vars *g1)
    gdouble temp_sin=0;
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 20);
+   cairo_set_font_size(cr, 20*width/400.0);
    cairo_move_to(cr, 0.0, 0.0);
    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
    for(i=0;i<12;i++)
@@ -1227,7 +1227,7 @@ static void draw_gouraud_mesh_clock(GtkWidget *da, cairo_t *cr)
    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_text_extents_t tick_extents;
-   cairo_set_font_size(cr, 25*width/400);
+   cairo_set_font_size(cr, 25*width/400.0);
    gchar *string=NULL;
    if(seconds<10&&minutes<10)
      {
