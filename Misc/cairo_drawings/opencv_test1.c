@@ -1,14 +1,14 @@
 /*
-     Test opencv drawing with GTK+. Process one pixbuf image with OpenMP to see if it will speed it up
+     Test OpenCV drawing with GTK+. Process one pixbuf image with OpenMP to see if it will speed it up
 a little.
     
      This apt-get for OpenCV works with GTK version 2 not version 3.
 
      sudo apt-get install libopencv-dev
 
-     gcc -Wall -fopenmp opencv_test1.c -o opencv_test1 `pkg-config gtk+-2.0 opencv --cflags --libs` -lm
+     This gets OpenCV version 2.4.9.1 on 32 bit Ubuntu16.04
 
-     Tested on Ubuntu14.04
+     gcc -Wall -fopenmp opencv_test1.c -o opencv_test1 `pkg-config gtk+-2.0 opencv --cflags --libs` -lm
 
      C. Eric Cashon
 */ 
@@ -23,12 +23,14 @@ static GdkPixbuf* get_pixbuf_image(const gchar *image_file);
 static GdkPixbuf* get_pixbuf_image_rgb(gint width, gint height);
 static GdkPixbuf* get_pixbuf_remove_rgb(GdkPixbuf *pixbuf, gint color);
 
-//Image file in local folder. Tested with (width 391 height 248 step 1176 channels 3 order 0) image.
-gchar *image_file="dino3.png";
+//Image file to use in local folder.
+gchar *image_file="dino2.png";
 
 int main(int argc, char *argv[])
   {
     gtk_init (&argc, &argv);
+ 
+    g_print("OpenCV version %s\n", CV_VERSION);
  
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); 
     gtk_window_set_title(GTK_WINDOW(window), "Remove Color");
@@ -40,7 +42,7 @@ int main(int argc, char *argv[])
     GtkWidget *image=gtk_image_new_from_file(image_file);
     GtkWidget *view1=gtk_viewport_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(view1), image);
-    GtkWidget *scroll1 = gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget *scroll1=gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll1), view1);
 
     IplImage *opencv_image=NULL;
@@ -296,12 +298,5 @@ static GdkPixbuf* get_pixbuf_remove_rgb(GdkPixbuf *pixbuf, gint color)
     else g_print("No OpenMP Time %f\n", elapsed_time);
     g_timer_destroy(timer);
 
-    return pixbuf2;
-   
+    return pixbuf2;   
   }
-
-
-
-
-
-
