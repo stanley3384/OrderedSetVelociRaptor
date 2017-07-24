@@ -79,6 +79,7 @@ static void draw_gear_clock(GtkWidget *da, cairo_t *cr, struct gear_vars *g1);
 static void gears1(cairo_t *cr, gdouble width, gdouble height, gdouble w1, gint second, struct gear_vars *g1);
 static void gear(cairo_t *cr, gdouble w1, struct gear_vars *g1);
 static void draw_gouraud_mesh_clock(GtkWidget *da, cairo_t *cr);
+static void draw_gem_clock(GtkWidget *da, cairo_t *cr);
 //Control points from coordinates.
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
@@ -128,7 +129,7 @@ void circular_clocks_set_clock(CircularClocks *da, gint clock_name)
 {
   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
  
-  if(clock_name>=0&&clock_name<5)
+  if(clock_name>=0&&clock_name<6)
     {
       priv->clock_name=clock_name; 
       if(clock_name==GRADIENT_CLOCK)
@@ -145,7 +146,7 @@ void circular_clocks_set_clock(CircularClocks *da, gint clock_name)
     }
   else
     {
-      g_warning("Pick a valid clock. GRADIENT_CLOCK, WAVE_CLOCK, BRAID_CLOCK, GEAR_CLOCK or GOURAUD_MESH_CLOCK.");
+      g_warning("Pick a valid clock. GRADIENT_CLOCK, WAVE_CLOCK, BRAID_CLOCK, GEAR_CLOCK, GOURAUD_MESH_CLOCK or GEM_CLOCK.");
     }
 }
 void circular_clocks_set_background_color(CircularClocks *da, const gchar *bc_string)
@@ -264,7 +265,8 @@ static gboolean circular_clocks_draw(GtkWidget *da, cairo_t *cr)
   else if(priv->clock_name==WAVE_CLOCK) draw_wave_clock(da, cr);
   else if(priv->clock_name==BRAID_CLOCK) draw_braid_clock(da, cr);
   else if(priv->clock_name==GEAR_CLOCK) draw_gear_clock(da, cr, priv->g1);
-  else draw_gouraud_mesh_clock(da, cr);
+  else if(priv->clock_name==GOURAUD_MESH_CLOCK) draw_gouraud_mesh_clock(da, cr);
+  else draw_gem_clock(da, cr);
   return FALSE;
 }
 static void draw_gradient_clock(GtkWidget *da, cairo_t *cr)
@@ -1253,6 +1255,173 @@ static void draw_gouraud_mesh_clock(GtkWidget *da, cairo_t *cr)
    cairo_move_to(cr, 0.0-tick_extents.width/2.0, 1.5*h1+tick_extents.height/2.0);
    cairo_show_text(cr, string);
    g_free(string);
+ }
+static void draw_gem_clock(GtkWidget *da, cairo_t *cr)
+ {
+   CircularClocksPrivate *priv=CIRCULAR_CLOCKS_GET_PRIVATE(da);
+
+   gint i=0;
+   gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
+   gdouble height=(gdouble)gtk_widget_get_allocated_height(da);
+
+   //Layout for the drawing is a 10x10 rectangle.
+   gdouble w1=width/10.0;
+   gdouble h1=height/10.0;
+
+   //Set background as transparent.
+   cairo_set_source_rgba(cr, priv->bc[0], priv->bc[1], priv->bc[2], priv->bc[3]);
+   cairo_paint(cr);
+
+   //Draw from the middle.
+   cairo_translate(cr, width/2.0, height/2.0);
+
+   //Draw 12 gouraud shaded triangles in a circle.
+   gdouble start=-G_PI/2.0;
+   gdouble next=-G_PI/6.0;
+   gdouble hour_radius=4.0*h1;
+   gdouble temp_cos=0;
+   gdouble temp_sin=0;
+   gdouble prev_cos=0;
+   gdouble prev_sin=0;
+   cairo_move_to(cr, 0.0, 0.0);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+   //Outside part of circle triangles. 
+   for(i=0;i<13;i++)
+     {
+       temp_cos=cos(start-(next*i));
+       temp_sin=sin(start-(next*i));
+       //The polar form of the equation for an ellipse to get the radius.
+       hour_radius=((4.0*w1)*(4.0*h1))/sqrt(((4.0*w1)*(4.0*w1)*temp_sin*temp_sin) + ((4.0*h1)*(4.0*h1)*temp_cos*temp_cos));
+       temp_cos=temp_cos*hour_radius;
+       temp_sin=temp_sin*hour_radius;       
+       if(i>0)
+         {
+           cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+           cairo_mesh_pattern_begin_patch(pattern1);
+           cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
+           cairo_mesh_pattern_line_to(pattern1, temp_cos, temp_sin);
+           cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.0, 1.0, 1.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 0.0, 1.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 0.0, 1.0, 1.0, 1.0);
+           cairo_mesh_pattern_end_patch(pattern1);
+           cairo_set_source(cr, pattern1);
+           cairo_paint(cr);   
+           cairo_pattern_destroy(pattern1);
+         }
+       prev_cos=temp_cos;
+       prev_sin=temp_sin;
+     }
+
+   //Inside part of circle triangles.
+   for(i=0;i<13;i++)
+     {
+       temp_cos=cos(start-(next*i));
+       temp_sin=sin(start-(next*i));
+       //The polar form of the equation for an ellipse to get the radius.
+       hour_radius=((2.0*w1)*(2.0*h1))/sqrt(((2.0*w1)*(2.0*w1)*temp_sin*temp_sin) + ((2.0*h1)*(2.0*h1)*temp_cos*temp_cos));
+       temp_cos=temp_cos*hour_radius;
+       temp_sin=temp_sin*hour_radius;       
+       if(i>0)
+         {
+           cairo_pattern_t *pattern1=cairo_pattern_create_mesh();
+           cairo_mesh_pattern_begin_patch(pattern1);
+           cairo_mesh_pattern_move_to(pattern1, prev_cos, prev_sin);
+           cairo_mesh_pattern_line_to(pattern1, temp_cos, temp_sin);
+           cairo_mesh_pattern_line_to(pattern1, 0.0, 0.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 0, 0.0, 1.0, 1.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 1, 0.0, 1.0, 1.0, 1.0);
+           cairo_mesh_pattern_set_corner_color_rgba(pattern1, 2, 0.0, 0.0, 1.0, 1.0);
+           cairo_mesh_pattern_end_patch(pattern1);
+           cairo_set_source(cr, pattern1);
+           cairo_paint(cr);   
+           cairo_pattern_destroy(pattern1);
+         }
+       prev_cos=temp_cos;
+       prev_sin=temp_sin;
+     } 
+
+   //Set the clock text.
+   gchar *hours[]={"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "CGmC"};
+   start=-G_PI/2.0;
+   next=-G_PI/6.0;
+   //Start at 12 or radius with just the y component.
+   hour_radius=3.5*h1;
+   temp_cos=0;
+   temp_sin=0;
+   cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_text_extents_t tick_extents;
+   cairo_set_font_size(cr, 20*width/400.0);
+   cairo_move_to(cr, 0.0, 0.0);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+   for(i=0;i<12;i++)
+     {
+       temp_cos=cos(start-(next*i));
+       temp_sin=sin(start-(next*i));
+       //The polar form of the equation for an ellipse to get the radius.
+       hour_radius=((3.5*w1)*(3.5*h1))/sqrt(((3.5*w1)*(3.5*w1)*temp_sin*temp_sin) + ((3.5*h1)*(3.5*h1)*temp_cos*temp_cos));
+       cairo_text_extents(cr, hours[i], &tick_extents);
+       temp_cos=temp_cos*hour_radius-tick_extents.width/2.0;
+       temp_sin=temp_sin*hour_radius+tick_extents.height/2.0;
+       cairo_move_to(cr, temp_cos, temp_sin);
+       cairo_show_text(cr, hours[i]);
+     }
+
+   //Put the clock name on the clock.
+   cairo_text_extents(cr, hours[12], &tick_extents);
+   cairo_move_to(cr, -(tick_extents.width/2.0), (1.5*h1)+(tick_extents.height/2.0));
+   cairo_show_text(cr, hours[12]);
+
+   //Get the current time.
+   GTimeZone *time_zone=g_time_zone_new_local();
+   GDateTime *date_time=g_date_time_new_now(time_zone);
+   gdouble hour=(gdouble)g_date_time_get_hour(date_time);
+   gdouble minute=(gdouble)g_date_time_get_minute(date_time);
+   gint second=(gdouble)g_date_time_get_second(date_time);
+   hour=hour+minute/60.0;
+   g_time_zone_unref(time_zone);
+   g_date_time_unref(date_time);
+   if(hour>12) hour=hour-12;
+
+   //Hour hand.
+   cairo_set_line_width(cr, 6.0);
+   cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+   cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+   cairo_move_to(cr, 0.0, 0.0);
+   temp_cos=cos(start-(next*hour));
+   temp_sin=sin(start-(next*hour));
+   hour_radius=((1.75*w1)*(1.75*h1))/sqrt(((1.75*w1)*(1.75*w1)*temp_sin*temp_sin) + ((1.75*h1)*(1.75*h1)*temp_cos*temp_cos));
+   temp_cos=temp_cos*hour_radius;
+   temp_sin=temp_sin*hour_radius;
+   cairo_line_to(cr, temp_cos, temp_sin);
+   cairo_stroke(cr);
+
+   //Minute hand.
+   gdouble next_minute=-G_PI/(6.0*5.0);
+   cairo_move_to(cr, 0.0, 0.0);
+   temp_cos=cos(start-(next_minute*minute));
+   temp_sin=sin(start-(next_minute*minute));
+   hour_radius=((2.5*w1)*(2.5*h1))/sqrt(((2.5*w1)*(2.5*w1)*temp_sin*temp_sin) + ((2.5*h1)*(2.5*h1)*temp_cos*temp_cos));
+   temp_cos=temp_cos*hour_radius;
+   temp_sin=temp_sin*hour_radius;
+   cairo_line_to(cr, temp_cos, temp_sin);
+   cairo_stroke(cr);
+
+   //Second hand.
+   cairo_set_line_width(cr, 4.0);
+   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.3);
+   start=-G_PI/2.0;
+   next=-G_PI/30.0;
+   temp_cos=0;
+   temp_sin=0;
+   temp_cos=cos(start-(next*second));
+   temp_sin=sin(start-(next*second));
+   hour_radius=((3.0*w1)*(3.0*h1))/sqrt(((3.0*w1)*(3.0*w1)*temp_sin*temp_sin) + ((3.0*h1)*(3.0*h1)*temp_cos*temp_cos));
+   temp_cos=temp_cos*hour_radius;
+   temp_sin=temp_sin*hour_radius;
+   cairo_move_to(cr, 0.0, 0.0);
+   cairo_line_to(cr, temp_cos, temp_sin);
+   cairo_stroke(cr);
  }
 /*
     This is some exellent work done by Ramsundar Shandilya. Note the following for the original work

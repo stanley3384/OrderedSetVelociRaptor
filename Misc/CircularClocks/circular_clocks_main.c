@@ -1,7 +1,7 @@
 
 /*
 
-    A clock widget. Five different types of clocks to choose from. This is making a widget out of the clocks1.c code in the cairo_drawings folder. There are only two accessor functions. One to change the 
+    A clock widget. Six different types of clocks to choose from. This is making a widget out of the clocks1.c code in the cairo_drawings folder. There are only two accessor functions. One to change the 
 name of the clock and the other to change the background color. Could always change clock colors and
 other properties in the code also.
 
@@ -23,7 +23,8 @@ static void combo1_changed(GtkComboBox *combo1, gpointer clock)
   else if(combo_id==1) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), WAVE_CLOCK);
   else if(combo_id==2) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), BRAID_CLOCK);
   else if(combo_id==3) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GEAR_CLOCK);
-  else circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GOURAUD_MESH_CLOCK);  
+  else if(combo_id==4) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GOURAUD_MESH_CLOCK);
+  else circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GEM_CLOCK);
 }
 static void combo2_changed(GtkComboBox *combo2, gpointer clock)
 {
@@ -32,7 +33,8 @@ static void combo2_changed(GtkComboBox *combo2, gpointer clock)
   else if(combo_id==1) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), WAVE_CLOCK);
   else if(combo_id==2) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), BRAID_CLOCK);
   else if(combo_id==3) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GEAR_CLOCK);
-  else circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GOURAUD_MESH_CLOCK);  
+  else if(combo_id==4) circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GOURAUD_MESH_CLOCK);
+  else circular_clocks_set_clock(CIRCULAR_CLOCKS(clock), GEM_CLOCK);  
 }
 static void change_background1(GtkWidget *button, gpointer *data[])
 {
@@ -71,6 +73,7 @@ int main(int argc, char *argv[])
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Braid Clock");
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Gear Clock");
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Gouraud Mesh Clock");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Gem Clock");
   gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
   g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), clock1);
 
@@ -81,6 +84,7 @@ int main(int argc, char *argv[])
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Braid Clock");
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Gear Clock");
   gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Gouraud Mesh Clock");
+  gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 5, "6", "Gem Clock");
   gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 1);
   g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), clock2);
 

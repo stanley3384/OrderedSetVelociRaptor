@@ -37,7 +37,8 @@ enum
   WAVE_CLOCK,
   BRAID_CLOCK,
   GEAR_CLOCK,
-  GOURAUD_MESH_CLOCK
+  GOURAUD_MESH_CLOCK,
+  GEM_CLOCK
 };
 
 //Public functions.
