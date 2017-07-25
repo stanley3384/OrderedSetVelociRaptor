@@ -16,6 +16,20 @@ other properties in the code also.
 #include<gtk/gtk.h>
 #include "circular_clocks.h"
 
+//Draw the main window transparent so the clock background can be transparent.
+static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data)
+{
+  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+  cairo_paint(cr);
+  return FALSE;
+}
+//Put the other widgets in an event box and draw the event box background.
+static gboolean draw_event(GtkWidget *widget, cairo_t *cr, gpointer data)
+{
+  cairo_set_source_rgb(cr, 0.8, 0.8, 0.9);
+  cairo_paint(cr);
+  return FALSE;
+}
 static void combo1_changed(GtkComboBox *combo1, gpointer clock)
 {
   gint combo_id=gtk_combo_box_get_active(combo1);
@@ -55,6 +69,16 @@ int main(int argc, char *argv[])
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
   gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+  gtk_widget_set_app_paintable(window, TRUE);
+  //Try to set transparency of main window.
+  if(gtk_widget_is_composited(window))
+    {
+      GdkScreen *screen=gtk_widget_get_screen(window);  
+      GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
+      gtk_widget_set_visual(window, visual);
+    }
+  else g_print("Can't set window transparency.\n");
+  g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), NULL);
 
   GtkWidget *clock1=circular_clocks_new();
   gtk_widget_set_hexpand(clock1, TRUE);
@@ -107,20 +131,27 @@ int main(int argc, char *argv[])
   GtkWidget *button2=gtk_button_new_with_label("Update Background2");
   gpointer widgets2[2]={clock2, entry2};
   g_signal_connect(button2, "clicked", G_CALLBACK(change_background2), widgets2);
+
+  GtkWidget *grid1=gtk_grid_new();
+  gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 0, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid1), label1, 0, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid1), combo2, 2, 0, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid1), label2, 2, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid1), entry2, 3, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid1), button2, 2, 2, 2, 1);
+
+  GtkWidget *event1=gtk_event_box_new();
+  gtk_container_add(GTK_CONTAINER(event1), grid1);
+  g_signal_connect(event1, "draw", G_CALLBACK(draw_event), NULL);
   
-  GtkWidget *grid=gtk_grid_new();
-  gtk_grid_attach(GTK_GRID(grid), clock1, 0, 0, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), combo1, 0, 1, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), label1, 0, 2, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), entry1, 1, 2, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), button1, 0, 3, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), clock2, 2, 0, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), combo2, 2, 1, 2, 1);
-  gtk_grid_attach(GTK_GRID(grid), label2, 2, 2, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), entry2, 3, 2, 1, 1);
-  gtk_grid_attach(GTK_GRID(grid), button2, 2, 3, 2, 1);
+  GtkWidget *grid2=gtk_grid_new();
+  gtk_grid_attach(GTK_GRID(grid2), clock1, 0, 0, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid2), clock2, 2, 0, 2, 1);
+  gtk_grid_attach(GTK_GRID(grid2), event1, 0, 1, 4, 1);
   
-  gtk_container_add(GTK_CONTAINER(window), grid);
+  gtk_container_add(GTK_CONTAINER(window), grid2);
   gtk_widget_show_all(window);
 
   gtk_main();
