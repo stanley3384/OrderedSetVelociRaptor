@@ -4,7 +4,7 @@
 control points. Similar to tensor_product1.c but you can draw the mesh dynamically. 
 Draw a t-shirt, fish and butterfly with the tiled mesh pattern.
 
-    gcc -Wall draw_mesh1.c -o draw_mesh1 `pkg-config --cflags --libs gtk+-3.0`
+    gcc -Wall mesh_maker1.c -o mesh_maker1 `pkg-config --cflags --libs gtk+-3.0`
 
     Tested on Ubuntu16.04 and GTK3.18
 
@@ -40,8 +40,6 @@ static GdkPixbuf* draw_icon();
 static gint motion_id=0;
 //Coordinates for the drawing rectangle.
 static gdouble rect[]={0.0, 0.0, 0.0, 0.0};
-//Starting control points for drawing a mesh.
-
 //Control points for the "box" lines.
 static gdouble mesh[]={1.0, 3.0, 3.0, 4.0, 3.0, 3.0, 4.0, 1.0};
 //Inside control points P0, P1, P2, P3.
@@ -491,6 +489,7 @@ static void draw_mesh(cairo_t *cr, gdouble width, gdouble height)
        cairo_mesh_pattern_set_control_point(pattern1, 2, mesh_p[4]*w1-3.0*w1, mesh_p[5]*h1);
        cairo_mesh_pattern_set_control_point(pattern1, 3, mesh_p[6]*w1-3.0*w1, mesh_p[7]*h1);
        cairo_mesh_pattern_end_patch(pattern1);
+
        cairo_set_source(cr, pattern1);
        cairo_paint(cr);
        cairo_pattern_destroy(pattern1);
