@@ -6,7 +6,7 @@ for the list box is from mclasen and the following.
     https://blog.gtk.org/2017/06/01/drag-and-drop-in-lists-revisited/
 
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
-list box will change the position of the points on the drawing. Still some things to figure out here.
+list box will change the draw order of the points. Still some things to figure out here.
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     gtk_init (&argc, &argv);
 
     GtkWidget *window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Bezier Points");
+    gtk_window_set_title(GTK_WINDOW(window), "Coordinates with Bezier Points");
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -140,6 +140,9 @@ int main(int argc, char *argv[])
     g_signal_connect(da, "button-release-event", G_CALLBACK(stop_press), NULL);
     motion_id=g_signal_connect(da, "motion-notify-event", G_CALLBACK(cursor_motion), NULL);
     g_signal_handler_block(da, motion_id);
+
+    GtkWidget *label1=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'>Point Draw Order</span>");
 
     GtkWidget *list = gtk_list_box_new ();
     gtk_widget_set_hexpand(list, TRUE);
@@ -169,8 +172,8 @@ int main(int argc, char *argv[])
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
     gtk_container_add (GTK_CONTAINER (sw), list);
 
-    GtkWidget *label1=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'>Background </span>");
+    GtkWidget *label2=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
 
     GtkWidget *entry1=gtk_entry_new();
     gtk_widget_set_hexpand(entry1, TRUE);
@@ -183,11 +186,12 @@ int main(int argc, char *argv[])
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 8); 
-    gtk_grid_attach(GTK_GRID(grid), sw, 0, 0, 2, 1);   
-    gtk_grid_attach(GTK_GRID(grid), label1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+    gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
+    gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1);   
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 3, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -283,7 +287,6 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         else cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
         cairo_show_text(cr, ps[id]);  
       }
-
 
     g_array_free(control1, TRUE);
 
@@ -621,34 +624,49 @@ drag_end (GtkWidget      *widget,
   g_print("Drag End\n");
   row_id=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
   gint i=0;
-  gint value=0;
+  gint value_id=0;
   gint len=0;
-  g_print("row %i\n", row_id);
+  struct point p1;
+  g_print("begin %i row %i\n", begin_id, row_id);
+
+  len=coords1->len;
+  for(i=0;i<len;i++)
+    {
+      p1=g_array_index(coords1, struct point, i);
+      g_print(" [%i %i %i]", i, (gint)p1.x, (gint)p1.y);
+    }
+  g_print("\n");
+
   if(begin_id!=row_id)
     {
-      value=g_array_index(array_id, gint, begin_id);
+      value_id=g_array_index(array_id, gint, begin_id);
+      p1=g_array_index(coords1, struct point, begin_id);
       if(begin_id>row_id)
         {
-          g_array_insert_val(array_id, row_id, value);
+          g_array_insert_val(array_id, row_id, value_id);
+          g_array_insert_val(coords1, row_id, p1);
           len=array_id->len-1;
           for(i=len;i>-1;i--)
             {
-              if(g_array_index(array_id, gint, i)==value)
+              if(g_array_index(array_id, gint, i)==value_id)
                 {
                   g_array_remove_index(array_id, i);
+                  g_array_remove_index(coords1, i);
                   break;
                 }
             }
         }
       else
         {
-          g_array_insert_val(array_id, row_id+1, value);
+          g_array_insert_val(array_id, row_id+1, value_id);
+          g_array_insert_val(coords1, row_id+1, p1);
           len=array_id->len-1;
           for(i=0;i<len;i++)
             {
-              if(g_array_index(array_id, gint, i)==value)
+              if(g_array_index(array_id, gint, i)==value_id)
                 {
                   g_array_remove_index(array_id, i);
+                  g_array_remove_index(coords1, i);
                   break;
                 }
             }
@@ -657,6 +675,14 @@ drag_end (GtkWidget      *widget,
 
   len=array_id->len;
   for(i=0;i<len;i++) g_print(" %i", g_array_index(array_id, gint, i));
+  g_print("\n");
+
+  len=coords1->len;
+  for(i=0;i<len;i++)
+    {
+      p1=g_array_index(coords1, struct point, i);
+      g_print(" [%i %i %i]", i, (gint)p1.x, (gint)p1.y);
+    }
   g_print("\n");
   
   begin_id=row_id;
