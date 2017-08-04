@@ -1,7 +1,7 @@
 
 /*
-    This is testing putting together drag and drop with some cairo interpolation. The drag and drop
-for the list box is from mclasen and the following. 
+    This is testing putting together drag and drop with some cairo interpolation and approximation.
+The drag and drop for the list box is from mclasen and the following. 
 
     https://blog.gtk.org/2017/06/01/drag-and-drop-in-lists-revisited/
 
@@ -18,14 +18,17 @@ list box will change the draw order of the points. Still some things to figure o
 #include<gtk/gtk.h>
 #include<math.h>
 
+static void interpolation_check(GtkToggleButton *button, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void check_colors(GtkWidget *widget, GtkWidget **colors);
 static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data);
-//Control points from coordinates.
+//Bezier control points from coordinates.
 static GArray* control_points_from_coords2(const GArray *dataPoints);
+//Mid points from coordinates to draw an aproximation curve.
+static GArray* mid_points_from_coords(const GArray *dataPoints);
 //drag and drop.
 static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer data);
 static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer data);
@@ -102,6 +105,8 @@ static gint motion_id=0;
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
 //Current selected row in list.
 static gint row_id=0;
+//If the curve should be drawn with interpolation or approximation.
+static gboolean interpolation=TRUE;
 
 //List box order array.
 static GArray *array_id=NULL;
@@ -172,6 +177,11 @@ int main(int argc, char *argv[])
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
     gtk_container_add (GTK_CONTAINER (sw), list);
 
+    GtkWidget *check1=gtk_check_button_new_with_label("Interpolation/Approximation");
+    gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), TRUE);
+    g_signal_connect(check1, "toggled", G_CALLBACK(interpolation_check), da);  
+
     GtkWidget *label2=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
 
@@ -188,10 +198,11 @@ int main(int argc, char *argv[])
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
-    gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1);   
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1);  
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -232,6 +243,12 @@ int main(int argc, char *argv[])
 
     return 0;
   }
+static void interpolation_check(GtkToggleButton *button, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(button)) interpolation=TRUE;
+    else interpolation=FALSE;
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
@@ -254,25 +271,58 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_line_to(cr, 5.0*w1, 9.0*h1);
     cairo_stroke(cr);
 
-    GArray *control1=control_points_from_coords2(coords1);
+    GArray *control1=NULL;
+    GArray *mid_points=NULL;
+    if(interpolation)
+      { 
+        control1=control_points_from_coords2(coords1);
+      }
+    else
+      {
+        mid_points=mid_points_from_coords(coords1);
+        control1=control_points_from_coords2(mid_points);
+      }
 
     cairo_scale(cr, width/500.0, height/500.0);
 
     gint i=0;
     gint id=0; 
+    gint len=0;
     struct point p1;
     struct point p2;
     struct controls c1;
-    p1=g_array_index(coords1, struct point, 0);
+    if(interpolation)
+      {
+        p1=g_array_index(coords1, struct point, 0);
+        len=coords1->len;
+      }
+    else
+      {
+        p1=g_array_index(mid_points, struct point, 0);
+        len=mid_points->len;
+      }
     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
     cairo_move_to(cr, p1.x, p1.y);
-    //g_print("coords %i controls %i\n", coords1->len, control1->len);
-    for(i=1;i<12;i++)
+    
+    if(interpolation)
       {
-        p2=g_array_index(coords1, struct point, i);
-        c1=g_array_index(control1, struct controls, i-1);
-        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p2.x, p2.y);
-        cairo_stroke_preserve(cr); 
+        for(i=1;i<len;i++)
+          {
+            p2=g_array_index(coords1, struct point, i);
+            c1=g_array_index(control1, struct controls, i-1);
+            cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p2.x, p2.y);
+            cairo_stroke_preserve(cr); 
+          }
+      }
+    else
+      {
+        for(i=1;i<len;i++)
+          {
+            p2=g_array_index(mid_points, struct point, i);
+            c1=g_array_index(control1, struct controls, i-1);
+            cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p2.x, p2.y);
+            cairo_stroke_preserve(cr); 
+          }
       }
 
     cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -288,7 +338,8 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_show_text(cr, ps[id]);  
       }
 
-    g_array_free(control1, TRUE);
+    if(control1!=NULL) g_array_free(control1, TRUE);
+    if(mid_points!=NULL) g_array_free(mid_points, TRUE);
 
     return FALSE;
   }
@@ -576,6 +627,48 @@ static GArray* control_points_from_coords2(const GArray *dataPoints)
     if(sCP!=NULL) g_free(sCP);
 
     return controlPoints;
+  }
+/*
+    Approximate by just getting the mid point between two coordinate points. Use the first
+and last points in the coordinate set for the start and finish.
+*/
+static GArray* mid_points_from_coords(const GArray *dataPoints)
+  {
+    gint i=0;
+    GArray *mid_points=NULL;      
+    //Number of Segments
+    gint count=0;
+    if(dataPoints!=NULL) count=dataPoints->len-1;
+        
+    if(count<1||dataPoints==NULL)
+      {
+        //Return NULL.
+        mid_points=NULL;
+        g_print("Can't get mid points from coordinates. NULL returned.\n");
+      }
+    else 
+      {
+        mid_points=g_array_new(FALSE, FALSE, sizeof(struct point));
+        struct point p1;
+        struct point p2;
+        struct point p3;
+        //Get first coordinate point to start with.
+        p1=g_array_index(dataPoints, struct point, 0);
+        g_array_append_val(mid_points, p1);
+        for(i=0;i<count;i++)
+          {
+            p1=g_array_index(dataPoints, struct point, i);
+            p2=g_array_index(dataPoints, struct point, i+1);
+            p3.x=(p1.x+p2.x)/2.0;
+            p3.y=(p1.y+p2.y)/2.0;
+            g_array_append_val(mid_points, p3);            
+          }
+        //Add the last point from the coordinates array.
+        p1=g_array_index(dataPoints, struct point, count);
+        g_array_append_val(mid_points, p1);
+      }
+
+    return mid_points;
   }
 
 static void
