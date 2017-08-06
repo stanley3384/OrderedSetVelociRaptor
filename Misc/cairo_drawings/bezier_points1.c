@@ -19,6 +19,7 @@ list box will change the draw order of the points. Still some things to figure o
 #include<math.h>
 
 static void interpolation_check(GtkToggleButton *button, gpointer data);
+static void close_and_fill_check(GtkToggleButton *button, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -107,6 +108,8 @@ static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
 static gint row_id=0;
 //If the curve should be drawn with interpolation or approximation.
 static gboolean interpolation=TRUE;
+//If the end of the curve connects to the start. If true fill the closed curve and draw a gradient.
+static gboolean fill=FALSE;
 
 //List box order array.
 static GArray *array_id=NULL;
@@ -177,10 +180,15 @@ int main(int argc, char *argv[])
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
     gtk_container_add (GTK_CONTAINER (sw), list);
 
-    GtkWidget *check1=gtk_check_button_new_with_label("Interpolation/Approximation");
+    GtkWidget *check1=gtk_check_button_new_with_label("Interpolate or Approximate");
     gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), TRUE);
-    g_signal_connect(check1, "toggled", G_CALLBACK(interpolation_check), da);  
+    g_signal_connect(check1, "toggled", G_CALLBACK(interpolation_check), da); 
+
+    GtkWidget *check2=gtk_check_button_new_with_label("Close and Fill");
+    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
+    g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da);  
 
     GtkWidget *label2=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
@@ -199,10 +207,11 @@ int main(int argc, char *argv[])
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1);  
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check2, 0, 3, 2, 1);  
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 5, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -247,6 +256,20 @@ static void interpolation_check(GtkToggleButton *button, gpointer data)
   {
     if(gtk_toggle_button_get_active(button)) interpolation=TRUE;
     else interpolation=FALSE;
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void close_and_fill_check(GtkToggleButton *button, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(button))
+      {
+        fill=TRUE;
+        g_array_append_val(coords1, g_array_index(coords1, struct point, 0));
+      }
+    else
+      {
+        g_array_remove_index(coords1, coords1->len-1);
+        fill=FALSE;
+      }
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -325,6 +348,19 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
 
+    //Fill a pattern.
+    if(fill) 
+      {
+        cairo_close_path(cr);
+        cairo_pattern_t *pattern1=cairo_pattern_create_linear(width/2.0, 0.0, width/2.0, height); 
+        cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 1.0); 
+        cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 1.0);
+        cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 1.0);  
+        cairo_set_source(cr, pattern1);  
+        cairo_fill(cr);
+        cairo_pattern_destroy(pattern1);
+      }
+
     cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 14);
     gchar *ps[]={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
@@ -333,7 +369,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         id=g_array_index(array_id, gint, i);
         p2=g_array_index(coords1, struct point, i);
         cairo_move_to(cr, p2.x, p2.y);
-        if(i==row_id) cairo_set_source_rgba(cr, 1.0, 0.0, 1.0, 1.0);
+        if(i==row_id) cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
         else cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
         cairo_show_text(cr, ps[id]);  
       }
