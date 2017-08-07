@@ -115,6 +115,10 @@ static gboolean fill=FALSE;
 static GArray *array_id=NULL;
 static gint begin_id=0;
 
+//Save initial drawing area dimensions.
+static gdouble start_width=0;
+static gdouble start_height=0;
+
 int main(int argc, char *argv[])
   {
     gtk_init (&argc, &argv);
@@ -230,16 +234,16 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(window);
 
     //Set some initial values for the drawing area.
-    gdouble width=(gdouble)gtk_widget_get_allocated_width(da);
-    gdouble height=(gdouble)gtk_widget_get_allocated_height(da); 
-    gdouble w1=width*0.4;
-    if(width>height) w1=height*0.4;
+    start_width=(gdouble)gtk_widget_get_allocated_width(da);
+    start_height=(gdouble)gtk_widget_get_allocated_height(da); 
+    gdouble w1=start_width*0.4;
+    if(start_width>start_height) w1=start_height*0.4;
     struct point p1;
     coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), 12);
     for(i=0;i<12;i++)
       {
-        p1.x=w1*cos((gdouble)i*G_PI/6.0)+width/2.0;
-        p1.y=w1*sin((gdouble)i*G_PI/6.0)+height/2.0;
+        p1.x=w1*cos((gdouble)i*G_PI/6.0)+start_width/2.0;
+        p1.y=w1*sin((gdouble)i*G_PI/6.0)+start_height/2.0;
         //g_print("x %f y %f\n", p1.x, p1.y);
         g_array_append_val(coords1, p1);
       }
@@ -306,7 +310,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         control1=control_points_from_coords2(mid_points);
       }
 
-    cairo_scale(cr, width/500.0, height/500.0);
+    cairo_scale(cr, width/start_width, height/start_height);
 
     gint i=0;
     gint id=0; 
@@ -348,11 +352,11 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
 
-    //Fill a pattern.
+    //Fill the pattern.
     if(fill) 
       {
         cairo_close_path(cr);
-        cairo_pattern_t *pattern1=cairo_pattern_create_linear(width/2.0, 0.0, width/2.0, height); 
+        cairo_pattern_t *pattern1=cairo_pattern_create_linear(width/2.0, 0.0, width/2.0, start_height); 
         cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 0.8); 
         cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 0.8);
         cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 0.8);  
