@@ -353,9 +353,9 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         cairo_close_path(cr);
         cairo_pattern_t *pattern1=cairo_pattern_create_linear(width/2.0, 0.0, width/2.0, height); 
-        cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 1.0); 
-        cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 1.0);
-        cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 1.0);  
+        cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 0.8); 
+        cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 0.8);
+        cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 0.8);  
         cairo_set_source(cr, pattern1);  
         cairo_fill(cr);
         cairo_pattern_destroy(pattern1);
