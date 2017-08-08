@@ -6,7 +6,8 @@ The drag and drop for the list box is from mclasen and the following.
     https://blog.gtk.org/2017/06/01/drag-and-drop-in-lists-revisited/
 
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
-list box will change the draw order of the points. Still some things to figure out here.
+list box will change the draw order of the points. Still some things to figure out here. Try out
+the animation to rotate the drawing around the center y-axis. 
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -20,6 +21,8 @@ list box will change the draw order of the points. Still some things to figure o
 
 static void interpolation_check(GtkToggleButton *button, gpointer data);
 static void close_and_fill_check(GtkToggleButton *button, gpointer data);
+static void animate_check(GtkToggleButton *button, gpointer data);
+static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -110,6 +113,10 @@ static gint row_id=0;
 static gboolean interpolation=TRUE;
 //If the end of the curve connects to the start. If true fill the closed curve and draw a gradient.
 static gboolean fill=FALSE;
+//Animate the drawing.
+static gboolean animate=FALSE;
+//Tick id for animation frame clock.
+static guint tick_id=0;
 
 //List box order array.
 static GArray *array_id=NULL;
@@ -194,6 +201,11 @@ int main(int argc, char *argv[])
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
     g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da);  
 
+    GtkWidget *check3=gtk_check_button_new_with_label("Animate");
+    gtk_widget_set_halign(check3, GTK_ALIGN_CENTER);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check3), FALSE);
+    g_signal_connect(check3, "toggled", G_CALLBACK(animate_check), da);  
+
     GtkWidget *label2=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
 
@@ -212,10 +224,11 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check2, 0, 3, 2, 1);  
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 5, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), check2, 0, 3, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check3, 0, 4, 2, 1);   
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -242,8 +255,8 @@ int main(int argc, char *argv[])
     coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), 12);
     for(i=0;i<12;i++)
       {
-        p1.x=w1*cos((gdouble)i*G_PI/6.0)+start_width/2.0;
-        p1.y=w1*sin((gdouble)i*G_PI/6.0)+start_height/2.0;
+        p1.x=w1*cos((gdouble)i*G_PI/6.0);
+        p1.y=w1*sin((gdouble)i*G_PI/6.0);
         //g_print("x %f y %f\n", p1.x, p1.y);
         g_array_append_val(coords1, p1);
       }
@@ -276,8 +289,29 @@ static void close_and_fill_check(GtkToggleButton *button, gpointer data)
       }
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
+static void animate_check(GtkToggleButton *button, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(button))
+      {
+        animate=TRUE;
+        tick_id=gtk_widget_add_tick_callback(GTK_WIDGET(data), (GtkTickCallback)animate_drawing, NULL, NULL);
+      }
+    else
+      {
+        animate=FALSE;
+        if(tick_id!=0) gtk_widget_remove_tick_callback(GTK_WIDGET(data), tick_id);
+        tick_id=0;
+      }
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data)
+  {
+    gtk_widget_queue_draw(drawing);
+    return G_SOURCE_CONTINUE;
+  }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
+    static gint j=0;
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     gdouble w1=width/10.0;
@@ -308,6 +342,25 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         mid_points=mid_points_from_coords(coords1);
         control1=control_points_from_coords2(mid_points);
+      }
+
+    gdouble angle=0;
+    gdouble scale_x=0;
+    gdouble scale_x_inv=0;
+    if(animate)
+      {
+        angle=-j*G_PI/256.0;
+        scale_x=cos(angle);
+        scale_x_inv=1.0/scale_x;
+        angle=angle+G_PI/2.0;
+        j++;
+        cairo_scale(cr, scale_x, 1.0);
+        cairo_translate(cr, scale_x_inv*width/2.0, height/2.0);
+      }
+    else
+      {
+        cairo_translate(cr, width/2.0, height/2.0);
+        j=0;
       }
 
     cairo_scale(cr, width/start_width, height/start_height);
@@ -356,7 +409,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     if(fill) 
       {
         cairo_close_path(cr);
-        cairo_pattern_t *pattern1=cairo_pattern_create_linear(width/2.0, 0.0, width/2.0, start_height); 
+        gdouble x1=0;
+        gdouble y1=0;
+        cairo_user_to_device(cr, &x1, &y1);
+        cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, -height/2.0, 0.0, y1);
         cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 0.8); 
         cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 0.8);
         cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 0.8);  
@@ -396,9 +452,15 @@ static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   }
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     struct point p1;
-    p1.x=event->button.x;
-    p1.y=event->button.y;
+
+    gdouble w1=start_width*0.5;
+    if(start_width>start_height) w1=start_height*0.5;
+
+    p1.x=event->button.x*start_width/width-w1;
+    p1.y=event->button.y*start_height/height-w1;
     //g_print("x %f, y %f\n", p1.x, p1.y);
 
     struct point *p;
