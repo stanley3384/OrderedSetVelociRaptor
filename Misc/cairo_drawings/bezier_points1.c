@@ -7,7 +7,7 @@ The drag and drop for the list box is from mclasen and the following.
 
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
 list box will change the draw order of the points. Still some things to figure out here. Try out
-the animation to rotate the drawing around the center y-axis. 
+the animation rotating the drawing around the x or y axis. 
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -21,7 +21,7 @@ the animation to rotate the drawing around the center y-axis.
 
 static void interpolation_check(GtkToggleButton *button, gpointer data);
 static void close_and_fill_check(GtkToggleButton *button, gpointer data);
-static void animate_check(GtkToggleButton *button, gpointer data);
+static void rotate_combo(GtkComboBox *combo1, gpointer data);
 static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -113,8 +113,8 @@ static gint row_id=0;
 static gboolean interpolation=TRUE;
 //If the end of the curve connects to the start. If true fill the closed curve and draw a gradient.
 static gboolean fill=FALSE;
-//Animate the drawing.
-static gboolean animate=FALSE;
+//Rotate and animate the drawing.
+static gint rotate=0;
 //Tick id for animation frame clock.
 static guint tick_id=0;
 
@@ -201,10 +201,13 @@ int main(int argc, char *argv[])
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
     g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da);  
 
-    GtkWidget *check3=gtk_check_button_new_with_label("Animate");
-    gtk_widget_set_halign(check3, GTK_ALIGN_CENTER);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check3), FALSE);
-    g_signal_connect(check3, "toggled", G_CALLBACK(animate_check), da);  
+    GtkWidget *combo1=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo1, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "No Rotate");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Rotate X");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Rotate Y");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
+    g_signal_connect(combo1, "changed", G_CALLBACK(rotate_combo), da);
 
     GtkWidget *label2=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
@@ -225,7 +228,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), check2, 0, 3, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check3, 0, 4, 2, 1);   
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 2, 1);   
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 2, 1);
@@ -289,20 +292,24 @@ static void close_and_fill_check(GtkToggleButton *button, gpointer data)
       }
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
-static void animate_check(GtkToggleButton *button, gpointer data)
-  {
-    if(gtk_toggle_button_get_active(button))
+static void rotate_combo(GtkComboBox *combo1, gpointer data)
+ {
+    rotate=gtk_combo_box_get_active(combo1);
+
+    if(rotate==0)
       {
-        animate=TRUE;
-        tick_id=gtk_widget_add_tick_callback(GTK_WIDGET(data), (GtkTickCallback)animate_drawing, NULL, NULL);
+        if(tick_id!=0) gtk_widget_remove_tick_callback(GTK_WIDGET(data), tick_id);
+        tick_id=0;
+        gtk_widget_queue_draw(GTK_WIDGET(data));
       }
     else
       {
-        animate=FALSE;
-        if(tick_id!=0) gtk_widget_remove_tick_callback(GTK_WIDGET(data), tick_id);
-        tick_id=0;
+        if(tick_id==0)
+          {
+            tick_id=gtk_widget_add_tick_callback(GTK_WIDGET(data), (GtkTickCallback)animate_drawing, NULL, NULL);
+          }
       }
-    gtk_widget_queue_draw(GTK_WIDGET(data));
+    
   }
 static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data)
   {
@@ -311,7 +318,7 @@ static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, 
   }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
-    static gint j=0;
+    static gint j=1;
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     gdouble w1=width/10.0;
@@ -345,22 +352,32 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
       }
 
     gdouble angle=0;
-    gdouble scale_x=0;
-    gdouble scale_x_inv=0;
-    if(animate)
+    gdouble scale=0;
+    gdouble scale_inv=0;
+    if(rotate>0)
       {
-        angle=-j*G_PI/256.0;
-        scale_x=cos(angle);
-        scale_x_inv=1.0/scale_x;
-        angle=angle+G_PI/2.0;
+        if(rotate==1)
+          {
+            angle=-j*G_PI/256.0-3.0*G_PI/2.0;
+            scale=sin(angle);
+            scale_inv=1.0/scale;
+            cairo_scale(cr, 1.0, scale);
+            cairo_translate(cr, width/2.0, scale_inv*height/2.0);
+          }
+        else
+          {
+            angle=-j*G_PI/256.0;
+            scale=cos(angle);
+            scale_inv=1.0/scale;
+            cairo_scale(cr, scale, 1.0);
+            cairo_translate(cr, scale_inv*width/2.0, height/2.0);
+          }
         j++;
-        cairo_scale(cr, scale_x, 1.0);
-        cairo_translate(cr, scale_x_inv*width/2.0, height/2.0);
       }
     else
       {
         cairo_translate(cr, width/2.0, height/2.0);
-        j=0;
+        j=1;
       }
 
     cairo_scale(cr, width/start_width, height/start_height);
