@@ -206,6 +206,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "No Rotate");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Rotate X");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Rotate Y");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Rotate Z");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(rotate_combo), da);
 
@@ -364,13 +365,19 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
             cairo_scale(cr, 1.0, scale);
             cairo_translate(cr, width/2.0, scale_inv*height/2.0);
           }
-        else
+        else if(rotate==2)
           {
             angle=-j*G_PI/256.0;
             scale=cos(angle);
             scale_inv=1.0/scale;
             cairo_scale(cr, scale, 1.0);
             cairo_translate(cr, scale_inv*width/2.0, height/2.0);
+          }
+        else
+          {
+            angle=j*G_PI/256.0;
+            cairo_translate(cr, width/2.0, height/2.0);
+            cairo_rotate(cr, angle);
           }
         j++;
       }
