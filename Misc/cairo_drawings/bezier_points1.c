@@ -7,7 +7,7 @@ The drag and drop for the list box is from mclasen and the following.
 
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
 list box will change the draw order of the points. Still some things to figure out here. Try out
-the animation rotating the drawing around the x or y axis. 
+the animation rotating the drawing around the x, y or z axis. 
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -47,6 +47,8 @@ static GtkWidget *create_row(const gchar *text, GtkWidget *da);
 static void on_row_activated(GtkListBox *self, GtkListBoxRow *row, gpointer data);
 static void on_selected_children_changed(GtkListBox *self);
 static void a11y_selection_changed (AtkObject *obj);
+static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
+static void add_point(GtkWidget *widget, GtkWidget **list_da);
 
 static GtkTargetEntry entries[] = {
   { "GTK_LIST_BOX_ROW", GTK_TARGET_SAME_APP, 0 }
@@ -117,6 +119,8 @@ static gboolean fill=FALSE;
 static gint rotate=0;
 //Tick id for animation frame clock.
 static guint tick_id=0;
+//Keep track of added list box rows. Start program with 12 rows in the listbox.
+static gint add_row=12;
 
 //List box order array.
 static GArray *array_id=NULL;
@@ -191,6 +195,11 @@ int main(int argc, char *argv[])
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
     gtk_container_add (GTK_CONTAINER (sw), list);
 
+    GtkWidget *button1=gtk_button_new_with_label("Add Point");
+    gtk_widget_set_hexpand(button1, FALSE);
+    GtkWidget *list_da[]={list, da};
+    g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
+
     GtkWidget *check1=gtk_check_button_new_with_label("Interpolate or Approximate");
     gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), TRUE);
@@ -218,22 +227,23 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry1, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
 
-    GtkWidget *button1=gtk_button_new_with_label("Update Background");
-    gtk_widget_set_hexpand(button1, FALSE);
+    GtkWidget *button2=gtk_button_new_with_label("Update Background");
+    gtk_widget_set_hexpand(button2, FALSE);
     GtkWidget *colors[]={entry1, window, da};
-    g_signal_connect(button1, "clicked", G_CALLBACK(check_colors), colors);
+    g_signal_connect(button2, "clicked", G_CALLBACK(check_colors), colors);
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check1, 0, 2, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check2, 0, 3, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 2, 1);   
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check1, 0, 3, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check2, 0, 4, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 5, 2, 1);   
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 7, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -459,15 +469,17 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 14);
-    gchar *ps[]={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
-    for(i=0;i<12;i++)
+    len=array_id->len;
+    for(i=0;i<len;i++)
       {
         id=g_array_index(array_id, gint, i);
         p2=g_array_index(coords1, struct point, i);
+        gchar *string=g_strdup_printf("%i", id+1);
         cairo_move_to(cr, p2.x, p2.y);
         if(i==row_id) cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
         else cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-        cairo_show_text(cr, ps[id]);  
+        cairo_show_text(cr, string); 
+        g_free(string); 
       }
 
     if(control1!=NULL) g_array_free(control1, TRUE);
@@ -1124,6 +1136,8 @@ create_row (const gchar *text, GtkWidget *da)
   g_signal_connect (ebox, "drag-end", G_CALLBACK (drag_end), da);
   g_signal_connect (ebox, "drag-data-get", G_CALLBACK (drag_data_get), NULL);
 
+  g_signal_connect (row, "key-press-event", G_CALLBACK (delete_row), da);
+
   return row;
 }
 
@@ -1147,4 +1161,36 @@ a11y_selection_changed (AtkObject *obj)
   g_message ("Accessible selection changed");
 }
 
+static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
+{
+  if(event->keyval==GDK_KEY_Delete)
+    {
+      g_print("Delete Row\n");
+      gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+      g_array_remove_index(array_id, i);
+      g_array_remove_index(coords1, i);
+      gtk_widget_destroy(row);
+      gtk_widget_queue_draw(GTK_WIDGET(data));
+    }
+  return TRUE;
+}
+static void add_point(GtkWidget *widget, GtkWidget **list_da)
+{
+  g_print("Add Point\n");
+  gint len=0;
+  gint i=add_row++;
+  struct point p1;
 
+  g_array_append_val(array_id, i);
+  len=coords1->len-1;
+  p1=g_array_index(coords1, struct point, len);
+  p1.x=p1.x-40.0;
+  g_array_append_val(coords1, p1);
+
+  gchar *point=g_strdup_printf("Point %i", i+1);
+  GtkWidget *row=create_row(point, list_da[1]);
+  gtk_list_box_insert(GTK_LIST_BOX(list_da[0]), row, -1);
+  gtk_widget_show_all(row);
+  gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
+  g_free(point);
+}
