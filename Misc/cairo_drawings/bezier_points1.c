@@ -202,9 +202,9 @@ int main(int argc, char *argv[])
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
-    GtkWidget *button2=gtk_button_new_with_label("Printf Points");
+    GtkWidget *button2=gtk_button_new_with_label("Printf SVG");
     gtk_widget_set_hexpand(button2, FALSE);
-    g_signal_connect(button2, "clicked", G_CALLBACK(printf_interpolation_points), NULL);
+    g_signal_connect(button2, "clicked", G_CALLBACK(printf_interpolation_points), da);
 
     GtkWidget *check1=gtk_check_button_new_with_label("Interpolate or Approximate");
     gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
@@ -434,7 +434,9 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         p1=g_array_index(mid_points, struct point, 0);
         len=mid_points->len;
       }
-    cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+
+    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+    cairo_set_line_width(cr, 3.0);
     cairo_move_to(cr, p1.x, p1.y);
     
     if(interpolation)
@@ -1159,13 +1161,13 @@ on_row_activated (GtkListBox *self, GtkListBoxRow *row, gpointer data)
 static void
 on_selected_children_changed (GtkListBox *self)
 {
-  g_message ("Selection changed");
+  //g_message ("Selection changed");
 }
 
 static void
 a11y_selection_changed (AtkObject *obj)
 {
-  g_message ("Accessible selection changed");
+  //g_message ("Accessible selection changed");
 }
 
 static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
@@ -1205,21 +1207,33 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
 }
 static void printf_interpolation_points(GtkWidget *widget, gpointer data)
 {
+  //The svg needs some work to get the gradient and background.
   gint i=0;
+  gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
+  gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
   gint len=coords1->len;
   GArray *control1=control_points_from_coords2(coords1);
   struct point p1;
-  struct point p2;
   struct controls c1;
 
-  g_print("Curve Segments\n");
+  g_print("<?xml version=\"1.0\" standalone=\"no\"?>\n");
+  g_print("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
+  g_print("\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+  g_print("<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
+  g_print("xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+  g_print("<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"white\" />\n", width, height);
+  g_print("<path class=\"SamplePath\" d=\"");
+  p1=g_array_index(coords1, struct point, 0);
+  g_print("M%i,%i ", (gint)p1.x, (gint)p1.y);
   for(i=1;i<len;i++)
     {
-      p1=g_array_index(coords1, struct point, i-1);
-      p2=g_array_index(coords1, struct point, i);
+      p1=g_array_index(coords1, struct point, i);
       c1=g_array_index(control1, struct controls, i-1);
-      g_print("%i. [%f %f %f %f %f %f %f %f]\n", i, p1.x, p1.y, c1.x1, c1.y1, c1.x2, c1.y2, p2.x, p2.y); 
+      g_print("C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
     }
+  if(fill) g_print("\"\nfill=\"cyan\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+  else g_print("\"\nfill=\"white\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+  g_print("</svg>\n");
 
   if(control1!=NULL) g_array_free(control1, TRUE);
 }
