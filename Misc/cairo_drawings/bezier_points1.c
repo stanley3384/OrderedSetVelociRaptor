@@ -7,7 +7,7 @@ The drag and drop for the list box is from mclasen and the following.
 
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
 list box will change the draw order of the points. Still some things to figure out here. Try out
-the animation rotating the drawing around the x, y or z axis. 
+the animation rotating the drawing around the x, y, z or xyz axis. 
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -47,8 +47,12 @@ static GtkWidget *create_row(const gchar *text, GtkWidget *da);
 static void on_row_activated(GtkListBox *self, GtkListBoxRow *row, gpointer data);
 static void on_selected_children_changed(GtkListBox *self);
 static void a11y_selection_changed (AtkObject *obj);
+//Delete list box row with Del key.
 static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
+//Add a new point and row to the list box.
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
+//Print the stored arrays.
+static void printf_interpolation_points(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
   { "GTK_LIST_BOX_ROW", GTK_TARGET_SAME_APP, 0 }
@@ -119,8 +123,6 @@ static gboolean fill=FALSE;
 static gint rotate=0;
 //Tick id for animation frame clock.
 static guint tick_id=0;
-//Keep track of added list box rows. Start program with 12 rows in the listbox.
-static gint add_row=12;
 
 //List box order array.
 static GArray *array_id=NULL;
@@ -200,6 +202,10 @@ int main(int argc, char *argv[])
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
+    GtkWidget *button2=gtk_button_new_with_label("Printf Points");
+    gtk_widget_set_hexpand(button2, FALSE);
+    g_signal_connect(button2, "clicked", G_CALLBACK(printf_interpolation_points), NULL);
+
     GtkWidget *check1=gtk_check_button_new_with_label("Interpolate or Approximate");
     gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), TRUE);
@@ -227,23 +233,24 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry1, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
 
-    GtkWidget *button2=gtk_button_new_with_label("Update Background");
-    gtk_widget_set_hexpand(button2, FALSE);
+    GtkWidget *button3=gtk_button_new_with_label("Update Background");
+    gtk_widget_set_hexpand(button3, FALSE);
     GtkWidget *colors[]={entry1, window, da};
-    g_signal_connect(button2, "clicked", G_CALLBACK(check_colors), colors);
+    g_signal_connect(button3, "clicked", G_CALLBACK(check_colors), colors);
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check1, 0, 3, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check2, 0, 4, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 5, 2, 1);   
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 6, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 6, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button2, 0, 7, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check1, 0, 4, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), check2, 0, 5, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 6, 2, 1);   
+    gtk_grid_attach(GTK_GRID(grid), label2, 0, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button3, 0, 8, 2, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -1177,6 +1184,8 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
 static void add_point(GtkWidget *widget, GtkWidget **list_da)
 {
   g_print("Add Point\n");
+  //Keep track of added list box rows. Start program with 12 rows in the listbox.
+  static gint add_row=12;
   gint len=0;
   gint i=add_row++;
   struct point p1;
@@ -1194,3 +1203,29 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
   gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
   g_free(point);
 }
+static void printf_interpolation_points(GtkWidget *widget, gpointer data)
+{
+  gint i=0;
+  gint len=coords1->len;
+  GArray *control1=control_points_from_coords2(coords1);
+  struct point p1;
+  struct point p2;
+  struct controls c1;
+
+  g_print("Curve Segments\n");
+  for(i=1;i<len;i++)
+    {
+      p1=g_array_index(coords1, struct point, i-1);
+      p2=g_array_index(coords1, struct point, i);
+      c1=g_array_index(control1, struct controls, i-1);
+      g_print("%i. [%f %f %f %f %f %f %f %f]\n", i, p1.x, p1.y, c1.x1, c1.y1, c1.x2, c1.y2, p2.x, p2.y); 
+    }
+
+  if(control1!=NULL) g_array_free(control1, TRUE);
+}
+
+
+
+
+
+
