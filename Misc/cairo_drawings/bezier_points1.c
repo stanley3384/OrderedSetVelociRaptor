@@ -1207,7 +1207,6 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
 }
 static void printf_interpolation_points(GtkWidget *widget, gpointer data)
 {
-  //The svg needs some work to get the gradient and background.
   gint i=0;
   gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
@@ -1221,7 +1220,19 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
   g_print("\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
   g_print("<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
   g_print("xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
-  g_print("<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"white\" />\n", width, height);
+  g_print("<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
+
+  if(fill)
+    {
+      g_print("<defs>\n");
+      g_print("<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
+      g_print("<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
+      g_print("<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
+      g_print("<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
+      g_print("</linearGradient>\n");
+      g_print("</defs>\n");
+    }
+
   g_print("<path class=\"SamplePath\" d=\"");
   p1=g_array_index(coords1, struct point, 0);
   g_print("M%i,%i ", (gint)p1.x, (gint)p1.y);
@@ -1231,7 +1242,7 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
       c1=g_array_index(control1, struct controls, i-1);
       g_print("C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
     }
-  if(fill) g_print("\"\nfill=\"cyan\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+  if(fill) g_print("\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
   else g_print("\"\nfill=\"white\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
   g_print("</svg>\n");
 
