@@ -18,6 +18,7 @@ the animation rotating the drawing around the x, y, z or xyz axis.
 
 #include<gtk/gtk.h>
 #include<math.h>
+#include<stdlib.h>
 
 static void interpolation_check(GtkToggleButton *button, gpointer data);
 static void close_and_fill_check(GtkToggleButton *button, gpointer data);
@@ -53,6 +54,8 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Print the stored arrays.
 static void printf_interpolation_points(GtkWidget *widget, gpointer data);
+//Dialog for showing svg.
+static void svg_dialog(gint width, gint height);
 
 static GtkTargetEntry entries[] = {
   { "GTK_LIST_BOX_ROW", GTK_TARGET_SAME_APP, 0 }
@@ -123,6 +126,8 @@ static gboolean fill=FALSE;
 static gint rotate=0;
 //Tick id for animation frame clock.
 static guint tick_id=0;
+//GTK window for dialogs.
+static GtkWidget *window;
 
 //List box order array.
 static GArray *array_id=NULL;
@@ -136,7 +141,7 @@ int main(int argc, char *argv[])
   {
     gtk_init (&argc, &argv);
 
-    GtkWidget *window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Coordinates with Bezier Points");
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
@@ -202,7 +207,7 @@ int main(int argc, char *argv[])
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
-    GtkWidget *button2=gtk_button_new_with_label("Printf SVG");
+    GtkWidget *button2=gtk_button_new_with_label("Save and Show SVG");
     gtk_widget_set_hexpand(button2, FALSE);
     g_signal_connect(button2, "clicked", G_CALLBACK(printf_interpolation_points), da);
 
@@ -1207,6 +1212,7 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
 }
 static void printf_interpolation_points(GtkWidget *widget, gpointer data)
 {
+  //This just uses the interpolated data. Need to also use the approximation data.
   gint i=0;
   gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
@@ -1215,38 +1221,67 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
   struct point p1;
   struct controls c1;
 
-  g_print("<?xml version=\"1.0\" standalone=\"no\"?>\n");
-  g_print("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
-  g_print("\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
-  g_print("<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
-  g_print("xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
-  g_print("<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
+  FILE *f=fopen("bezier_drawing1.svg", "w");
+
+  fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
+  fprintf(f, "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
+  fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+  fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
+  fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+  fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
   if(fill)
     {
-      g_print("<defs>\n");
-      g_print("<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
-      g_print("<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
-      g_print("<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
-      g_print("<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
-      g_print("</linearGradient>\n");
-      g_print("</defs>\n");
+      fprintf(f, "<defs>\n");
+      fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
+      fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
+      fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
+      fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
+      fprintf(f, "</linearGradient>\n");
+      fprintf(f, "</defs>\n");
     }
 
-  g_print("<path class=\"SamplePath\" d=\"");
+  fprintf(f, "<path class=\"SamplePath\" d=\"");
   p1=g_array_index(coords1, struct point, 0);
-  g_print("M%i,%i ", (gint)p1.x, (gint)p1.y);
+  fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
   for(i=1;i<len;i++)
     {
       p1=g_array_index(coords1, struct point, i);
       c1=g_array_index(control1, struct controls, i-1);
-      g_print("C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
+      fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
     }
-  if(fill) g_print("\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
-  else g_print("\"\nfill=\"white\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
-  g_print("</svg>\n");
+  if(fill) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+  else fprintf(f, "\"\nfill=\"rgba(%i,%i,%i,%f)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3], width/2, height/2);
+  fprintf(f, "</svg>\n");
 
+  fclose(f);
+  
   if(control1!=NULL) g_array_free(control1, TRUE);
+
+  //Show the svg drawing.
+  svg_dialog(width, height);
+}
+static void svg_dialog(gint width, gint height)
+{
+  GtkWidget *dialog=gtk_dialog_new_with_buttons("bezier_drawing1.svg", GTK_WINDOW(window), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, NULL);
+  gtk_window_set_default_size(GTK_WINDOW(dialog), width, height);
+  GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+  GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", NULL);
+  GtkWidget *image=gtk_image_new_from_pixbuf(svg);
+  gtk_widget_set_hexpand(image, TRUE);
+  gtk_widget_set_vexpand(image, TRUE);
+
+  GtkWidget *sw=gtk_scrolled_window_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(sw), image);
+
+  gtk_container_add(GTK_CONTAINER(content_area), sw);
+  gtk_widget_show_all(dialog);
+
+  gtk_dialog_run(GTK_DIALOG(dialog));
+            
+  gtk_widget_destroy(dialog); 
+  g_object_unref(svg);                 
 }
 
 
