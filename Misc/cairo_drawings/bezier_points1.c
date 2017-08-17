@@ -7,7 +7,8 @@ The drag and drop for the list box is from mclasen and the following.
 
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
 list box will change the draw order of the points. Still some things to figure out here. Try out
-the animation rotating the drawing around the x, y, z or xyz axis. 
+the animation rotating the drawing around the x, y, z or xyz axis. The drawing will output to svg
+in the working directory and open the svg in an image widget. 
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -1217,49 +1218,93 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
   gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
   gint len=coords1->len;
-  GArray *control1=control_points_from_coords2(coords1);
   struct point p1;
   struct controls c1;
+  gboolean file_error=FALSE;
 
-  FILE *f=fopen("bezier_drawing1.svg", "w");
-
-  fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
-  fprintf(f, "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
-  fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
-  fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
-  fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
-  fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
-
-  if(fill)
+  if(len>0)
     {
-      fprintf(f, "<defs>\n");
-      fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
-      fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
-      fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
-      fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
-      fprintf(f, "</linearGradient>\n");
-      fprintf(f, "</defs>\n");
-    }
+      GArray *control1=NULL;
+      GArray *mid_points=NULL;
+      if(interpolation)
+        { 
+          control1=control_points_from_coords2(coords1);
+        }
+      else
+        {
+          mid_points=mid_points_from_coords(coords1);
+          len=mid_points->len;
+          control1=control_points_from_coords2(mid_points);
+        }
 
-  fprintf(f, "<path class=\"SamplePath\" d=\"");
-  p1=g_array_index(coords1, struct point, 0);
-  fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
-  for(i=1;i<len;i++)
-    {
-      p1=g_array_index(coords1, struct point, i);
-      c1=g_array_index(control1, struct controls, i-1);
-      fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
-    }
-  if(fill) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
-  else fprintf(f, "\"\nfill=\"rgba(%i,%i,%i,%f)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3], width/2, height/2);
-  fprintf(f, "</svg>\n");
+      FILE *f=fopen("bezier_drawing1.svg", "w");
 
-  fclose(f);
+      if(f!=NULL)
+        {
+          fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
+          fprintf(f, "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
+          fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+          fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
+          fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+          fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
+
+          if(fill)
+            {
+              fprintf(f, "<defs>\n");
+              fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
+              fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
+              fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
+              fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
+              fprintf(f, "</linearGradient>\n");
+              fprintf(f, "</defs>\n");
+            }
+
+          fprintf(f, "<path class=\"SamplePath\" d=\"");
+          if(interpolation)
+            {
+              p1=g_array_index(coords1, struct point, 0);
+              fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
+              for(i=1;i<len;i++)
+                {
+                  p1=g_array_index(coords1, struct point, i);
+                  c1=g_array_index(control1, struct controls, i-1);
+                  fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
+                }
+            }
+          else
+            {
+              p1=g_array_index(mid_points, struct point, 0);
+              fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
+              for(i=1;i<len;i++)
+                {
+                  p1=g_array_index(mid_points, struct point, i);
+                  c1=g_array_index(control1, struct controls, i-1);
+                  fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
+                }
+            }
+
+          if(fill) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+          else fprintf(f, "\"\nfill=\"rgba(%i,%i,%i,%f)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3], width/2, height/2);
+          fprintf(f, "</svg>\n");
+
+          fclose(f);
+        }
+      else
+        {
+          file_error=TRUE;
+          g_print("Couldn't open file bezier_drawing1.svg\n");
+        }
   
-  if(control1!=NULL) g_array_free(control1, TRUE);
+      if(control1!=NULL) g_array_free(control1, TRUE);
+      if(mid_points!=NULL) g_array_free(mid_points, TRUE);
+    }
+  else
+    {
+      g_print("No coordinates to output svg with.\n");
+    }
 
   //Show the svg drawing.
-  svg_dialog(width, height);
+  if(!file_error&&len>0) svg_dialog(width, height);
 }
 static void svg_dialog(gint width, gint height)
 {
@@ -1267,7 +1312,10 @@ static void svg_dialog(gint width, gint height)
   gtk_window_set_default_size(GTK_WINDOW(dialog), width, height);
   GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-  GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", NULL);
+  GError *error=NULL;
+  GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", &error);
+  if(error!=NULL) g_print("%s\n", error->message);
+  //If error open image anyway. It will just show a broken image.
   GtkWidget *image=gtk_image_new_from_pixbuf(svg);
   gtk_widget_set_hexpand(image, TRUE);
   gtk_widget_set_vexpand(image, TRUE);
