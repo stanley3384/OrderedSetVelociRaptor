@@ -1314,7 +1314,11 @@ static void svg_dialog(gint width, gint height)
 
   GError *error=NULL;
   GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", &error);
-  if(error!=NULL) g_print("%s\n", error->message);
+  if(error!=NULL)
+    {
+      g_print("%s\n", error->message);
+      g_error_free(error);
+    }
   //If error open image anyway. It will just show a broken image.
   GtkWidget *image=gtk_image_new_from_pixbuf(svg);
   gtk_widget_set_hexpand(image, TRUE);
