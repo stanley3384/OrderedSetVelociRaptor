@@ -21,9 +21,9 @@ in the working directory and open the svg in an image widget.
 #include<math.h>
 #include<stdlib.h>
 
-static void interpolation_check(GtkToggleButton *button, gpointer data);
+static void interpolation_combo(GtkComboBox *combo, gpointer data);
 static void close_and_fill_check(GtkToggleButton *button, gpointer data);
-static void rotate_combo(GtkComboBox *combo1, gpointer data);
+static void rotate_combo(GtkComboBox *combo, gpointer data);
 static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -119,8 +119,8 @@ static gint motion_id=0;
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
 //Current selected row in list.
 static gint row_id=0;
-//If the curve should be drawn with interpolation or approximation.
-static gboolean interpolation=TRUE;
+//If the curve should be drawn linear, smooth or approximate. Start with smooth.
+static gint interpolation=1;
 //If the end of the curve connects to the start. If true fill the closed curve and draw a gradient.
 static gboolean fill=FALSE;
 //Rotate and animate the drawing.
@@ -212,25 +212,28 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(button2, FALSE);
     g_signal_connect(button2, "clicked", G_CALLBACK(printf_interpolation_points), da);
 
-    GtkWidget *check1=gtk_check_button_new_with_label("Interpolate or Approximate");
-    gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), TRUE);
-    g_signal_connect(check1, "toggled", G_CALLBACK(interpolation_check), da); 
-
+    GtkWidget *combo1=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo1, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Linear");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Smooth");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Approximate");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 1);
+    g_signal_connect(combo1, "changed", G_CALLBACK(interpolation_combo), da);
+ 
     GtkWidget *check2=gtk_check_button_new_with_label("Close and Fill");
     gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
     g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da);  
 
-    GtkWidget *combo1=gtk_combo_box_text_new();
-    gtk_widget_set_hexpand(combo1, TRUE);
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "No Rotate");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 1, "2", "Rotate X");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Rotate Y");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Rotate Z");
-    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Rotate XYZ");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
-    g_signal_connect(combo1, "changed", G_CALLBACK(rotate_combo), da);
+    GtkWidget *combo2=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo2, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "No Rotate");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Rotate X");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Rotate Y");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Rotate Z");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Rotate XYZ");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
+    g_signal_connect(combo2, "changed", G_CALLBACK(rotate_combo), da);
 
     GtkWidget *label2=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
@@ -251,9 +254,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), check1, 0, 4, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), check2, 0, 5, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 6, 2, 1);   
+    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 6, 2, 1);   
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button3, 0, 8, 2, 1);
@@ -297,10 +300,9 @@ int main(int argc, char *argv[])
 
     return 0;
   }
-static void interpolation_check(GtkToggleButton *button, gpointer data)
+static void interpolation_combo(GtkComboBox *combo, gpointer data)
   {
-    if(gtk_toggle_button_get_active(button)) interpolation=TRUE;
-    else interpolation=FALSE;
+    interpolation=gtk_combo_box_get_active(combo);
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void close_and_fill_check(GtkToggleButton *button, gpointer data)
@@ -317,9 +319,9 @@ static void close_and_fill_check(GtkToggleButton *button, gpointer data)
       }
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
-static void rotate_combo(GtkComboBox *combo1, gpointer data)
+static void rotate_combo(GtkComboBox *combo, gpointer data)
  {
-    rotate=gtk_combo_box_get_active(combo1);
+    rotate=gtk_combo_box_get_active(combo);
 
     if(rotate==0)
       {
@@ -366,11 +368,15 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     GArray *control1=NULL;
     GArray *mid_points=NULL;
-    if(interpolation)
+    if(interpolation==0)
+      {
+        //Just draw straight lines. Don't need control points.
+      }
+    else if(interpolation==1)
       { 
         control1=control_points_from_coords2(coords1);
       }
-    else
+    else 
       {
         mid_points=mid_points_from_coords(coords1);
         control1=control_points_from_coords2(mid_points);
@@ -430,7 +436,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     struct point p1;
     struct point p2;
     struct controls c1;
-    if(interpolation)
+    if(interpolation==0||interpolation==1)
       {
         p1=g_array_index(coords1, struct point, 0);
         len=coords1->len;
@@ -445,7 +451,16 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_line_width(cr, 3.0);
     cairo_move_to(cr, p1.x, p1.y);
     
-    if(interpolation)
+    if(interpolation==0)
+      {
+        for(i=1;i<len;i++)
+          {
+            p2=g_array_index(coords1, struct point, i);
+            cairo_line_to(cr, p2.x, p2.y);
+            cairo_stroke_preserve(cr); 
+          }
+      }
+    else if(interpolation==1)
       {
         for(i=1;i<len;i++)
           {
@@ -1226,7 +1241,11 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
     {
       GArray *control1=NULL;
       GArray *mid_points=NULL;
-      if(interpolation)
+      if(interpolation==0)
+        {
+          //Just draw lines. Don't need control points.
+        }
+      else if(interpolation==1)
         { 
           control1=control_points_from_coords2(coords1);
         }
@@ -1259,9 +1278,19 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
               fprintf(f, "</defs>\n");
             }
 
-          fprintf(f, "<path class=\"SamplePath\" d=\"");
-          if(interpolation)
+          if(interpolation==0)
             {
+              fprintf(f, "<polyline points=\"");
+              p1=g_array_index(coords1, struct point, 0);
+              for(i=0;i<len;i++)
+                {
+                  p1=g_array_index(coords1, struct point, i);
+                  fprintf(f, "%i,%i ", (gint)p1.x, (gint)p1.y); 
+                }
+            }
+          else if(interpolation==1)
+            {
+              fprintf(f, "<path class=\"SamplePath\" d=\"");
               p1=g_array_index(coords1, struct point, 0);
               fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
               for(i=1;i<len;i++)
@@ -1273,6 +1302,7 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
             }
           else
             {
+              fprintf(f, "<path class=\"SamplePath\" d=\"");
               p1=g_array_index(mid_points, struct point, 0);
               fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
               for(i=1;i<len;i++)
