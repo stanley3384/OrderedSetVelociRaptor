@@ -26,6 +26,7 @@ static void close_and_fill_check(GtkToggleButton *button, gpointer data);
 static void rotate_combo(GtkComboBox *combo, gpointer data);
 static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
+static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -54,9 +55,12 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
 //Add a new point and row to the list box.
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Print the stored arrays.
-static void printf_interpolation_points(GtkWidget *widget, gpointer data);
+static void save_svg(GtkWidget *widget, gpointer data);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
+//Save current drawing cordinates.
+static void add_points(GtkWidget *widget, GtkWidget **widgets);
+static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
   { "GTK_LIST_BOX_ROW", GTK_TARGET_SAME_APP, 0 }
@@ -113,6 +117,10 @@ struct controls{
 
 //Coordinate points for drawing.
 static GArray *coords1=NULL;
+//A pointer array to save garrays of points.
+static GPtrArray *paths=NULL;
+//Saved path draw info. Interpolate and Fill.
+static GArray *path_info=NULL;
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
 //Drawing background color.
@@ -122,7 +130,7 @@ static gint row_id=0;
 //If the curve should be drawn linear, smooth or approximate. Start with smooth.
 static gint interpolation=1;
 //If the end of the curve connects to the start. If true fill the closed curve and draw a gradient.
-static gboolean fill=FALSE;
+static gint fill=0;
 //Rotate and animate the drawing.
 static gint rotate=0;
 //Tick id for animation frame clock.
@@ -144,9 +152,9 @@ int main(int argc, char *argv[])
 
     window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Coordinates with Bezier Points");
-    gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 850, 500);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(cleanup), NULL);
     gtk_widget_set_app_paintable(window, TRUE);
     //Try to set transparency of main window.
     if(gtk_widget_is_composited(window))
@@ -208,9 +216,14 @@ int main(int argc, char *argv[])
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
-    GtkWidget *button2=gtk_button_new_with_label("Save and Show SVG");
+    GtkWidget *button2=gtk_button_new_with_label("Save Show SVG");
     gtk_widget_set_hexpand(button2, FALSE);
-    g_signal_connect(button2, "clicked", G_CALLBACK(printf_interpolation_points), da);
+    g_signal_connect(button2, "clicked", G_CALLBACK(save_svg), da);
+
+    GtkWidget *button3=gtk_button_new_with_label("Add Shape");
+    gtk_widget_set_hexpand(button3, FALSE);
+    //This path needs work with the svg.
+    gtk_widget_set_sensitive(button3, FALSE);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
@@ -223,7 +236,10 @@ int main(int argc, char *argv[])
     GtkWidget *check2=gtk_check_button_new_with_label("Close and Fill");
     gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
-    g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da);  
+    g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da); 
+
+    GtkWidget *widgets[]={da, check2};
+    g_signal_connect(button3, "clicked", G_CALLBACK(add_points), widgets); 
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo2, TRUE);
@@ -242,10 +258,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry1, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
 
-    GtkWidget *button3=gtk_button_new_with_label("Update Background");
-    gtk_widget_set_hexpand(button3, FALSE);
+    GtkWidget *button4=gtk_button_new_with_label("Update Background");
+    gtk_widget_set_hexpand(button4, FALSE);
     GtkWidget *colors[]={entry1, window, da};
-    g_signal_connect(button3, "clicked", G_CALLBACK(check_colors), colors);
+    g_signal_connect(button4, "clicked", G_CALLBACK(check_colors), colors);
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
@@ -253,18 +269,24 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button3, 1, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), check2, 0, 5, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 6, 2, 1);   
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button3, 0, 8, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button4, 0, 8, 2, 1);
+
+    GtkWidget *nb_label1=gtk_label_new("Draw Path");
+    GtkWidget *notebook=gtk_notebook_new();
+    gtk_container_set_border_width(GTK_CONTAINER(notebook), 15);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid, nb_label1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-    gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
+    gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
     gtk_paned_pack2(GTK_PANED(paned1), da, TRUE, TRUE);
-    gtk_paned_set_position(GTK_PANED(paned1), 300);
+    gtk_paned_set_position(GTK_PANED(paned1), 350);
 
     //Draw background window based on the paned window splitter.
     g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), paned1);
@@ -293,10 +315,10 @@ int main(int argc, char *argv[])
       }
     gtk_widget_queue_draw(da);
 
-    gtk_main();
+    paths=g_ptr_array_new();
+    path_info=g_array_new(FALSE, FALSE, sizeof(gint));
 
-    g_array_free(array_id, TRUE);
-    g_array_free(coords1, TRUE);
+    gtk_main();
 
     return 0;
   }
@@ -309,13 +331,13 @@ static void close_and_fill_check(GtkToggleButton *button, gpointer data)
   {
     if(gtk_toggle_button_get_active(button))
       {
-        fill=TRUE;
+        fill=1;
         g_array_append_val(coords1, g_array_index(coords1, struct point, 0));
       }
     else
       {
         g_array_remove_index(coords1, coords1->len-1);
-        fill=FALSE;
+        fill=0;
       }
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
@@ -345,7 +367,14 @@ static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, 
   }
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
+    gint i=0;
     static gint j=1;
+    gint len=paths->len;
+    GArray *array=NULL;
+    gint shape_fill=0;
+    gint shape_inter=0;
+    gboolean saved=TRUE;
+
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     gdouble w1=width/10.0;
@@ -366,22 +395,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_line_to(cr, 5.0*w1, 9.0*h1);
     cairo_stroke(cr);
 
-    GArray *control1=NULL;
-    GArray *mid_points=NULL;
-    if(interpolation==0)
-      {
-        //Just draw straight lines. Don't need control points.
-      }
-    else if(interpolation==1)
-      { 
-        control1=control_points_from_coords2(coords1);
-      }
-    else 
-      {
-        mid_points=mid_points_from_coords(coords1);
-        control1=control_points_from_coords2(mid_points);
-      }
-
+    //Rotations for animation.
     gdouble angle=0;
     gdouble scale=0;
     gdouble scale_inv=0;
@@ -430,16 +444,53 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     cairo_scale(cr, width/start_width, height/start_height);
 
+    //Draw saved drawings.
+    for(i=0;i<len;i++)
+      {
+        array=(GArray*)(g_ptr_array_index(paths, i));
+        shape_fill=g_array_index(path_info, gint, 2*i);
+        shape_inter=g_array_index(path_info, gint, 2*i+1);
+        draw_shapes(widget, cr, array, shape_fill, shape_inter, saved);
+      }
+
+    //Draw top or current drawing.
+    array=coords1;
+    shape_fill=fill;
+    shape_inter=interpolation;
+    saved=FALSE;
+    draw_shapes(widget, cr, array, shape_fill, shape_inter, saved);
+    return FALSE;
+  }
+static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved)
+  {
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+    GArray *control1=NULL;
+    GArray *mid_points=NULL;
     gint i=0;
     gint id=0; 
     gint len=0;
     struct point p1;
     struct point p2;
     struct controls c1;
-    if(interpolation==0||interpolation==1)
+
+    if(shape_inter==0)
       {
-        p1=g_array_index(coords1, struct point, 0);
-        len=coords1->len;
+        //Just draw straight lines. Don't need control points.
+      }
+    else if(shape_inter==1)
+      { 
+        control1=control_points_from_coords2(array);
+      }
+    else 
+      {
+        mid_points=mid_points_from_coords(array);
+        control1=control_points_from_coords2(mid_points);
+      }    
+
+    if(shape_inter==0||shape_inter==1)
+      {
+        p1=g_array_index(array, struct point, 0);
+        len=array->len;
       }
     else
       {
@@ -451,20 +502,20 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_line_width(cr, 3.0);
     cairo_move_to(cr, p1.x, p1.y);
     
-    if(interpolation==0)
+    if(shape_inter==0)
       {
         for(i=1;i<len;i++)
           {
-            p2=g_array_index(coords1, struct point, i);
+            p2=g_array_index(array, struct point, i);
             cairo_line_to(cr, p2.x, p2.y);
             cairo_stroke_preserve(cr); 
           }
       }
-    else if(interpolation==1)
+    else if(shape_inter==1)
       {
         for(i=1;i<len;i++)
           {
-            p2=g_array_index(coords1, struct point, i);
+            p2=g_array_index(array, struct point, i);
             c1=g_array_index(control1, struct controls, i-1);
             cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p2.x, p2.y);
             cairo_stroke_preserve(cr); 
@@ -482,7 +533,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
       }
 
     //Fill the pattern.
-    if(fill) 
+    if(shape_fill==1) 
       {
         cairo_close_path(cr);
         gdouble x1=0;
@@ -497,25 +548,27 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_pattern_destroy(pattern1);
       }
 
-    cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 14);
-    len=array_id->len;
-    for(i=0;i<len;i++)
+    if(!saved)
       {
-        id=g_array_index(array_id, gint, i);
-        p2=g_array_index(coords1, struct point, i);
-        gchar *string=g_strdup_printf("%i", id+1);
-        cairo_move_to(cr, p2.x, p2.y);
-        if(i==row_id) cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
-        else cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-        cairo_show_text(cr, string); 
-        g_free(string); 
+        cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_set_font_size(cr, 14);
+        len=array_id->len;
+        for(i=0;i<len;i++)
+          {
+            id=g_array_index(array_id, gint, i);
+            p2=g_array_index(array, struct point, i);
+            gchar *string=g_strdup_printf("%i", id+1);
+            cairo_move_to(cr, p2.x, p2.y);
+            if(i==row_id) cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 1.0);
+            else cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+            cairo_show_text(cr, string); 
+            g_free(string); 
+          }
       }
 
     if(control1!=NULL) g_array_free(control1, TRUE);
     if(mid_points!=NULL) g_array_free(mid_points, TRUE);
 
-    return FALSE;
   }
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
@@ -1226,9 +1279,8 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
   gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
   g_free(point);
 }
-static void printf_interpolation_points(GtkWidget *widget, gpointer data)
+static void save_svg(GtkWidget *widget, gpointer data)
 {
-  //This just uses the interpolated data. Need to also use the approximation data.
   gint i=0;
   gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
@@ -1267,7 +1319,7 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
           fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
           fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
-          if(fill)
+          if(fill==1)
             {
               fprintf(f, "<defs>\n");
               fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
@@ -1313,7 +1365,7 @@ static void printf_interpolation_points(GtkWidget *widget, gpointer data)
                 }
             }
 
-          if(fill) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+          if(fill==1) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
           else fprintf(f, "\"\nfill=\"rgba(%i,%i,%i,%f)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3], width/2, height/2);
           fprintf(f, "</svg>\n");
 
@@ -1364,6 +1416,54 @@ static void svg_dialog(gint width, gint height)
             
   gtk_widget_destroy(dialog); 
   g_object_unref(svg);                 
+}
+static void add_points(GtkWidget *widget, GtkWidget **widgets)
+{
+  g_print("Add Points\n");
+  gint i=0;
+  gint len=coords1->len;
+  GArray *c1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), len);
+  for(i=0;i<len;i++)
+    {
+      g_array_append_val(c1, g_array_index(coords1, struct point, i));
+    }
+  g_ptr_array_add(paths, (GArray*)c1);
+  g_array_append_val(path_info, interpolation);
+  g_array_append_val(path_info, fill);
+
+  //Reset coords to draw again.
+  len=coords1->len; 
+  gdouble w1=start_width*0.4;
+  if(start_width>start_height) w1=start_height*0.4;
+  struct point p1;
+  for(i=0;i<len;i++) g_array_remove_index_fast(coords1, 0);
+  len=array_id->len;
+  for(i=0;i<len;i++)
+    {
+      p1.x=w1*cos((gdouble)i*G_PI/((gdouble)len/2.0));
+      p1.y=w1*sin((gdouble)i*G_PI/((gdouble)len/2.0));
+      //g_print("x %f y %f\n", p1.x, p1.y);
+      g_array_append_val(coords1, p1);
+    }
+
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widgets[1]), FALSE);
+  fill=0;
+  gtk_widget_queue_draw(widgets[0]);
+}
+static void cleanup(GtkWidget *widget, gpointer data)
+{
+  gint i=0;
+  g_array_free(array_id, TRUE);
+  g_array_free(coords1, TRUE);
+  gint len=paths->len;
+  g_print("Paths %i\n", len);
+  for(i=0;i<len;i++)
+    {
+      g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
+    }
+  g_ptr_array_free(paths, TRUE);
+  g_array_free(path_info, TRUE);
+  gtk_main_quit();
 }
 
 
