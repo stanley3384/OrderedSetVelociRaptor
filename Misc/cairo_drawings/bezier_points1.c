@@ -54,12 +54,14 @@ static void a11y_selection_changed (AtkObject *obj);
 static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
 //Add a new point and row to the list box.
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
-//Print the stored arrays.
+//Save to svg file.
 static void save_svg(GtkWidget *widget, gpointer data);
+static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
 //Save current drawing cordinates.
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
+static void clear_shapes(GtkWidget *widget, gpointer data);
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -165,10 +167,6 @@ int main(int argc, char *argv[])
       }
     else g_print("Can't set window transparency.\n");
 
-    gint i=0;
-    array_id=g_array_new (FALSE, FALSE, sizeof(gint));
-    for(i=0;i<12;i++) g_array_append_val(array_id, i);
-
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE);
     gtk_widget_set_vexpand(da, TRUE);
@@ -183,6 +181,7 @@ int main(int argc, char *argv[])
     GtkWidget *label1=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'>Point Draw Order</span>");
 
+    gint i=0;
     GtkWidget *list = gtk_list_box_new ();
     gtk_widget_set_hexpand(list, TRUE);
     gtk_widget_set_vexpand(list, TRUE);
@@ -216,14 +215,12 @@ int main(int argc, char *argv[])
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
-    GtkWidget *button2=gtk_button_new_with_label("Save Show SVG");
+    GtkWidget *button2=gtk_button_new_with_label("Add Shape");
     gtk_widget_set_hexpand(button2, FALSE);
-    g_signal_connect(button2, "clicked", G_CALLBACK(save_svg), da);
 
-    GtkWidget *button3=gtk_button_new_with_label("Add Shape");
+    GtkWidget *button3=gtk_button_new_with_label("Clear Shapes");
     gtk_widget_set_hexpand(button3, FALSE);
-    //This path needs work with the svg.
-    gtk_widget_set_sensitive(button3, FALSE);
+    g_signal_connect(button3, "clicked", G_CALLBACK(clear_shapes), da);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
@@ -232,6 +229,10 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Approximate");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 1);
     g_signal_connect(combo1, "changed", G_CALLBACK(interpolation_combo), da);
+
+    GtkWidget *button4=gtk_button_new_with_label("Save Show SVG");
+    gtk_widget_set_hexpand(button4, FALSE);
+    g_signal_connect(button4, "clicked", G_CALLBACK(save_svg), da);
  
     GtkWidget *check2=gtk_check_button_new_with_label("Close and Fill");
     gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
@@ -239,7 +240,7 @@ int main(int argc, char *argv[])
     g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da); 
 
     GtkWidget *widgets[]={da, check2};
-    g_signal_connect(button3, "clicked", G_CALLBACK(add_points), widgets); 
+    g_signal_connect(button2, "clicked", G_CALLBACK(add_points), widgets); 
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo2, TRUE);
@@ -258,10 +259,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry1, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
 
-    GtkWidget *button4=gtk_button_new_with_label("Update Background");
-    gtk_widget_set_hexpand(button4, FALSE);
+    GtkWidget *button5=gtk_button_new_with_label("Update Background");
+    gtk_widget_set_hexpand(button5, FALSE);
     GtkWidget *colors[]={entry1, window, da};
-    g_signal_connect(button4, "clicked", G_CALLBACK(check_colors), colors);
+    g_signal_connect(button5, "clicked", G_CALLBACK(check_colors), colors);
     
     GtkWidget *grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
@@ -271,12 +272,13 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button3, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 1, 1); 
+    gtk_grid_attach(GTK_GRID(grid), button4, 1, 4, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), check2, 0, 5, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 6, 2, 1);   
     gtk_grid_attach(GTK_GRID(grid), label2, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entry1, 1, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button4, 0, 8, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), button5, 0, 8, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *notebook=gtk_notebook_new();
@@ -313,6 +315,9 @@ int main(int argc, char *argv[])
         //g_print("x %f y %f\n", p1.x, p1.y);
         g_array_append_val(coords1, p1);
       }
+    //Array to track the list.
+    array_id=g_array_new (FALSE, FALSE, sizeof(gint));
+    for(i=0;i<12;i++) g_array_append_val(array_id, i);
     gtk_widget_queue_draw(da);
 
     paths=g_ptr_array_new();
@@ -448,9 +453,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     for(i=0;i<len;i++)
       {
         array=(GArray*)(g_ptr_array_index(paths, i));
-        shape_fill=g_array_index(path_info, gint, 2*i);
-        shape_inter=g_array_index(path_info, gint, 2*i+1);
+        shape_inter=g_array_index(path_info, gint, 2*i);
+        shape_fill=g_array_index(path_info, gint, 2*i+1); 
         draw_shapes(widget, cr, array, shape_fill, shape_inter, saved);
+        cairo_new_path(cr);
       }
 
     //Draw top or current drawing.
@@ -1282,101 +1288,127 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
 static void save_svg(GtkWidget *widget, gpointer data)
 {
   gint i=0;
+  gint path_id=1;
   gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
-  gint len=coords1->len;
+  gint len=0;
+  GArray *array=NULL;
+  gint shape_fill=0;
+  gint shape_inter=0;
+  gboolean file_error=FALSE;
+
+  FILE *f=fopen("bezier_drawing1.svg", "w");
+  if(f!=NULL)
+    {
+      fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
+      fprintf(f, "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
+      fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+      fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
+      fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+      fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
+
+      //Define a fill to be used.
+      fprintf(f, "<defs>\n");
+      fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
+      fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
+      fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
+      fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
+      fprintf(f, "</linearGradient>\n");
+      fprintf(f, "</defs>\n");       
+
+      //Build the svg from the stored arrays.
+      len=paths->len;
+      for(i=0;i<len;i++)
+        {
+          array=(GArray*)(g_ptr_array_index(paths, i));
+          shape_inter=g_array_index(path_info, gint, 2*i);
+          shape_fill=g_array_index(path_info, gint, 2*i+1);
+          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id);
+          path_id++;
+        }
+
+      //Draw top or current drawing from the coords array.
+      array=coords1;
+      shape_fill=fill;
+      shape_inter=interpolation;
+      build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id);
+
+      fprintf(f, "</svg>\n");
+      fclose(f);
+    }
+  else
+    {
+      file_error=TRUE;
+      g_print("Couldn't open file bezier_drawing1.svg\n");
+    }
+
+  //Show the svg drawing.
+  if(!file_error) svg_dialog(width, height);
+}
+static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id)
+{
+  gint i=0;
+  gint len=array->len;
   struct point p1;
   struct controls c1;
-  gboolean file_error=FALSE;
 
   if(len>0)
     {
       GArray *control1=NULL;
       GArray *mid_points=NULL;
-      if(interpolation==0)
+      if(shape_inter==0)
         {
           //Just draw lines. Don't need control points.
         }
-      else if(interpolation==1)
+      else if(shape_inter==1)
         { 
-          control1=control_points_from_coords2(coords1);
+          control1=control_points_from_coords2(array);
         }
       else
         {
-          mid_points=mid_points_from_coords(coords1);
+          mid_points=mid_points_from_coords(array);
           len=mid_points->len;
           control1=control_points_from_coords2(mid_points);
         }
 
-      FILE *f=fopen("bezier_drawing1.svg", "w");
-
-      if(f!=NULL)
+      if(shape_inter==0)
         {
-          fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
-          fprintf(f, "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
-          fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
-          fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
-          fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
-          fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
-
-          if(fill==1)
+          fprintf(f, "<polyline points=\"");
+          p1=g_array_index(array, struct point, 0);
+          for(i=0;i<len;i++)
             {
-              fprintf(f, "<defs>\n");
-              fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
-              fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
-              fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
-              fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
-              fprintf(f, "</linearGradient>\n");
-              fprintf(f, "</defs>\n");
+              p1=g_array_index(array, struct point, i);
+              fprintf(f, "%i,%i ", (gint)p1.x, (gint)p1.y); 
             }
-
-          if(interpolation==0)
+        }
+      else if(shape_inter==1)
+        {
+          fprintf(f, "<path class=\"Path%i\" d=\"", path_id);
+          p1=g_array_index(array, struct point, 0);
+          fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
+          for(i=1;i<len;i++)
             {
-              fprintf(f, "<polyline points=\"");
-              p1=g_array_index(coords1, struct point, 0);
-              for(i=0;i<len;i++)
-                {
-                  p1=g_array_index(coords1, struct point, i);
-                  fprintf(f, "%i,%i ", (gint)p1.x, (gint)p1.y); 
-                }
+              p1=g_array_index(array, struct point, i);
+              c1=g_array_index(control1, struct controls, i-1);
+              fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
             }
-          else if(interpolation==1)
-            {
-              fprintf(f, "<path class=\"SamplePath\" d=\"");
-              p1=g_array_index(coords1, struct point, 0);
-              fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
-              for(i=1;i<len;i++)
-                {
-                  p1=g_array_index(coords1, struct point, i);
-                  c1=g_array_index(control1, struct controls, i-1);
-                  fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
-                }
-            }
-          else
-            {
-              fprintf(f, "<path class=\"SamplePath\" d=\"");
-              p1=g_array_index(mid_points, struct point, 0);
-              fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
-              for(i=1;i<len;i++)
-                {
-                  p1=g_array_index(mid_points, struct point, i);
-                  c1=g_array_index(control1, struct controls, i-1);
-                  fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
-                }
-            }
-
-          if(fill==1) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
-          else fprintf(f, "\"\nfill=\"rgba(%i,%i,%i,%f)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3], width/2, height/2);
-          fprintf(f, "</svg>\n");
-
-          fclose(f);
         }
       else
         {
-          file_error=TRUE;
-          g_print("Couldn't open file bezier_drawing1.svg\n");
+          fprintf(f, "<path class=\"Path%i\" d=\"", path_id);
+          p1=g_array_index(mid_points, struct point, 0);
+          fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
+          for(i=1;i<len;i++)
+            {
+              p1=g_array_index(mid_points, struct point, i);
+              c1=g_array_index(control1, struct controls, i-1);
+              fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
+            }
         }
-  
+
+      if(shape_fill==1) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+      else fprintf(f, "\"\n fill=\"none\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+        
       if(control1!=NULL) g_array_free(control1, TRUE);
       if(mid_points!=NULL) g_array_free(mid_points, TRUE);
     }
@@ -1384,9 +1416,6 @@ static void save_svg(GtkWidget *widget, gpointer data)
     {
       g_print("No coordinates to output svg with.\n");
     }
-
-  //Show the svg drawing.
-  if(!file_error&&len>0) svg_dialog(width, height);
 }
 static void svg_dialog(gint width, gint height)
 {
@@ -1396,11 +1425,8 @@ static void svg_dialog(gint width, gint height)
 
   GError *error=NULL;
   GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", &error);
-  if(error!=NULL)
-    {
-      g_print("%s\n", error->message);
-      g_error_free(error);
-    }
+  if(error!=NULL) g_print("%s\n", error->message);
+     
   //If error open image anyway. It will just show a broken image.
   GtkWidget *image=gtk_image_new_from_pixbuf(svg);
   gtk_widget_set_hexpand(image, TRUE);
@@ -1415,11 +1441,13 @@ static void svg_dialog(gint width, gint height)
   gtk_dialog_run(GTK_DIALOG(dialog));
             
   gtk_widget_destroy(dialog); 
-  g_object_unref(svg);                 
+  if(error==NULL) g_object_unref(svg);
+  else g_error_free(error);
+                  
 }
 static void add_points(GtkWidget *widget, GtkWidget **widgets)
 {
-  g_print("Add Points\n");
+  g_print("Save Drawing\n");
   gint i=0;
   gint len=coords1->len;
   GArray *c1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), len);
@@ -1437,7 +1465,7 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   if(start_width>start_height) w1=start_height*0.4;
   struct point p1;
   for(i=0;i<len;i++) g_array_remove_index_fast(coords1, 0);
-  len=array_id->len;
+
   for(i=0;i<len;i++)
     {
       p1.x=w1*cos((gdouble)i*G_PI/((gdouble)len/2.0));
@@ -1450,13 +1478,29 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   fill=0;
   gtk_widget_queue_draw(widgets[0]);
 }
+static void clear_shapes(GtkWidget *widget, gpointer data)
+{
+  gint i=0;
+  gint len=paths->len;
+  g_print("Free %i Paths\n", len);
+  for(i=0;i<len;i++)
+    {
+      g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
+    }
+  for(i=0;i<len;i++) g_ptr_array_remove_index_fast(paths, 0);
+
+  len=path_info->len;
+  for(i=0;i<len;i++) g_array_remove_index_fast(path_info, 0);
+
+  gtk_widget_queue_draw(GTK_WIDGET(data));
+}
 static void cleanup(GtkWidget *widget, gpointer data)
 {
   gint i=0;
   g_array_free(array_id, TRUE);
   g_array_free(coords1, TRUE);
   gint len=paths->len;
-  g_print("Paths %i\n", len);
+  g_print("Free %i Paths\n", len);
   for(i=0;i<len;i++)
     {
       g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
