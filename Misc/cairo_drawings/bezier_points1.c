@@ -264,26 +264,32 @@ int main(int argc, char *argv[])
     GtkWidget *colors[]={entry1, window, da};
     g_signal_connect(button5, "clicked", G_CALLBACK(check_colors), colors);
     
-    GtkWidget *grid=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
-    gtk_grid_attach(GTK_GRID(grid), label1, 0, 0, 2, 1);    
-    gtk_grid_attach(GTK_GRID(grid), sw, 0, 1, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), button1, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), button2, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button3, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), combo1, 0, 4, 1, 1); 
-    gtk_grid_attach(GTK_GRID(grid), button4, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), check2, 0, 5, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 6, 2, 1);   
-    gtk_grid_attach(GTK_GRID(grid), label2, 0, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), entry1, 1, 7, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button5, 0, 8, 2, 1);
+    GtkWidget *grid1=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid1), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid1), 8);
+    gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 2, 1);    
+    gtk_grid_attach(GTK_GRID(grid1), sw, 0, 1, 2, 1); 
+    gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 3, 1, 1); 
+    gtk_grid_attach(GTK_GRID(grid1), combo2, 1, 3, 1, 1);  
+    gtk_grid_attach(GTK_GRID(grid1), check2, 0, 4, 2, 1);     
+    gtk_grid_attach(GTK_GRID(grid1), label2, 0, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), button5, 0, 6, 2, 1);
+
+    GtkWidget *grid2=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
+    gtk_grid_attach(GTK_GRID(grid2), button2, 0, 0, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), button3, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), button4, 0, 3, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
+    GtkWidget *nb_label2=gtk_label_new("Add Shape");
     GtkWidget *notebook=gtk_notebook_new();
     gtk_container_set_border_width(GTK_CONTAINER(notebook), 15);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid, nb_label1);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid1, nb_label1);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid2, nb_label2);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
