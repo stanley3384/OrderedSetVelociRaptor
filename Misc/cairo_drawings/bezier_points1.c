@@ -1326,7 +1326,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
       fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
       fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
       fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
-      fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgba(%i,%i,%i,%f)\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
+      fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
       //Define a fill to be used.
       fprintf(f, "<defs>\n");
