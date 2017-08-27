@@ -655,7 +655,7 @@ static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
     cairo_paint(cr);
     //Paint the background under the grid.
-    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
+    cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 0.8);
     gint width=gtk_paned_get_position(GTK_PANED(data));
     gint height=gtk_widget_get_allocated_height(widget);
 
@@ -1531,7 +1531,6 @@ static GtkTreeStore* get_tree_store()
     GtkTreeStore *store=gtk_tree_store_new(1, G_TYPE_STRING);
     gint len=0;
     GArray *array=NULL;
-    g_print("Path len %i\n", paths->len);
     if((paths->len)>0)
       {
         GtkTreeIter iter1;
@@ -1549,7 +1548,7 @@ static GtkTreeStore* get_tree_store()
               {
                 gtk_tree_store_append(store, &iter2, &iter1);  
                 p1=g_array_index(array, struct point, j); 
-                gchar *string2=g_strdup_printf("%i. x:%i y:%i", j+1, (gint)p1.x, (gint)p1.y);
+                gchar *string2=g_strdup_printf("%i. x: %i, y: %i", j+1, (gint)p1.x, (gint)p1.y);
                 gtk_tree_store_set(store, &iter2, 0, string2, -1);
                 g_free(string2);
               }
@@ -1565,7 +1564,6 @@ static void cleanup(GtkWidget *widget, gpointer data)
   g_array_free(array_id, TRUE);
   g_array_free(coords1, TRUE);
   gint len=paths->len;
-  g_print("Free %i Paths\n", len);
   for(i=0;i<len;i++)
     {
       g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
