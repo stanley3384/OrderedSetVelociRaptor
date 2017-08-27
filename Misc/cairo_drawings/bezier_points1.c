@@ -61,7 +61,8 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
 static void svg_dialog(gint width, gint height);
 //Save current drawing cordinates.
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
-static void clear_shapes(GtkWidget *widget, gpointer data);
+static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
+static GtkTreeStore* get_tree_store();
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -216,11 +217,10 @@ int main(int argc, char *argv[])
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
     GtkWidget *button2=gtk_button_new_with_label("Add Shape");
-    gtk_widget_set_hexpand(button2, FALSE);
+    gtk_widget_set_hexpand(button2, TRUE);
 
     GtkWidget *button3=gtk_button_new_with_label("Clear Shapes");
-    gtk_widget_set_hexpand(button3, FALSE);
-    g_signal_connect(button3, "clicked", G_CALLBACK(clear_shapes), da);
+    gtk_widget_set_hexpand(button3, TRUE);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
@@ -231,16 +231,13 @@ int main(int argc, char *argv[])
     g_signal_connect(combo1, "changed", G_CALLBACK(interpolation_combo), da);
 
     GtkWidget *button4=gtk_button_new_with_label("Save Show SVG");
-    gtk_widget_set_hexpand(button4, FALSE);
+    gtk_widget_set_hexpand(button4, TRUE);
     g_signal_connect(button4, "clicked", G_CALLBACK(save_svg), da);
  
     GtkWidget *check2=gtk_check_button_new_with_label("Close and Fill");
     gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
     g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da); 
-
-    GtkWidget *widgets[]={da, check2};
-    g_signal_connect(button2, "clicked", G_CALLBACK(add_points), widgets); 
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo2, TRUE);
@@ -277,11 +274,32 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), button5, 0, 6, 2, 1);
 
+    paths=g_ptr_array_new();
+    path_info=g_array_new(FALSE, FALSE, sizeof(gint));
+
+    GtkTreeStore *store=get_tree_store();
+    GtkWidget *tree=gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+    g_object_unref(G_OBJECT(store));
+    GtkCellRenderer *renderer1=gtk_cell_renderer_text_new();
+    g_object_set(renderer1, "editable", FALSE, NULL);   
+    GtkTreeViewColumn *column1=gtk_tree_view_column_new_with_attributes("Shape Coordinates", renderer1, "text", 0, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1); 
+
+    GtkWidget *widgets[]={da, check2, tree};
+    g_signal_connect(button2, "clicked", G_CALLBACK(add_points), widgets); 
+    g_signal_connect(button3, "clicked", G_CALLBACK(clear_shapes), widgets);
+
+    GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_vexpand(scroll, TRUE);
+    gtk_widget_set_hexpand(scroll, TRUE);
+    gtk_container_add(GTK_CONTAINER(scroll), tree); 
+
     GtkWidget *grid2=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
     gtk_grid_attach(GTK_GRID(grid2), button2, 0, 0, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), button3, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), scroll, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), button3, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid2), button4, 0, 3, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
@@ -325,9 +343,6 @@ int main(int argc, char *argv[])
     array_id=g_array_new (FALSE, FALSE, sizeof(gint));
     for(i=0;i<12;i++) g_array_append_val(array_id, i);
     gtk_widget_queue_draw(da);
-
-    paths=g_ptr_array_new();
-    path_info=g_array_new(FALSE, FALSE, sizeof(gint));
 
     gtk_main();
 
@@ -1482,9 +1497,14 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
 
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widgets[1]), FALSE);
   fill=0;
+
+  GtkTreeStore *store=get_tree_store();
+  gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
+  g_object_unref(G_OBJECT(store));
+  
   gtk_widget_queue_draw(widgets[0]);
 }
-static void clear_shapes(GtkWidget *widget, gpointer data)
+static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
 {
   gint i=0;
   gint len=paths->len;
@@ -1498,8 +1518,47 @@ static void clear_shapes(GtkWidget *widget, gpointer data)
   len=path_info->len;
   for(i=0;i<len;i++) g_array_remove_index_fast(path_info, 0);
 
-  gtk_widget_queue_draw(GTK_WIDGET(data));
+  GtkTreeStore *store=get_tree_store();
+  gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
+  g_object_unref(G_OBJECT(store));
+
+  gtk_widget_queue_draw(GTK_WIDGET(widgets[0]));
 }
+static GtkTreeStore* get_tree_store()
+  {
+    gint i=0;
+    gint j=0;
+    GtkTreeStore *store=gtk_tree_store_new(1, G_TYPE_STRING);
+    gint len=0;
+    GArray *array=NULL;
+    g_print("Path len %i\n", paths->len);
+    if((paths->len)>0)
+      {
+        GtkTreeIter iter1;
+        GtkTreeIter iter2;
+        struct point p1;
+        gtk_tree_store_append(store, &iter1, NULL);
+        for(i=0;i<paths->len;i++)
+          {
+            gchar *string1=g_strdup_printf("Shape%i", i+1);
+            gtk_tree_store_set(store, &iter1, 0, string1, -1);
+            g_free(string1);
+            len=((GArray*)(g_ptr_array_index(paths, i)))->len;
+            array=((GArray*)(g_ptr_array_index(paths, i)));
+            for(j=0;j<len;j++)
+              {
+                gtk_tree_store_append(store, &iter2, &iter1);  
+                p1=g_array_index(array, struct point, j); 
+                gchar *string2=g_strdup_printf("%i. x:%i y:%i", j+1, (gint)p1.x, (gint)p1.y);
+                gtk_tree_store_set(store, &iter2, 0, string2, -1);
+                g_free(string2);
+              }
+            gtk_tree_store_append(store, &iter1, NULL);
+          }
+       }
+
+    return store;
+  }
 static void cleanup(GtkWidget *widget, gpointer data)
 {
   gint i=0;
