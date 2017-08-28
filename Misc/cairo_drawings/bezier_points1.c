@@ -23,6 +23,7 @@ in the working directory and open the svg in an image widget.
 
 static void interpolation_combo(GtkComboBox *combo, gpointer data);
 static void close_and_fill_check(GtkToggleButton *button, gpointer data);
+static void save_top_check(GtkToggleButton *button, gpointer data);
 static void rotate_combo(GtkComboBox *combo, gpointer data);
 static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
@@ -61,6 +62,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
 static void svg_dialog(gint width, gint height);
 //Save current drawing cordinates.
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
+static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
 static GtkTreeStore* get_tree_store();
 static void cleanup(GtkWidget *widget, gpointer data);
@@ -124,6 +126,9 @@ static GArray *coords1=NULL;
 static GPtrArray *paths=NULL;
 //Saved path draw info. Interpolate and Fill.
 static GArray *path_info=NULL;
+//List box order array.
+static GArray *array_id=NULL;
+static gint begin_id=0;
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
 //Drawing background color.
@@ -140,11 +145,8 @@ static gint rotate=0;
 static guint tick_id=0;
 //GTK window for dialogs.
 static GtkWidget *window;
-
-//List box order array.
-static GArray *array_id=NULL;
-static gint begin_id=0;
-
+//It the top drawing is included in the svg.
+gboolean save_top=TRUE;
 //Save initial drawing area dimensions.
 static gdouble start_width=0;
 static gdouble start_height=0;
@@ -216,12 +218,6 @@ int main(int argc, char *argv[])
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
 
-    GtkWidget *button2=gtk_button_new_with_label("Add Shape");
-    gtk_widget_set_hexpand(button2, TRUE);
-
-    GtkWidget *button3=gtk_button_new_with_label("Clear Shapes");
-    gtk_widget_set_hexpand(button3, TRUE);
-
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Linear");
@@ -229,15 +225,11 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Approximate");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 1);
     g_signal_connect(combo1, "changed", G_CALLBACK(interpolation_combo), da);
-
-    GtkWidget *button4=gtk_button_new_with_label("Save Show SVG");
-    gtk_widget_set_hexpand(button4, TRUE);
-    g_signal_connect(button4, "clicked", G_CALLBACK(save_svg), da);
  
-    GtkWidget *check2=gtk_check_button_new_with_label("Close and Fill");
-    gtk_widget_set_halign(check2, GTK_ALIGN_CENTER);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check2), FALSE);
-    g_signal_connect(check2, "toggled", G_CALLBACK(close_and_fill_check), da); 
+    GtkWidget *check1=gtk_check_button_new_with_label("Close and Fill");
+    gtk_widget_set_halign(check1, GTK_ALIGN_CENTER);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check1), FALSE);
+    g_signal_connect(check1, "toggled", G_CALLBACK(close_and_fill_check), da); 
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo2, TRUE);
@@ -256,10 +248,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(entry1, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
 
-    GtkWidget *button5=gtk_button_new_with_label("Update Background");
-    gtk_widget_set_hexpand(button5, FALSE);
+    GtkWidget *button2=gtk_button_new_with_label("Update Background");
+    gtk_widget_set_hexpand(button2, FALSE);
     GtkWidget *colors[]={entry1, window, da};
-    g_signal_connect(button5, "clicked", G_CALLBACK(check_colors), colors);
+    g_signal_connect(button2, "clicked", G_CALLBACK(check_colors), colors);
     
     GtkWidget *grid1=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid1), 15);
@@ -269,10 +261,29 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 3, 1, 1); 
     gtk_grid_attach(GTK_GRID(grid1), combo2, 1, 3, 1, 1);  
-    gtk_grid_attach(GTK_GRID(grid1), check2, 0, 4, 2, 1);     
+    gtk_grid_attach(GTK_GRID(grid1), check1, 0, 4, 2, 1);     
     gtk_grid_attach(GTK_GRID(grid1), label2, 0, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), button5, 0, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), button2, 0, 6, 2, 1);
+
+    //Tab 2 widgets.
+    GtkWidget *b1=gtk_button_new_with_label("Add Shape");
+    gtk_widget_set_hexpand(b1, TRUE);
+
+    GtkWidget *b2=gtk_button_new_with_label("Delete Shape");
+    gtk_widget_set_hexpand(b2, TRUE);
+
+    GtkWidget *b3=gtk_button_new_with_label("Clear Shapes");
+    gtk_widget_set_hexpand(b3, TRUE);
+
+    GtkWidget *b4=gtk_button_new_with_label("Save Show SVG");
+    gtk_widget_set_hexpand(b4, TRUE);
+    g_signal_connect(b4, "clicked", G_CALLBACK(save_svg), da);
+
+    GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawings");
+    gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
+    g_signal_connect(ch1, "toggled", G_CALLBACK(save_top_check), da); 
 
     paths=g_ptr_array_new();
     path_info=g_array_new(FALSE, FALSE, sizeof(gint));
@@ -285,9 +296,10 @@ int main(int argc, char *argv[])
     GtkTreeViewColumn *column1=gtk_tree_view_column_new_with_attributes("Shape Coordinates", renderer1, "text", 0, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1); 
 
-    GtkWidget *widgets[]={da, check2, tree};
-    g_signal_connect(button2, "clicked", G_CALLBACK(add_points), widgets); 
-    g_signal_connect(button3, "clicked", G_CALLBACK(clear_shapes), widgets);
+    GtkWidget *widgets[]={da, check1, tree};
+    g_signal_connect(b1, "clicked", G_CALLBACK(add_points), widgets); 
+    g_signal_connect(b2, "clicked", G_CALLBACK(delete_shape), widgets); 
+    g_signal_connect(b3, "clicked", G_CALLBACK(clear_shapes), widgets);
 
     GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_vexpand(scroll, TRUE);
@@ -297,10 +309,12 @@ int main(int argc, char *argv[])
     GtkWidget *grid2=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
-    gtk_grid_attach(GTK_GRID(grid2), button2, 0, 0, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b1, 0, 0, 2, 1);
     gtk_grid_attach(GTK_GRID(grid2), scroll, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), button3, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), button4, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b2, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b3, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), ch1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b4, 0, 4, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *nb_label2=gtk_label_new("Add Shape");
@@ -367,8 +381,13 @@ static void close_and_fill_check(GtkToggleButton *button, gpointer data)
       }
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
+static void save_top_check(GtkToggleButton *button, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(button)) save_top=TRUE;
+    else save_top=FALSE;
+  }
 static void rotate_combo(GtkComboBox *combo, gpointer data)
- {
+  {
     rotate=gtk_combo_box_get_active(combo);
 
     if(rotate==0)
@@ -1349,10 +1368,13 @@ static void save_svg(GtkWidget *widget, gpointer data)
         }
 
       //Draw top or current drawing from the coords array.
-      array=coords1;
-      shape_fill=fill;
-      shape_inter=interpolation;
-      build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id);
+      if(save_top)
+        {
+          array=coords1;
+          shape_fill=fill;
+          shape_inter=interpolation;
+          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id);
+        }
 
       fprintf(f, "</svg>\n");
       fclose(f);
@@ -1502,6 +1524,36 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
   g_object_unref(G_OBJECT(store));
   
+  gtk_widget_queue_draw(widgets[0]);
+}
+static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
+{
+  g_print("Delete Shape\n");
+  GtkTreeIter iter;
+  GtkTreeSelection *selection=gtk_tree_view_get_selection(GTK_TREE_VIEW(widgets[2]));
+  GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(widgets[2]));
+  if(gtk_tree_selection_get_selected(selection, NULL, &iter))
+    {
+      GtkTreePath *path=gtk_tree_model_get_path(model, &iter);
+      if(gtk_tree_path_get_depth(path)==1)
+        {
+          gchar *string=gtk_tree_path_to_string(path);
+          gint row_id=atoi(string);
+          if(row_id<=(paths->len-1)&&(paths->len)>0)
+            {
+              gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+              g_array_free((GArray*)(g_ptr_array_index(paths, row_id)), TRUE);
+              g_ptr_array_remove_index(paths, row_id);
+            }
+          g_free(string);
+        }
+      else
+        {
+          g_print("Can only delete top node shape.\n");
+        }
+    }
+
+  gtk_tree_selection_unselect_all(selection);
   gtk_widget_queue_draw(widgets[0]);
 }
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
