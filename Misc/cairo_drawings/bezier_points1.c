@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(b4, TRUE);
     g_signal_connect(b4, "clicked", G_CALLBACK(save_svg), da);
 
-    GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawings");
+    GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
     gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
     g_signal_connect(ch1, "toggled", G_CALLBACK(save_top_check), da); 
