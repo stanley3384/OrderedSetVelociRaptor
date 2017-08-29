@@ -333,9 +333,16 @@ int main(int argc, char *argv[])
 
     gtk_container_add(GTK_CONTAINER(window), paned1);
 
+    GError *css_error=NULL;
     GtkCssProvider *provider=gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider, css, -1, NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider), 800);
+    gtk_css_provider_load_from_data(provider, css, -1, &css_error);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    if(css_error!=NULL)
+      {
+        g_print("CSS loader error %s\n", css_error->message);
+        g_error_free(css_error);
+      }
+    g_object_unref(provider);
 
     gtk_widget_show_all(window);
 
