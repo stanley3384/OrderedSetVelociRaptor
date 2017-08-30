@@ -20,6 +20,7 @@ in the working directory and open the svg in an image widget.
 #include<gtk/gtk.h>
 #include<math.h>
 #include<stdlib.h>
+#include<string.h>
 
 static void interpolation_combo(GtkComboBox *combo, gpointer data);
 static void close_and_fill_check(GtkToggleButton *button, gpointer data);
@@ -64,6 +65,7 @@ static void svg_dialog(gint width, gint height);
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
+static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets);
 static GtkTreeStore* get_tree_store();
 static void cleanup(GtkWidget *widget, gpointer data);
 
@@ -112,7 +114,7 @@ static const char *css =
 struct point{
   gdouble x;
   gdouble y;
-}points;
+}point;
 struct controls{
   gdouble x1;
   gdouble y1;
@@ -280,6 +282,9 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(b4, TRUE);
     g_signal_connect(b4, "clicked", G_CALLBACK(save_svg), da);
 
+    GtkWidget *b5=gtk_button_new_with_label("Get Saved SVG");
+    gtk_widget_set_hexpand(b5, TRUE);
+
     GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
     gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
@@ -300,6 +305,7 @@ int main(int argc, char *argv[])
     g_signal_connect(b1, "clicked", G_CALLBACK(add_points), widgets); 
     g_signal_connect(b2, "clicked", G_CALLBACK(delete_shape), widgets); 
     g_signal_connect(b3, "clicked", G_CALLBACK(clear_shapes), widgets);
+    g_signal_connect(b5, "clicked", G_CALLBACK(get_saved_svg), widgets);
 
     GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_vexpand(scroll, TRUE);
@@ -315,6 +321,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid2), b3, 1, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), ch1, 0, 3, 2, 1);
     gtk_grid_attach(GTK_GRID(grid2), b4, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b5, 0, 5, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *nb_label2=gtk_label_new("Add Shape");
@@ -1335,14 +1342,17 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
 static void save_svg(GtkWidget *widget, gpointer data)
 {
   gint i=0;
+  gint j=0;
   gint path_id=1;
   gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
   gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
   gint len=0;
+  gint array_len=0;
   GArray *array=NULL;
   gint shape_fill=0;
   gint shape_inter=0;
   gboolean file_error=FALSE;
+  struct point p1;
 
   FILE *f=fopen("bezier_drawing1.svg", "w");
   if(f!=NULL)
@@ -1352,6 +1362,43 @@ static void save_svg(GtkWidget *widget, gpointer data)
       fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
       fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
       fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+
+      //Add xml comment to store data for the bezier_points1 program. 
+      fprintf(f, "<!--\n");
+      fprintf(f, "bezier_points1 program data.\n");
+      len=paths->len;
+      for(i=0;i<len;i++)
+        {
+          array=(GArray*)(g_ptr_array_index(paths, i));
+          shape_inter=g_array_index(path_info, gint, 2*i);
+          shape_fill=g_array_index(path_info, gint, 2*i+1);
+          fprintf(f, "Shape%i [", i+1);
+          array_len=array->len;
+          for(j=0;j<array_len;j++)
+            {
+              p1=g_array_index(array, struct point, j);
+              fprintf(f, "%f %f ", p1.x, p1.y);
+            }
+          fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill);          
+        }
+      //Top drawing from the coords array.
+      if(save_top)
+        {
+          array=coords1;
+          shape_fill=fill;
+          shape_inter=interpolation;
+          fprintf(f, "Top [");
+          len=array->len;
+          for(i=0;i<len;i++)
+            {
+              p1=g_array_index(array, struct point, i);
+              fprintf(f, "%f %f ", p1.x, p1.y);
+            }
+          fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill); 
+        }
+      fprintf(f, "-->\n");
+
+      //Fill the background color in.
       fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
       //Define a fill to be used.
@@ -1583,6 +1630,132 @@ static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
 
   gtk_widget_queue_draw(GTK_WIDGET(widgets[0]));
 }
+static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
+  {
+    //Test getting the previously saved shape.
+    GFile *text_file=g_file_new_for_path("bezier_drawing1.svg");
+    GFileInputStream *file_stream=NULL;
+    gssize length=0;
+    GFileInfo *file_info=NULL;
+    gint file_size=-1;
+    gchar *text_buffer=NULL;
+    GError *error=NULL;
+    GString *string=g_string_new(NULL);
+    struct point pt1;
+    GArray *array1=NULL;
+
+    file_stream=g_file_read(text_file, NULL, &error);
+    if(error==NULL)
+      {
+        file_info=g_file_input_stream_query_info(G_FILE_INPUT_STREAM(file_stream), G_FILE_ATTRIBUTE_STANDARD_SIZE, NULL, NULL);     
+        file_size=g_file_info_get_size(file_info);
+        g_print("Text Length = %d\n", file_size);
+        g_object_unref(file_info);
+        text_buffer=(char *) malloc(sizeof(gchar) * file_size);
+        memset(text_buffer, 0, file_size);
+        length=g_input_stream_read(G_INPUT_STREAM(file_stream), text_buffer, file_size, NULL, NULL);
+        //Is length reasonable?
+        g_print("Length of Buffer = %i\n", length);
+       
+        //Parse.
+        gint counter=1;
+        gchar *p1=text_buffer;
+        gboolean xml_comment=FALSE;
+        gboolean start_data=FALSE;
+        gboolean path=TRUE;
+        gint shapes=0;
+        gint info_temp=0;
+        while(*p1!='\0')
+          {
+            //Look for start of comment tag. Could check more of the comment tag "bezier...".
+            if(*p1=='-'&&*(p1-1)=='!'&&*(p1-2)=='<'&&*(p1+3)=='b'&&*(p1+5)=='z')
+              {
+                xml_comment=TRUE;
+              }
+            if(xml_comment)
+              {
+                if(*p1=='[')
+                  {
+                    start_data=TRUE;
+                    if(path)
+                      {
+                        shapes++;
+                        counter=1;
+                        //Allocate array
+                        array1=g_array_new(FALSE, FALSE, sizeof(struct point));
+                        g_ptr_array_add(paths, (GArray*)array1);
+                      }
+                  }
+              }
+            if(start_data)
+              {
+                if(g_ascii_isdigit(*p1)||*p1=='-'||*p1=='.')
+                  {
+                    g_string_append_c(string, *p1);
+                  }
+                else if(*p1==' '||*p1==']')
+                  {
+                    if(string->len>0)
+                      {
+                        if(path)
+                          {
+                            if(counter%2!=0)
+                              {
+                                pt1.x=g_ascii_strtod(string->str, NULL);
+                                counter++;
+                              }
+                            else
+                              {
+                                pt1.y=g_ascii_strtod(string->str, NULL);
+                                g_array_append_val(array1, pt1);
+                                counter++;
+                              }
+                          }
+                        else
+                          {
+                            info_temp=g_ascii_strtod(string->str, NULL);
+                            g_array_append_val(path_info, info_temp);
+                          }
+                      }
+                    g_string_truncate(string, 0);
+                  }
+                else{}
+              }
+            if(xml_comment) 
+              {
+                if(*p1==']')
+                  {
+                    start_data=FALSE;
+                    if(path) path=FALSE;
+                    else path=TRUE;
+                  }
+              }
+            if(*p1=='>'&&*(p1-1)=='-'&&xml_comment)
+              {
+                break;
+              }
+      
+            p1++;
+          }
+        g_object_unref(file_stream);
+        g_free(text_buffer);
+
+        //Update the treeview.
+        GtkTreeStore *store=get_tree_store();
+        gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
+        g_object_unref(G_OBJECT(store));
+        gtk_widget_queue_draw(GTK_WIDGET(widgets[0]));
+      }
+    else
+      {
+        g_print("%s\n", error->message);
+        g_error_free(error);
+      }
+   
+    g_object_unref(text_file);
+    g_string_free(string, TRUE);
+
+  }
 static GtkTreeStore* get_tree_store()
   {
     gint i=0;
