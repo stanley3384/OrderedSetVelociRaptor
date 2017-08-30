@@ -1482,24 +1482,24 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
         {
           fprintf(f, "<path class=\"Path%i\" d=\"", path_id);
           p1=g_array_index(array, struct point, 0);
-          fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
+          fprintf(f, "M%f,%f ", p1.x, p1.y);
           for(i=1;i<len;i++)
             {
               p1=g_array_index(array, struct point, i);
               c1=g_array_index(control1, struct controls, i-1);
-              fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
+              fprintf(f, "C%f,%f %f,%f %f,%f ", c1.x1, c1.y1, c1.x2, c1.y2, p1.x, p1.y); 
             }
         }
       else
         {
           fprintf(f, "<path class=\"Path%i\" d=\"", path_id);
           p1=g_array_index(mid_points, struct point, 0);
-          fprintf(f, "M%i,%i ", (gint)p1.x, (gint)p1.y);
+          fprintf(f, "M%f,%f ", p1.x, p1.y);
           for(i=1;i<len;i++)
             {
               p1=g_array_index(mid_points, struct point, i);
               c1=g_array_index(control1, struct controls, i-1);
-              fprintf(f, "C%i,%i %i,%i %i,%i ", (gint)c1.x1, (gint)c1.y1, (gint)c1.x2, (gint)c1.y2, (gint)p1.x, (gint)p1.y); 
+              fprintf(f, "C%f,%f %f,%f %f,%f ", c1.x1, c1.y1, c1.x2, c1.y2, p1.x, p1.y); 
             }
         }
 
