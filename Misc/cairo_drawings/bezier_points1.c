@@ -67,6 +67,7 @@ static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
 static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets);
 static GtkTreeStore* get_tree_store();
+static GtkTreeStore* get_tree_store_fill();
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -121,6 +122,13 @@ struct controls{
   gdouble x2;
   gdouble y2;
 }controls;
+struct color_stop{
+  gdouble p;
+  gdouble r;
+  gdouble g;
+  gdouble b;
+  gdouble a;
+}color_stop;
 
 //Coordinate points for drawing.
 static GArray *coords1=NULL;
@@ -130,6 +138,8 @@ static GPtrArray *paths=NULL;
 static GArray *path_info=NULL;
 //List box order array.
 static GArray *array_id=NULL;
+//Color stop array.
+static GArray *color_stops=NULL;
 static gint begin_id=0;
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
@@ -268,7 +278,66 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), button2, 0, 6, 2, 1);
 
-    //Tab 2 widgets.
+    //Tab 2 "Fill" widgets.
+    GtkWidget *label_stop=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label_stop), "<span font_weight='heavy'>New Color Stop </span>");
+
+    GtkWidget *entry_stop=gtk_entry_new();
+    gtk_widget_set_hexpand(entry_stop, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry_stop), "(0.8, 0.5, 0.5, 0.5, 1.0)");
+    gtk_widget_set_sensitive(entry_stop, FALSE);
+
+    //Initialize default color stops.
+    struct color_stop st;
+    color_stops=g_array_new(FALSE, FALSE, sizeof(struct color_stop));
+    st.p=0.0; st.r=1.0; st.g=0.0; st.b=1.0, st.a=0.8;
+    g_array_append_val(color_stops, st);
+    st.p=0.5; st.r=1.0; st.g=1.0; st.b=0.0, st.a=0.8;
+    g_array_append_val(color_stops, st);
+    st.p=1.0; st.r=0.0; st.g=1.0; st.b=1.0, st.a=0.8;
+    g_array_append_val(color_stops, st);
+
+    GtkTreeStore *store_fill=get_tree_store_fill();
+    GtkWidget *tree_fill=gtk_tree_view_new_with_model(GTK_TREE_MODEL(store_fill));
+    g_object_unref(G_OBJECT(store_fill));
+    GtkCellRenderer *renderer_fill=gtk_cell_renderer_text_new();
+    g_object_set(renderer_fill, "editable", FALSE, NULL);   
+    GtkTreeViewColumn *column_fill1=gtk_tree_view_column_new_with_attributes("Color Stops", renderer_fill, "text", 0, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_fill), column_fill1); 
+
+    GtkWidget *scroll_fill=gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_vexpand(scroll_fill, TRUE);
+    gtk_widget_set_hexpand(scroll_fill, TRUE);
+    gtk_container_add(GTK_CONTAINER(scroll_fill), tree_fill); 
+
+    GtkWidget *b_add=gtk_button_new_with_label("Add Color Stop");
+    gtk_widget_set_hexpand(b_add, TRUE);
+    gtk_widget_set_sensitive(b_add, FALSE);
+
+    GtkWidget *b_delete=gtk_button_new_with_label("Delete Color Stop");
+    gtk_widget_set_hexpand(b_delete, TRUE);
+    gtk_widget_set_sensitive(b_delete, FALSE);
+
+    GtkWidget *label_dir=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label_dir), "<span font_weight='heavy'>Linear Direction </span>");
+
+    GtkWidget *entry_dir=gtk_entry_new();
+    gtk_widget_set_hexpand(entry_dir, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(entry_dir), "(0, 0, 0, 100)");
+    gtk_widget_set_sensitive(entry_dir, FALSE);
+
+    GtkWidget *grid2=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
+    gtk_grid_attach(GTK_GRID(grid2), label_stop, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), entry_stop, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b_add, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), scroll_fill, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b_delete, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), label_dir, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), entry_dir, 1, 4, 1, 1);
+
+    //Tab 3 "Add Shape" widgets.
     GtkWidget *b1=gtk_button_new_with_label("Add Shape");
     gtk_widget_set_hexpand(b1, TRUE);
 
@@ -312,23 +381,25 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(scroll, TRUE);
     gtk_container_add(GTK_CONTAINER(scroll), tree); 
 
-    GtkWidget *grid2=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
-    gtk_grid_attach(GTK_GRID(grid2), b1, 0, 0, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), scroll, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b2, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b3, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), ch1, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b4, 0, 4, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b5, 0, 5, 2, 1);
+    GtkWidget *grid3=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid3), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid3), 8);
+    gtk_grid_attach(GTK_GRID(grid3), b1, 0, 0, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), scroll, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b2, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b3, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), ch1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b4, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b5, 0, 5, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
-    GtkWidget *nb_label2=gtk_label_new("Add Shape");
+    GtkWidget *nb_label2=gtk_label_new("Gradient");
+    GtkWidget *nb_label3=gtk_label_new("Add Shape");
     GtkWidget *notebook=gtk_notebook_new();
     gtk_container_set_border_width(GTK_CONTAINER(notebook), 15);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid1, nb_label1);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid2, nb_label2);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid3, nb_label3);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
@@ -1790,11 +1861,33 @@ static GtkTreeStore* get_tree_store()
 
     return store;
   }
+static GtkTreeStore* get_tree_store_fill()
+  {
+    gint i=0;
+    GtkTreeStore *store=gtk_tree_store_new(1, G_TYPE_STRING);
+    if((color_stops->len)>0)
+      {
+        GtkTreeIter iter1;
+        struct color_stop st;
+        gtk_tree_store_append(store, &iter1, NULL);
+        for(i=0;i<color_stops->len;i++)
+          {
+            st=g_array_index(color_stops, struct color_stop, i);
+            gchar *string1=g_strdup_printf("%i. p:%.2f. r: %.2f, g: %.2f, b: %.2f, a: %.2f", i, st.p, st.r, st.g, st.b, st.a);
+            gtk_tree_store_set(store, &iter1, 0, string1, -1);
+            gtk_tree_store_append(store, &iter1, NULL);
+            g_free(string1);
+          }
+       }
+
+    return store;
+  }
 static void cleanup(GtkWidget *widget, gpointer data)
 {
   gint i=0;
   g_array_free(array_id, TRUE);
   g_array_free(coords1, TRUE);
+  g_array_free(color_stops, TRUE);
   gint len=paths->len;
   for(i=0;i<len;i++)
     {
