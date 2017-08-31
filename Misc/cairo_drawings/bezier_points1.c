@@ -61,6 +61,9 @@ static void save_svg(GtkWidget *widget, gpointer data);
 static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
+//Gradient color stops.
+static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2);
+static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2); 
 //Save current drawing cordinates.
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
@@ -285,7 +288,11 @@ int main(int argc, char *argv[])
     GtkWidget *entry_stop=gtk_entry_new();
     gtk_widget_set_hexpand(entry_stop, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry_stop), "(0.8, 0.5, 0.5, 0.5, 1.0)");
-    gtk_widget_set_sensitive(entry_stop, FALSE);
+    //gtk_widget_set_sensitive(entry_stop, FALSE);
+
+    GtkWidget *b_add=gtk_button_new_with_label("Add Color Stop");
+    gtk_widget_set_hexpand(b_add, TRUE); 
+    //gtk_widget_set_sensitive(b_add, FALSE);
 
     //Initialize default color stops.
     struct color_stop st;
@@ -310,13 +317,13 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(scroll_fill, TRUE);
     gtk_container_add(GTK_CONTAINER(scroll_fill), tree_fill); 
 
-    GtkWidget *b_add=gtk_button_new_with_label("Add Color Stop");
-    gtk_widget_set_hexpand(b_add, TRUE);
-    gtk_widget_set_sensitive(b_add, FALSE);
-
     GtkWidget *b_delete=gtk_button_new_with_label("Delete Color Stop");
     gtk_widget_set_hexpand(b_delete, TRUE);
-    gtk_widget_set_sensitive(b_delete, FALSE);
+    //gtk_widget_set_sensitive(b_delete, FALSE);
+
+    GtkWidget *widgets2[]={entry_stop, tree_fill, da};
+    g_signal_connect(b_add, "clicked", G_CALLBACK(add_color_stop), widgets2);
+    g_signal_connect(b_delete, "clicked", G_CALLBACK(delete_color_stop), widgets2);
 
     GtkWidget *label_dir=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label_dir), "<span font_weight='heavy'>Linear Direction </span>");
@@ -664,16 +671,19 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
       }
 
     //Fill the pattern.
-    if(shape_fill==1) 
+    if(shape_fill==1&&color_stops->len>0) 
       {
         cairo_close_path(cr);
+        struct color_stop st;
         gdouble x1=0;
         gdouble y1=0;
         cairo_user_to_device(cr, &x1, &y1);
         cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, -height/2.0, 0.0, y1);
-        cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 0.8); 
-        cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 0.8);
-        cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 0.8);  
+        for(i=0;i<color_stops->len;i++)
+          {
+            st=g_array_index(color_stops, struct color_stop, i);
+            cairo_pattern_add_color_stop_rgba(pattern1, st.p, st.r, st.g, st.b, st.a); 
+          }  
         cairo_set_source(cr, pattern1);  
         cairo_fill(cr);
         cairo_pattern_destroy(pattern1);
@@ -1613,6 +1623,80 @@ static void svg_dialog(gint width, gint height)
   else g_error_free(error);
                   
 }
+static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2)
+  {
+    g_print("Add Color Stop\n");
+    GtkEntryBuffer *buffer=gtk_entry_get_buffer(GTK_ENTRY(widgets2[0]));
+    const gchar *text=gtk_entry_buffer_get_text(buffer);
+    gsize len=gtk_entry_buffer_get_bytes(buffer);
+    gchar *string=g_strndup(text, len);
+    gchar *p=string;
+    GString *temp=g_string_new(NULL);
+    gint counter=0;
+    gdouble value=0; 
+    gdouble array[5];
+    struct color_stop st;
+
+    while(*p!='\0')
+      {
+        if(g_ascii_isdigit(*p)||*p=='.')
+          {
+            g_string_append_c(temp, *p);
+          }
+        else if((*p==' '||*p==')')&&temp->len>0)
+          {
+            value=g_ascii_strtod(temp->str, NULL);
+            if(value>=0.0&&value<=1.0)
+              {
+                array[counter]=value;
+                g_print("%f ", g_ascii_strtod(temp->str, NULL));
+                counter++;
+              }
+            g_string_truncate(temp, 0);
+          }
+        p++;
+      }
+    g_print("\n");
+
+    if(counter!=5)
+      {
+        g_print("Need five numbers for the color stop.\n");
+      }
+    else
+      {
+        st.p=array[0]; st.r=array[1]; st.g=array[2]; st.b=array[3], st.a=array[4];
+        g_array_append_val(color_stops, st);
+        GtkTreeStore *store=get_tree_store_fill();
+        gtk_tree_view_set_model(GTK_TREE_VIEW(widgets2[1]), GTK_TREE_MODEL(store));
+        g_object_unref(G_OBJECT(store));  
+        gtk_widget_queue_draw(widgets2[2]);
+      }
+
+    g_free(string);
+    g_string_free(temp, TRUE);
+  }
+static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2)
+  {
+    g_print("Delete Color Stop\n");
+    GtkTreeIter iter;
+    GtkTreeSelection *selection=gtk_tree_view_get_selection(GTK_TREE_VIEW(widgets2[1]));
+    GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(widgets2[1]));
+    if(gtk_tree_selection_get_selected(selection, NULL, &iter))
+      {
+        GtkTreePath *path=gtk_tree_model_get_path(model, &iter);
+        gchar *string=gtk_tree_path_to_string(path);
+        gint row_id=atoi(string);
+        if(row_id<=(color_stops->len-1)&&(color_stops->len)>0)
+          {
+            gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+            g_array_remove_index(color_stops, row_id);
+          }
+        g_free(string);
+      }
+
+    gtk_tree_selection_unselect_all(selection);
+    gtk_widget_queue_draw(widgets2[2]);
+  }
 static void add_points(GtkWidget *widget, GtkWidget **widgets)
 {
   g_print("Save Drawing\n");
@@ -1873,7 +1957,7 @@ static GtkTreeStore* get_tree_store_fill()
         for(i=0;i<color_stops->len;i++)
           {
             st=g_array_index(color_stops, struct color_stop, i);
-            gchar *string1=g_strdup_printf("%i. p:%.2f. r: %.2f, g: %.2f, b: %.2f, a: %.2f", i, st.p, st.r, st.g, st.b, st.a);
+            gchar *string1=g_strdup_printf("%i. p:%.2f. r: %.2f, g: %.2f, b: %.2f, a: %.2f", i+1, st.p, st.r, st.g, st.b, st.a);
             gtk_tree_store_set(store, &iter1, 0, string1, -1);
             gtk_tree_store_append(store, &iter1, NULL);
             g_free(string1);
