@@ -63,7 +63,8 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
 static void svg_dialog(gint width, gint height);
 //Gradient color stops.
 static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2);
-static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2); 
+static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2);
+static void update_linear_direction(GtkWidget *widget, GtkWidget **widgets2);  
 //Save current drawing cordinates.
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
@@ -143,6 +144,9 @@ static GArray *path_info=NULL;
 static GArray *array_id=NULL;
 //Color stop array.
 static GArray *color_stops=NULL;
+//Linear direction for the gradient
+static gdouble ld[4];
+
 static gint begin_id=0;
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
@@ -288,13 +292,11 @@ int main(int argc, char *argv[])
     GtkWidget *entry_stop=gtk_entry_new();
     gtk_widget_set_hexpand(entry_stop, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry_stop), "(0.8, 0.5, 0.5, 0.5, 1.0)");
-    //gtk_widget_set_sensitive(entry_stop, FALSE);
 
     GtkWidget *b_add=gtk_button_new_with_label("Add Color Stop");
     gtk_widget_set_hexpand(b_add, TRUE); 
-    //gtk_widget_set_sensitive(b_add, FALSE);
 
-    //Initialize default color stops.
+    //Initialize default color stops and linear direction.
     struct color_stop st;
     color_stops=g_array_new(FALSE, FALSE, sizeof(struct color_stop));
     st.p=0.0; st.r=1.0; st.g=0.0; st.b=1.0, st.a=0.8;
@@ -303,6 +305,7 @@ int main(int argc, char *argv[])
     g_array_append_val(color_stops, st);
     st.p=1.0; st.r=0.0; st.g=1.0; st.b=1.0, st.a=0.8;
     g_array_append_val(color_stops, st);
+    ld[0]=0; ld[1]=0; ld[2]=0; ld[3]=100;
 
     GtkTreeStore *store_fill=get_tree_store_fill();
     GtkWidget *tree_fill=gtk_tree_view_new_with_model(GTK_TREE_MODEL(store_fill));
@@ -319,11 +322,6 @@ int main(int argc, char *argv[])
 
     GtkWidget *b_delete=gtk_button_new_with_label("Delete Color Stop");
     gtk_widget_set_hexpand(b_delete, TRUE);
-    //gtk_widget_set_sensitive(b_delete, FALSE);
-
-    GtkWidget *widgets2[]={entry_stop, tree_fill, da};
-    g_signal_connect(b_add, "clicked", G_CALLBACK(add_color_stop), widgets2);
-    g_signal_connect(b_delete, "clicked", G_CALLBACK(delete_color_stop), widgets2);
 
     GtkWidget *label_dir=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label_dir), "<span font_weight='heavy'>Linear Direction </span>");
@@ -331,7 +329,14 @@ int main(int argc, char *argv[])
     GtkWidget *entry_dir=gtk_entry_new();
     gtk_widget_set_hexpand(entry_dir, TRUE);
     gtk_entry_set_text(GTK_ENTRY(entry_dir), "(0, 0, 0, 100)");
-    gtk_widget_set_sensitive(entry_dir, FALSE);
+
+    GtkWidget *b_linear=gtk_button_new_with_label("Update Linear Direction");
+    gtk_widget_set_hexpand(b_linear, TRUE);
+
+    GtkWidget *widgets2[]={entry_stop, tree_fill, da, entry_dir};
+    g_signal_connect(b_add, "clicked", G_CALLBACK(add_color_stop), widgets2);
+    g_signal_connect(b_delete, "clicked", G_CALLBACK(delete_color_stop), widgets2);
+    g_signal_connect(b_linear, "clicked", G_CALLBACK(update_linear_direction), widgets2);
 
     GtkWidget *grid2=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
@@ -343,6 +348,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid2), b_delete, 0, 3, 2, 1);
     gtk_grid_attach(GTK_GRID(grid2), label_dir, 0, 4, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), entry_dir, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), b_linear, 0, 5, 2, 1);
 
     //Tab 3 "Add Shape" widgets.
     GtkWidget *b1=gtk_button_new_with_label("Add Shape");
@@ -601,6 +607,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   }
 static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved)
   {
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     GArray *control1=NULL;
     GArray *mid_points=NULL;
@@ -675,10 +682,11 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
       {
         cairo_close_path(cr);
         struct color_stop st;
-        gdouble x1=0;
-        gdouble y1=0;
-        cairo_user_to_device(cr, &x1, &y1);
-        cairo_pattern_t *pattern1=cairo_pattern_create_linear(0.0, -height/2.0, 0.0, y1);
+        gdouble x1=ld[0]/100.0*width-width/2.0;
+        gdouble y1=ld[1]/100.0*height-height/2.0;
+        gdouble x2=ld[2]/100.0*width-width/2.0;
+        gdouble y2=ld[3]/100.0*height-height/2.0;
+        cairo_pattern_t *pattern1=cairo_pattern_create_linear(x1, y1, x2, y2);
         for(i=0;i<color_stops->len;i++)
           {
             st=g_array_index(color_stops, struct color_stop, i);
@@ -1643,24 +1651,23 @@ static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2)
           {
             g_string_append_c(temp, *p);
           }
-        else if((*p==' '||*p==')')&&temp->len>0)
+        else if(!g_ascii_isdigit(*p)&&temp->len>0)
           {
             value=g_ascii_strtod(temp->str, NULL);
             if(value>=0.0&&value<=1.0)
               {
                 array[counter]=value;
-                g_print("%f ", g_ascii_strtod(temp->str, NULL));
                 counter++;
+                if(counter>4) break;
               }
             g_string_truncate(temp, 0);
           }
         p++;
       }
-    g_print("\n");
 
     if(counter!=5)
       {
-        g_print("Need five numbers for the color stop.\n");
+        g_print("Need five numbers(0.0<=x<=1.0) for the color stop.\n");
       }
     else
       {
@@ -1696,6 +1703,52 @@ static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2)
 
     gtk_tree_selection_unselect_all(selection);
     gtk_widget_queue_draw(widgets2[2]);
+  }
+static void update_linear_direction(GtkWidget *widget, GtkWidget **widgets2)
+  {
+    g_print("Update Linear Direction\n");
+    GtkEntryBuffer *buffer=gtk_entry_get_buffer(GTK_ENTRY(widgets2[3]));
+    const gchar *text=gtk_entry_buffer_get_text(buffer);
+    gsize len=gtk_entry_buffer_get_bytes(buffer);
+    gchar *string=g_strndup(text, len);
+    gchar *p=string;
+    GString *temp=g_string_new(NULL);
+    gint counter=0;
+    gdouble value=0; 
+    gdouble array[4];
+
+    while(*p!='\0')
+      {
+        if(g_ascii_isdigit(*p)||*p=='.')
+          {
+            g_string_append_c(temp, *p);
+          }
+        else if(!g_ascii_isdigit(*p)&&temp->len>0)
+          {
+            value=g_ascii_strtod(temp->str, NULL);
+            if(value>=0.0&&value<=100.0)
+              {
+                array[counter]=value;
+                counter++;
+                if(counter>3) break;
+              }
+            g_string_truncate(temp, 0);
+          }
+        p++;
+      }
+
+    if(counter!=4)
+      {
+        g_print("Need four numbers(0.0<=x<=100.0) for the linear direction.\n");
+      }
+    else
+      {
+        ld[0]=array[0]; ld[1]=array[1]; ld[2]=array[2]; ld[3]=array[3];
+        gtk_widget_queue_draw(widgets2[2]);
+      }
+
+    g_free(string);
+    g_string_free(temp, TRUE);
   }
 static void add_points(GtkWidget *widget, GtkWidget **widgets)
 {
