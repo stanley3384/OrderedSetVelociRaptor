@@ -58,6 +58,7 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
 static void save_svg(GtkWidget *widget, gpointer data);
+static void build_gradient_svg(FILE *f);
 static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
@@ -146,6 +147,10 @@ static GArray *array_id=NULL;
 static GArray *color_stops=NULL;
 //Linear direction for the gradient
 static gdouble ld[4];
+//The saved color stops for the gradients.
+static GPtrArray *gradients=NULL;
+//The linear direction of the gradient.
+static GArray *direction=NULL;
 
 static gint begin_id=0;
 //For blocking motion signal. Block when not drawing top rectangle
@@ -374,6 +379,8 @@ int main(int argc, char *argv[])
 
     paths=g_ptr_array_new();
     path_info=g_array_new(FALSE, FALSE, sizeof(gint));
+    gradients=g_ptr_array_new();
+    direction=g_array_new(FALSE, FALSE, sizeof(gdouble));
 
     GtkTreeStore *store=get_tree_store();
     GtkWidget *tree=gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -1490,15 +1497,9 @@ static void save_svg(GtkWidget *widget, gpointer data)
       //Fill the background color in.
       fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
-      //Define a fill to be used.
-      fprintf(f, "<defs>\n");
-      fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
-      fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
-      fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
-      fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
-      fprintf(f, "</linearGradient>\n");
-      fprintf(f, "</defs>\n");       
-
+      //Define a gradient fill to be used.
+      build_gradient_svg(f);
+      
       //Build the svg from the stored arrays.
       len=paths->len;
       for(i=0;i<len;i++)
@@ -1531,6 +1532,51 @@ static void save_svg(GtkWidget *widget, gpointer data)
   //Show the svg drawing.
   if(!file_error) svg_dialog(width, height);
 }
+static void build_gradient_svg(FILE *f)
+  {
+    gint i=0;
+    gint j=0;
+    gint x1=0;
+    gint y1=0;
+    gint x2=0;
+    gint y2=0;
+    gint len=gradients->len;
+    struct color_stop cs;
+    GArray *array=NULL;
+
+    //The stored array.
+    printf("<defs>\n");
+    for(i=0;i<len;i++)
+      {
+        x1=(gint)g_array_index(direction, gdouble, 4*i);
+        y1=(gint)g_array_index(direction, gdouble, 4*i+1);
+        x2=(gint)g_array_index(direction, gdouble, 4*i+2);
+        y2=(gint)g_array_index(direction, gdouble, 4*i+3);
+        printf("<linearGradient id=\"grad%i\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n",i, x1, y1, x2, y2);
+        array=((GArray*)(g_ptr_array_index(gradients, i)));
+        for(j=0;j<array->len;j++)
+          {
+            cs=g_array_index(array, struct color_stop, j);
+            cs.p=cs.p*100.0;
+            cs.r=cs.r*255.0;
+            cs.g=cs.g*255.0;
+            cs.b=cs.b*255.0;
+            printf("<stop offset=\"%i%%\" style=\"stop-color:rgb(%i,%i,%i);stop-opacity:%f\" />\n", (gint)cs.p, (gint)cs.r, (gint)cs.g, (gint)cs.b, cs.a);
+          }
+        printf("</linearGradient>\n");
+      }
+
+    //The top gradient values.
+    printf("</defs>\n");
+
+    fprintf(f, "<defs>\n");
+    fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
+    fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
+    fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
+    fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
+    fprintf(f, "</linearGradient>\n");
+    fprintf(f, "</defs>\n");       
+  }
 static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id)
 {
   gint i=0;
@@ -1756,6 +1802,8 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   gint i=0;
   gint len=coords1->len;
   GArray *c1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), len);
+
+  //Save the current coordinates.
   for(i=0;i<len;i++)
     {
       g_array_append_val(c1, g_array_index(coords1, struct point, i));
@@ -1763,6 +1811,22 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   g_ptr_array_add(paths, (GArray*)c1);
   g_array_append_val(path_info, interpolation);
   g_array_append_val(path_info, fill);
+
+  //Save the color stops and direction for the gradient.
+  if(fill==1)
+    {
+      len=color_stops->len;
+      GArray *c2=g_array_sized_new(FALSE, FALSE, sizeof(struct color_stop), len);
+      for(i=0;i<len;i++)
+        {
+          g_array_append_val(c2, g_array_index(color_stops, struct color_stop, i));
+        }
+      g_ptr_array_add(gradients, (GArray*)c2);      
+      g_array_append_val(direction, ld[0]);
+      g_array_append_val(direction, ld[1]);
+      g_array_append_val(direction, ld[2]);
+      g_array_append_val(direction, ld[3]);       
+    }
 
   //Reset coords to draw again.
   len=coords1->len; 
@@ -2024,7 +2088,6 @@ static void cleanup(GtkWidget *widget, gpointer data)
   gint i=0;
   g_array_free(array_id, TRUE);
   g_array_free(coords1, TRUE);
-  g_array_free(color_stops, TRUE);
   gint len=paths->len;
   for(i=0;i<len;i++)
     {
@@ -2032,6 +2095,16 @@ static void cleanup(GtkWidget *widget, gpointer data)
     }
   g_ptr_array_free(paths, TRUE);
   g_array_free(path_info, TRUE);
+
+  len=gradients->len;
+  for(i=0;i<len;i++)
+    {
+      g_array_free((GArray*)(g_ptr_array_index(gradients, i)), TRUE);
+    }
+  g_ptr_array_free(gradients, TRUE);
+  g_array_free(color_stops, TRUE);
+  g_array_free(direction, TRUE);
+
   gtk_main_quit();
 }
 
