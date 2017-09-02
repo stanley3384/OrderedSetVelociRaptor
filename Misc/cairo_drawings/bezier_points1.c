@@ -28,7 +28,7 @@ static void save_top_check(GtkToggleButton *button, gpointer data);
 static void rotate_combo(GtkComboBox *combo, gpointer data);
 static gboolean animate_drawing(GtkWidget *drawing, GdkFrameClock *frame_clock, gpointer data);
 static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data);
-static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved);
+static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved, gint *count_fill);
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -59,7 +59,7 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
 static void save_svg(GtkWidget *widget, gpointer data);
 static void build_gradient_svg(FILE *f);
-static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id);
+static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
 //Gradient color stops.
@@ -71,6 +71,9 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets);
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
 static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets);
+static gchar* get_array_type(gchar *p1, gboolean *found, gint *array_type);
+static gchar* get_array_start(gchar *p1);
+static gchar* parse_array(gchar *p1, GArray *array_temp);
 static GtkTreeStore* get_tree_store();
 static GtkTreeStore* get_tree_store_fill();
 static void cleanup(GtkWidget *widget, gpointer data);
@@ -371,6 +374,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *b5=gtk_button_new_with_label("Get Saved SVG");
     gtk_widget_set_hexpand(b5, TRUE);
+    gtk_widget_set_sensitive(b5, FALSE);
 
     GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
     gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
@@ -524,6 +528,8 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     gint shape_fill=0;
     gint shape_inter=0;
     gboolean saved=TRUE;
+    //Count the drawings with a fill gradient to match paths with gradients.
+    gint count_fill=0;
 
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
@@ -600,7 +606,8 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         array=(GArray*)(g_ptr_array_index(paths, i));
         shape_inter=g_array_index(path_info, gint, 2*i);
         shape_fill=g_array_index(path_info, gint, 2*i+1); 
-        draw_shapes(widget, cr, array, shape_fill, shape_inter, saved);
+        draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
+        count_fill++;
         cairo_new_path(cr);
       }
 
@@ -609,10 +616,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     shape_fill=fill;
     shape_inter=interpolation;
     saved=FALSE;
-    draw_shapes(widget, cr, array, shape_fill, shape_inter, saved);
+    draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
     return FALSE;
   }
-static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved)
+static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved, gint *count_fill)
   {
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
@@ -684,8 +691,29 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
           }
       }
 
-    //Fill the pattern.
-    if(shape_fill==1&&color_stops->len>0) 
+    //Fill the saved paths with the saved gradient.
+    if(shape_fill==1&&saved) 
+      {
+        cairo_close_path(cr);
+        struct color_stop st;
+        gdouble x1=g_array_index(direction, gdouble, 4*(*count_fill))/100.0*width-width/2.0;
+        gdouble y1=g_array_index(direction, gdouble, 4*(*count_fill)+1)/100.0*height-height/2.0;
+        gdouble x2=g_array_index(direction, gdouble, 4*(*count_fill)+2)/100.0*width-width/2.0;
+        gdouble y2=g_array_index(direction, gdouble, 4*(*count_fill)+3)/100.0*height-height/2.0;
+        GArray *array=((GArray*)(g_ptr_array_index(gradients, (*count_fill))));
+        cairo_pattern_t *pattern1=cairo_pattern_create_linear(x1, y1, x2, y2);
+        for(i=0;i<array->len;i++)
+          {
+            st=g_array_index(color_stops, struct color_stop, i);
+            cairo_pattern_add_color_stop_rgba(pattern1, st.p, st.r, st.g, st.b, st.a); 
+          }  
+        cairo_set_source(cr, pattern1);  
+        cairo_fill(cr);
+        cairo_pattern_destroy(pattern1);
+      }
+
+    //Fill the top path with a gradient.
+    if(shape_fill==1&&color_stops->len>0&&!saved) 
       {
         cairo_close_path(cr);
         struct color_stop st;
@@ -1449,6 +1477,9 @@ static void save_svg(GtkWidget *widget, gpointer data)
   gint shape_inter=0;
   gboolean file_error=FALSE;
   struct point p1;
+  struct color_stop st;
+  //Need to count drawings with a fill gradient to match the path with the color stops.
+  gint count_fill=0;
 
   FILE *f=fopen("bezier_drawing1.svg", "w");
   if(f!=NULL)
@@ -1462,7 +1493,16 @@ static void save_svg(GtkWidget *widget, gpointer data)
       //Add xml comment to store data for the bezier_points1 program. 
       fprintf(f, "<!--\n");
       fprintf(f, "bezier_points1 program data.\n");
+
+      //Save the gradient arrays.
+      
+      //Save the path arrays.
       len=paths->len;
+      gdouble x1=0;
+      gdouble y1=0;
+      gdouble x2=0;
+      gdouble y2=0;
+      gint lcf=0;
       for(i=0;i<len;i++)
         {
           array=(GArray*)(g_ptr_array_index(paths, i));
@@ -1475,8 +1515,30 @@ static void save_svg(GtkWidget *widget, gpointer data)
               p1=g_array_index(array, struct point, j);
               fprintf(f, "%f %f ", p1.x, p1.y);
             }
-          fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill);          
+          fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill);
+ 
+          if(shape_fill==1)
+            {
+              x1=g_array_index(direction, gdouble, 4*lcf);
+              y1=g_array_index(direction, gdouble, 4*lcf+1);
+              x2=g_array_index(direction, gdouble, 4*lcf+2);
+              y2=g_array_index(direction, gdouble, 4*lcf+3);
+              fprintf(f, "Direction [%f %f %f %f]\n", x1, y1, x2, y2);
+              array=(GArray*)(g_ptr_array_index(gradients, lcf));
+              if(array->len>0)
+                {
+                  fprintf(f, "Gradient [");
+                  for(j=0;j<array->len;j++)
+                    {
+                      st=g_array_index(color_stops, struct color_stop, i);
+                      fprintf(f, "%f %f %f %f %f ", st.p, st.r, st.g, st.b, st.a);
+                    }
+                  fprintf(f, "]\n");
+                }
+              lcf++;
+            }          
         }
+
       //Top drawing from the coords array.
       if(save_top)
         {
@@ -1491,6 +1553,20 @@ static void save_svg(GtkWidget *widget, gpointer data)
               fprintf(f, "%f %f ", p1.x, p1.y);
             }
           fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill); 
+          if(fill==1)
+            {
+              fprintf(f, "Direction [%f %f %f %f]\n", ld[0], ld[1], ld[2], ld[3]);
+              if(color_stops->len>0)
+                {
+                  fprintf(f, "Gradient [");
+                  for(i=0;i<color_stops->len;i++)
+                    {
+                      st=g_array_index(color_stops, struct color_stop, i);
+                      fprintf(f, "%f %f %f %f %f ", st.p, st.r, st.g, st.b, st.a); 
+                    }
+                  fprintf(f, "]\n");
+                }
+            }
         }
       fprintf(f, "-->\n");
 
@@ -1507,7 +1583,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
           array=(GArray*)(g_ptr_array_index(paths, i));
           shape_inter=g_array_index(path_info, gint, 2*i);
           shape_fill=g_array_index(path_info, gint, 2*i+1);
-          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id);
+          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill);
           path_id++;
         }
 
@@ -1517,7 +1593,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
           array=coords1;
           shape_fill=fill;
           shape_inter=interpolation;
-          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id);
+          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill);
         }
 
       fprintf(f, "</svg>\n");
@@ -1543,16 +1619,32 @@ static void build_gradient_svg(FILE *f)
     gint len=gradients->len;
     struct color_stop cs;
     GArray *array=NULL;
+ 
+    fprintf(f, "<defs>\n");
+    //Gradient for the top drawing.
+    if(save_top)
+      {
+        fprintf(f, "<linearGradient id=\"grad_top\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n", (gint)ld[0], (gint)ld[1], (gint)ld[2], (gint)ld[3]);
+        for(i=0;i<color_stops->len;i++)
+          {
+            cs=g_array_index(color_stops, struct color_stop, i);
+            cs.p=cs.p*100.0;
+            cs.r=cs.r*255.0;
+            cs.g=cs.g*255.0;
+            cs.b=cs.b*255.0;
+            fprintf(f, "<stop offset=\"%i%%\" style=\"stop-color:rgb(%i,%i,%i);stop-opacity:%f\" />\n", (gint)cs.p, (gint)cs.r, (gint)cs.g, (gint)cs.b, cs.a);
+          }
+        fprintf(f, "</linearGradient>\n");
+      }
 
-    //The stored array.
-    printf("<defs>\n");
+    //The stored gradient array.
     for(i=0;i<len;i++)
       {
         x1=(gint)g_array_index(direction, gdouble, 4*i);
         y1=(gint)g_array_index(direction, gdouble, 4*i+1);
         x2=(gint)g_array_index(direction, gdouble, 4*i+2);
         y2=(gint)g_array_index(direction, gdouble, 4*i+3);
-        printf("<linearGradient id=\"grad%i\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n",i, x1, y1, x2, y2);
+        fprintf(f, "<linearGradient id=\"grad%i\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n",i, x1, y1, x2, y2);
         array=((GArray*)(g_ptr_array_index(gradients, i)));
         for(j=0;j<array->len;j++)
           {
@@ -1561,23 +1653,15 @@ static void build_gradient_svg(FILE *f)
             cs.r=cs.r*255.0;
             cs.g=cs.g*255.0;
             cs.b=cs.b*255.0;
-            printf("<stop offset=\"%i%%\" style=\"stop-color:rgb(%i,%i,%i);stop-opacity:%f\" />\n", (gint)cs.p, (gint)cs.r, (gint)cs.g, (gint)cs.b, cs.a);
+            fprintf(f, "<stop offset=\"%i%%\" style=\"stop-color:rgb(%i,%i,%i);stop-opacity:%f\" />\n", (gint)cs.p, (gint)cs.r, (gint)cs.g, (gint)cs.b, cs.a);
           }
-        printf("</linearGradient>\n");
+        fprintf(f, "</linearGradient>\n");
       }
 
     //The top gradient values.
-    printf("</defs>\n");
-
-    fprintf(f, "<defs>\n");
-    fprintf(f, "<linearGradient id=\"grad2\" x1=\"0%%\" y1=\"0%%\" x2=\"0%%\" y2=\"100%%\">\n");
-    fprintf(f, "<stop offset=\"0%%\" style=\"stop-color:rgb(255,0,255);stop-opacity:0.8\" />\n");
-    fprintf(f, "<stop offset=\"50%%\" style=\"stop-color:rgb(255,255,0);stop-opacity:0.8\" />\n");
-    fprintf(f, "<stop offset=\"100%%\" style=\"stop-color:rgb(0,255,255);stop-opacity:0.8\" />\n");
-    fprintf(f, "</linearGradient>\n");
-    fprintf(f, "</defs>\n");       
+    fprintf(f, "</defs>\n");   
   }
-static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id)
+static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill)
 {
   gint i=0;
   gint len=array->len;
@@ -1638,8 +1722,22 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
             }
         }
 
-      if(shape_fill==1) fprintf(f, "\"\nfill=\"url(#grad2)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
-      else fprintf(f, "\"\n fill=\"none\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+      if(shape_fill==1)
+        {
+          if(save_top)
+            {
+              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+            }
+          else
+            {
+              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", *count_fill, width/2, height/2);
+              (*count_fill)++;
+            }
+        }
+      else
+        {
+          fprintf(f, "\"\n fill=\"none\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+        }
         
       if(control1!=NULL) g_array_free(control1, TRUE);
       if(mid_points!=NULL) g_array_free(mid_points, TRUE);
@@ -1912,9 +2010,6 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
     gint file_size=-1;
     gchar *text_buffer=NULL;
     GError *error=NULL;
-    GString *string=g_string_new(NULL);
-    struct point pt1;
-    GArray *array1=NULL;
 
     file_stream=g_file_read(text_file, NULL, &error);
     if(error==NULL)
@@ -1930,85 +2025,90 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
         g_print("Length of Buffer = %i\n", length);
        
         //Parse.
-        gint counter=1;
+        gint i=0;
+        gint array_type=0;
         gchar *p1=text_buffer;
         gboolean xml_comment=FALSE;
-        gboolean start_data=FALSE;
-        gboolean path=TRUE;
-        gint shapes=0;
-        gint info_temp=0;
+        
+        //Look for start of comment tag. Could check more of the comment tag "bezier...".
         while(*p1!='\0')
           {
-            //Look for start of comment tag. Could check more of the comment tag "bezier...".
             if(*p1=='-'&&*(p1-1)=='!'&&*(p1-2)=='<'&&*(p1+3)=='b'&&*(p1+5)=='z')
               {
                 xml_comment=TRUE;
-              }
-            if(xml_comment)
-              {
-                if(*p1=='[')
-                  {
-                    start_data=TRUE;
-                    if(path)
-                      {
-                        shapes++;
-                        counter=1;
-                        //Allocate array
-                        array1=g_array_new(FALSE, FALSE, sizeof(struct point));
-                        g_ptr_array_add(paths, (GArray*)array1);
-                      }
-                  }
-              }
-            if(start_data)
-              {
-                if(g_ascii_isdigit(*p1)||*p1=='-'||*p1=='.')
-                  {
-                    g_string_append_c(string, *p1);
-                  }
-                else if(*p1==' '||*p1==']')
-                  {
-                    if(string->len>0)
-                      {
-                        if(path)
-                          {
-                            if(counter%2!=0)
-                              {
-                                pt1.x=g_ascii_strtod(string->str, NULL);
-                                counter++;
-                              }
-                            else
-                              {
-                                pt1.y=g_ascii_strtod(string->str, NULL);
-                                g_array_append_val(array1, pt1);
-                                counter++;
-                              }
-                          }
-                        else
-                          {
-                            info_temp=g_ascii_strtod(string->str, NULL);
-                            g_array_append_val(path_info, info_temp);
-                          }
-                      }
-                    g_string_truncate(string, 0);
-                  }
-                else{}
-              }
-            if(xml_comment) 
-              {
-                if(*p1==']')
-                  {
-                    start_data=FALSE;
-                    if(path) path=FALSE;
-                    else path=TRUE;
-                  }
-              }
-            if(*p1=='>'&&*(p1-1)=='-'&&xml_comment)
-              {
                 break;
               }
-      
             p1++;
           }
+
+        if(xml_comment) 
+          {
+            gint len=0;
+            gboolean found_tag=TRUE;
+            GArray *array_temp=g_array_new(FALSE, FALSE, sizeof(gdouble));
+            while(found_tag)
+              {
+                p1=get_array_type(p1, &found_tag, &array_type);
+                if(found_tag)
+                  {
+                    p1=get_array_start(p1);
+                    p1=parse_array(p1, array_temp);
+                    
+                    //g_print("Type %i\n", array_type);
+                    len=array_temp->len;
+                    if(array_type==0)
+                      {
+                        struct point pt;
+                        GArray *array=g_array_new(FALSE, FALSE, sizeof(struct point));
+                        for(i=0;i<len;i+=2)
+                          {
+                            pt.x=g_array_index(array_temp, gdouble, i);
+                            pt.y=g_array_index(array_temp, gdouble, i+1);
+                            g_array_append_val(array, pt);
+                          }
+                        g_ptr_array_add(paths, (GArray*)array);
+                      }
+                    else if(array_type==1)
+                      {
+                        for(i=0;i<len;i++)
+                          {
+                            gint value=(gint)g_array_index(array_temp, gdouble, i);
+                            g_array_append_val(path_info, value);
+                          }
+                      }
+                    else if(array_type==2)
+                      {
+                        for(i=0;i<len;i++)
+                          {
+                            gdouble dr=g_array_index(array_temp, gdouble, i);
+                            g_array_append_val(direction, dr);
+                          }
+                      }
+                    else
+                      {
+                        struct color_stop cs;
+                        GArray *array=g_array_new(FALSE, FALSE, sizeof(struct color_stop));
+                        for(i=0;i<len;i+=5)
+                          {
+                            cs.p=g_array_index(array_temp, gdouble, i);
+                            cs.r=g_array_index(array_temp, gdouble, i+1);
+                            cs.g=g_array_index(array_temp, gdouble, i+2);
+                            cs.b=g_array_index(array_temp, gdouble, i+3);
+                            cs.a=g_array_index(array_temp, gdouble, i+4);
+                            g_array_append_val(array, cs);
+                          }
+                        g_ptr_array_add(gradients, (GArray*)array);
+                      }
+                   
+                    //for(i=0;i<len;i++) g_print("%f ", g_array_index(array_temp, gdouble, i));
+                    //g_print("\n");
+                    for(i=0;i<len;i++) g_array_remove_index_fast(array_temp, 0);
+                  }
+                 if(p1=='\0') break;
+              }
+            g_array_free(array_temp, TRUE);
+          }
+                      
         g_object_unref(file_stream);
         g_free(text_buffer);
 
@@ -2025,8 +2125,83 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
       }
    
     g_object_unref(text_file);
-    g_string_free(string, TRUE);
+  }
+static gchar* get_array_type(gchar *p1, gboolean *found, gint *array_type)
+  {
+    while(*p1!='\0')
+      {
+        if(*p1=='\n'&&(*(p1+1)=='S'||*(p1+1)=='T'))
+          {
+            *array_type=0;
+            *found=TRUE;
+            break;
+          }
+        if(*p1=='\n'&&*(p1+1)=='I')
+          {
+            *array_type=1;
+            *found=TRUE;
+            break;
+          }
+        if(*p1=='\n'&&*(p1+1)=='D')
+          {
+            *array_type=2;
+            *found=TRUE;
+            break;
+          }
+        if(*p1=='\n'&&*(p1+1)=='G')
+          {
+            *array_type=3;
+            *found=TRUE;
+            break;
+          }
+        if(*p1=='>'&&*(p1-1)=='-')
+          {
+            *found=FALSE;
+            break;
+          }
+        p1++;
+      }
+    return p1;
+  }
+static gchar* get_array_start(gchar *p1)
+  {
+    while(*p1!='\0')
+      {
+        if(*p1=='[')
+          {
+            break;
+          }
+        p1++;
+      }
+     
+    return p1;             
+  }
+static gchar* parse_array(gchar *p1, GArray *array_temp)
+  {
+    GString *string=g_string_new(NULL);
+    gdouble temp=0;
 
+    while(*p1!='\0')
+      {
+        if(g_ascii_isdigit(*p1)||*p1=='-'||*p1=='.')
+          {
+            g_string_append_c(string, *p1);
+          }
+        else if(*p1==' '||*p1==']')
+          {
+            if(string->len>0)
+              {                
+                temp=g_ascii_strtod(string->str, NULL);
+                g_array_append_val(array_temp, temp);
+                g_string_truncate(string, 0);
+              }
+          }
+        if(*p1==']') break;
+        p1++;
+      }
+
+     g_string_free(string, TRUE);
+     return p1;
   }
 static GtkTreeStore* get_tree_store()
   {
