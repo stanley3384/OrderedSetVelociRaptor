@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *b5=gtk_button_new_with_label("Get Saved SVG");
     gtk_widget_set_hexpand(b5, TRUE);
-    gtk_widget_set_sensitive(b5, FALSE);
+    //gtk_widget_set_sensitive(b5, FALSE);
 
     GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
     gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
@@ -523,7 +523,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
     gint i=0;
     static gint j=1;
-    gint len=paths->len;
+    gint len=0;
     GArray *array=NULL;
     gint shape_fill=0;
     gint shape_inter=0;
@@ -601,13 +601,13 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_scale(cr, width/start_width, height/start_height);
 
     //Draw saved drawings.
+    len=paths->len;
     for(i=0;i<len;i++)
       {
         array=(GArray*)(g_ptr_array_index(paths, i));
         shape_inter=g_array_index(path_info, gint, 2*i);
         shape_fill=g_array_index(path_info, gint, 2*i+1); 
         draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
-        count_fill++;
         cairo_new_path(cr);
       }
 
@@ -709,6 +709,7 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
           }  
         cairo_set_source(cr, pattern1);  
         cairo_fill(cr);
+        (*count_fill)++;
         cairo_pattern_destroy(pattern1);
       }
 
@@ -2016,13 +2017,13 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
       {
         file_info=g_file_input_stream_query_info(G_FILE_INPUT_STREAM(file_stream), G_FILE_ATTRIBUTE_STANDARD_SIZE, NULL, NULL);     
         file_size=g_file_info_get_size(file_info);
-        g_print("Text Length = %d\n", file_size);
+        //g_print("Text Length = %d\n", file_size);
         g_object_unref(file_info);
         text_buffer=(char *) malloc(sizeof(gchar) * file_size);
         memset(text_buffer, 0, file_size);
         length=g_input_stream_read(G_INPUT_STREAM(file_stream), text_buffer, file_size, NULL, NULL);
         //Is length reasonable?
-        g_print("Length of Buffer = %i\n", length);
+        g_print("Length of Buffer=%i\n", length);
        
         //Parse.
         gint i=0;
