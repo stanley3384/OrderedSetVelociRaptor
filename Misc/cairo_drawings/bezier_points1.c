@@ -1534,7 +1534,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
                   fprintf(f, "Gradient [");
                   for(j=0;j<array->len;j++)
                     {
-                      st=g_array_index(color_stops, struct color_stop, j);
+                      st=g_array_index(array, struct color_stop, j);
                       fprintf(f, "%f %f %f %f %f ", st.p, st.r, st.g, st.b, st.a);
                     }
                   fprintf(f, "]\n");
