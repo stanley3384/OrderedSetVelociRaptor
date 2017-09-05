@@ -59,7 +59,7 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
 static void save_svg(GtkWidget *widget, gpointer data);
 static void build_gradient_svg(FILE *f);
-static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill);
+static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
 //Gradient color stops.
@@ -70,10 +70,12 @@ static void update_linear_direction(GtkWidget *widget, GtkWidget **widgets2);
 static void add_points(GtkWidget *widget, GtkWidget **widgets);
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
+//Get and parse the svg.
 static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets);
-static gchar* get_array_type(gchar *p1, gboolean *found, gint *array_type);
-static gchar* get_array_start(gchar *p1);
-static gchar* parse_array(gchar *p1, GArray *array_temp);
+static gchar* get_array_type_svg(gchar *p1, gboolean *found, gint *array_type);
+static gchar* get_array_start_svg(gchar *p1);
+static gchar* parse_array_svg(gchar *p1, GArray *array_temp);
+static void build_array_svg(GArray *array_temp, gint array_type);
 static GtkTreeStore* get_tree_store();
 static GtkTreeStore* get_tree_store_fill();
 static void cleanup(GtkWidget *widget, gpointer data);
@@ -704,7 +706,7 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
         cairo_pattern_t *pattern1=cairo_pattern_create_linear(x1, y1, x2, y2);
         for(i=0;i<array->len;i++)
           {
-            st=g_array_index(color_stops, struct color_stop, i);
+            st=g_array_index(array, struct color_stop, i);
             cairo_pattern_add_color_stop_rgba(pattern1, st.p, st.r, st.g, st.b, st.a); 
           }  
         cairo_set_source(cr, pattern1);  
@@ -1476,11 +1478,12 @@ static void save_svg(GtkWidget *widget, gpointer data)
   GArray *array=NULL;
   gint shape_fill=0;
   gint shape_inter=0;
+  gboolean top_drawing=FALSE;
   gboolean file_error=FALSE;
   struct point p1;
   struct color_stop st;
   //Need to count drawings with a fill gradient to match the path with the color stops.
-  gint count_fill=0;
+  gint count_fill_svg=0;
 
   FILE *f=fopen("bezier_drawing1.svg", "w");
   if(f!=NULL)
@@ -1531,7 +1534,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
                   fprintf(f, "Gradient [");
                   for(j=0;j<array->len;j++)
                     {
-                      st=g_array_index(color_stops, struct color_stop, i);
+                      st=g_array_index(color_stops, struct color_stop, j);
                       fprintf(f, "%f %f %f %f %f ", st.p, st.r, st.g, st.b, st.a);
                     }
                   fprintf(f, "]\n");
@@ -1563,7 +1566,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
                   for(i=0;i<color_stops->len;i++)
                     {
                       st=g_array_index(color_stops, struct color_stop, i);
-                      fprintf(f, "%f %f %f %f %f ", st.p, st.r, st.g, st.b, st.a); 
+                      fprintf(f, "%f %f %f %f %f ", st.p, st.r, st.g, st.b, st.a);  
                     }
                   fprintf(f, "]\n");
                 }
@@ -1584,7 +1587,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
           array=(GArray*)(g_ptr_array_index(paths, i));
           shape_inter=g_array_index(path_info, gint, 2*i);
           shape_fill=g_array_index(path_info, gint, 2*i+1);
-          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill);
+          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
           path_id++;
         }
 
@@ -1594,7 +1597,8 @@ static void save_svg(GtkWidget *widget, gpointer data)
           array=coords1;
           shape_fill=fill;
           shape_inter=interpolation;
-          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill);
+          top_drawing=TRUE;
+          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
         }
 
       fprintf(f, "</svg>\n");
@@ -1621,10 +1625,10 @@ static void build_gradient_svg(FILE *f)
     struct color_stop cs;
     GArray *array=NULL;
  
-    fprintf(f, "<defs>\n");
     //Gradient for the top drawing.
     if(save_top)
       {
+        fprintf(f, "<defs>\n");
         fprintf(f, "<linearGradient id=\"grad_top\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n", (gint)ld[0], (gint)ld[1], (gint)ld[2], (gint)ld[3]);
         for(i=0;i<color_stops->len;i++)
           {
@@ -1636,6 +1640,7 @@ static void build_gradient_svg(FILE *f)
             fprintf(f, "<stop offset=\"%i%%\" style=\"stop-color:rgb(%i,%i,%i);stop-opacity:%f\" />\n", (gint)cs.p, (gint)cs.r, (gint)cs.g, (gint)cs.b, cs.a);
           }
         fprintf(f, "</linearGradient>\n");
+        fprintf(f, "</defs>\n");   
       }
 
     //The stored gradient array.
@@ -1645,7 +1650,8 @@ static void build_gradient_svg(FILE *f)
         y1=(gint)g_array_index(direction, gdouble, 4*i+1);
         x2=(gint)g_array_index(direction, gdouble, 4*i+2);
         y2=(gint)g_array_index(direction, gdouble, 4*i+3);
-        fprintf(f, "<linearGradient id=\"grad%i\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n",i, x1, y1, x2, y2);
+        fprintf(f, "<defs>\n");
+        fprintf(f, "<linearGradient id=\"grad%i\" x1=\"%i%%\" y1=\"%i%%\" x2=\"%i%%\" y2=\"%i%%\">\n", i, x1, y1, x2, y2);
         array=((GArray*)(g_ptr_array_index(gradients, i)));
         for(j=0;j<array->len;j++)
           {
@@ -1657,12 +1663,11 @@ static void build_gradient_svg(FILE *f)
             fprintf(f, "<stop offset=\"%i%%\" style=\"stop-color:rgb(%i,%i,%i);stop-opacity:%f\" />\n", (gint)cs.p, (gint)cs.r, (gint)cs.g, (gint)cs.b, cs.a);
           }
         fprintf(f, "</linearGradient>\n");
+        fprintf(f, "</defs>\n");   
       }
 
-    //The top gradient values.
-    fprintf(f, "</defs>\n");   
   }
-static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill)
+static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing)
 {
   gint i=0;
   gint len=array->len;
@@ -1725,14 +1730,14 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
 
       if(shape_fill==1)
         {
-          if(save_top)
+          if(save_top&&top_drawing)
             {
               fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
             }
           else
             {
-              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", *count_fill, width/2, height/2);
-              (*count_fill)++;
+              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", *count_fill_svg, width/2, height/2);
+              (*count_fill_svg)++;
             }
         }
       else
@@ -2019,14 +2024,13 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
         file_size=g_file_info_get_size(file_info);
         //g_print("Text Length = %d\n", file_size);
         g_object_unref(file_info);
-        text_buffer=(char *) malloc(sizeof(gchar) * file_size);
-        memset(text_buffer, 0, file_size);
+        text_buffer=(char *) malloc(sizeof(gchar) * file_size+1);
+        memset(text_buffer, '\0', file_size+1);
         length=g_input_stream_read(G_INPUT_STREAM(file_stream), text_buffer, file_size, NULL, NULL);
         //Is length reasonable?
         g_print("Length of Buffer=%i\n", length);
        
-        //Parse.
-        gint i=0;
+        //Parse
         gint array_type=0;
         gchar *p1=text_buffer;
         gboolean xml_comment=FALSE;
@@ -2044,70 +2048,32 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
 
         if(xml_comment) 
           {
+            gint i=0;
             gint len=0;
             gboolean found_tag=TRUE;
             GArray *array_temp=g_array_new(FALSE, FALSE, sizeof(gdouble));
             while(found_tag)
               {
-                p1=get_array_type(p1, &found_tag, &array_type);
+                p1=get_array_type_svg(p1, &found_tag, &array_type);
                 if(found_tag)
                   {
-                    p1=get_array_start(p1);
-                    p1=parse_array(p1, array_temp);
-                    
-                    //g_print("Type %i\n", array_type);
+                    p1=get_array_start_svg(p1);
+                    //parse the svg text.
+                    p1=parse_array_svg(p1, array_temp);
+                    //build the program array.
+                    build_array_svg(array_temp, array_type);
+                    //Clear temp array.
                     len=array_temp->len;
-                    if(array_type==0)
-                      {
-                        struct point pt;
-                        GArray *array=g_array_new(FALSE, FALSE, sizeof(struct point));
-                        for(i=0;i<len;i+=2)
-                          {
-                            pt.x=g_array_index(array_temp, gdouble, i);
-                            pt.y=g_array_index(array_temp, gdouble, i+1);
-                            g_array_append_val(array, pt);
-                          }
-                        g_ptr_array_add(paths, (GArray*)array);
-                      }
-                    else if(array_type==1)
-                      {
-                        for(i=0;i<len;i++)
-                          {
-                            gint value=(gint)g_array_index(array_temp, gdouble, i);
-                            g_array_append_val(path_info, value);
-                          }
-                      }
-                    else if(array_type==2)
-                      {
-                        for(i=0;i<len;i++)
-                          {
-                            gdouble dr=g_array_index(array_temp, gdouble, i);
-                            g_array_append_val(direction, dr);
-                          }
-                      }
-                    else
-                      {
-                        struct color_stop cs;
-                        GArray *array=g_array_new(FALSE, FALSE, sizeof(struct color_stop));
-                        for(i=0;i<len;i+=5)
-                          {
-                            cs.p=g_array_index(array_temp, gdouble, i);
-                            cs.r=g_array_index(array_temp, gdouble, i+1);
-                            cs.g=g_array_index(array_temp, gdouble, i+2);
-                            cs.b=g_array_index(array_temp, gdouble, i+3);
-                            cs.a=g_array_index(array_temp, gdouble, i+4);
-                            g_array_append_val(array, cs);
-                          }
-                        g_ptr_array_add(gradients, (GArray*)array);
-                      }
-                   
-                    //for(i=0;i<len;i++) g_print("%f ", g_array_index(array_temp, gdouble, i));
-                    //g_print("\n");
                     for(i=0;i<len;i++) g_array_remove_index_fast(array_temp, 0);
                   }
+ 
                  if(p1=='\0') break;
               }
             g_array_free(array_temp, TRUE);
+          }
+        else
+          {
+            g_print("Couldn't find program data in svg file.\n");
           }
                       
         g_object_unref(file_stream);
@@ -2127,7 +2093,7 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
    
     g_object_unref(text_file);
   }
-static gchar* get_array_type(gchar *p1, gboolean *found, gint *array_type)
+static gchar* get_array_type_svg(gchar *p1, gboolean *found, gint *array_type)
   {
     while(*p1!='\0')
       {
@@ -2164,7 +2130,7 @@ static gchar* get_array_type(gchar *p1, gboolean *found, gint *array_type)
       }
     return p1;
   }
-static gchar* get_array_start(gchar *p1)
+static gchar* get_array_start_svg(gchar *p1)
   {
     while(*p1!='\0')
       {
@@ -2177,7 +2143,7 @@ static gchar* get_array_start(gchar *p1)
      
     return p1;             
   }
-static gchar* parse_array(gchar *p1, GArray *array_temp)
+static gchar* parse_array_svg(gchar *p1, GArray *array_temp)
   {
     GString *string=g_string_new(NULL);
     gdouble temp=0;
@@ -2203,6 +2169,54 @@ static gchar* parse_array(gchar *p1, GArray *array_temp)
 
      g_string_free(string, TRUE);
      return p1;
+  }
+static void build_array_svg(GArray *array_temp, gint array_type)
+  {
+    gint i=0;
+    gint len=array_temp->len;
+    if(array_type==0)
+      {
+        struct point pt;
+        GArray *array=g_array_new(FALSE, FALSE, sizeof(struct point));
+        for(i=0;i<len;i+=2)
+          {
+            pt.x=g_array_index(array_temp, gdouble, i);
+            pt.y=g_array_index(array_temp, gdouble, i+1);
+            g_array_append_val(array, pt);
+          }
+        g_ptr_array_add(paths, (GArray*)array);
+      }
+    else if(array_type==1)
+      {
+        for(i=0;i<len;i++)
+          {
+            gint value=(gint)g_array_index(array_temp, gdouble, i);
+            g_array_append_val(path_info, value);
+          }
+      }
+    else if(array_type==2)
+      {
+        for(i=0;i<len;i++)
+          {
+            gdouble dr=g_array_index(array_temp, gdouble, i);
+            g_array_append_val(direction, dr);
+          }
+      }
+    else
+      {
+        struct color_stop cs;
+        GArray *array=g_array_new(FALSE, FALSE, sizeof(struct color_stop));
+        for(i=0;i<len;i+=5)
+          {
+            cs.p=g_array_index(array_temp, gdouble, i);
+            cs.r=g_array_index(array_temp, gdouble, i+1);
+            cs.g=g_array_index(array_temp, gdouble, i+2);
+            cs.b=g_array_index(array_temp, gdouble, i+3);
+            cs.a=g_array_index(array_temp, gdouble, i+4);
+            g_array_append_val(array, cs);
+          }
+        g_ptr_array_add(gradients, (GArray*)array);
+      }              
   }
 static GtkTreeStore* get_tree_store()
   {
