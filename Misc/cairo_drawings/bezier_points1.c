@@ -78,6 +78,8 @@ static gchar* parse_array_svg(gchar *p1, GArray *array_temp);
 static void build_array_svg(GArray *array_temp, gint array_type);
 static GtkTreeStore* get_tree_store();
 static GtkTreeStore* get_tree_store_fill();
+//For the "Line" tab.
+static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets);
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -156,12 +158,16 @@ static gdouble ld[4];
 static GPtrArray *gradients=NULL;
 //The linear direction of the gradient.
 static GArray *direction=NULL;
+//The line color of the drawings.
+static GArray *line_colors=NULL;
 
 static gint begin_id=0;
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
 //Drawing background color.
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
+//The line color to draw with.
+static gdouble lca[]={0.0, 0.0, 1.0, 1.0};
 //Current selected row in list.
 static gint row_id=0;
 //If the curve should be drawn linear, smooth or approximate. Start with smooth.
@@ -295,7 +301,27 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), button2, 0, 6, 2, 1);
 
-    //Tab 2 "Fill" widgets.
+    //Tab 2 "Line" widgets.
+    GtkWidget *line_label1=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(line_label1), "<span font_weight='heavy'>Line Color </span>");
+
+    GtkWidget *line_entry1=gtk_entry_new();
+    gtk_widget_set_hexpand(line_entry1, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(line_entry1), "rgba(0, 0, 255, 1.0)");
+
+    GtkWidget *line_button1=gtk_button_new_with_label("Update Line Color");
+    gtk_widget_set_hexpand(line_button1, FALSE);
+    GtkWidget *line_widgets[]={line_entry1, window, da};
+    g_signal_connect(line_button1, "clicked", G_CALLBACK(update_line_color), line_widgets);
+
+    GtkWidget *grid2=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
+    gtk_grid_attach(GTK_GRID(grid2), line_label1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), line_entry1, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), line_button1, 0, 1, 2, 1);
+
+    //Tab 3 "Fill" widgets.
     GtkWidget *label_stop=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label_stop), "<span font_weight='heavy'>New Color Stop </span>");
 
@@ -348,36 +374,35 @@ int main(int argc, char *argv[])
     g_signal_connect(b_delete, "clicked", G_CALLBACK(delete_color_stop), widgets2);
     g_signal_connect(b_linear, "clicked", G_CALLBACK(update_linear_direction), widgets2);
 
-    GtkWidget *grid2=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
-    gtk_grid_attach(GTK_GRID(grid2), label_stop, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), entry_stop, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b_add, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), scroll_fill, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b_delete, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), label_dir, 0, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), entry_dir, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), b_linear, 0, 5, 2, 1);
+    GtkWidget *grid3=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid3), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid3), 8);
+    gtk_grid_attach(GTK_GRID(grid3), label_stop, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), entry_stop, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b_add, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), scroll_fill, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b_delete, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid3), label_dir, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), entry_dir, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid3), b_linear, 0, 5, 2, 1);
 
-    //Tab 3 "Add Shape" widgets.
-    GtkWidget *b1=gtk_button_new_with_label("Add Shape");
-    gtk_widget_set_hexpand(b1, TRUE);
+    //Tab 4 "Add Shape" widgets.
+    GtkWidget *shape_button1=gtk_button_new_with_label("Add Shape");
+    gtk_widget_set_hexpand(shape_button1, TRUE);
 
-    GtkWidget *b2=gtk_button_new_with_label("Delete Shape");
-    gtk_widget_set_hexpand(b2, TRUE);
+    GtkWidget *shape_button2=gtk_button_new_with_label("Delete Shape");
+    gtk_widget_set_hexpand(shape_button2, TRUE);
 
-    GtkWidget *b3=gtk_button_new_with_label("Clear Shapes");
-    gtk_widget_set_hexpand(b3, TRUE);
+    GtkWidget *shape_button3=gtk_button_new_with_label("Clear Shapes");
+    gtk_widget_set_hexpand(shape_button3, TRUE);
 
-    GtkWidget *b4=gtk_button_new_with_label("Save Show SVG");
-    gtk_widget_set_hexpand(b4, TRUE);
-    g_signal_connect(b4, "clicked", G_CALLBACK(save_svg), da);
+    GtkWidget *shape_button4=gtk_button_new_with_label("Save Show SVG");
+    gtk_widget_set_hexpand(shape_button4, TRUE);
+    g_signal_connect(shape_button4, "clicked", G_CALLBACK(save_svg), da);
 
-    GtkWidget *b5=gtk_button_new_with_label("Get Saved SVG");
-    gtk_widget_set_hexpand(b5, TRUE);
-    //gtk_widget_set_sensitive(b5, FALSE);
-
+    GtkWidget *shape_button5=gtk_button_new_with_label("Get Saved SVG");
+    gtk_widget_set_hexpand(shape_button5, TRUE);
+    
     GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
     gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
@@ -387,6 +412,7 @@ int main(int argc, char *argv[])
     path_info=g_array_new(FALSE, FALSE, sizeof(gint));
     gradients=g_ptr_array_new();
     direction=g_array_new(FALSE, FALSE, sizeof(gdouble));
+    line_colors=g_array_new(FALSE, FALSE, sizeof(gdouble));
 
     GtkTreeStore *store=get_tree_store();
     GtkWidget *tree=gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -397,35 +423,37 @@ int main(int argc, char *argv[])
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column1); 
 
     GtkWidget *widgets[]={da, check1, tree};
-    g_signal_connect(b1, "clicked", G_CALLBACK(add_points), widgets); 
-    g_signal_connect(b2, "clicked", G_CALLBACK(delete_shape), widgets); 
-    g_signal_connect(b3, "clicked", G_CALLBACK(clear_shapes), widgets);
-    g_signal_connect(b5, "clicked", G_CALLBACK(get_saved_svg), widgets);
+    g_signal_connect(shape_button1, "clicked", G_CALLBACK(add_points), widgets); 
+    g_signal_connect(shape_button2, "clicked", G_CALLBACK(delete_shape), widgets); 
+    g_signal_connect(shape_button3, "clicked", G_CALLBACK(clear_shapes), widgets);
+    g_signal_connect(shape_button5, "clicked", G_CALLBACK(get_saved_svg), widgets);
 
     GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_vexpand(scroll, TRUE);
     gtk_widget_set_hexpand(scroll, TRUE);
     gtk_container_add(GTK_CONTAINER(scroll), tree); 
 
-    GtkWidget *grid3=gtk_grid_new();
+    GtkWidget *grid4=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid3), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid3), 8);
-    gtk_grid_attach(GTK_GRID(grid3), b1, 0, 0, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), scroll, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b2, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b3, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), ch1, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b4, 0, 4, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b5, 0, 5, 2, 1);
+    gtk_grid_set_row_spacing(GTK_GRID(grid4), 8);
+    gtk_grid_attach(GTK_GRID(grid4), shape_button1, 0, 0, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid4), scroll, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid4), shape_button2, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid4), shape_button3, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid4), ch1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid4), shape_button4, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid4), shape_button5, 0, 5, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
-    GtkWidget *nb_label2=gtk_label_new("Gradient");
-    GtkWidget *nb_label3=gtk_label_new("Add Shape");
+    GtkWidget *nb_label2=gtk_label_new("Line");
+    GtkWidget *nb_label3=gtk_label_new("Gradient");
+    GtkWidget *nb_label4=gtk_label_new("Add Shape");
     GtkWidget *notebook=gtk_notebook_new();
     gtk_container_set_border_width(GTK_CONTAINER(notebook), 15);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid1, nb_label1);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid2, nb_label2);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid3, nb_label3);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid4, nb_label4);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
@@ -603,12 +631,21 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_scale(cr, width/start_width, height/start_height);
 
     //Draw saved drawings.
+    gdouble lca0=0;
+    gdouble lca1=0;
+    gdouble lca2=0;
+    gdouble lca3=0;
     len=paths->len;
     for(i=0;i<len;i++)
       {
         array=(GArray*)(g_ptr_array_index(paths, i));
         shape_inter=g_array_index(path_info, gint, 2*i);
         shape_fill=g_array_index(path_info, gint, 2*i+1); 
+        lca0=g_array_index(line_colors, gdouble, 4*i);
+        lca1=g_array_index(line_colors, gdouble, 4*i+1);
+        lca2=g_array_index(line_colors, gdouble, 4*i+2);
+        lca3=g_array_index(line_colors, gdouble, 4*i+3);
+        cairo_set_source_rgba(cr, lca0, lca1, lca2, lca3);
         draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
         cairo_new_path(cr);
       }
@@ -618,6 +655,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     shape_fill=fill;
     shape_inter=interpolation;
     saved=FALSE;
+    cairo_set_source_rgba(cr, lca[0], lca[1], lca[2], lca[3]);
     draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
     return FALSE;
   }
@@ -659,7 +697,6 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
         len=mid_points->len;
       }
 
-    cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
     cairo_set_line_width(cr, 3.0);
     cairo_move_to(cr, p1.x, p1.y);
     
@@ -1478,6 +1515,10 @@ static void save_svg(GtkWidget *widget, gpointer data)
   GArray *array=NULL;
   gint shape_fill=0;
   gint shape_inter=0;
+  gdouble lca0=0;
+  gdouble lca1=0;
+  gdouble lca2=0;
+  gdouble lca3=0;
   gboolean top_drawing=FALSE;
   gboolean file_error=FALSE;
   struct point p1;
@@ -1520,7 +1561,13 @@ static void save_svg(GtkWidget *widget, gpointer data)
               fprintf(f, "%f %f ", p1.x, p1.y);
             }
           fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill);
- 
+
+          lca0=g_array_index(line_colors, gdouble, 4*i);
+          lca1=g_array_index(line_colors, gdouble, 4*i+1);
+          lca2=g_array_index(line_colors, gdouble, 4*i+2);
+          lca3=g_array_index(line_colors, gdouble, 4*i+3);
+          fprintf(f, "LineColor [%f %f %f %f]\n", lca0, lca1, lca2, lca3);
+
           if(shape_fill==1)
             {
               x1=g_array_index(direction, gdouble, 4*lcf);
@@ -1557,6 +1604,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
               fprintf(f, "%f %f ", p1.x, p1.y);
             }
           fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill); 
+          fprintf(f, "LineColor [%f %f %f %f]\n", lca[0], lca[1], lca[2], lca[3]);
           if(fill==1)
             {
               fprintf(f, "Direction [%f %f %f %f]\n", ld[0], ld[1], ld[2], ld[3]);
@@ -1670,6 +1718,10 @@ static void build_gradient_svg(FILE *f)
 static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing)
 {
   gint i=0;
+  gdouble lca0=0;
+  gdouble lca1=0;
+  gdouble lca2=0;
+  gdouble lca3=0;
   gint len=array->len;
   struct point p1;
   struct controls c1;
@@ -1732,17 +1784,32 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
         {
           if(save_top&&top_drawing)
             {
-              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], width/2, height/2);
             }
           else
             {
-              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", *count_fill_svg, width/2, height/2);
+              lca0=g_array_index(line_colors, gdouble, 4*(path_id-1))*255.0;
+              lca1=g_array_index(line_colors, gdouble, 4*(path_id-1)+1)*255.0;
+              lca2=g_array_index(line_colors, gdouble, 4*(path_id-1)+2)*255.0;
+              lca3=g_array_index(line_colors, gdouble, 4*(path_id-1)+3)*255.0;
+              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", *count_fill_svg, (gint)lca0, (gint)lca1, (gint)lca2, lca3, width/2, height/2);
               (*count_fill_svg)++;
             }
         }
       else
         {
-          fprintf(f, "\"\n fill=\"none\" stroke=\"blue\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", width/2, height/2);
+          if(save_top&&top_drawing)
+            {
+              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], width/2, height/2);
+            }
+          else
+            {
+              lca0=g_array_index(line_colors, gdouble, 4*(path_id-1))*255.0;
+              lca1=g_array_index(line_colors, gdouble, 4*(path_id-1)+1)*255.0;
+              lca2=g_array_index(line_colors, gdouble, 4*(path_id-1)+2)*255.0;
+              lca3=g_array_index(line_colors, gdouble, 4*(path_id-1)+3)*255.0;
+              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"3\" transform=\"translate(%i,%i)\" />\n", (gint)lca0, (gint)lca1, (gint)lca2, lca3, width/2, height/2);
+            }
         }
         
       if(control1!=NULL) g_array_free(control1, TRUE);
@@ -1915,6 +1982,10 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   g_ptr_array_add(paths, (GArray*)c1);
   g_array_append_val(path_info, interpolation);
   g_array_append_val(path_info, fill);
+  g_array_append_val(line_colors, lca[0]);
+  g_array_append_val(line_colors, lca[1]);
+  g_array_append_val(line_colors, lca[2]);
+  g_array_append_val(line_colors, lca[3]);
 
   //Save the color stops and direction for the gradient.
   if(fill==1)
@@ -1959,12 +2030,14 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
 {
   g_print("Delete Shape\n");
+  gint i=0;
   GtkTreeIter iter;
   GtkTreeSelection *selection=gtk_tree_view_get_selection(GTK_TREE_VIEW(widgets[2]));
   GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(widgets[2]));
   if(gtk_tree_selection_get_selected(selection, NULL, &iter))
     {
       GtkTreePath *path=gtk_tree_model_get_path(model, &iter);
+      gint count=0;
       if(gtk_tree_path_get_depth(path)==1)
         {
           gchar *string=gtk_tree_path_to_string(path);
@@ -1972,8 +2045,30 @@ static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
           if(row_id<=(paths->len-1)&&(paths->len)>0)
             {
               gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+              //Need to delete direction and gradient entries based on the number of fills up to the row_id.
+              if(g_array_index(path_info, gint, 2*row_id+1)==1)
+                {
+                  for(i=1;i<path_info->len;i+=2)
+                    {
+                      if(g_array_index(path_info, gint, i)==1) count++;
+                    }
+                  count--;
+                  g_array_remove_index(direction, 4*count);
+                  g_array_remove_index(direction, 4*count);
+                  g_array_remove_index(direction, 4*count);
+                  g_array_remove_index(direction, 4*count);
+                  g_array_free((GArray*)(g_ptr_array_index(gradients, count)), TRUE);
+                  g_ptr_array_remove_index(gradients, count);
+                }
               g_array_free((GArray*)(g_ptr_array_index(paths, row_id)), TRUE);
               g_ptr_array_remove_index(paths, row_id);
+              g_array_remove_index(path_info, 2*row_id);
+              g_array_remove_index(path_info, 2*row_id);
+              g_array_remove_index(line_colors, 4*row_id);
+              g_array_remove_index(line_colors, 4*row_id);
+              g_array_remove_index(line_colors, 4*row_id);
+              g_array_remove_index(line_colors, 4*row_id);
+              
             }
           g_free(string);
         }
@@ -1999,6 +2094,19 @@ static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
 
   len=path_info->len;
   for(i=0;i<len;i++) g_array_remove_index_fast(path_info, 0);
+
+  len=line_colors->len;
+  for(i=0;i<len;i++) g_array_remove_index_fast(line_colors, 0);
+
+  len=direction->len;
+  for(i=0;i<len;i++) g_array_remove_index_fast(direction, 0);
+
+  len=gradients->len;
+  for(i=0;i<len;i++)
+    {
+      g_array_free((GArray*)(g_ptr_array_index(gradients, i)), TRUE);
+    }
+  for(i=0;i<len;i++) g_ptr_array_remove_index_fast(gradients, 0);
 
   GtkTreeStore *store=get_tree_store();
   gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
@@ -2121,6 +2229,12 @@ static gchar* get_array_type_svg(gchar *p1, gboolean *found, gint *array_type)
             *found=TRUE;
             break;
           }
+        if(*p1=='\n'&&*(p1+1)=='L')
+          {
+            *array_type=4;
+            *found=TRUE;
+            break;
+          }
         if(*p1=='>'&&*(p1-1)=='-')
           {
             *found=FALSE;
@@ -2202,7 +2316,7 @@ static void build_array_svg(GArray *array_temp, gint array_type)
             g_array_append_val(direction, dr);
           }
       }
-    else
+    else if(array_type==3)
       {
         struct color_stop cs;
         GArray *array=g_array_new(FALSE, FALSE, sizeof(struct color_stop));
@@ -2216,7 +2330,15 @@ static void build_array_svg(GArray *array_temp, gint array_type)
             g_array_append_val(array, cs);
           }
         g_ptr_array_add(gradients, (GArray*)array);
-      }              
+      } 
+    else
+      {
+        for(i=0;i<len;i++)
+          {
+            gdouble value=g_array_index(array_temp, gdouble, i);
+            g_array_append_val(line_colors, value);
+          }
+      }             
   }
 static GtkTreeStore* get_tree_store()
   {
@@ -2273,29 +2395,51 @@ static GtkTreeStore* get_tree_store_fill()
 
     return store;
   }
+static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets)
+  {
+    GdkRGBA rgba;
+    
+    if(gdk_rgba_parse(&rgba, gtk_entry_get_text(GTK_ENTRY(line_widgets[0]))))
+      {
+        lca[0]=rgba.red;
+        lca[1]=rgba.green;
+        lca[2]=rgba.blue;
+        lca[3]=rgba.alpha;
+      }
+    else
+      {
+        g_print("Color string format error in line color.\n");
+      } 
+   
+    //Update main window.
+    gtk_widget_queue_draw(line_widgets[1]);
+    //Update the drawing area.
+    gtk_widget_queue_draw(line_widgets[2]);
+  }
 static void cleanup(GtkWidget *widget, gpointer data)
-{
-  gint i=0;
-  g_array_free(array_id, TRUE);
-  g_array_free(coords1, TRUE);
-  gint len=paths->len;
-  for(i=0;i<len;i++)
-    {
-      g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
-    }
-  g_ptr_array_free(paths, TRUE);
-  g_array_free(path_info, TRUE);
+  {
+    gint i=0;
+    g_array_free(array_id, TRUE);
+    g_array_free(coords1, TRUE);
+    gint len=paths->len;
+    for(i=0;i<len;i++)
+      {
+        g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
+      }
+    g_ptr_array_free(paths, TRUE);
+    g_array_free(path_info, TRUE);
 
-  len=gradients->len;
-  for(i=0;i<len;i++)
-    {
-      g_array_free((GArray*)(g_ptr_array_index(gradients, i)), TRUE);
-    }
-  g_ptr_array_free(gradients, TRUE);
-  g_array_free(color_stops, TRUE);
-  g_array_free(direction, TRUE);
+    len=gradients->len;
+    for(i=0;i<len;i++)
+      {
+        g_array_free((GArray*)(g_ptr_array_index(gradients, i)), TRUE);
+      }
+    g_ptr_array_free(gradients, TRUE);
+    g_array_free(color_stops, TRUE);
+    g_array_free(direction, TRUE);
+    g_array_free(line_colors, TRUE);
 
-  gtk_main_quit();
+    gtk_main_quit();
 }
 
 
