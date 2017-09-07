@@ -81,6 +81,7 @@ static GtkTreeStore* get_tree_store_fill();
 //For the "Line" tab.
 static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets);
 static void set_line_width(GtkComboBox *combo, gpointer data);
+static void set_line_cap(GtkComboBox *combo, gpointer data);
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -148,7 +149,7 @@ struct color_stop{
 */
 //A pointer array to save garrays of coordinate points.
 static GPtrArray *paths=NULL;
-//Saved path draw info. Interpolate and Fill.
+//Saved path draw info. interpolate and fill variables.
 static GArray *path_info=NULL;
 //The line color of the drawings.
 static GArray *line_colors=NULL;
@@ -156,7 +157,7 @@ static GArray *line_colors=NULL;
 static GArray *direction=NULL;
 //The saved color stops for the gradients.
 static GPtrArray *gradients=NULL;
-//Saved line widths.
+//Saved line widths and line caps.
 static GArray *line_widths=NULL;
 
 
@@ -178,6 +179,8 @@ static gint fill=0;
 static gdouble ld[4];
 //Line width setting from combo.
 static gint line_width=3;
+//Line cap setting from combo.
+static gint line_cap=0;
 
 //Drawing background color.
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
@@ -332,6 +335,17 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo_width), 2);
     g_signal_connect(combo_width, "changed", G_CALLBACK(set_line_width), da);
 
+    GtkWidget *line_cap1=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(line_cap1), "<span font_weight='heavy'>Line Cap </span>");
+
+    GtkWidget *combo_cap=gtk_combo_box_text_new();
+    gtk_widget_set_hexpand(combo_cap, TRUE);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo_cap), 0, "1", "Butt");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo_cap), 1, "2", "Round");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo_cap), 2, "3", "Square");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_cap), 0);
+    g_signal_connect(combo_cap, "changed", G_CALLBACK(set_line_cap), da);
+
     GtkWidget *line_label1=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(line_label1), "<span font_weight='heavy'>Line Color </span>");
 
@@ -349,9 +363,11 @@ int main(int argc, char *argv[])
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
     gtk_grid_attach(GTK_GRID(grid2), line_width1, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), combo_width, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_label1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_entry1, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_button1, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), line_cap1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), combo_cap, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), line_label1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), line_entry1, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), line_button1, 0, 3, 2, 1);
 
     //Tab 3 "Fill" widgets.
     GtkWidget *label_stop=gtk_label_new(NULL);
@@ -668,7 +684,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     gdouble lca1=0;
     gdouble lca2=0;
     gdouble lca3=0;
+    //line width.
     gint lw=0;
+    //line cap.
+    gint line_c=0;
     len=paths->len;
     for(i=0;i<len;i++)
       {
@@ -680,8 +699,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         lca2=g_array_index(line_colors, gdouble, 4*i+2);
         lca3=g_array_index(line_colors, gdouble, 4*i+3);       
         cairo_set_source_rgba(cr, lca0, lca1, lca2, lca3);
-        lw=g_array_index(line_widths, gint, i);
+        lw=g_array_index(line_widths, gint, 2*i);
+        line_c=g_array_index(line_widths, gint, 2*i+1);
         cairo_set_line_width(cr, lw);
+        cairo_set_line_cap(cr, line_c); 
         draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
         cairo_new_path(cr);
       }
@@ -693,6 +714,7 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     saved=FALSE;
     cairo_set_source_rgba(cr, lca[0], lca[1], lca[2], lca[3]);
     cairo_set_line_width(cr, line_width);
+    cairo_set_line_cap(cr, line_cap); 
     draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
     return FALSE;
   }
@@ -1555,7 +1577,9 @@ static void save_svg(GtkWidget *widget, gpointer data)
   gdouble lca1=0;
   gdouble lca2=0;
   gdouble lca3=0;
-  gint lw=3;
+  //line width.
+  gint lw=0;
+  gint line_c=0;
   gboolean top_drawing=FALSE;
   gboolean file_error=FALSE;
   struct point p1;
@@ -1597,15 +1621,16 @@ static void save_svg(GtkWidget *widget, gpointer data)
               p1=g_array_index(array, struct point, j);
               fprintf(f, "%f %f ", p1.x, p1.y);
             }
-          fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill);
+          fprintf(f, "]\nInterpolationFill [%i %i]\n", shape_inter, shape_fill);
 
           lca0=g_array_index(line_colors, gdouble, 4*i);
           lca1=g_array_index(line_colors, gdouble, 4*i+1);
           lca2=g_array_index(line_colors, gdouble, 4*i+2);
           lca3=g_array_index(line_colors, gdouble, 4*i+3);
           fprintf(f, "LineColor [%f %f %f %f]\n", lca0, lca1, lca2, lca3);
-          lw=g_array_index(line_widths, gint, i);
-          fprintf(f, "WidthLine [%i]\n", lw);
+          lw=g_array_index(line_widths, gint, 2*i);
+          line_c=g_array_index(line_widths, gint, 2*i+1);
+          fprintf(f, "WidthCap [%i %i]\n", lw, line_c);
 
           if(shape_fill==1)
             {
@@ -1642,9 +1667,9 @@ static void save_svg(GtkWidget *widget, gpointer data)
               p1=g_array_index(array, struct point, i);
               fprintf(f, "%f %f ", p1.x, p1.y);
             }
-          fprintf(f, "]\nInfo [%i %i]\n", shape_inter, shape_fill); 
+          fprintf(f, "]\nInterpolationFill [%i %i]\n", shape_inter, shape_fill); 
           fprintf(f, "LineColor [%f %f %f %f]\n", lca[0], lca[1], lca[2], lca[3]);
-          fprintf(f, "WidthLine [%i]\n", line_width);
+          fprintf(f, "WidthCap [%i %i]\n", line_width, line_cap);
           if(fill==1)
             {
               fprintf(f, "Direction [%f %f %f %f]\n", ld[0], ld[1], ld[2], ld[3]);
@@ -1764,7 +1789,10 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
   gdouble lca2=0;
   gdouble lca3=0;
   //line width.
-  gint lw=3;
+  gint lw=0;
+  //line cap.
+  gint line_c=0;
+  gchar *caps[]={"butt", "round", "square"};
   gint len=array->len;
   struct point p1;
   struct controls c1;
@@ -1827,7 +1855,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
         {
           if(save_top&&top_drawing)
             {
-              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, width/2, height/2);
+              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, caps[line_cap], width/2, height/2);
             }
           else
             {
@@ -1835,8 +1863,9 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
               lca1=g_array_index(line_colors, gdouble, 4*(path_id-1)+1)*255.0;
               lca2=g_array_index(line_colors, gdouble, 4*(path_id-1)+2)*255.0;
               lca3=g_array_index(line_colors, gdouble, 4*(path_id-1)+3)*255.0;
-              lw=g_array_index(line_widths, gint, path_id-1);
-              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" transform=\"translate(%i,%i)\" />\n", *count_fill_svg, (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, width/2, height/2);
+              lw=g_array_index(line_widths, gint, 2*(path_id-1));
+              line_c=g_array_index(line_widths, gint, 2*(path_id-1)+1);
+              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", *count_fill_svg, (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, caps[line_c], width/2, height/2);
               (*count_fill_svg)++;
             }
         }
@@ -1844,7 +1873,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
         {
           if(save_top&&top_drawing)
             {
-              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, width/2, height/2);
+              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, caps[line_cap], width/2, height/2);
             }
           else
             {
@@ -1852,8 +1881,9 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
               lca1=g_array_index(line_colors, gdouble, 4*(path_id-1)+1)*255.0;
               lca2=g_array_index(line_colors, gdouble, 4*(path_id-1)+2)*255.0;
               lca3=g_array_index(line_colors, gdouble, 4*(path_id-1)+3)*255.0;
-              lw=g_array_index(line_widths, gint, path_id-1);
-              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" transform=\"translate(%i,%i)\" />\n", (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, width/2, height/2);
+              lw=g_array_index(line_widths, gint, 2*(path_id-1));
+              line_c=g_array_index(line_widths, gint, 2*(path_id-1)+1);
+              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, caps[line_c], width/2, height/2);
             }
         }
         
@@ -2032,6 +2062,7 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   g_array_append_val(line_colors, lca[2]);
   g_array_append_val(line_colors, lca[3]);
   g_array_append_val(line_widths, line_width);
+  g_array_append_val(line_widths, line_cap);
 
   //Save the color stops and direction for the gradient.
   if(fill==1)
@@ -2114,7 +2145,8 @@ static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
               g_array_remove_index(line_colors, 4*row_id);
               g_array_remove_index(line_colors, 4*row_id);
               g_array_remove_index(line_colors, 4*row_id);
-              g_array_remove_index(line_widths, row_id);              
+              g_array_remove_index(line_widths, 2*row_id);
+              g_array_remove_index(line_widths, 2*row_id);               
             }
           g_free(string);
         }
@@ -2482,6 +2514,11 @@ static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets)
 static void set_line_width(GtkComboBox *combo, gpointer data)
   {
     line_width=gtk_combo_box_get_active(combo)+1;
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void set_line_cap(GtkComboBox *combo, gpointer data)
+  {
+    line_cap=gtk_combo_box_get_active(combo);
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
 static void cleanup(GtkWidget *widget, gpointer data)
