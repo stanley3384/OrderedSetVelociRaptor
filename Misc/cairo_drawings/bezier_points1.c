@@ -1531,11 +1531,18 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
   if(event->keyval==GDK_KEY_Delete)
     {
       g_print("Delete Row\n");
-      gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
-      g_array_remove_index(array_id, i);
-      g_array_remove_index(coords1, i);
-      gtk_widget_destroy(row);
-      gtk_widget_queue_draw(GTK_WIDGET(data));
+      if(array_id->len>3)
+        {
+          gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+          g_array_remove_index(array_id, i);
+          g_array_remove_index(coords1, i);
+          gtk_widget_destroy(row);
+          gtk_widget_queue_draw(GTK_WIDGET(data));
+        }
+      else
+        {
+          g_print("Couldn't delete row. There needs to be at least 3 rows in the list box.\n");
+        }
     }
   return TRUE;
 }
