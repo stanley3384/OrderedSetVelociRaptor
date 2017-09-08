@@ -1229,21 +1229,11 @@ drag_end (GtkWidget      *widget,
   gtk_style_context_remove_class (gtk_widget_get_style_context (row), "drag-row");
   gtk_style_context_remove_class (gtk_widget_get_style_context (row), "drag-hover");
 
-  g_print("Drag End\n");
   row_id=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
   gint i=0;
   gint value_id=0;
   gint len=0;
   struct point p1;
-  g_print("begin %i row %i\n", begin_id, row_id);
-
-  len=coords1->len;
-  for(i=0;i<len;i++)
-    {
-      p1=g_array_index(coords1, struct point, i);
-      g_print(" [%i %i %i]", i, (gint)p1.x, (gint)p1.y);
-    }
-  g_print("\n");
 
   if(begin_id!=row_id)
     {
@@ -1280,18 +1270,6 @@ drag_end (GtkWidget      *widget,
             }
         }
     }
-
-  len=array_id->len;
-  for(i=0;i<len;i++) g_print(" %i", g_array_index(array_id, gint, i));
-  g_print("\n");
-
-  len=coords1->len;
-  for(i=0;i<len;i++)
-    {
-      p1=g_array_index(coords1, struct point, i);
-      g_print(" [%i %i %i]", i, (gint)p1.x, (gint)p1.y);
-    }
-  g_print("\n");
   
   begin_id=row_id;
 
@@ -1530,7 +1508,6 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
 {
   if(event->keyval==GDK_KEY_Delete)
     {
-      g_print("Delete Row\n");
       if(array_id->len>3)
         {
           gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
@@ -1548,7 +1525,6 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
 }
 static void add_point(GtkWidget *widget, GtkWidget **list_da)
 {
-  g_print("Add Point\n");
   //Keep track of added list box rows. Start program with 12 rows in the listbox.
   static gint add_row=12;
   gint len=0;
@@ -1932,7 +1908,6 @@ static void svg_dialog(gint width, gint height)
 }
 static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2)
   {
-    g_print("Add Color Stop\n");
     GtkEntryBuffer *buffer=gtk_entry_get_buffer(GTK_ENTRY(widgets2[0]));
     const gchar *text=gtk_entry_buffer_get_text(buffer);
     gsize len=gtk_entry_buffer_get_bytes(buffer);
@@ -1983,7 +1958,6 @@ static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2)
   }
 static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2)
   {
-    g_print("Delete Color Stop\n");
     GtkTreeIter iter;
     GtkTreeSelection *selection=gtk_tree_view_get_selection(GTK_TREE_VIEW(widgets2[1]));
     GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(widgets2[1]));
@@ -2005,7 +1979,6 @@ static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2)
   }
 static void update_linear_direction(GtkWidget *widget, GtkWidget **widgets2)
   {
-    g_print("Update Linear Direction\n");
     GtkEntryBuffer *buffer=gtk_entry_get_buffer(GTK_ENTRY(widgets2[3]));
     const gchar *text=gtk_entry_buffer_get_text(buffer);
     gsize len=gtk_entry_buffer_get_bytes(buffer);
@@ -2051,7 +2024,6 @@ static void update_linear_direction(GtkWidget *widget, GtkWidget **widgets2)
   }
 static void add_points(GtkWidget *widget, GtkWidget **widgets)
 {
-  g_print("Save Drawing\n");
   gint i=0;
   gint len=coords1->len;
   GArray *c1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), len);
@@ -2095,7 +2067,7 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   gdouble w1=start_width*0.4;
   if(start_width>start_height) w1=start_height*0.4;
   struct point p1;
-  for(i=0;i<len;i++) g_array_remove_index_fast(coords1, 0);
+  g_array_remove_range(coords1, 0, len);
 
   for(i=0;i<len;i++)
     {
@@ -2115,7 +2087,6 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
 }
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
 {
-  g_print("Delete Shape\n");
   gint i=0;
   GtkTreeIter iter;
   GtkTreeSelection *selection=gtk_tree_view_get_selection(GTK_TREE_VIEW(widgets[2]));
@@ -2172,31 +2143,31 @@ static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
 {
   gint i=0;
   gint len=paths->len;
-  g_print("Free %i Paths\n", len);
+ 
   for(i=0;i<len;i++)
     {
       g_array_free((GArray*)(g_ptr_array_index(paths, i)), TRUE);
     }
-  for(i=0;i<len;i++) g_ptr_array_remove_index_fast(paths, 0);
+  g_ptr_array_remove_range(paths, 0, len);
 
   len=path_info->len;
-  for(i=0;i<len;i++) g_array_remove_index_fast(path_info, 0);
+  g_array_remove_range(path_info, 0, len);
 
   len=line_colors->len;
-  for(i=0;i<len;i++) g_array_remove_index_fast(line_colors, 0);
+  g_array_remove_range(line_colors, 0, len);
 
   len=line_widths->len;
-  for(i=0;i<len;i++) g_array_remove_index_fast(line_widths, 0);
+  g_array_remove_range(line_widths, 0, len);
 
   len=direction->len;
-  for(i=0;i<len;i++) g_array_remove_index_fast(direction, 0);
+  g_array_remove_range(direction, 0, len);
 
   len=gradients->len;
   for(i=0;i<len;i++)
     {
       g_array_free((GArray*)(g_ptr_array_index(gradients, i)), TRUE);
     }
-  for(i=0;i<len;i++) g_ptr_array_remove_index_fast(gradients, 0);
+  g_ptr_array_remove_range(gradients, 0, len);
 
   GtkTreeStore *store=get_tree_store();
   gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
@@ -2209,7 +2180,6 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
     //Test getting the previously saved shape.
     GFile *text_file=g_file_new_for_path("bezier_drawing1.svg");
     GFileInputStream *file_stream=NULL;
-    gssize length=0;
     GFileInfo *file_info=NULL;
     gint file_size=-1;
     gchar *text_buffer=NULL;
@@ -2220,13 +2190,10 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
       {
         file_info=g_file_input_stream_query_info(G_FILE_INPUT_STREAM(file_stream), G_FILE_ATTRIBUTE_STANDARD_SIZE, NULL, NULL);     
         file_size=g_file_info_get_size(file_info);
-        //g_print("Text Length = %d\n", file_size);
         g_object_unref(file_info);
         text_buffer=(char *) malloc(sizeof(gchar) * file_size+1);
         memset(text_buffer, '\0', file_size+1);
-        length=g_input_stream_read(G_INPUT_STREAM(file_stream), text_buffer, file_size, NULL, NULL);
-        //Is length reasonable?
-        g_print("Buffer Length %i\n", length);
+        g_input_stream_read(G_INPUT_STREAM(file_stream), text_buffer, file_size, NULL, NULL);
        
         //Parse
         gint array_type=0;
@@ -2246,7 +2213,6 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
 
         if(xml_comment) 
           {
-            gint i=0;
             gint len=0;
             gboolean found_tag=TRUE;
             GArray *array_temp=g_array_new(FALSE, FALSE, sizeof(gdouble));
@@ -2262,7 +2228,7 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
                     build_array_svg(array_temp, array_type);
                     //Clear temp array.
                     len=array_temp->len;
-                    for(i=0;i<len;i++) g_array_remove_index_fast(array_temp, 0);
+                    g_array_remove_range(array_temp, 0, len);
                   }
  
                  if(p1=='\0') break;
