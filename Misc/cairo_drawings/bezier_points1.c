@@ -1,7 +1,8 @@
 
 /*
-    This is testing putting together drag and drop with some cairo interpolation and approximation.
-The drag and drop for the list box is from mclasen and the following. 
+    This is testing putting together drag and drop with some linear, smooth and approximate
+interpolation using Cairo and GTK. The drag and drop for the list box is from mclasen and
+the following. 
 
     https://blog.gtk.org/2017/06/01/drag-and-drop-in-lists-revisited/
 
@@ -125,7 +126,7 @@ static const char *css =
   "}"
 ;
 
-//Points and controls for drawing with.
+//Points, controls and color stops for drawing with.
 struct point{
   gdouble x;
   gdouble y;
@@ -145,7 +146,8 @@ struct color_stop{
 }color_stop;
 
 /*
-  Arrays for saving a drawing in a layer in the program. They are also used for outputing to svg.
+  Arrays for saving a drawing in a layer in the program. They are also used for outputing to svg
+  and reading in text from the svg.
 */
 //A pointer array to save garrays of coordinate points.
 static GPtrArray *paths=NULL;
@@ -538,7 +540,6 @@ int main(int argc, char *argv[])
       {
         p1.x=w1*cos((gdouble)i*G_PI/6.0);
         p1.y=w1*sin((gdouble)i*G_PI/6.0);
-        //g_print("x %f y %f\n", p1.x, p1.y);
         g_array_append_val(coords1, p1);
       }
     //Array to track the list.
@@ -874,7 +875,6 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
 
     p1.x=event->button.x*start_width/width-w1;
     p1.y=event->button.y*start_height/height-w1;
-    //g_print("x %f, y %f\n", p1.x, p1.y);
 
     struct point *p;
     p=&g_array_index(coords1, struct point, row_id);
@@ -2080,7 +2080,10 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
       g_array_append_val(direction, ld[3]);       
     }
 
-  //Reset coords to draw again.
+  /*
+    Reset coords to draw again. Reset based on number of current coordinates. This can
+    look a little strange in the UI.
+  */
   len=coords1->len; 
   gdouble w1=start_width*0.4;
   if(start_width>start_height) w1=start_height*0.4;
@@ -2091,7 +2094,6 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
     {
       p1.x=w1*cos((gdouble)i*G_PI/((gdouble)len/2.0));
       p1.y=w1*sin((gdouble)i*G_PI/((gdouble)len/2.0));
-      //g_print("x %f y %f\n", p1.x, p1.y);
       g_array_append_val(coords1, p1);
     }
 
