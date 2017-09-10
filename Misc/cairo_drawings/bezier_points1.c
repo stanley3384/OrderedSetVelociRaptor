@@ -9,7 +9,9 @@ the following.
 Drag a few points on the drawing for the interpolation. Hopefully changing the point order in the 
 list box will change the draw order of the points. Still some things to figure out here. Try out
 the animation rotating the drawing around the x, y, z or xyz axis. The drawing will output to svg
-in the working directory and open the svg in an image widget. 
+in the working directory and open the svg in an image widget. If the drawing is saved while it is 
+animated, it will attach a little java script to the svg. If you open the svg in firefox, it will
+be animated like in the program.
 
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
@@ -60,7 +62,8 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
 static void save_svg(GtkWidget *widget, gpointer data);
 static void build_gradient_svg(FILE *f);
-static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing);
+static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing);
+static void build_rotation_script_svg(FILE *f, gint width, gint height);
 //Dialog for showing svg.
 static void svg_dialog(gint width, gint height);
 //Gradient color stops.
@@ -1673,6 +1676,9 @@ static void save_svg(GtkWidget *widget, gpointer data)
       //Fill the background color in.
       fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
+      //Apply the transforms.
+      fprintf(f, "<g id=\"scale_drawing\" transform=\"translate(%i, %i) scale(1.0, 1.0) rotate(0)\">\n", width/2, height/2);
+
       //Define a gradient fill to be used.
       build_gradient_svg(f);
       
@@ -1683,7 +1689,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
           array=(GArray*)(g_ptr_array_index(paths, i));
           shape_inter=g_array_index(path_info, gint, 2*i);
           shape_fill=g_array_index(path_info, gint, 2*i+1);
-          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
+          build_drawing_svg(f, array, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
           path_id++;
         }
 
@@ -1694,10 +1700,13 @@ static void save_svg(GtkWidget *widget, gpointer data)
           shape_fill=fill;
           shape_inter=interpolation;
           top_drawing=TRUE;
-          build_drawing_svg(f, array, width, height, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
+          build_drawing_svg(f, array, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
         }
 
-      fprintf(f, "</svg>\n");
+      //If the drawing is animated, add the java script for rotation.
+      if(rotate>0) build_rotation_script_svg(f, width, height);
+
+      fprintf(f, "</g>\n</svg>\n");
       fclose(f);
     }
   else
@@ -1763,7 +1772,7 @@ static void build_gradient_svg(FILE *f)
       }
 
   }
-static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing)
+static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing)
 {
   gint i=0;
   //line color.
@@ -1838,7 +1847,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
         {
           if(save_top&&top_drawing)
             {
-              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, caps[line_cap], width/2, height/2);
+              fprintf(f, "\"\nfill=\"url(#grad_top)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, caps[line_cap]);
             }
           else
             {
@@ -1848,7 +1857,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
               lca3=g_array_index(line_colors, gdouble, 4*(path_id-1)+3)*255.0;
               lw=g_array_index(line_widths, gint, 2*(path_id-1));
               line_c=g_array_index(line_widths, gint, 2*(path_id-1)+1);
-              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", *count_fill_svg, (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, caps[line_c], width/2, height/2);
+              fprintf(f, "\"\nfill=\"url(#grad%i)\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" />\n", *count_fill_svg, (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, caps[line_c]);
               (*count_fill_svg)++;
             }
         }
@@ -1856,7 +1865,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
         {
           if(save_top&&top_drawing)
             {
-              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, caps[line_cap], width/2, height/2);
+              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" />\n", (gint)(lca[0]*255.0), (gint)(lca[1]*255.0), (gint)(lca[2]*255.0), lca[3], line_width, caps[line_cap]);
             }
           else
             {
@@ -1866,7 +1875,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
               lca3=g_array_index(line_colors, gdouble, 4*(path_id-1)+3)*255.0;
               lw=g_array_index(line_widths, gint, 2*(path_id-1));
               line_c=g_array_index(line_widths, gint, 2*(path_id-1)+1);
-              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" transform=\"translate(%i,%i)\" />\n", (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, caps[line_c], width/2, height/2);
+              fprintf(f, "\"\n fill=\"none\" stroke=\"rgb(%i,%i,%i)\" stroke-opacity=\"%f\" stroke-width=\"%i\" stroke-linecap=\"%s\" />\n", (gint)lca0, (gint)lca1, (gint)lca2, lca3, lw, caps[line_c]);
             }
         }
         
@@ -1878,34 +1887,99 @@ static void build_drawing_svg(FILE *f, GArray *array, gint width, gint height, g
       g_print("No coordinates to output svg with.\n");
     }
 }
+static void build_rotation_script_svg(FILE *f, gint width, gint height)
+  {
+    //Add java script to the svg if the drawing is animated.
+    if(rotate==1)
+      {
+        fprintf(f, "<script>\n"
+                   "var scale_drawing = document.getElementById(\"scale_drawing\");\n"
+                   "var j = 0;\n"
+                   "function redraw() {\n"
+                   "var angle = -j * Math.PI / 256.0 - 3.0 * Math.PI / 2.0;\n"
+                   "var scale = Math.sin(angle);\n"
+                   "var scale_inv = 1.0 / scale * %i;\n"
+                   "j += 1.0;\n"
+                   "scale_drawing.setAttribute(\"transform\", \"scale(1.0, \" + scale + \") translate(%i, \" + scale_inv + \")\");\n"
+                   "}\n"
+                   "setInterval(\"redraw()\", 16.7);\n"
+                   "</script>\n", height/2, width/2);
+      }
+    if(rotate==2)
+      {
+        fprintf(f, "<script>\n"
+                   "var scale_drawing = document.getElementById(\"scale_drawing\");\n"
+                   "var j = 0;\n"
+                   "function redraw() {\n"
+                   "var angle = -j * Math.PI / 256.0;\n"
+                   "var scale = Math.cos(angle);\n"
+                   "var scale_inv = 1.0 / scale * %i;\n"
+                   "j += 1.0;\n"
+                   "scale_drawing.setAttribute(\"transform\", \"scale(\" + scale + \", 1.0) translate(\" + scale_inv + \", %i)\");\n"
+                   "}\n"
+                   "setInterval(\"redraw()\", 16.7);\n"
+                   "</script>\n", width/2, height/2);
+      }
+    if(rotate==3)
+      {
+        fprintf(f, "<script>\n"
+                   "var scale_drawing = document.getElementById(\"scale_drawing\");\n"
+                   "var j = 0;\n"
+                   "function redraw() {\n"
+                   "var angle = j * Math.PI / 256.0;\n"
+                   "angle = angle * 180.0 / Math.PI;\n"
+                   "j += 1.0;\n"
+                   "scale_drawing.setAttribute(\"transform\", \"translate(%i, %i) rotate(\" + angle + \")\");\n"
+                   "}\n"
+                   "setInterval(\"redraw()\", 16.7);\n"
+                   "</script>\n", width/2, height/2);
+      }
+    if(rotate==4)
+      {
+        fprintf(f, "<script>\n"
+                   "var scale_drawing = document.getElementById(\"scale_drawing\");\n"
+                   "var j = 0;\n"
+                   "function redraw() {\n"
+                   "var angle = j * Math.PI / 256.0;\n"
+                   "var scale = Math.cos(angle);\n"
+                   "var scale_inv = 1.0 / scale * %i;\n"
+                   "var scale2 = Math.sin(angle);\n"
+                   "var scale_inv2 = 1.0 / scale2 * %i;\n"
+                   "angle = angle * 180.0 / Math.PI;\n"
+                   "j += 1.0;\n"
+                   "scale_drawing.setAttribute(\"transform\", \"scale(\" + scale + \" ,\" + scale2 + \") translate(\" + scale_inv + \" ,\" + scale_inv2 + \") rotate(\" + angle + \")\");\n"
+                   "}\n"
+                   "setInterval(\"redraw()\", 16.7);\n"
+                   "</script>\n", width/2, height/2);
+       }
+  }
 static void svg_dialog(gint width, gint height)
-{
-  GtkWidget *dialog=gtk_dialog_new_with_buttons("bezier_drawing1.svg", GTK_WINDOW(window), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, NULL);
-  gtk_window_set_default_size(GTK_WINDOW(dialog), width, height);
-  GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+  {
+    GtkWidget *dialog=gtk_dialog_new_with_buttons("bezier_drawing1.svg", GTK_WINDOW(window), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, NULL);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), width, height);
+    GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-  GError *error=NULL;
-  GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", &error);
-  if(error!=NULL) g_print("%s\n", error->message);
+    GError *error=NULL;
+    GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", &error);
+    if(error!=NULL) g_print("%s\n", error->message);
      
-  //If error open image anyway. It will just show a broken image.
-  GtkWidget *image=gtk_image_new_from_pixbuf(svg);
-  gtk_widget_set_hexpand(image, TRUE);
-  gtk_widget_set_vexpand(image, TRUE);
+    //If error open image anyway. It will just show a broken image.
+    GtkWidget *image=gtk_image_new_from_pixbuf(svg);
+    gtk_widget_set_hexpand(image, TRUE);
+    gtk_widget_set_vexpand(image, TRUE);
 
-  GtkWidget *sw=gtk_scrolled_window_new(NULL, NULL);
-  gtk_container_add(GTK_CONTAINER(sw), image);
+    GtkWidget *sw=gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(sw), image);
 
-  gtk_container_add(GTK_CONTAINER(content_area), sw);
-  gtk_widget_show_all(dialog);
+    gtk_container_add(GTK_CONTAINER(content_area), sw);
+    gtk_widget_show_all(dialog);
 
-  gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_dialog_run(GTK_DIALOG(dialog));
             
-  gtk_widget_destroy(dialog); 
-  if(error==NULL) g_object_unref(svg);
-  else g_error_free(error);
-                  
-}
+    gtk_widget_destroy(dialog); 
+    if(error==NULL) g_object_unref(svg);
+    else g_error_free(error);                  
+  }
 static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2)
   {
     GtkEntryBuffer *buffer=gtk_entry_get_buffer(GTK_ENTRY(widgets2[0]));
