@@ -86,6 +86,7 @@ static GtkTreeStore* get_tree_store_fill();
 static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets);
 static void set_line_width(GtkComboBox *combo, gpointer data);
 static void set_line_cap(GtkComboBox *combo, gpointer data);
+static void set_layout(GtkWidget *widget, GtkWidget **widgets3);
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -205,8 +206,11 @@ static GtkWidget *window;
 //It the top drawing is included in the svg.
 gboolean save_top=TRUE;
 //Save initial drawing area dimensions.
-static gdouble start_width=0;
-static gdouble start_height=0;
+static const gdouble start_width=400.0;
+static const gdouble start_height=400.0;
+//Initial drawing is 400x400 so need to be able to scale for different sizes in svg.
+static gdouble layout_width=400.0;
+static gdouble layout_height=400.0;
 
 int main(int argc, char *argv[])
   {
@@ -214,7 +218,7 @@ int main(int argc, char *argv[])
 
     window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Coordinates with Bezier Points");
-    gtk_window_set_default_size(GTK_WINDOW(window), 850, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(cleanup), NULL);
     gtk_widget_set_app_paintable(window, TRUE);
@@ -237,6 +241,12 @@ int main(int argc, char *argv[])
     g_signal_connect(da, "button-release-event", G_CALLBACK(stop_press), NULL);
     motion_id=g_signal_connect(da, "motion-notify-event", G_CALLBACK(cursor_motion), NULL);
     g_signal_handler_block(da, motion_id);
+
+    GtkWidget *da_sw=gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(da_sw), GTK_POLICY_ALWAYS, GTK_POLICY_ALWAYS);
+    gtk_widget_set_hexpand(da_sw, TRUE);
+    gtk_widget_set_vexpand(da_sw, TRUE);
+    gtk_container_add(GTK_CONTAINER(da_sw), da);
 
     GtkWidget *label1=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(label1), "<span font_weight='heavy'>Point Draw Order</span>");
@@ -449,18 +459,6 @@ int main(int argc, char *argv[])
     GtkWidget *shape_button3=gtk_button_new_with_label("Clear Shapes");
     gtk_widget_set_hexpand(shape_button3, TRUE);
 
-    GtkWidget *shape_button4=gtk_button_new_with_label("Save Show SVG");
-    gtk_widget_set_hexpand(shape_button4, TRUE);
-    g_signal_connect(shape_button4, "clicked", G_CALLBACK(save_svg), da);
-
-    GtkWidget *shape_button5=gtk_button_new_with_label("Get Saved SVG");
-    gtk_widget_set_hexpand(shape_button5, TRUE);
-    
-    GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
-    gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
-    g_signal_connect(ch1, "toggled", G_CALLBACK(save_top_check), da); 
-
     paths=g_ptr_array_new();
     path_info=g_array_new(FALSE, FALSE, sizeof(gint));
     gradients=g_ptr_array_new();
@@ -480,7 +478,6 @@ int main(int argc, char *argv[])
     g_signal_connect(shape_button1, "clicked", G_CALLBACK(add_points), widgets); 
     g_signal_connect(shape_button2, "clicked", G_CALLBACK(delete_shape), widgets); 
     g_signal_connect(shape_button3, "clicked", G_CALLBACK(clear_shapes), widgets);
-    g_signal_connect(shape_button5, "clicked", G_CALLBACK(get_saved_svg), widgets);
 
     GtkWidget *scroll=gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_vexpand(scroll, TRUE);
@@ -488,31 +485,75 @@ int main(int argc, char *argv[])
     gtk_container_add(GTK_CONTAINER(scroll), tree); 
 
     GtkWidget *grid4=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid3), 15);
+    gtk_container_set_border_width(GTK_CONTAINER(grid4), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid4), 8);
     gtk_grid_attach(GTK_GRID(grid4), shape_button1, 0, 0, 2, 1);
     gtk_grid_attach(GTK_GRID(grid4), scroll, 0, 1, 2, 1);
     gtk_grid_attach(GTK_GRID(grid4), shape_button2, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid4), shape_button3, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid4), ch1, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid4), shape_button4, 0, 4, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid4), shape_button5, 0, 5, 2, 1);
+    
+    //Tab 5 "Save" widgets.
+    GtkWidget *save_label1=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(save_label1), "<span font_weight='heavy'>SVG Width </span>");
+
+    GtkWidget *save_entry1=gtk_entry_new();
+    gtk_widget_set_hexpand(save_entry1, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(save_entry1), "400");
+
+    GtkWidget *save_label2=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(save_label2), "<span font_weight='heavy'>SVG Height </span>");
+
+    GtkWidget *save_entry2=gtk_entry_new();
+    gtk_widget_set_hexpand(save_entry2, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(save_entry2), "400");
+
+    GtkWidget *save_button1=gtk_button_new_with_label("Save SVG Dimensions");
+    gtk_widget_set_hexpand(save_button1, TRUE);
+    GtkWidget *widgets3[]={save_entry1, save_entry2, da};
+    g_signal_connect(save_button1, "clicked", G_CALLBACK(set_layout), widgets3);
+
+    GtkWidget *ch1=gtk_check_button_new_with_label("Save Top Drawing to SVG");
+    gtk_widget_set_halign(ch1, GTK_ALIGN_CENTER);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
+    g_signal_connect(ch1, "toggled", G_CALLBACK(save_top_check), da); 
+
+    GtkWidget *save_button2=gtk_button_new_with_label("Save Show SVG");
+    gtk_widget_set_hexpand(save_button2, TRUE);
+    g_signal_connect(save_button2, "clicked", G_CALLBACK(save_svg), da);
+
+    GtkWidget *save_button3=gtk_button_new_with_label("Get Saved SVG");
+    gtk_widget_set_hexpand(save_button3, TRUE);
+    g_signal_connect(save_button3, "clicked", G_CALLBACK(get_saved_svg), widgets);
+
+    GtkWidget *grid5=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(grid5), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(grid5), 8);
+    gtk_grid_attach(GTK_GRID(grid5), save_label1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_entry1, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_label2, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_entry2, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_button1, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), ch1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_button2, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_button3, 0, 5, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *nb_label2=gtk_label_new("Line");
     GtkWidget *nb_label3=gtk_label_new("Gradient");
     GtkWidget *nb_label4=gtk_label_new("Add Shape");
+    GtkWidget *nb_label5=gtk_label_new("Save");
     GtkWidget *notebook=gtk_notebook_new();
     gtk_container_set_border_width(GTK_CONTAINER(notebook), 15);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid1, nb_label1);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid2, nb_label2);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid3, nb_label3);
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid4, nb_label4);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid5, nb_label5);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
-    gtk_paned_pack2(GTK_PANED(paned1), da, TRUE, TRUE);
-    gtk_paned_set_position(GTK_PANED(paned1), 350);
+    gtk_paned_pack2(GTK_PANED(paned1), da_sw, TRUE, TRUE);
+    gtk_paned_set_position(GTK_PANED(paned1), 400);
 
     //Draw background window based on the paned window splitter.
     g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), paned1);
@@ -533,10 +574,8 @@ int main(int argc, char *argv[])
     gtk_widget_show_all(window);
 
     //Set some initial values for the drawing area.
-    start_width=(gdouble)gtk_widget_get_allocated_width(da);
-    start_height=(gdouble)gtk_widget_get_allocated_height(da); 
     gdouble w1=start_width*0.4;
-    if(start_width>start_height) w1=start_height*0.4;
+
     struct point p1;
     coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), 12);
     for(i=0;i<12;i++)
@@ -619,10 +658,19 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     gdouble w1=width/10.0;
     gdouble h1=height/10.0;
 
+    //Scale drawing based on layout.
+    cairo_scale(cr, layout_width/start_width, layout_height/start_height);
+
     cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
     cairo_paint(cr);
 
-    //Layout axis for drawing.
+    //Layout axis for drawing. Outer box.
+    cairo_set_line_width(cr, 2.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_rectangle(cr, 0, 0, width, height);
+    cairo_stroke(cr);
+
+    //Inner box
     cairo_set_line_width(cr, 1.0);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_rectangle(cr, w1, h1, 8.0*w1, 8.0*h1);
@@ -1579,7 +1627,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
       fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
       fprintf(f, "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"); 
       fprintf(f, "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
-      fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", width, height, width, height);
+      fprintf(f, "<svg width=\"%i\" height=\"%i\" viewBox=\"0 0 %i %i\"\n", (gint)layout_width, (gint)layout_height, (gint)layout_width, (gint)layout_height);
       fprintf(f, "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
 
       //Add xml comment to store data for the bezier_points1 program. 
@@ -1674,10 +1722,10 @@ static void save_svg(GtkWidget *widget, gpointer data)
       fprintf(f, "-->\n");
 
       //Fill the background color in.
-      fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", width, height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
+      fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", (gint)layout_width, (gint)layout_height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
       //Apply the transforms.
-      fprintf(f, "<g id=\"scale_drawing\" transform=\"translate(%i, %i) scale(1.0, 1.0) rotate(0)\">\n", width/2, height/2);
+      fprintf(f, "<g id=\"scale_drawing\" transform=\"translate(%i, %i) scale(%f, %f) rotate(0)\">\n", (gint)(layout_width/2.0), (gint)(layout_height/2.0), layout_width/start_width, layout_height/start_height);
 
       //Define a gradient fill to be used.
       build_gradient_svg(f);
@@ -1897,13 +1945,13 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "var j = 0;\n"
                    "function redraw() {\n"
                    "var angle = -j * Math.PI / 256.0 - 3.0 * Math.PI / 2.0;\n"
-                   "var scale = Math.sin(angle);\n"
+                   "var scale = Math.sin(angle) * %f;\n"
                    "var scale_inv = 1.0 / scale * %i;\n"
                    "j += 1.0;\n"
-                   "scale_drawing.setAttribute(\"transform\", \"scale(1.0, \" + scale + \") translate(%i, \" + scale_inv + \")\");\n"
+                   "scale_drawing.setAttribute(\"transform\", \"scale(%f, \" + scale + \") translate(%i, \" + scale_inv + \")\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", height/2, width/2);
+                   "</script>\n", layout_height/start_height, (gint)(layout_height/2.0), layout_width/start_width, width/2);
       }
     if(rotate==2)
       {
@@ -1912,13 +1960,13 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "var j = 0;\n"
                    "function redraw() {\n"
                    "var angle = -j * Math.PI / 256.0;\n"
-                   "var scale = Math.cos(angle);\n"
+                   "var scale = Math.cos(angle) * %f;\n"
                    "var scale_inv = 1.0 / scale * %i;\n"
                    "j += 1.0;\n"
-                   "scale_drawing.setAttribute(\"transform\", \"scale(\" + scale + \", 1.0) translate(\" + scale_inv + \", %i)\");\n"
+                   "scale_drawing.setAttribute(\"transform\", \"scale(\" + scale + \", %f) translate(\" + scale_inv + \", %i)\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", width/2, height/2);
+                   "</script>\n", layout_width/start_width, (gint)(layout_width/2.0), layout_height/start_height, height/2);
       }
     if(rotate==3)
       {
@@ -1929,10 +1977,10 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "var angle = j * Math.PI / 256.0;\n"
                    "angle = angle * 180.0 / Math.PI;\n"
                    "j += 1.0;\n"
-                   "scale_drawing.setAttribute(\"transform\", \"translate(%i, %i) rotate(\" + angle + \")\");\n"
+                   "scale_drawing.setAttribute(\"transform\", \"scale(%f, %f) translate(%i, %i) rotate(\" + angle + \")\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", width/2, height/2);
+                   "</script>\n", layout_width/start_width, layout_height/start_height, width/2, height/2);
       }
     if(rotate==4)
       {
@@ -1941,16 +1989,16 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "var j = 0;\n"
                    "function redraw() {\n"
                    "var angle = j * Math.PI / 256.0;\n"
-                   "var scale = Math.cos(angle);\n"
+                   "var scale = Math.cos(angle) * %f;\n"
                    "var scale_inv = 1.0 / scale * %i;\n"
-                   "var scale2 = Math.sin(angle);\n"
+                   "var scale2 = Math.sin(angle) * %f;\n"
                    "var scale_inv2 = 1.0 / scale2 * %i;\n"
                    "angle = angle * 180.0 / Math.PI;\n"
                    "j += 1.0;\n"
                    "scale_drawing.setAttribute(\"transform\", \"scale(\" + scale + \" ,\" + scale2 + \") translate(\" + scale_inv + \" ,\" + scale_inv2 + \") rotate(\" + angle + \")\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", width/2, height/2);
+                   "</script>\n", layout_width/start_width, (gint)(layout_width/2.0), layout_height/start_height, (gint)(layout_width/2.0));
        }
   }
 static void svg_dialog(gint width, gint height)
@@ -2569,6 +2617,22 @@ static void set_line_cap(GtkComboBox *combo, gpointer data)
   {
     line_cap=gtk_combo_box_get_active(combo);
     gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
+  {
+    gdouble width=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[0])));
+    gdouble height=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[1])));
+
+    if(width>30&&height>30&&width<500&&height<500)
+      {
+        layout_width=width;
+        layout_height=height;
+        gtk_widget_queue_draw(GTK_WIDGET(widgets3[2]));
+      }
+    else
+      {
+        g_print("The layout width and height both need to be greater than 30 and less than 500.\n");
+      }
   }
 static void cleanup(GtkWidget *widget, gpointer data)
   {
