@@ -60,7 +60,7 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
 //Add a new point and row to the list box.
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
-static void save_svg(GtkWidget *widget, gpointer data);
+static void save_svg(GtkWidget *widget, GtkWidget **widgets4);
 static void build_gradient_svg(FILE *f);
 static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing);
 static void build_rotation_script_svg(FILE *f, gint width, gint height);
@@ -75,7 +75,7 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets);
 static void delete_shape(GtkWidget *widget, GtkWidget **widgets);
 static void clear_shapes(GtkWidget *widget, GtkWidget **widgets);
 //Get and parse the svg.
-static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets);
+static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets5);
 static gchar* get_array_type_svg(gchar *p1, gboolean *found, gint *array_type);
 static gchar* get_array_start_svg(gchar *p1);
 static gchar* parse_array_svg(gchar *p1, GArray *array_temp);
@@ -517,13 +517,23 @@ int main(int argc, char *argv[])
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ch1), TRUE);
     g_signal_connect(ch1, "toggled", G_CALLBACK(save_top_check), da); 
 
+    GtkWidget *save_entry3=gtk_entry_new();
+    gtk_widget_set_hexpand(save_entry3, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(save_entry3), "bezier_drawing1.svg");
+
     GtkWidget *save_button2=gtk_button_new_with_label("Save Show SVG");
     gtk_widget_set_hexpand(save_button2, TRUE);
-    g_signal_connect(save_button2, "clicked", G_CALLBACK(save_svg), da);
+    GtkWidget *widgets4[]={da, save_entry3};
+    g_signal_connect(save_button2, "clicked", G_CALLBACK(save_svg), widgets4);
+
+    GtkWidget *save_entry4=gtk_entry_new();
+    gtk_widget_set_hexpand(save_entry4, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(save_entry4), "bezier_drawing1.svg");
 
     GtkWidget *save_button3=gtk_button_new_with_label("Get Saved SVG");
     gtk_widget_set_hexpand(save_button3, TRUE);
-    g_signal_connect(save_button3, "clicked", G_CALLBACK(get_saved_svg), widgets);
+    GtkWidget *widgets5[]={da, check1, tree, save_entry4};
+    g_signal_connect(save_button3, "clicked", G_CALLBACK(get_saved_svg), widgets5);
 
     GtkWidget *grid5=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid5), 15);
@@ -534,8 +544,10 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid5), save_entry2, 1, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid5), save_button1, 0, 2, 2, 1);
     gtk_grid_attach(GTK_GRID(grid5), ch1, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_button2, 0, 4, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_button3, 0, 5, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_entry3, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_button2, 0, 5, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_entry4, 0, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid5), save_button3, 0, 7, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *nb_label2=gtk_label_new("Line");
@@ -1595,13 +1607,13 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da)
   gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
   g_free(point);
 }
-static void save_svg(GtkWidget *widget, gpointer data)
+static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
 {
   gint i=0;
   gint j=0;
   gint path_id=1;
-  gint width=gtk_widget_get_allocated_width(GTK_WIDGET(data));
-  gint height=gtk_widget_get_allocated_height(GTK_WIDGET(data));
+  gint width=gtk_widget_get_allocated_width(GTK_WIDGET(widgets4[0]));
+  gint height=gtk_widget_get_allocated_height(GTK_WIDGET(widgets4[0]));
   gint len=0;
   gint array_len=0;
   GArray *array=NULL;
@@ -1621,7 +1633,7 @@ static void save_svg(GtkWidget *widget, gpointer data)
   //Need to count drawings with a fill gradient to match the path with the color stops.
   gint count_fill_svg=0;
 
-  FILE *f=fopen("bezier_drawing1.svg", "w");
+  FILE *f=fopen(gtk_entry_get_text(GTK_ENTRY(widgets4[1])), "w");
   if(f!=NULL)
     {
       fprintf(f, "<?xml version=\"1.0\" standalone=\"no\"?>\n");
@@ -2297,10 +2309,10 @@ static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
 
   gtk_widget_queue_draw(GTK_WIDGET(widgets[0]));
 }
-static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
+static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets5)
   {
     //Test getting the previously saved shape.
-    GFile *text_file=g_file_new_for_path("bezier_drawing1.svg");
+    GFile *text_file=g_file_new_for_path(gtk_entry_get_text(GTK_ENTRY(widgets5[3])));
     GFileInputStream *file_stream=NULL;
     GFileInfo *file_info=NULL;
     gint file_size=-1;
@@ -2367,9 +2379,9 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets)
 
         //Update the treeview.
         GtkTreeStore *store=get_tree_store();
-        gtk_tree_view_set_model(GTK_TREE_VIEW(widgets[2]), GTK_TREE_MODEL(store));
+        gtk_tree_view_set_model(GTK_TREE_VIEW(widgets5[2]), GTK_TREE_MODEL(store));
         g_object_unref(G_OBJECT(store));
-        gtk_widget_queue_draw(GTK_WIDGET(widgets[0]));
+        gtk_widget_queue_draw(GTK_WIDGET(widgets5[0]));
       }
     else
       {
@@ -2623,7 +2635,7 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
     gdouble width=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[0])));
     gdouble height=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[1])));
 
-    if(width>30&&height>30&&width<500&&height<500)
+    if(width>=30&&height>=30&&width<=500&&height<=500)
       {
         layout_width=width;
         layout_height=height;
@@ -2631,7 +2643,7 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
       }
     else
       {
-        g_print("The layout width and height both need to be greater than 30 and less than 500.\n");
+        g_print("The layout width and height range 30<=x<=500.\n");
       }
   }
 static void cleanup(GtkWidget *widget, gpointer data)
