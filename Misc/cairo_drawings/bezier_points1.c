@@ -63,9 +63,9 @@ static void add_point(GtkWidget *widget, GtkWidget **list_da);
 static void save_svg(GtkWidget *widget, GtkWidget **widgets4);
 static void build_gradient_svg(FILE *f);
 static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing);
-static void build_rotation_script_svg(FILE *f, gint width, gint height);
+static void build_rotation_script_svg(FILE *f);
 //Dialog for showing svg.
-static void svg_dialog(gint width, gint height);
+static void svg_dialog();
 //Gradient color stops.
 static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2);
 static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2);
@@ -208,7 +208,7 @@ gboolean save_top=TRUE;
 //Save initial drawing area dimensions.
 static const gdouble start_width=400.0;
 static const gdouble start_height=400.0;
-//Initial drawing is 400x400 so need to be able to scale for different sizes in svg.
+//Initial drawing is 400x400 so need to be able to scale for different sizes in layout and svg.
 static gdouble layout_width=400.0;
 static gdouble layout_height=400.0;
 
@@ -232,8 +232,8 @@ int main(int argc, char *argv[])
     else g_print("Can't set window transparency.\n");
 
     GtkWidget *da=gtk_drawing_area_new();
-    gtk_widget_set_hexpand(da, TRUE);
-    gtk_widget_set_vexpand(da, TRUE);
+    //Start with a 1000x1000 drawing area with a 400x400 drawing.
+    gtk_widget_set_size_request(GTK_WIDGET(da), 1000, 1000);
     //Add some extra events to the top drawing area.
     gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_POINTER_MOTION_MASK);
     g_signal_connect(da, "draw", G_CALLBACK(start_drawing), NULL);
@@ -494,20 +494,20 @@ int main(int argc, char *argv[])
     
     //Tab 5 "Save" widgets.
     GtkWidget *save_label1=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(save_label1), "<span font_weight='heavy'>SVG Width </span>");
+    gtk_label_set_markup(GTK_LABEL(save_label1), "<span font_weight='heavy'>Layout and SVG Width </span>");
 
     GtkWidget *save_entry1=gtk_entry_new();
     gtk_widget_set_hexpand(save_entry1, TRUE);
     gtk_entry_set_text(GTK_ENTRY(save_entry1), "400");
 
     GtkWidget *save_label2=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(save_label2), "<span font_weight='heavy'>SVG Height </span>");
+    gtk_label_set_markup(GTK_LABEL(save_label2), "<span font_weight='heavy'>Layout and SVG Height </span>");
 
     GtkWidget *save_entry2=gtk_entry_new();
     gtk_widget_set_hexpand(save_entry2, TRUE);
     gtk_entry_set_text(GTK_ENTRY(save_entry2), "400");
 
-    GtkWidget *save_button1=gtk_button_new_with_label("Save SVG Dimensions");
+    GtkWidget *save_button1=gtk_button_new_with_label("Save Layout and SVG Dimensions");
     gtk_widget_set_hexpand(save_button1, TRUE);
     GtkWidget *widgets3[]={save_entry1, save_entry2, da};
     g_signal_connect(save_button1, "clicked", G_CALLBACK(set_layout), widgets3);
@@ -665,13 +665,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Count the drawings with a fill gradient to match paths with gradients.
     gint count_fill=0;
 
-    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
-    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+    gdouble width=layout_width;
+    gdouble height=layout_height;
     gdouble w1=width/10.0;
     gdouble h1=height/10.0;
-
-    //Scale drawing based on layout.
-    cairo_scale(cr, layout_width/start_width, layout_height/start_height);
 
     cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
     cairo_paint(cr);
@@ -784,8 +781,6 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
   }
 static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shape_fill, gint shape_inter, gboolean saved, gint *count_fill)
   {
-    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
-    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     GArray *control1=NULL;
     GArray *mid_points=NULL;
     gint i=0;
@@ -857,10 +852,10 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
       {
         cairo_close_path(cr);
         struct color_stop st;
-        gdouble x1=g_array_index(direction, gdouble, 4*(*count_fill))/100.0*width-width/2.0;
-        gdouble y1=g_array_index(direction, gdouble, 4*(*count_fill)+1)/100.0*height-height/2.0;
-        gdouble x2=g_array_index(direction, gdouble, 4*(*count_fill)+2)/100.0*width-width/2.0;
-        gdouble y2=g_array_index(direction, gdouble, 4*(*count_fill)+3)/100.0*height-height/2.0;
+        gdouble x1=g_array_index(direction, gdouble, 4*(*count_fill))/100.0*layout_width-layout_width/2.0;
+        gdouble y1=g_array_index(direction, gdouble, 4*(*count_fill)+1)/100.0*layout_height-layout_height/2.0;
+        gdouble x2=g_array_index(direction, gdouble, 4*(*count_fill)+2)/100.0*layout_width-layout_width/2.0;
+        gdouble y2=g_array_index(direction, gdouble, 4*(*count_fill)+3)/100.0*layout_height-layout_height/2.0;
         GArray *array=((GArray*)(g_ptr_array_index(gradients, (*count_fill))));
         cairo_pattern_t *pattern1=cairo_pattern_create_linear(x1, y1, x2, y2);
         for(i=0;i<array->len;i++)
@@ -879,10 +874,10 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
       {
         cairo_close_path(cr);
         struct color_stop st;
-        gdouble x1=ld[0]/100.0*width-width/2.0;
-        gdouble y1=ld[1]/100.0*height-height/2.0;
-        gdouble x2=ld[2]/100.0*width-width/2.0;
-        gdouble y2=ld[3]/100.0*height-height/2.0;
+        gdouble x1=ld[0]/100.0*layout_width-layout_width/2.0;
+        gdouble y1=ld[1]/100.0*layout_height-layout_height/2.0;
+        gdouble x2=ld[2]/100.0*layout_width-layout_width/2.0;
+        gdouble y2=ld[3]/100.0*layout_height-layout_height/2.0;
         cairo_pattern_t *pattern1=cairo_pattern_create_linear(x1, y1, x2, y2);
         for(i=0;i<color_stops->len;i++)
           {
@@ -929,15 +924,13 @@ static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   }
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
-    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
-    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     struct point p1;
 
-    gdouble w1=start_width*0.5;
-    if(start_width>start_height) w1=start_height*0.5;
+    gdouble w1=0.5*layout_width-0.5*(layout_width-start_width);
+    gdouble h1=0.5*layout_height-0.5*(layout_height-start_height);
 
-    p1.x=event->button.x*start_width/width-w1;
-    p1.y=event->button.y*start_height/height-w1;
+    p1.x=event->button.x*start_width/layout_width-w1;
+    p1.y=event->button.y*start_height/layout_height-h1;
 
     struct point *p;
     p=&g_array_index(coords1, struct point, row_id);
@@ -1612,8 +1605,8 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
   gint i=0;
   gint j=0;
   gint path_id=1;
-  gint width=gtk_widget_get_allocated_width(GTK_WIDGET(widgets4[0]));
-  gint height=gtk_widget_get_allocated_height(GTK_WIDGET(widgets4[0]));
+  //gint width=gtk_widget_get_allocated_width(GTK_WIDGET(widgets4[0]));
+  //gint height=gtk_widget_get_allocated_height(GTK_WIDGET(widgets4[0]));
   gint len=0;
   gint array_len=0;
   GArray *array=NULL;
@@ -1764,7 +1757,7 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
         }
 
       //If the drawing is animated, add the java script for rotation.
-      if(rotate>0) build_rotation_script_svg(f, width, height);
+      if(rotate>0) build_rotation_script_svg(f);
 
       fprintf(f, "</g>\n</svg>\n");
       fclose(f);
@@ -1776,7 +1769,7 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
     }
 
   //Show the svg drawing.
-  if(!file_error) svg_dialog(width, height);
+  if(!file_error) svg_dialog();
 }
 static void build_gradient_svg(FILE *f)
   {
@@ -1947,7 +1940,7 @@ static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shap
       g_print("No coordinates to output svg with.\n");
     }
 }
-static void build_rotation_script_svg(FILE *f, gint width, gint height)
+static void build_rotation_script_svg(FILE *f)
   {
     //Add java script to the svg if the drawing is animated.
     if(rotate==1)
@@ -1963,7 +1956,7 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "scale_drawing.setAttribute(\"transform\", \"scale(%f, \" + scale + \") translate(%i, \" + scale_inv + \")\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", layout_height/start_height, (gint)(layout_height/2.0), layout_width/start_width, width/2);
+                   "</script>\n", layout_height/start_height, (gint)(layout_height/2.0), layout_width/start_width, (gint)(layout_width/2.0));
       }
     if(rotate==2)
       {
@@ -1978,7 +1971,7 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "scale_drawing.setAttribute(\"transform\", \"scale(\" + scale + \", %f) translate(\" + scale_inv + \", %i)\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", layout_width/start_width, (gint)(layout_width/2.0), layout_height/start_height, height/2);
+                   "</script>\n", layout_width/start_width, (gint)(layout_width/2.0), layout_height/start_height, (gint)(layout_height/2.0));
       }
     if(rotate==3)
       {
@@ -1992,7 +1985,7 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "scale_drawing.setAttribute(\"transform\", \"scale(%f, %f) translate(%i, %i) rotate(\" + angle + \")\");\n"
                    "}\n"
                    "setInterval(\"redraw()\", 16.7);\n"
-                   "</script>\n", layout_width/start_width, layout_height/start_height, width/2, height/2);
+                   "</script>\n", layout_width/start_width, layout_height/start_height, (gint)(layout_width/2.0), (gint)(layout_height/2.0));
       }
     if(rotate==4)
       {
@@ -2013,10 +2006,10 @@ static void build_rotation_script_svg(FILE *f, gint width, gint height)
                    "</script>\n", layout_width/start_width, (gint)(layout_width/2.0), layout_height/start_height, (gint)(layout_width/2.0));
        }
   }
-static void svg_dialog(gint width, gint height)
+static void svg_dialog()
   {
     GtkWidget *dialog=gtk_dialog_new_with_buttons("bezier_drawing1.svg", GTK_WINDOW(window), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, NULL);
-    gtk_window_set_default_size(GTK_WINDOW(dialog), width, height);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 400);
     GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
     GError *error=NULL;
@@ -2635,7 +2628,7 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
     gdouble width=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[0])));
     gdouble height=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[1])));
 
-    if(width>=30&&height>=30&&width<=500&&height<=500)
+    if(width>=20&&height>=20&&width<=600&&height<=600)
       {
         layout_width=width;
         layout_height=height;
