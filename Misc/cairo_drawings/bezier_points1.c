@@ -87,6 +87,10 @@ static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets);
 static void set_line_width(GtkComboBox *combo, gpointer data);
 static void set_line_cap(GtkComboBox *combo, gpointer data);
 static void set_layout(GtkWidget *widget, GtkWidget **widgets3);
+//The about program dialog and drawing.
+static void about_dialog(GtkWidget *widget, gpointer data);
+static GdkPixbuf* draw_icon();
+//Clean up all those arrays.
 static void cleanup(GtkWidget *widget, gpointer data);
 
 static GtkTargetEntry entries[] = {
@@ -230,6 +234,8 @@ int main(int argc, char *argv[])
         gtk_widget_set_visual(window, visual);
       }
     else g_print("Can't set window transparency.\n");
+    GdkPixbuf *icon=draw_icon();
+    gtk_window_set_default_icon(icon);
 
     GtkWidget *da=gtk_drawing_area_new();
     //Start with a 1000x1000 drawing area with a 400x400 drawing.
@@ -570,7 +576,20 @@ int main(int argc, char *argv[])
     //Draw background window based on the paned window splitter.
     g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), paned1);
 
-    gtk_container_add(GTK_CONTAINER(window), paned1);
+    GtkWidget *menu1=gtk_menu_new();
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Bezier Points1");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
+    GtkWidget *title1=gtk_menu_item_new_with_label("About");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
+    GtkWidget *menu_bar=gtk_menu_bar_new();
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), title1);
+    g_signal_connect(menu1item1, "activate", G_CALLBACK(about_dialog), window);
+
+    GtkWidget *grid6=gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid6), menu_bar, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid6), paned1, 0, 1, 1, 1);
+
+    gtk_container_add(GTK_CONTAINER(window), grid6);
 
     GError *css_error=NULL;
     GtkCssProvider *provider=gtk_css_provider_new();
@@ -2638,6 +2657,161 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
       {
         g_print("The layout width and height range 30<=x<=500.\n");
       }
+  }
+static void about_dialog(GtkWidget *widget, gpointer data)
+  {
+    GtkWidget *dialog=gtk_about_dialog_new();
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
+    //gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Bezier Points1");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A non linear approach to drawing.");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2017 C. Eric Cashon");
+
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+static GdkPixbuf* draw_icon()
+  {  
+    gint i=0;
+    gint len=0;
+    struct point p1;
+    struct controls c1;
+    GArray *cp1=NULL;
+    GArray *cp2=NULL;
+    GArray *cp3=NULL;
+    GArray *cp4=NULL;
+    GArray *head=g_array_new(FALSE, FALSE, sizeof(struct point));
+    GArray *eye1=g_array_new(FALSE, FALSE, sizeof(struct point));
+    GArray *eye2=g_array_new(FALSE, FALSE, sizeof(struct point));
+    GArray *smile=g_array_new(FALSE, FALSE, sizeof(struct point));
+    gdouble shape1[]={197.600000, 0.000000, 171.855286, 165.421722, 92.251190, 80.340851, -3.041626, 157.230347, -91.292328, 80.802856, -173.921051, 166.943161, -197.600000, 0.000000, -171.126620, -98.800000, -98.800000, -171.126620, -0.000000, -197.600000, 98.800000, -171.126620, 171.126620, -98.800000, 197.600000, 0.000000};
+    gdouble shape2[]={-80.005219, -116.974167, -60.891556, -99.481995, -47.832367, -53.821945, -90.579529, -53.343048, -119.620056, -73.651749, -106.794327, -112.442886, -80.005219, -116.974167};
+    gdouble shape3[]={118.749344, -89.965118, 123.728241, -64.674652, 96.609802, -49.756699, 54.696991, -48.287888, 67.510803, -92.461472, 101.569748, -109.263504, 118.749344, -89.965118};
+    gdouble shape4[]={125.234634, 6.535904, 70.436905, 64.270874, -4.464111, 81.433762, -78.761032, 52.571838, -128.618881, 2.941559};
+
+    //Create a surface to draw a 256x256 icon. 
+    cairo_surface_t *surface_icon=cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 256, 256);
+    cairo_t *cr=cairo_create(surface_icon);
+
+    //Paint the background.
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
+    cairo_paint(cr);
+
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    cairo_translate(cr, 256.0/2.0, 256.0/2.0);
+    cairo_scale(cr, 256.0/500.0, 256.0/500.0);
+    cairo_set_line_width(cr, 6.0);
+    
+    //Load arrays.
+    for(i=0;i<26;i+=2)
+      {
+        p1.x=shape1[i];
+        p1.y=shape1[i+1];
+        g_array_append_val(head, p1);
+      }
+    for(i=0;i<14;i+=2)
+      {
+        p1.x=shape2[i];
+        p1.y=shape2[i+1];
+        g_array_append_val(eye1, p1);
+      }
+    for(i=0;i<14;i+=2)
+      {
+        p1.x=shape3[i];
+        p1.y=shape3[i+1];
+        g_array_append_val(eye2, p1);
+      }
+
+    for(i=0;i<10;i+=2)
+      {
+        p1.x=shape4[i];
+        p1.y=shape4[i+1];
+        g_array_append_val(smile, p1);
+      }
+
+    //Get the Bezier control points.
+    cp1=control_points_from_coords2(head);
+    cp2=control_points_from_coords2(eye1);
+    cp3=control_points_from_coords2(eye2);
+    cp4=control_points_from_coords2(smile);
+
+    //Draw arrays and patterns.
+    cairo_pattern_t *pattern1=cairo_pattern_create_linear(0, -128, 0, 128);
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.0, 1.0, 0.0, 1.0, 1.0); 
+    cairo_pattern_add_color_stop_rgba(pattern1, 0.5, 1.0, 1.0, 0.0, 1.0); 
+    cairo_pattern_add_color_stop_rgba(pattern1, 1.0, 0.0, 1.0, 1.0, 1.0); 
+    len=head->len;
+    p1=g_array_index(head, struct point, 0);
+    cairo_move_to(cr, p1.x, p1.y);
+    for(i=1;i<len;i++)
+      {
+        p1=g_array_index(head, struct point, i);
+        c1=g_array_index(cp1, struct controls, i-1);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p1.x, p1.y);
+        cairo_stroke_preserve(cr); 
+      }
+    cairo_set_source(cr, pattern1);  
+    cairo_fill(cr);
+    cairo_pattern_destroy(pattern1);
+    cairo_new_path(cr);
+
+    cairo_pattern_t *pattern2=cairo_pattern_create_linear(0, -128, 0, 128);
+    cairo_pattern_add_color_stop_rgba(pattern2, 0.08, 0.0, 0.0, 1.0, 1.0); 
+    cairo_pattern_add_color_stop_rgba(pattern2, 0.3, 0.0, 1.0, 1.0, 1.0);  
+    len=eye1->len;
+    p1=g_array_index(eye1, struct point, 0);
+    cairo_move_to(cr, p1.x, p1.y);
+    for(i=1;i<len;i++)
+      {
+        p1=g_array_index(eye1, struct point, i);
+        c1=g_array_index(cp2, struct controls, i-1);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p1.x, p1.y);
+        cairo_stroke_preserve(cr); 
+      }
+    cairo_set_source(cr, pattern2);  
+    cairo_fill(cr);
+    cairo_new_path(cr);
+
+    len=eye2->len;
+    p1=g_array_index(eye2, struct point, 0);
+    cairo_move_to(cr, p1.x, p1.y);
+    for(i=1;i<len;i++)
+      {
+        p1=g_array_index(eye2, struct point, i);
+        c1=g_array_index(cp3, struct controls, i-1);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p1.x, p1.y);
+        cairo_stroke_preserve(cr); 
+      }
+    cairo_fill(cr);
+    cairo_pattern_destroy(pattern2);
+    cairo_new_path(cr);
+
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_width(cr, 7.0);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+    len=smile->len;
+    p1=g_array_index(smile, struct point, 0);
+    cairo_move_to(cr, p1.x, p1.y);
+    for(i=1;i<len;i++)
+      {
+        p1=g_array_index(smile, struct point, i);
+        c1=g_array_index(cp4, struct controls, i-1);
+        cairo_curve_to(cr, c1.x1, c1.y1, c1.x2, c1.y2, p1.x, p1.y);
+        cairo_stroke_preserve(cr); 
+      }
+    cairo_new_path(cr);
+       
+    GdkPixbuf *icon=gdk_pixbuf_get_from_surface(surface_icon, 0, 0, 256, 256);
+
+    g_array_free(head, TRUE);
+    g_array_free(eye1, TRUE);
+    g_array_free(eye2, TRUE);
+    g_array_free(smile, TRUE);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface_icon); 
+    return icon;
   }
 static void cleanup(GtkWidget *widget, gpointer data)
   {
