@@ -203,6 +203,8 @@ static gint rotate=0;
 static gint begin_id=0;
 //For blocking motion signal. Block when not drawing top rectangle
 static gint motion_id=0;
+static gdouble motion_x=0;
+static gdouble motion_y=0;
 //Tick id for animation frame clock.
 static guint tick_id=0;
 //GTK window for dialogs.
@@ -222,7 +224,7 @@ int main(int argc, char *argv[])
 
     window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Coordinates with Bezier Points");
-    gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);
+    gtk_window_set_default_size(GTK_WINDOW(window), 850, 450);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(cleanup), NULL);
     gtk_widget_set_app_paintable(window, TRUE);
@@ -572,7 +574,6 @@ int main(int argc, char *argv[])
     gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
     gtk_paned_pack2(GTK_PANED(paned1), da_sw, TRUE, TRUE);
     gtk_paned_set_position(GTK_PANED(paned1), 400);
-
     //Draw background window based on the paned window splitter.
     g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), paned1);
 
@@ -587,7 +588,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *grid6=gtk_grid_new();
     gtk_grid_attach(GTK_GRID(grid6), menu_bar, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid6), paned1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid6), paned1, 0, 1, 8, 8);
 
     gtk_container_add(GTK_CONTAINER(window), grid6);
 
@@ -606,7 +607,8 @@ int main(int argc, char *argv[])
 
     //Set some initial values for the drawing area.
     gdouble w1=start_width*0.4;
-
+    motion_x=w1*cos(0.0);
+    motion_y=w1*sin(0.0);
     struct point p1;
     coords1=g_array_sized_new(FALSE, FALSE, sizeof(struct point), 12);
     for(i=0;i<12;i++)
@@ -709,6 +711,14 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_move_to(cr, 5.0*w1, 1.0*h1);
     cairo_line_to(cr, 5.0*w1, 9.0*h1);
     cairo_stroke(cr);
+
+    //The x, y coordinates of the selected point below the box.
+    cairo_move_to(cr, 20, height+30);
+    gchar *motion=g_strdup_printf("X: %f Y: %f", motion_x, motion_y);
+    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 16);
+    cairo_show_text(cr, motion);
+    g_free(motion);
 
     //Rotations for animation.
     gdouble angle=0;
@@ -944,6 +954,10 @@ static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data)
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     struct point p1;
+
+    //Update the coordinates in the drawing.
+    motion_x=event->button.x-layout_width/2.0;
+    motion_y=event->button.y-layout_height/2.0;
 
     gdouble w1=0.5*layout_width-0.5*(layout_width-start_width);
     gdouble h1=0.5*layout_height-0.5*(layout_height-start_height);
@@ -1562,8 +1576,12 @@ create_row (const gchar *text, GtkWidget *da)
 static void
 on_row_activated (GtkListBox *self, GtkListBoxRow *row, gpointer data)
 {
+  struct point p1;
   row_id=gtk_list_box_row_get_index(row);
   begin_id=row_id;
+  p1=g_array_index(coords1, struct point, begin_id);
+  motion_x=p1.x*layout_width/start_width;
+  motion_y=p1.y*layout_height/start_height;
   gtk_widget_queue_draw(GTK_WIDGET(data));
 }
 
@@ -2649,6 +2667,8 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
 
     if(width>=20&&height>=20&&width<=600&&height<=600)
       {
+        motion_x=motion_x*width/layout_width;
+        motion_y=motion_y*height/layout_height;
         layout_width=width;
         layout_height=height;
         gtk_widget_queue_draw(GTK_WIDGET(widgets3[2]));
