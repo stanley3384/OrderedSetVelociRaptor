@@ -2809,6 +2809,10 @@ static GdkPixbuf* draw_icon()
     g_array_free(eye1, TRUE);
     g_array_free(eye2, TRUE);
     g_array_free(smile, TRUE);
+    g_array_free(cp1, TRUE);
+    g_array_free(cp2, TRUE);
+    g_array_free(cp3, TRUE);
+    g_array_free(cp4, TRUE);
     cairo_destroy(cr);
     cairo_surface_destroy(surface_icon); 
     return icon;
