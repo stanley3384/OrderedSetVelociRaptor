@@ -56,7 +56,8 @@ static void on_row_activated(GtkListBox *self, GtkListBoxRow *row, gpointer data
 static void on_selected_children_changed(GtkListBox *self);
 static void a11y_selection_changed (AtkObject *obj);
 //Delete list box row with Del key.
-static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
+static gboolean key_delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
+static void button_delete_row(GtkWidget *widget, GtkWidget **list_da);
 //Add a new point and row to the list box.
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
@@ -273,6 +274,8 @@ int main(int argc, char *argv[])
       gtk_list_box_insert (GTK_LIST_BOX (list), row, -1);
       g_free(text);
     }
+    GtkListBoxRow *select_row=gtk_list_box_get_row_at_index(GTK_LIST_BOX(list), 0);
+    gtk_list_box_select_row(GTK_LIST_BOX(list), select_row);
 
     gtk_drag_dest_set (list, GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_DROP, entries, 1, GDK_ACTION_MOVE);
     g_signal_connect (list, "drag-data-received", G_CALLBACK (drag_data_received), NULL);
@@ -292,6 +295,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(button1, FALSE);
     GtkWidget *list_da[]={list, da};
     g_signal_connect(button1, "clicked", G_CALLBACK(add_point), list_da);
+
+    GtkWidget *delete_button=gtk_button_new_with_label("Delete Point");
+    gtk_widget_set_hexpand(delete_button, FALSE);
+    g_signal_connect(delete_button, "clicked", G_CALLBACK(button_delete_row), list_da);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
@@ -315,31 +322,17 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 4, "5", "Rotate XYZ");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(rotate_combo), da);
-
-    GtkWidget *label2=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(label2), "<span font_weight='heavy'>Background </span>");
-
-    GtkWidget *entry1=gtk_entry_new();
-    gtk_widget_set_hexpand(entry1, TRUE);
-    gtk_entry_set_text(GTK_ENTRY(entry1), "rgba(255, 255, 255, 1.0)");
-
-    GtkWidget *button2=gtk_button_new_with_label("Update Background");
-    gtk_widget_set_hexpand(button2, FALSE);
-    GtkWidget *colors[]={entry1, window, da};
-    g_signal_connect(button2, "clicked", G_CALLBACK(check_colors), colors);
     
     GtkWidget *grid1=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid1), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid1), 8);
     gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 2, 1);    
     gtk_grid_attach(GTK_GRID(grid1), sw, 0, 1, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), delete_button, 1, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 3, 1, 1); 
     gtk_grid_attach(GTK_GRID(grid1), combo2, 1, 3, 1, 1);  
     gtk_grid_attach(GTK_GRID(grid1), check1, 0, 4, 2, 1);     
-    gtk_grid_attach(GTK_GRID(grid1), label2, 0, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), entry1, 1, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), button2, 0, 6, 2, 1);
 
     //Tab 2 "Line" widgets.
     GtkWidget *line_width1=gtk_label_new(NULL);
@@ -381,6 +374,18 @@ int main(int argc, char *argv[])
     GtkWidget *line_widgets[]={line_entry1, window, da};
     g_signal_connect(line_button1, "clicked", G_CALLBACK(update_line_color), line_widgets);
 
+    GtkWidget *background_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(background_label), "<span font_weight='heavy'>Background </span>");
+
+    GtkWidget *background_entry=gtk_entry_new();
+    gtk_widget_set_hexpand(background_entry, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(background_entry), "rgba(255, 255, 255, 1.0)");
+
+    GtkWidget *background_button=gtk_button_new_with_label("Update Background");
+    gtk_widget_set_hexpand(background_button, FALSE);
+    GtkWidget *colors[]={background_entry, window, da};
+    g_signal_connect(background_button, "clicked", G_CALLBACK(check_colors), colors);
+
     GtkWidget *grid2=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
     gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
@@ -391,6 +396,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid2), line_label1, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), line_entry1, 1, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid2), line_button1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid2), background_label, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), background_entry, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid2), background_button, 0, 5, 2, 1);
 
     //Tab 3 "Fill" widgets.
     GtkWidget *label_stop=gtk_label_new(NULL);
@@ -1568,7 +1576,7 @@ create_row (const gchar *text, GtkWidget *da)
   g_signal_connect (ebox, "drag-end", G_CALLBACK (drag_end), da);
   g_signal_connect (ebox, "drag-data-get", G_CALLBACK (drag_data_get), NULL);
 
-  g_signal_connect (row, "key-press-event", G_CALLBACK (delete_row), da);
+  g_signal_connect (row, "key-press-event", G_CALLBACK (key_delete_row), da);
 
   return row;
 }
@@ -1597,7 +1605,7 @@ a11y_selection_changed (AtkObject *obj)
   //g_message ("Accessible selection changed");
 }
 
-static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
+static gboolean key_delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
 {
   if(event->keyval==GDK_KEY_Delete)
     {
@@ -1611,10 +1619,33 @@ static gboolean delete_row(GtkWidget *row, GdkEventKey *event, gpointer data)
         }
       else
         {
-          g_print("Couldn't delete row. There needs to be at least 3 rows in the list box.\n");
+          g_print("Couldn't delete row. There needs to be at least 3 points to draw with.\n");
         }
     }
   return TRUE;
+}
+static void button_delete_row(GtkWidget *widget, GtkWidget **list_da)
+{
+  if(array_id->len>3)
+    {
+      GtkListBoxRow *row=gtk_list_box_get_selected_row(GTK_LIST_BOX(list_da[0]));
+      if(row!=NULL&&gtk_list_box_row_is_selected(row))
+        {
+          gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+          g_array_remove_index(array_id, i);
+          g_array_remove_index(coords1, i);
+          gtk_widget_destroy(GTK_WIDGET(row));
+          gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
+        }
+      else
+        {
+          g_print("No rows are selected in the list box.\n");
+        }
+    }
+  else
+    {
+      g_print("Couldn't delete row. There needs to be at least 3 points to draw with.\n");
+    }
 }
 static void add_point(GtkWidget *widget, GtkWidget **list_da)
 {
