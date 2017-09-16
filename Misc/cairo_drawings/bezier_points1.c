@@ -91,6 +91,8 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3);
 //The about program dialog and drawing.
 static void about_dialog(GtkWidget *widget, gpointer data);
 static GdkPixbuf* draw_icon();
+//General info message dialog.
+static void message_dialog(gchar *msg);
 //Clean up all those arrays.
 static void cleanup(GtkWidget *widget, gpointer data);
 
@@ -236,7 +238,12 @@ int main(int argc, char *argv[])
         GdkVisual *visual=gdk_screen_get_rgba_visual(screen);
         gtk_widget_set_visual(window, visual);
       }
-    else g_print("Can't set window transparency.\n");
+    else
+      {
+        gchar *msg=g_strdup("Can't set window transparency.");
+        message_dialog(msg);
+        g_free(msg);
+      } 
     GdkPixbuf *icon=draw_icon();
     gtk_window_set_default_icon(icon);
 
@@ -993,7 +1000,9 @@ static void check_colors(GtkWidget *widget, GtkWidget **colors)
       }
     else
       {
-        g_print("Color string format error in background\n");
+        gchar *msg=g_strdup("Color string format error in background color");
+        message_dialog(msg);
+        g_free(msg);
       } 
    
     //Update main window.
@@ -1072,7 +1081,7 @@ static GArray* control_points_from_coords2(const GArray *dataPoints)
       {
         //Return NULL.
         controlPoints=NULL;
-        g_print("Can't get control points from coordinates. NULL returned.\n");
+        g_warning("Can't get control points from coordinates. NULL returned.\n");
       }
     else if(count==1)
       {
@@ -1325,6 +1334,10 @@ drag_end (GtkWidget      *widget,
   g_object_set_data (G_OBJECT (gtk_widget_get_parent (row)), "drag-row", NULL);
   gtk_style_context_remove_class (gtk_widget_get_style_context (row), "drag-row");
   gtk_style_context_remove_class (gtk_widget_get_style_context (row), "drag-hover");
+
+  //Unselect first? If not, the row looks selected but isn't.
+  gtk_list_box_unselect_row(GTK_LIST_BOX(gtk_widget_get_parent(row)), GTK_LIST_BOX_ROW(row));
+  gtk_list_box_select_row(GTK_LIST_BOX(gtk_widget_get_parent(row)), GTK_LIST_BOX_ROW(row));
 
   row_id=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
   gint i=0;
@@ -1619,7 +1632,9 @@ static gboolean key_delete_row(GtkWidget *row, GdkEventKey *event, gpointer data
         }
       else
         {
-          g_print("Couldn't delete row. There needs to be at least 3 points to draw with.\n");
+          gchar *msg=g_strdup("Couldn't delete row. There needs to be at least 3 points to draw with.");
+          message_dialog(msg);
+          g_free(msg);
         }
     }
   return TRUE;
@@ -1628,7 +1643,8 @@ static void button_delete_row(GtkWidget *widget, GtkWidget **list_da)
 {
   if(array_id->len>3)
     {
-      GtkListBoxRow *row=gtk_list_box_get_selected_row(GTK_LIST_BOX(list_da[0]));
+      GtkListBoxRow *row=NULL;
+      row=gtk_list_box_get_selected_row(GTK_LIST_BOX(list_da[0]));
       if(row!=NULL&&gtk_list_box_row_is_selected(row))
         {
           gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
@@ -1639,12 +1655,16 @@ static void button_delete_row(GtkWidget *widget, GtkWidget **list_da)
         }
       else
         {
-          g_print("No rows are selected in the list box.\n");
+          gchar *msg=g_strdup("No rows are selected in the list box.");
+          message_dialog(msg);
+          g_free(msg);
         }
     }
   else
     {
-      g_print("Couldn't delete row. There needs to be at least 3 points to draw with.\n");
+      gchar *msg=g_strdup("Couldn't delete row. There needs to be at least 3 points to draw with.");
+      message_dialog(msg);
+      g_free(msg);
     }
 }
 static void add_point(GtkWidget *widget, GtkWidget **list_da)
@@ -1833,7 +1853,9 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
   else
     {
       file_error=TRUE;
-      g_print("Couldn't open file bezier_drawing1.svg\n");
+      gchar *msg=g_strdup("Couldn't open file bezier_drawing1.svg.");
+      message_dialog(msg);
+      g_free(msg);
     }
 
   //Show the svg drawing.
@@ -2005,7 +2027,9 @@ static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shap
     }
   else
     {
-      g_print("No coordinates to output svg with.\n");
+      gchar *msg=g_strdup("No coordinates to output svg with.");
+      message_dialog(msg);
+      g_free(msg);
     }
 }
 static void build_rotation_script_svg(FILE *f)
@@ -2136,7 +2160,9 @@ static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2)
 
     if(counter!=5)
       {
-        g_print("Need five numbers(0.0<=x<=1.0) for the color stop.\n");
+        gchar *msg=g_strdup("Need five numbers(0.0<=x<=1.0) for the color stop.");
+        message_dialog(msg);
+        g_free(msg);
       }
     else
       {
@@ -2206,7 +2232,9 @@ static void update_linear_direction(GtkWidget *widget, GtkWidget **widgets2)
 
     if(counter!=4)
       {
-        g_print("Need four numbers(0.0<=x<=100.0) for the linear direction.\n");
+        gchar *msg=g_strdup("Need four numbers(0.0<=x<=100.0) for the linear direction.");
+        message_dialog(msg);
+        g_free(msg);
       }
     else
       {
@@ -2327,7 +2355,9 @@ static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
         }
       else
         {
-          g_print("Can only delete top node shape.\n");
+          gchar *msg=g_strdup("Can only delete top node shape.");
+          message_dialog(msg);
+          g_free(msg);
         }
     }
 
@@ -2432,7 +2462,9 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets5)
           }
         else
           {
-            g_print("Couldn't find program data in svg file.\n");
+            gchar *msg=g_strdup("Couldn't find program data in svg file.");
+            message_dialog(msg);
+            g_free(msg);
           }
                       
         g_object_unref(file_stream);
@@ -2446,7 +2478,7 @@ static void get_saved_svg(GtkWidget *widget, GtkWidget **widgets5)
       }
     else
       {
-        g_print("%s\n", error->message);
+        message_dialog(error->message);
         g_error_free(error);
       }
    
@@ -2673,7 +2705,9 @@ static void update_line_color(GtkWidget *widget, GtkWidget **line_widgets)
       }
     else
       {
-        g_print("Color string format error in line color.\n");
+        gchar *msg=g_strdup("Color string format error in line color.");
+        message_dialog(msg);
+        g_free(msg);
       } 
    
     //Update main window.
@@ -2706,7 +2740,9 @@ static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
       }
     else
       {
-        g_print("The layout width and height range 30<=x<=500.\n");
+        gchar *msg=g_strdup("The layout width and height range 30<=x<=500.");
+        message_dialog(msg);
+        g_free(msg);
       }
   }
 static void about_dialog(GtkWidget *widget, gpointer data)
@@ -2867,6 +2903,12 @@ static GdkPixbuf* draw_icon()
     cairo_destroy(cr);
     cairo_surface_destroy(surface_icon); 
     return icon;
+  }
+static void message_dialog(gchar *msg)
+  {
+    GtkWidget *dialog=gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "%s", msg);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
   }
 static void cleanup(GtkWidget *widget, gpointer data)
   {
