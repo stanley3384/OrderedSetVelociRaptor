@@ -58,6 +58,7 @@ static void a11y_selection_changed (AtkObject *obj);
 //Delete list box row with Del key.
 static gboolean key_delete_row(GtkWidget *row, GdkEventKey *event, gpointer data);
 static void button_delete_row(GtkWidget *widget, GtkWidget **list_da);
+static void change_selected_point(GtkWidget *widget, GtkWidget **list_da);
 //Add a new point and row to the list box.
 static void add_point(GtkWidget *widget, GtkWidget **list_da);
 //Save to svg file.
@@ -307,6 +308,10 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(delete_button, FALSE);
     g_signal_connect(delete_button, "clicked", G_CALLBACK(button_delete_row), list_da);
 
+    GtkWidget *point_button=gtk_button_new_with_label("Change Selected Point");
+    gtk_widget_set_hexpand(point_button, FALSE);
+    g_signal_connect(point_button, "clicked", G_CALLBACK(change_selected_point), list_da);
+
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_widget_set_hexpand(combo1, TRUE);
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Linear");
@@ -337,9 +342,10 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid1), sw, 0, 1, 2, 1); 
     gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid1), delete_button, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 3, 1, 1); 
-    gtk_grid_attach(GTK_GRID(grid1), combo2, 1, 3, 1, 1);  
-    gtk_grid_attach(GTK_GRID(grid1), check1, 0, 4, 2, 1);     
+    gtk_grid_attach(GTK_GRID(grid1), point_button, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 4, 1, 1); 
+    gtk_grid_attach(GTK_GRID(grid1), combo2, 1, 4, 1, 1);  
+    gtk_grid_attach(GTK_GRID(grid1), check1, 0, 5, 2, 1);     
 
     //Tab 2 "Line" widgets.
     GtkWidget *line_width1=gtk_label_new(NULL);
@@ -1667,6 +1673,67 @@ static void button_delete_row(GtkWidget *widget, GtkWidget **list_da)
       g_free(msg);
     }
 }
+static void change_selected_point(GtkWidget *widget, GtkWidget **list_da)
+{
+  GtkWidget *dialog=gtk_dialog_new_with_buttons ("Change Selected Point", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Cancel", GTK_RESPONSE_REJECT, "OK", GTK_RESPONSE_ACCEPT, NULL);
+  gtk_window_set_default_size(GTK_WINDOW(dialog), 250, 100);
+
+  GtkWidget *x_label=gtk_label_new("X:");
+  gtk_widget_set_hexpand(x_label, TRUE);
+  gtk_widget_set_halign(x_label, GTK_ALIGN_CENTER);
+  GtkWidget *y_label=gtk_label_new("Y:");
+  gtk_widget_set_halign(y_label, GTK_ALIGN_CENTER);
+  GtkWidget *x_entry=gtk_entry_new();
+  GtkWidget *y_entry=gtk_entry_new();
+
+  GtkWidget *grid=gtk_grid_new();
+  gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+  gtk_grid_attach(GTK_GRID(grid), x_label, 0, 0, 1, 1); 
+  gtk_grid_attach(GTK_GRID(grid), x_entry, 1, 0, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), y_label, 0, 1, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), y_entry, 1, 1, 1, 1);
+
+  GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+  gtk_container_add(GTK_CONTAINER(content_area), grid);
+  gtk_widget_show_all(dialog);
+
+  gint response=gtk_dialog_run(GTK_DIALOG(dialog));
+  if(response==GTK_RESPONSE_ACCEPT)
+    {
+      GtkListBoxRow *row=NULL;
+      row=gtk_list_box_get_selected_row(GTK_LIST_BOX(list_da[0]));
+      if(row!=NULL&&gtk_list_box_row_is_selected(row))
+        {
+          gdouble x_coord=strtod(gtk_entry_get_text(GTK_ENTRY(x_entry)), NULL);
+          gdouble y_coord=strtod(gtk_entry_get_text(GTK_ENTRY(y_entry)), NULL);
+          //A return of 0 is OK. Set general limits based on the drawing area initail size.
+          if(x_coord>=-1000&&x_coord<=1000&&y_coord>=-1000&&y_coord<=1000)
+            {
+              gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+              gint index=g_array_index(array_id, gint, i);
+              struct point *p1=&g_array_index(coords1, struct point, index);
+              (p1->x)=x_coord;
+              (p1->y)=y_coord;          
+              gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
+            }
+          else
+            {
+              gchar *msg=g_strdup("The x and y coordinate range: -1000<=x,y<=1000");
+              message_dialog(msg);
+              g_free(msg);
+            }
+        }
+      else
+        {
+          gchar *msg=g_strdup("No rows are selected in the list box.");
+          message_dialog(msg);
+          g_free(msg);
+        }
+    }
+
+  gtk_widget_destroy(dialog);
+}
 static void add_point(GtkWidget *widget, GtkWidget **list_da)
 {
   //Keep track of added list box rows. Start program with 12 rows in the listbox.
@@ -2727,8 +2794,8 @@ static void set_line_cap(GtkComboBox *combo, gpointer data)
   }
 static void set_layout(GtkWidget *widget, GtkWidget **widgets3)
   {
-    gdouble width=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[0])));
-    gdouble height=atof(gtk_entry_get_text(GTK_ENTRY(widgets3[1])));
+    gdouble width=strtod(gtk_entry_get_text(GTK_ENTRY(widgets3[0])), NULL);
+    gdouble height=strtod(gtk_entry_get_text(GTK_ENTRY(widgets3[1])), NULL);
 
     if(width>=20&&height>=20&&width<=600&&height<=600)
       {
