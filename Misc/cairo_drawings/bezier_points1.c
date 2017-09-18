@@ -613,9 +613,21 @@ int main(int argc, char *argv[])
 
     gtk_container_add(GTK_CONTAINER(window), grid6);
 
+    gint minor_version=gtk_get_minor_version();
+    gchar *css_string=NULL;
+    //GTK CSS changed in 3.20. The CSS for after 3.18 may need to be modified to have it work.
+    if(minor_version>20)
+      {
+        css_string=g_strdup_printf("%s dialog {background: rgba(0,220,220,0.8);}", css);
+      }
+    else
+      {
+        css_string=g_strdup_printf("%s GtkDialog{background: rgba(0,220,220,0.8);}", css);
+      }
+
     GError *css_error=NULL;
     GtkCssProvider *provider=gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider, css, -1, &css_error);
+    gtk_css_provider_load_from_data(provider, css_string, -1, &css_error);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     if(css_error!=NULL)
       {
@@ -623,6 +635,7 @@ int main(int argc, char *argv[])
         g_error_free(css_error);
       }
     g_object_unref(provider);
+    g_free(css_string);
 
     gtk_widget_show_all(window);
 
@@ -965,11 +978,24 @@ static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     g_signal_handler_unblock(widget, motion_id);
 
+    GdkWindow *win=gtk_widget_get_window(widget);
+    GdkDisplay *display=gdk_window_get_display(win);
+    GdkCursor *cursor=gdk_cursor_new_from_name(display, "move");
+    gdk_window_set_cursor(win, cursor);
+    g_object_unref(cursor); 
+
     return TRUE;
   }
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     g_signal_handler_block(widget, motion_id);
+
+    GdkWindow *win=gtk_widget_get_window(widget);
+    GdkDisplay *display=gdk_window_get_display(win);
+    GdkCursor *cursor=gdk_cursor_new_from_name(display, "default");
+    gdk_window_set_cursor(win, cursor);
+    g_object_unref(cursor); 
+
     return TRUE;
   }
 static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -1022,7 +1048,7 @@ static gboolean draw_main_window(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgba(cr, b1[0], b1[1], b1[2], b1[3]);
     cairo_paint(cr);
     //Paint the background under the grid.
-    cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 0.8);
+    cairo_set_source_rgba(cr, 0.0, 0.86, 0.86, 0.8);
     gint width=gtk_paned_get_position(GTK_PANED(data));
     gint height=gtk_widget_get_allocated_height(widget);
 
@@ -1684,7 +1710,9 @@ static void change_selected_point(GtkWidget *widget, GtkWidget **list_da)
   GtkWidget *y_label=gtk_label_new("Y:");
   gtk_widget_set_halign(y_label, GTK_ALIGN_CENTER);
   GtkWidget *x_entry=gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(x_entry), "0");
   GtkWidget *y_entry=gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(y_entry), "0");
 
   GtkWidget *grid=gtk_grid_new();
   gtk_container_set_border_width(GTK_CONTAINER(grid), 15);
