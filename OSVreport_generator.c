@@ -983,8 +983,12 @@ static void load_pango_list(GString *string, void *data[])
                 span_open=TRUE;   
               }
           }
+
         g_string_append_c(string, text[i]); 
       }
+
+    if(span_open) g_string_append(string, "</span>");
+         
     //g_print("%s\n", string->str);
     if(text!=NULL) g_free(text);
   }
