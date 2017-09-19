@@ -13,6 +13,10 @@ in the working directory and open the svg in an image widget. If the drawing is 
 animated, it will attach a little java script to the svg. If you open the svg in firefox, it will
 be animated like in the program.
 
+    For drawing, everything is three or more points. You can draw lines, curves and fill shapes
+made of lines and curves. It takes a little while to get used to but it does make some types of
+drawing simpler.
+
     gcc -Wall bezier_points1.c -o bezier_points1 `pkg-config --cflags --libs gtk+-3.0` -lm
 
     Tested on Ubuntu16.04 and GTK3.18
