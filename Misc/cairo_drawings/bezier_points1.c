@@ -1638,7 +1638,7 @@ on_row_activated (GtkListBox *self, GtkListBoxRow *row, gpointer data)
   begin_id=row_id;
   p1=g_array_index(coords1, struct point, begin_id);
   motion_x=p1.x*layout_width/start_width;
-  motion_y=p1.y*layout_height/start_height;
+  motion_y=-(p1.y*layout_height/start_height);
   gtk_widget_queue_draw(GTK_WIDGET(data));
 }
 
@@ -1746,7 +1746,9 @@ static void change_selected_point(GtkWidget *widget, GtkWidget **list_da)
               gint index=g_array_index(array_id, gint, i);
               struct point *p1=&g_array_index(coords1, struct point, index);
               (p1->x)=x_coord;
-              (p1->y)=-y_coord;          
+              (p1->y)=-y_coord; 
+              motion_x=x_coord;
+              motion_y=y_coord;         
               gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
             }
           else
