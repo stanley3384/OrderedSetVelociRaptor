@@ -980,25 +980,30 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
   }
 static gboolean start_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
-    g_signal_handler_unblock(widget, motion_id);
-
-    GdkWindow *win=gtk_widget_get_window(widget);
-    GdkDisplay *display=gdk_window_get_display(win);
-    GdkCursor *cursor=gdk_cursor_new_from_name(display, "move");
-    gdk_window_set_cursor(win, cursor);
-    g_object_unref(cursor); 
+    //Don't unblock if the drawing is animated and rotating.
+    if(rotate==0)
+      {
+        g_signal_handler_unblock(widget, motion_id); 
+        GdkWindow *win=gtk_widget_get_window(widget);
+        GdkDisplay *display=gdk_window_get_display(win);
+        GdkCursor *cursor=gdk_cursor_new_from_name(display, "move");
+        gdk_window_set_cursor(win, cursor);
+        g_object_unref(cursor); 
+      }
 
     return TRUE;
   }
 static gboolean stop_press(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
-    g_signal_handler_block(widget, motion_id);
-
-    GdkWindow *win=gtk_widget_get_window(widget);
-    GdkDisplay *display=gdk_window_get_display(win);
-    GdkCursor *cursor=gdk_cursor_new_from_name(display, "default");
-    gdk_window_set_cursor(win, cursor);
-    g_object_unref(cursor); 
+    if(rotate==0)
+      {
+        g_signal_handler_block(widget, motion_id);
+        GdkWindow *win=gtk_widget_get_window(widget);
+        GdkDisplay *display=gdk_window_get_display(win);
+        GdkCursor *cursor=gdk_cursor_new_from_name(display, "default");
+        gdk_window_set_cursor(win, cursor);
+        g_object_unref(cursor);
+      } 
 
     return TRUE;
   }
