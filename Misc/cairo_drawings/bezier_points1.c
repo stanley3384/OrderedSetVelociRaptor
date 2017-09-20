@@ -1008,7 +1008,7 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
 
     //Update the coordinates in the drawing.
     motion_x=event->button.x-layout_width/2.0;
-    motion_y=event->button.y-layout_height/2.0;
+    motion_y=-(event->button.y-layout_height/2.0);
 
     gdouble w1=0.5*layout_width-0.5*(layout_width-start_width);
     gdouble h1=0.5*layout_height-0.5*(layout_height-start_height);
@@ -1746,7 +1746,7 @@ static void change_selected_point(GtkWidget *widget, GtkWidget **list_da)
               gint index=g_array_index(array_id, gint, i);
               struct point *p1=&g_array_index(coords1, struct point, index);
               (p1->x)=x_coord;
-              (p1->y)=y_coord;          
+              (p1->y)=-y_coord;          
               gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
             }
           else
