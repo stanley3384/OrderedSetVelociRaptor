@@ -185,6 +185,10 @@ static GArray *line_widths=NULL;
 */
 //Coordinate points for the top or current drawing.
 static GArray *coords1=NULL;
+//Keeps track of where the coordinates are after drag and drop and deletes.
+static GArray *array_id=NULL;
+//Keeps track of the list box point names.
+static GArray *point_id=NULL;
 //Color stop array values shown in the treeview.
 static GArray *color_stops=NULL;
 //The line color to draw with.
@@ -202,8 +206,6 @@ static gint line_cap=0;
 
 //Drawing background color.
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
-//List box order array.
-static GArray *array_id=NULL;
 //Current selected row in list.
 static gint row_id=0;
 //Rotate and animate the drawing.
@@ -657,7 +659,12 @@ int main(int argc, char *argv[])
       }
     //Array to track the list.
     array_id=g_array_new (FALSE, FALSE, sizeof(gint));
-    for(i=0;i<12;i++) g_array_append_val(array_id, i);
+    point_id=g_array_new (FALSE, FALSE, sizeof(gint));
+    for(i=0;i<12;i++)
+      {
+        g_array_append_val(array_id, i);
+        g_array_append_val(point_id, i);
+      }
     gtk_widget_queue_draw(da);
 
     gtk_main();
@@ -960,10 +967,10 @@ static void draw_shapes(GtkWidget *widget, cairo_t *cr, GArray *array, gint shap
       {
         cairo_select_font_face(cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, 14);
-        len=array_id->len;
+        len=point_id->len;
         for(i=0;i<len;i++)
           {
-            id=g_array_index(array_id, gint, i);
+            id=g_array_index(point_id, gint, i);
             p2=g_array_index(array, struct point, i);
             gchar *string=g_strdup_printf("%i", id+1);
             cairo_move_to(cr, p2.x, p2.y);
@@ -1383,16 +1390,19 @@ drag_end (GtkWidget      *widget,
   row_id=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
   gint i=0;
   gint value_id=0;
+  gint value_id2=0;
   gint len=0;
   struct point p1;
 
   if(begin_id!=row_id)
     {
       value_id=g_array_index(array_id, gint, begin_id);
+      value_id2=g_array_index(point_id, gint, begin_id);
       p1=g_array_index(coords1, struct point, begin_id);
       if(begin_id>row_id)
         {
           g_array_insert_val(array_id, row_id, value_id);
+          g_array_insert_val(point_id, row_id, value_id2);
           g_array_insert_val(coords1, row_id, p1);
           len=array_id->len-1;
           for(i=len;i>-1;i--)
@@ -1404,10 +1414,20 @@ drag_end (GtkWidget      *widget,
                   break;
                 }
             }
+          len=point_id->len-1;
+          for(i=len;i>-1;i--)
+            {
+              if(g_array_index(point_id, gint, i)==value_id2)
+                {
+                  g_array_remove_index(point_id, i);
+                  break;
+                }
+            }
         }
       else
         {
           g_array_insert_val(array_id, row_id+1, value_id);
+          g_array_insert_val(point_id, row_id+1, value_id2);
           g_array_insert_val(coords1, row_id+1, p1);
           len=array_id->len-1;
           for(i=0;i<len;i++)
@@ -1416,6 +1436,15 @@ drag_end (GtkWidget      *widget,
                 {
                   g_array_remove_index(array_id, i);
                   g_array_remove_index(coords1, i);
+                  break;
+                }
+            }
+          len=point_id->len-1;
+          for(i=0;i<len;i++)
+            {
+              if(g_array_index(point_id, gint, i)==value_id2)
+                {
+                  g_array_remove_index(point_id, i);
                   break;
                 }
             }
@@ -1666,8 +1695,19 @@ static gboolean key_delete_row(GtkWidget *row, GdkEventKey *event, gpointer data
       if(array_id->len>3)
         {
           gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+          gint j=g_array_index(array_id, gint , i);
+          //Adjust indexes into coords.
+          gint id=0;
+          gint *idp=&g_array_index(array_id, gint , 0);
+          for(id=0;id<array_id->len;id++)
+            {
+              if(g_array_index(array_id, gint , id)>i) *idp=*idp-1;
+              idp++;
+            }
+          //Remove the point.
+          g_array_remove_index(point_id, i);
           g_array_remove_index(array_id, i);
-          g_array_remove_index(coords1, i);
+          g_array_remove_index(coords1, j);
           gtk_widget_destroy(row);
           gtk_widget_queue_draw(GTK_WIDGET(data));
         }
@@ -1689,8 +1729,20 @@ static void button_delete_row(GtkWidget *widget, GtkWidget **list_da)
       if(row!=NULL&&gtk_list_box_row_is_selected(row))
         {
           gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+          gint j=g_array_index(array_id, gint , i);
+          //Adjust indexes into coords.
+          gint id=0;
+          gint *idp=&g_array_index(array_id, gint , 0);
+          for(id=0;id<array_id->len;id++)
+            {
+              if(g_array_index(array_id, gint , id)>i) *idp=*idp-1; 
+              idp++;
+            }
+          
+          //Remove the point.
+          g_array_remove_index(point_id, i);
           g_array_remove_index(array_id, i);
-          g_array_remove_index(coords1, i);
+          g_array_remove_index(coords1, j);
           gtk_widget_destroy(GTK_WIDGET(row));
           gtk_widget_queue_draw(GTK_WIDGET(list_da[1]));
         }
@@ -1748,8 +1800,7 @@ static void change_selected_point(GtkWidget *widget, GtkWidget **list_da)
           if(x_coord>=-1000&&x_coord<=1000&&y_coord>=-1000&&y_coord<=1000)
             {
               gint i=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
-              gint index=g_array_index(array_id, gint, i);
-              struct point *p1=&g_array_index(coords1, struct point, index);
+              struct point *p1=&g_array_index(coords1, struct point, i);
               (p1->x)=x_coord;
               (p1->y)=-y_coord; 
               motion_x=x_coord;
@@ -1775,19 +1826,26 @@ static void change_selected_point(GtkWidget *widget, GtkWidget **list_da)
 }
 static void add_point(GtkWidget *widget, GtkWidget **list_da)
 {
-  //Keep track of added list box rows. Start program with 12 rows in the listbox.
-  static gint add_row=12;
+  gint i=0;
   gint len=0;
-  gint i=add_row++;
+  gint max=0;
   struct point p1;
+  gint id=array_id->len;
 
-  g_array_append_val(array_id, i);
+  //Find the current max point id.
+  for(i=0;i<point_id->len;i++)
+    {
+      if(g_array_index(point_id, gint, i)>max) max=g_array_index(point_id, gint, i);
+    }
+  max++;
+  g_array_append_val(array_id, id);
+  g_array_append_val(point_id, max);
   len=coords1->len-1;
   p1=g_array_index(coords1, struct point, len);
   p1.x=p1.x-40.0;
   g_array_append_val(coords1, p1);
 
-  gchar *point=g_strdup_printf("Point %i", i+1);
+  gchar *point=g_strdup_printf("Point %i", max+1);
   GtkWidget *row=create_row(point, list_da[1]);
   gtk_list_box_insert(GTK_LIST_BOX(list_da[0]), row, -1);
   gtk_widget_show_all(row);
@@ -1799,8 +1857,6 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
   gint i=0;
   gint j=0;
   gint path_id=1;
-  //gint width=gtk_widget_get_allocated_width(GTK_WIDGET(widgets4[0]));
-  //gint height=gtk_widget_get_allocated_height(GTK_WIDGET(widgets4[0]));
   gint len=0;
   gint array_len=0;
   GArray *array=NULL;
@@ -3020,6 +3076,7 @@ static void cleanup(GtkWidget *widget, gpointer data)
   {
     gint i=0;
     g_array_free(array_id, TRUE);
+    g_array_free(point_id, TRUE);
     g_array_free(coords1, TRUE);
     gint len=paths->len;
     for(i=0;i<len;i++)
