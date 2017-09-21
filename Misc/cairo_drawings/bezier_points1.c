@@ -1346,12 +1346,17 @@ drag_begin (GtkWidget      *widget,
             gpointer        data)
 {
   GtkWidget *row;
+  GtkWidget *listbox;
   GtkAllocation alloc;
   cairo_surface_t *surface;
   cairo_t *cr;
   int x, y;
 
   row = gtk_widget_get_ancestor (widget, GTK_TYPE_LIST_BOX_ROW);
+  listbox=gtk_widget_get_parent(row);
+  //Make sure the row gets selected and begin_id gets updated.
+  gtk_list_box_select_row(GTK_LIST_BOX(listbox), GTK_LIST_BOX_ROW(row));
+  begin_id=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
   gtk_widget_get_allocation (row, &alloc);
   surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, alloc.width, alloc.height);
   cr = cairo_create (surface);
@@ -1382,10 +1387,6 @@ drag_end (GtkWidget      *widget,
   g_object_set_data (G_OBJECT (gtk_widget_get_parent (row)), "drag-row", NULL);
   gtk_style_context_remove_class (gtk_widget_get_style_context (row), "drag-row");
   gtk_style_context_remove_class (gtk_widget_get_style_context (row), "drag-hover");
-
-  //Unselect first? If not, the row looks selected but isn't.
-  gtk_list_box_unselect_row(GTK_LIST_BOX(gtk_widget_get_parent(row)), GTK_LIST_BOX_ROW(row));
-  gtk_list_box_select_row(GTK_LIST_BOX(gtk_widget_get_parent(row)), GTK_LIST_BOX_ROW(row));
 
   row_id=gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
   gint i=0;
@@ -1701,7 +1702,7 @@ static gboolean key_delete_row(GtkWidget *row, GdkEventKey *event, gpointer data
           gint *idp=&g_array_index(array_id, gint , 0);
           for(id=0;id<array_id->len;id++)
             {
-              if(g_array_index(array_id, gint , id)>i) *idp=*idp-1;
+              if(g_array_index(array_id, gint , id)>=i) *idp=*idp-1;
               idp++;
             }
           //Remove the point.
@@ -1735,7 +1736,7 @@ static void button_delete_row(GtkWidget *widget, GtkWidget **list_da)
           gint *idp=&g_array_index(array_id, gint , 0);
           for(id=0;id<array_id->len;id++)
             {
-              if(g_array_index(array_id, gint , id)>i) *idp=*idp-1; 
+              if(g_array_index(array_id, gint , id)>=i) *idp=*idp-1; 
               idp++;
             }
           
