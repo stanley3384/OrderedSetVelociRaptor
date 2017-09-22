@@ -71,7 +71,7 @@ static void build_gradient_svg(FILE *f);
 static void build_drawing_svg(FILE *f, GArray *array, gint shape_fill, gint shape_inter, gint path_id, gint *count_fill_svg, gboolean top_drawing);
 static void build_rotation_script_svg(FILE *f);
 //Dialog for showing svg.
-static void svg_dialog();
+static void svg_dialog(const gchar *file_name);
 //Gradient color stops.
 static void add_color_stop(GtkWidget *widget, GtkWidget **widgets2);
 static void delete_color_stop(GtkWidget *widget, GtkWidget **widgets2);
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
     gtk_init (&argc, &argv);
 
     window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Coordinates with Bezier Points");
+    gtk_window_set_title(GTK_WINDOW(window), "Smooth Artist");
     gtk_window_set_default_size(GTK_WINDOW(window), 850, 450);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(cleanup), NULL);
@@ -554,7 +554,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *save_entry3=gtk_entry_new();
     gtk_widget_set_hexpand(save_entry3, TRUE);
-    gtk_entry_set_text(GTK_ENTRY(save_entry3), "bezier_drawing1.svg");
+    gtk_entry_set_text(GTK_ENTRY(save_entry3), "artist_drawing1.svg");
 
     GtkWidget *save_button2=gtk_button_new_with_label("Save Show SVG");
     gtk_widget_set_hexpand(save_button2, TRUE);
@@ -563,7 +563,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *save_entry4=gtk_entry_new();
     gtk_widget_set_hexpand(save_entry4, TRUE);
-    gtk_entry_set_text(GTK_ENTRY(save_entry4), "bezier_drawing1.svg");
+    gtk_entry_set_text(GTK_ENTRY(save_entry4), "artist_drawing1.svg");
 
     GtkWidget *save_button3=gtk_button_new_with_label("Get Saved SVG");
     gtk_widget_set_hexpand(save_button3, TRUE);
@@ -605,7 +605,7 @@ int main(int argc, char *argv[])
     g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), paned1);
 
     GtkWidget *menu1=gtk_menu_new();
-    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Bezier Points1");
+    GtkWidget *menu1item1=gtk_menu_item_new_with_label("Smooth Artist");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu1), menu1item1);
     GtkWidget *title1=gtk_menu_item_new_with_label("About");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(title1), menu1);
@@ -2016,13 +2016,13 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
   else
     {
       file_error=TRUE;
-      gchar *msg=g_strdup("Couldn't open file bezier_drawing1.svg.");
+      gchar *msg=g_strdup("Couldn't open file svg file.");
       message_dialog(msg);
       g_free(msg);
     }
 
   //Show the svg drawing.
-  if(!file_error) svg_dialog();
+  if(!file_error) svg_dialog(gtk_entry_get_text(GTK_ENTRY(widgets4[1])));
 }
 static void build_gradient_svg(FILE *f)
   {
@@ -2261,14 +2261,14 @@ static void build_rotation_script_svg(FILE *f)
                    "</script>\n", layout_width/start_width, (gint)(layout_width/2.0), layout_height/start_height, (gint)(layout_width/2.0));
        }
   }
-static void svg_dialog()
+static void svg_dialog(const gchar *file_name)
   {
-    GtkWidget *dialog=gtk_dialog_new_with_buttons("bezier_drawing1.svg", GTK_WINDOW(window), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, NULL);
+    GtkWidget *dialog=gtk_dialog_new_with_buttons(file_name, GTK_WINDOW(window), GTK_DIALOG_MODAL, "OK", GTK_RESPONSE_OK, NULL);
     gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 400);
     GtkWidget *content_area=gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
     GError *error=NULL;
-    GdkPixbuf *svg=gdk_pixbuf_new_from_file("bezier_drawing1.svg", &error);
+    GdkPixbuf *svg=gdk_pixbuf_new_from_file(file_name, &error);
     if(error!=NULL) g_print("%s\n", error->message);
      
     //If error open image anyway. It will just show a broken image.
@@ -2913,7 +2913,7 @@ static void about_dialog(GtkWidget *widget, gpointer data)
     GtkWidget *dialog=gtk_about_dialog_new();
     gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(data));
     //gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), NULL);
-    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Bezier Points1");
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Smooth Artist");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "Test Version 1.0");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A non linear approach to drawing.");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "(C) 2017 C. Eric Cashon");
