@@ -98,6 +98,10 @@ static void about_dialog(GtkWidget *widget, gpointer data);
 static GdkPixbuf* draw_icon();
 //General info message dialog.
 static void message_dialog(gchar *msg);
+//Set transforms.
+static void scale_drawing(GtkWidget *widget, GtkWidget **scale_entries);
+static void translate_drawing(GtkWidget *widget, GtkWidget **translate_entries);
+static void rotate_drawing(GtkWidget *widget, GtkWidget **rotate_entries);
 //Clean up all those arrays.
 static void cleanup(GtkWidget *widget, gpointer data);
 
@@ -227,6 +231,12 @@ static const gdouble start_height=400.0;
 //Initial drawing is 400x400 so need to be able to scale for different sizes in layout and svg.
 static gdouble layout_width=400.0;
 static gdouble layout_height=400.0;
+//Transforms
+static gdouble t_scale_x=1.0;
+static gdouble t_scale_y=1.0;
+static gdouble t_translate_x=0.0;
+static gdouble t_translate_y=0.0;
+static gdouble t_rotate=0.0;
 
 int main(int argc, char *argv[])
   {
@@ -234,7 +244,7 @@ int main(int argc, char *argv[])
 
     window=gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Smooth Artist");
-    gtk_window_set_default_size(GTK_WINDOW(window), 850, 450);
+    gtk_window_set_default_size(GTK_WINDOW(window), 900, 450);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     g_signal_connect(window, "destroy", G_CALLBACK(cleanup), NULL);
     gtk_widget_set_app_paintable(window, TRUE);
@@ -341,17 +351,17 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(rotate_combo), da);
     
-    GtkWidget *grid1=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid1), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid1), 8);
-    gtk_grid_attach(GTK_GRID(grid1), label1, 0, 0, 2, 1);    
-    gtk_grid_attach(GTK_GRID(grid1), sw, 0, 1, 2, 1); 
-    gtk_grid_attach(GTK_GRID(grid1), button1, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), delete_button, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), point_button, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid1), combo1, 0, 4, 1, 1); 
-    gtk_grid_attach(GTK_GRID(grid1), combo2, 1, 4, 1, 1);  
-    gtk_grid_attach(GTK_GRID(grid1), check1, 0, 5, 2, 1);     
+    GtkWidget *path_grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(path_grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(path_grid), 8);
+    gtk_grid_attach(GTK_GRID(path_grid), label1, 0, 0, 2, 1);    
+    gtk_grid_attach(GTK_GRID(path_grid), sw, 0, 1, 2, 1); 
+    gtk_grid_attach(GTK_GRID(path_grid), button1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(path_grid), delete_button, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(path_grid), point_button, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(path_grid), combo1, 0, 4, 1, 1); 
+    gtk_grid_attach(GTK_GRID(path_grid), combo2, 1, 4, 1, 1);  
+    gtk_grid_attach(GTK_GRID(path_grid), check1, 0, 5, 2, 1);     
 
     //Tab 2 "Line" widgets.
     GtkWidget *line_width1=gtk_label_new(NULL);
@@ -405,19 +415,19 @@ int main(int argc, char *argv[])
     GtkWidget *colors[]={background_entry, window, da};
     g_signal_connect(background_button, "clicked", G_CALLBACK(check_colors), colors);
 
-    GtkWidget *grid2=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid2), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid2), 8);
-    gtk_grid_attach(GTK_GRID(grid2), line_width1, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), combo_width, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_cap1, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), combo_cap, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_label1, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_entry1, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), line_button1, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid2), background_label, 0, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), background_entry, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid2), background_button, 0, 5, 2, 1);
+    GtkWidget *line_grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(line_grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(line_grid), 8);
+    gtk_grid_attach(GTK_GRID(line_grid), line_width1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), combo_width, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), line_cap1, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), combo_cap, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), line_label1, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), line_entry1, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), line_button1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), background_label, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), background_entry, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(line_grid), background_button, 0, 5, 2, 1);
 
     //Tab 3 "Fill" widgets.
     GtkWidget *label_stop=gtk_label_new(NULL);
@@ -472,19 +482,79 @@ int main(int argc, char *argv[])
     g_signal_connect(b_delete, "clicked", G_CALLBACK(delete_color_stop), widgets2);
     g_signal_connect(b_linear, "clicked", G_CALLBACK(update_linear_direction), widgets2);
 
-    GtkWidget *grid3=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid3), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid3), 8);
-    gtk_grid_attach(GTK_GRID(grid3), label_stop, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), entry_stop, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b_add, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), scroll_fill, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b_delete, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid3), label_dir, 0, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), entry_dir, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid3), b_linear, 0, 5, 2, 1);
+    GtkWidget *fill_grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(fill_grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(fill_grid), 8);
+    gtk_grid_attach(GTK_GRID(fill_grid), label_stop, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), entry_stop, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), b_add, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), scroll_fill, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), b_delete, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), label_dir, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), entry_dir, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(fill_grid), b_linear, 0, 5, 2, 1);
 
-    //Tab 4 "Add Shape" widgets.
+    //Tab 4 "Transform" widgets.
+    GtkWidget *work_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(work_label), "<span font_weight='heavy'>Transforms Need Work! </span>");
+
+    GtkWidget *scale_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(scale_label), "<span font_weight='heavy'>Scale </span>");
+
+    GtkWidget *scale_entry_x=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(scale_entry_x), "1.0");
+
+    GtkWidget *scale_entry_y=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(scale_entry_y), "1.0");
+
+    GtkWidget *scale_button=gtk_button_new_with_label("Update Scale");
+    gtk_widget_set_hexpand(scale_button, TRUE);
+    GtkWidget *scale_entries[]={scale_entry_x, scale_entry_y, da};
+    g_signal_connect(scale_button, "clicked", G_CALLBACK(scale_drawing), scale_entries);
+
+    GtkWidget *translate_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(translate_label), "<span font_weight='heavy'>Translate </span>");
+
+    GtkWidget *translate_entry_x=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(translate_entry_x), "0.0");
+
+    GtkWidget *translate_entry_y=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(translate_entry_y), "0.0");
+
+    GtkWidget *translate_button=gtk_button_new_with_label("Update Translate");
+    gtk_widget_set_hexpand(translate_button, TRUE);
+    GtkWidget *translate_entries[]={translate_entry_x, translate_entry_y, da};
+    g_signal_connect(translate_button, "clicked", G_CALLBACK(translate_drawing), translate_entries);
+
+    GtkWidget *rotate_label=gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(rotate_label), "<span font_weight='heavy'>Rotate </span>");
+
+    GtkWidget *rotate_entry=gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(rotate_entry), "0.0");
+
+    GtkWidget *rotate_button=gtk_button_new_with_label("Update Rotate");
+    gtk_widget_set_hexpand(rotate_button, TRUE);
+    GtkWidget *rotate_entries[]={rotate_entry, da};
+    g_signal_connect(rotate_button, "clicked", G_CALLBACK(rotate_drawing), rotate_entries);
+
+    GtkWidget *transform_grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(transform_grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(transform_grid), 8);
+    gtk_grid_attach(GTK_GRID(transform_grid), work_label, 0, 0, 3, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_label, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_entry_x, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_entry_y, 2, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_button, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_label, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_entry_x, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_entry_y, 2, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_button, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), rotate_label, 0, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), rotate_entry, 1, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), rotate_button, 1, 6, 1, 1);
+
+
+    //Tab 5 "Add Shape" widgets.
     GtkWidget *shape_button1=gtk_button_new_with_label("Add Shape");
     gtk_widget_set_hexpand(shape_button1, TRUE);
 
@@ -519,15 +589,15 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(scroll, TRUE);
     gtk_container_add(GTK_CONTAINER(scroll), tree); 
 
-    GtkWidget *grid4=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid4), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid4), 8);
-    gtk_grid_attach(GTK_GRID(grid4), shape_button1, 0, 0, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid4), scroll, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid4), shape_button2, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid4), shape_button3, 1, 2, 1, 1);
+    GtkWidget *shape_grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(shape_grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(shape_grid), 8);
+    gtk_grid_attach(GTK_GRID(shape_grid), shape_button1, 0, 0, 2, 1);
+    gtk_grid_attach(GTK_GRID(shape_grid), scroll, 0, 1, 2, 1);
+    gtk_grid_attach(GTK_GRID(shape_grid), shape_button2, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(shape_grid), shape_button3, 1, 2, 1, 1);
     
-    //Tab 5 "Save" widgets.
+    //Tab 6 "Save" widgets.
     GtkWidget *save_label1=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(save_label1), "<span font_weight='heavy'>Layout and SVG Width </span>");
 
@@ -570,37 +640,39 @@ int main(int argc, char *argv[])
     GtkWidget *widgets5[]={da, check1, tree, save_entry4};
     g_signal_connect(save_button3, "clicked", G_CALLBACK(get_saved_svg), widgets5);
 
-    GtkWidget *grid5=gtk_grid_new();
-    gtk_container_set_border_width(GTK_CONTAINER(grid5), 15);
-    gtk_grid_set_row_spacing(GTK_GRID(grid5), 8);
-    gtk_grid_attach(GTK_GRID(grid5), save_label1, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_entry1, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_label2, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_entry2, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_button1, 0, 2, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), ch1, 0, 3, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_entry3, 0, 4, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_button2, 0, 5, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_entry4, 0, 6, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid5), save_button3, 0, 7, 2, 1);
+    GtkWidget *save_grid=gtk_grid_new();
+    gtk_container_set_border_width(GTK_CONTAINER(save_grid), 15);
+    gtk_grid_set_row_spacing(GTK_GRID(save_grid), 8);
+    gtk_grid_attach(GTK_GRID(save_grid), save_label1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_entry1, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_label2, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_entry2, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_button1, 0, 2, 2, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), ch1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_entry3, 0, 4, 2, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_button2, 0, 5, 2, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_entry4, 0, 6, 2, 1);
+    gtk_grid_attach(GTK_GRID(save_grid), save_button3, 0, 7, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *nb_label2=gtk_label_new("Line");
     GtkWidget *nb_label3=gtk_label_new("Gradient");
-    GtkWidget *nb_label4=gtk_label_new("Add Shape");
-    GtkWidget *nb_label5=gtk_label_new("Save");
+    GtkWidget *nb_label4=gtk_label_new("Transform");
+    GtkWidget *nb_label5=gtk_label_new("Add Shape");
+    GtkWidget *nb_label6=gtk_label_new("Save");
     GtkWidget *notebook=gtk_notebook_new();
     gtk_container_set_border_width(GTK_CONTAINER(notebook), 15);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid1, nb_label1);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid2, nb_label2);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid3, nb_label3);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid4, nb_label4);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), grid5, nb_label5);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), path_grid, nb_label1);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), line_grid, nb_label2);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), fill_grid, nb_label3);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), transform_grid, nb_label4);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), shape_grid, nb_label5);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), save_grid, nb_label6);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), notebook, FALSE, TRUE);
     gtk_paned_pack2(GTK_PANED(paned1), da_sw, TRUE, TRUE);
-    gtk_paned_set_position(GTK_PANED(paned1), 400);
+    gtk_paned_set_position(GTK_PANED(paned1), 450);
     //Draw background window based on the paned window splitter.
     g_signal_connect(window, "draw", G_CALLBACK(draw_main_window), paned1);
 
@@ -765,6 +837,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_show_text(cr, motion);
     g_free(motion);
 
+    //The transforms from the GUI. Rotation for GUI is added below.
+    cairo_scale(cr, t_scale_x, t_scale_y);
+    cairo_translate(cr, t_translate_x, t_translate_y);
+
     //Rotations for animation.
     gdouble angle=0;
     gdouble scale=0;
@@ -804,11 +880,13 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
             cairo_translate(cr, scale_inv*width/2.0, scale_inv2*height/2.0);
             cairo_rotate(cr, angle);
           }
+        cairo_rotate(cr, t_rotate);
         j++;
       }
     else
       {
         cairo_translate(cr, width/2.0, height/2.0);
+        cairo_rotate(cr, t_rotate);
         j=1;
       }
 
@@ -3072,6 +3150,61 @@ static void message_dialog(gchar *msg)
     GtkWidget *dialog=gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "%s", msg);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+  }
+static void scale_drawing(GtkWidget *widget, GtkWidget **scale_entries)
+  {
+    gdouble x=strtod(gtk_entry_get_text(GTK_ENTRY(scale_entries[0])), NULL);
+    gdouble y=strtod(gtk_entry_get_text(GTK_ENTRY(scale_entries[1])), NULL);
+    
+    //Set some scale limits.
+    if(x>0&&y>0&&x<=100&&y<=100)
+      {
+        t_scale_x=x;
+        t_scale_y=y;
+        gtk_widget_queue_draw(scale_entries[2]);
+      }
+    else
+      {
+        gchar *msg=g_strdup("The scale_x and scale_y range 0<=x,y<=100.");
+        message_dialog(msg);
+        g_free(msg);
+      }
+  }
+static void translate_drawing(GtkWidget *widget, GtkWidget **translate_entries)
+  {
+    gdouble x=strtod(gtk_entry_get_text(GTK_ENTRY(translate_entries[0])), NULL);
+    gdouble y=strtod(gtk_entry_get_text(GTK_ENTRY(translate_entries[1])), NULL);
+
+    //Set some translate limits.
+    if(x>-1000&&y>-1000&&x<=1000&&y<=1000)
+      {
+        t_translate_x=x;
+        t_translate_y=y;
+        gtk_widget_queue_draw(translate_entries[2]);
+      }
+    else
+      {
+        gchar *msg=g_strdup("The translate_x and translate_y range -1000<=x,y<=1000.");
+        message_dialog(msg);
+        g_free(msg);
+      }
+  }
+static void rotate_drawing(GtkWidget *widget, GtkWidget **rotate_entries)
+  {
+    gdouble r=strtod(gtk_entry_get_text(GTK_ENTRY(rotate_entries[0])), NULL);
+
+    //Set some rotation limits.
+    if(r>=0&&r<=360)
+      {
+        t_rotate=r*G_PI/180.0;
+        gtk_widget_queue_draw(rotate_entries[1]);
+      }
+    else
+      {
+        gchar *msg=g_strdup("The rotation range 0<=x<=360.");
+        message_dialog(msg);
+        g_free(msg);
+      }
   }
 static void cleanup(GtkWidget *widget, gpointer data)
   {
