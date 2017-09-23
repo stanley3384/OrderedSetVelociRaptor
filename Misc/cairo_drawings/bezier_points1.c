@@ -496,7 +496,7 @@ int main(int argc, char *argv[])
 
     //Tab 4 "Transform" widgets.
     GtkWidget *work_label=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(work_label), "<span font_weight='heavy'>Transforms Need Work! </span>");
+    gtk_label_set_markup(GTK_LABEL(work_label), "<span font_weight='heavy'>These transforms don't save to svg yet! </span>");
 
     GtkWidget *scale_label=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(scale_label), "<span font_weight='heavy'>Scale </span>");
@@ -1100,11 +1100,21 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
     motion_x=event->button.x-layout_width/2.0;
     motion_y=-(event->button.y-layout_height/2.0);
 
-    gdouble w1=0.5*layout_width-0.5*(layout_width-start_width);
-    gdouble h1=0.5*layout_height-0.5*(layout_height-start_height);
+    //With Scale from GUI.
+    gdouble w1=(0.5*layout_width-0.5*(layout_width-start_width))*t_scale_x;
+    gdouble h1=(0.5*layout_height-0.5*(layout_height-start_height))*t_scale_y;
 
     p1.x=event->button.x*start_width/layout_width-w1;
     p1.y=event->button.y*start_height/layout_height-h1;
+
+    //Translate from GUI.
+    p1.x=p1.x-t_translate_x;
+    p1.y=p1.y-t_translate_y;
+
+    //Rotate from GUI.
+    gdouble temp_x=p1.x;
+    p1.x=p1.x*cos(-t_rotate)-p1.y*sin(-t_rotate);
+    p1.y=temp_x*sin(-t_rotate)+p1.y*cos(-t_rotate);
 
     struct point *p;
     p=&g_array_index(coords1, struct point, row_id);
