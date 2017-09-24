@@ -14,10 +14,34 @@ plug2.c and socket2.c files need to be compiled and then run socket2.
 #include<gtk/gtkx.h>
 #include<stdio.h>
 
+static gdouble move_line=0.0;
+
+static gboolean frame_clock(GtkWidget *plug, GdkFrameClock *frame_clock, gpointer data)
+  {
+    move_line+=0.02;
+    gtk_widget_queue_draw(plug);
+    return G_SOURCE_CONTINUE;
+  }
 static gboolean draw_background(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
+    gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
+    gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
+    gint w1=0;
+
+    if(width>height) w1=height/3.0;
+    else w1=width/3.0;
+
     cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.5);
     cairo_paint(cr);
+
+    cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+    cairo_set_line_width(cr, 6.0);
+    cairo_translate(cr, width/2.0, height/2.0);
+    cairo_rotate(cr, move_line);
+    cairo_move_to(cr, 0.0, 0.0);
+    cairo_line_to(cr, w1, 0.0);
+    cairo_stroke(cr);
+
     return FALSE;
   } 
 static void on_embed(GtkPlug *plug, gpointer data)
@@ -58,6 +82,7 @@ int main(int argc, char *argv[])
       }
     else g_print("Can't set window transparency.\n");
     g_signal_connect(plug, "draw", G_CALLBACK(draw_background), NULL);
+    gtk_widget_add_tick_callback(plug, (GtkTickCallback)frame_clock, NULL, NULL);
   
     GtkWidget *label=gtk_label_new("");
     gchar *markup=NULL;
