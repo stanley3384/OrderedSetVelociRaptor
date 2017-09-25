@@ -493,9 +493,6 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(fill_grid), b_linear, 0, 5, 2, 1);
 
     //Tab 4 "Transform" widgets.
-    GtkWidget *work_label=gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(work_label), "<span font_weight='heavy'>These transforms don't save to svg yet! </span>");
-
     GtkWidget *scale_label=gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(scale_label), "<span font_weight='heavy'>Scale </span>");
 
@@ -538,18 +535,17 @@ int main(int argc, char *argv[])
     GtkWidget *transform_grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(transform_grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(transform_grid), 8);
-    gtk_grid_attach(GTK_GRID(transform_grid), work_label, 0, 0, 3, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), scale_label, 0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), scale_entry_x, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), scale_entry_y, 2, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), scale_button, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), translate_label, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), translate_entry_x, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), translate_entry_y, 2, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), translate_button, 1, 4, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), rotate_label, 0, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), rotate_entry, 1, 5, 1, 1);
-    gtk_grid_attach(GTK_GRID(transform_grid), rotate_button, 1, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_label, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_entry_x, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_entry_y, 2, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), scale_button, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_label, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_entry_x, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_entry_y, 2, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), translate_button, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), rotate_label, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), rotate_entry, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(transform_grid), rotate_button, 1, 5, 1, 1);
 
 
     //Tab 5 "Add Shape" widgets.
@@ -1953,10 +1949,17 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
   GArray *array=NULL;
   gint shape_fill=0;
   gint shape_inter=0;
+  //line colors.
   gdouble lca0=0;
   gdouble lca1=0;
   gdouble lca2=0;
   gdouble lca3=0;
+  //transforms.
+  gdouble tf0=0;
+  gdouble tf1=0;
+  gdouble tf2=0;
+  gdouble tf3=0;
+  gdouble tf4=0;
   //line width.
   gint lw=0;
   gint line_c=0;
@@ -2007,7 +2010,13 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
           lca1=g_array_index(line_colors, gdouble, 4*i+1);
           lca2=g_array_index(line_colors, gdouble, 4*i+2);
           lca3=g_array_index(line_colors, gdouble, 4*i+3);
-          fprintf(f, "LineColor [%f %f %f %f]\n", lca0, lca1, lca2, lca3);
+          fprintf(f, "LineColor [%f %f %f %f]\n", lca0, lca1, lca2, lca3);          
+          tf0=g_array_index(transforms, gdouble, 5*i);
+          tf1=g_array_index(transforms, gdouble, 5*i+1);
+          tf2=g_array_index(transforms, gdouble, 5*i+2);
+          tf3=g_array_index(transforms, gdouble, 5*i+3);
+          tf4=g_array_index(transforms, gdouble, 5*i+4);
+          fprintf(f, "Transforms [%f %f %f %f %f]\n", tf0, tf1, tf2, tf3, tf4);
           lw=g_array_index(line_widths, gint, 2*i);
           line_c=g_array_index(line_widths, gint, 2*i+1);
           fprintf(f, "WidthCap [%i %i]\n", lw, line_c);
@@ -2049,6 +2058,7 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
             }
           fprintf(f, "]\nInterpolationFill [%i %i]\n", shape_inter, shape_fill); 
           fprintf(f, "LineColor [%f %f %f %f]\n", lca[0], lca[1], lca[2], lca[3]);
+          fprintf(f, "Transforms [%f %f %f %f %f]\n", tf[0], tf[1], tf[2], tf[3], tf[4]);
           fprintf(f, "WidthCap [%i %i]\n", line_width, line_cap);
           if(fill==1)
             {
@@ -2070,7 +2080,7 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
       //Fill the background color in.
       fprintf(f, "<rect x=\"0\" y=\"0\" width=\"%i\" height=\"%i\" fill=\"rgb(%i,%i,%i)\" fill-opacity=\"%f\" />\n", (gint)layout_width, (gint)layout_height, (gint)(b1[0]*255.0), (gint)(b1[1]*255.0), (gint)(b1[2]*255.0), b1[3]);
 
-      //Apply the transforms.
+      //Apply the transforms for layout and animation with java script.
       fprintf(f, "<g id=\"scale_drawing\" transform=\"translate(%i, %i) scale(%f, %f) rotate(0)\">\n", (gint)(layout_width/2.0), (gint)(layout_height/2.0), layout_width/start_width, layout_height/start_height);
 
       //Define a gradient fill to be used.
@@ -2079,22 +2089,31 @@ static void save_svg(GtkWidget *widget, GtkWidget **widgets4)
       //Build the svg from the stored arrays.
       len=paths->len;
       for(i=0;i<len;i++)
-        {
+        {          
+          tf0=g_array_index(transforms, gdouble, 5*i);
+          tf1=g_array_index(transforms, gdouble, 5*i+1);
+          tf2=g_array_index(transforms, gdouble, 5*i+2);
+          tf3=g_array_index(transforms, gdouble, 5*i+3);
+          tf4=g_array_index(transforms, gdouble, 5*i+4);
+          fprintf(f, "<g transform=\"scale(%f, %f) translate(%i, %i) rotate(%i)\">\n", tf0, tf1, (gint)tf2, (gint)tf3, (gint)(tf4*180.0/G_PI));
           array=(GArray*)(g_ptr_array_index(paths, i));
           shape_inter=g_array_index(path_info, gint, 2*i);
           shape_fill=g_array_index(path_info, gint, 2*i+1);
           build_drawing_svg(f, array, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
+          fprintf(f, "</g>\n");
           path_id++;
         }
 
       //Draw top or current drawing from the coords array.
       if(save_top)
         {
+          fprintf(f, "<g transform=\"scale(%f, %f) translate(%i, %i) rotate(%i)\">\n", tf[0], tf[1], (gint)tf[2], (gint)tf[3], (gint)(tf[4]*180.0/G_PI));
           array=coords1;
           shape_fill=fill;
           shape_inter=interpolation;
           top_drawing=TRUE;
           build_drawing_svg(f, array, shape_fill, shape_inter, path_id, &count_fill_svg, top_drawing);
+          fprintf(f, "</g>\n");
         }
 
       //If the drawing is animated, add the java script for rotation.
@@ -2754,7 +2773,7 @@ static gchar* get_array_type_svg(gchar *p1, gboolean *found, gint *array_type)
   {
     while(*p1!='\0')
       {
-        if(*p1=='\n'&&(*(p1+1)=='S'||*(p1+1)=='T'))
+        if(*p1=='\n'&&(*(p1+1)=='S'||(*(p1+1)=='T'&&*(p1+2)=='o')))
           {
             *array_type=0;
             *found=TRUE;
@@ -2787,6 +2806,12 @@ static gchar* get_array_type_svg(gchar *p1, gboolean *found, gint *array_type)
         if(*p1=='\n'&&*(p1+1)=='W')
           {
             *array_type=5;
+            *found=TRUE;
+            break;
+          }
+        if(*p1=='\n'&&*(p1+1)=='T'&&*(p1+2)=='r')
+          {
+            *array_type=6;
             *found=TRUE;
             break;
           }
@@ -2894,12 +2919,20 @@ static void build_array_svg(GArray *array_temp, gint array_type)
             g_array_append_val(line_colors, value);
           }
       } 
-    else
+    else if(array_type==5)
       {
         for(i=0;i<len;i++)
           {
             gint value=(gint)g_array_index(array_temp, gdouble, i);
             g_array_append_val(line_widths, value);
+          }
+      }
+    else if(array_type==6)
+      {
+        for(i=0;i<len;i++)
+          {
+            gdouble value=g_array_index(array_temp, gdouble, i);
+            g_array_append_val(transforms, value);
           }
       }            
   }
