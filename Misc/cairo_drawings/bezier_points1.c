@@ -179,6 +179,8 @@ static GArray *line_colors=NULL;
 static GArray *direction=NULL;
 //The saved color stops for the gradients.
 static GPtrArray *gradients=NULL;
+//The saved scale, translation and rotation.
+static GArray *transforms=NULL;
 //Saved line widths and line caps.
 static GArray *line_widths=NULL;
 
@@ -195,6 +197,8 @@ static GArray *array_id=NULL;
 static GArray *point_id=NULL;
 //Color stop array values shown in the treeview.
 static GArray *color_stops=NULL;
+//The current scale, translation and rotation from the UI.
+static gdouble tf[]={1.0, 1.0, 0.0, 0.0, 0.0};
 //The line color to draw with.
 static gdouble lca[]={0.0, 0.0, 1.0, 1.0};
 //If the curve should be drawn linear, smooth or approximate. Start with smooth.
@@ -207,9 +211,9 @@ static gdouble ld[4];
 static gint line_width=3;
 //Line cap setting from combo.
 static gint line_cap=0;
-
 //Drawing background color.
 static gdouble b1[]={1.0, 1.0, 1.0, 1.0};
+
 //Current selected row in list.
 static gint row_id=0;
 //Rotate and animate the drawing.
@@ -231,12 +235,6 @@ static const gdouble start_height=400.0;
 //Initial drawing is 400x400 so need to be able to scale for different sizes in layout and svg.
 static gdouble layout_width=400.0;
 static gdouble layout_height=400.0;
-//Transforms
-static gdouble t_scale_x=1.0;
-static gdouble t_scale_y=1.0;
-static gdouble t_translate_x=0.0;
-static gdouble t_translate_y=0.0;
-static gdouble t_rotate=0.0;
 
 int main(int argc, char *argv[])
   {
@@ -567,6 +565,7 @@ int main(int argc, char *argv[])
     paths=g_ptr_array_new();
     path_info=g_array_new(FALSE, FALSE, sizeof(gint));
     gradients=g_ptr_array_new();
+    transforms=g_array_new(FALSE, FALSE, sizeof(gdouble));
     direction=g_array_new(FALSE, FALSE, sizeof(gdouble));
     line_colors=g_array_new(FALSE, FALSE, sizeof(gdouble));
     line_widths=g_array_new(FALSE, FALSE, sizeof(gint));
@@ -737,6 +736,7 @@ int main(int argc, char *argv[])
         g_array_append_val(array_id, i);
         g_array_append_val(point_id, i);
       }
+
     gtk_widget_queue_draw(da);
 
     gtk_main();
@@ -837,10 +837,6 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_show_text(cr, motion);
     g_free(motion);
 
-    //The transforms from the GUI. Rotation for GUI is added below.
-    cairo_scale(cr, t_scale_x, t_scale_y);
-    cairo_translate(cr, t_translate_x, t_translate_y);
-
     //Rotations for animation.
     gdouble angle=0;
     gdouble scale=0;
@@ -880,13 +876,11 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
             cairo_translate(cr, scale_inv*width/2.0, scale_inv2*height/2.0);
             cairo_rotate(cr, angle);
           }
-        cairo_rotate(cr, t_rotate);
         j++;
       }
     else
       {
         cairo_translate(cr, width/2.0, height/2.0);
-        cairo_rotate(cr, t_rotate);
         j=1;
       }
 
@@ -904,6 +898,10 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
     len=paths->len;
     for(i=0;i<len;i++)
       {
+        cairo_save(cr);
+        cairo_scale(cr, g_array_index(transforms, gdouble, 5*i), g_array_index(transforms, gdouble, 5*i+1));
+        cairo_translate(cr, g_array_index(transforms, gdouble, 5*i+2), g_array_index(transforms, gdouble, 5*i+3));
+        cairo_rotate(cr, g_array_index(transforms, gdouble, 5*i+4));
         array=(GArray*)(g_ptr_array_index(paths, i));
         shape_inter=g_array_index(path_info, gint, 2*i);
         shape_fill=g_array_index(path_info, gint, 2*i+1); 
@@ -918,9 +916,13 @@ static gboolean start_drawing(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_set_line_cap(cr, line_c); 
         draw_shapes(widget, cr, array, shape_fill, shape_inter, saved, &count_fill);
         cairo_new_path(cr);
+        cairo_restore(cr);
       }
 
     //Draw top or current drawing.
+    cairo_scale(cr, tf[0], tf[1]);
+    cairo_translate(cr, tf[2], tf[3]);
+    cairo_rotate(cr, tf[4]);
     array=coords1;
     shape_fill=fill;
     shape_inter=interpolation;
@@ -1101,20 +1103,20 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
     motion_y=-(event->button.y-layout_height/2.0);
 
     //With Scale from GUI.
-    gdouble w1=(0.5*layout_width-0.5*(layout_width-start_width))*t_scale_x;
-    gdouble h1=(0.5*layout_height-0.5*(layout_height-start_height))*t_scale_y;
+    gdouble w1=(0.5*layout_width-0.5*(layout_width-start_width))*tf[0];
+    gdouble h1=(0.5*layout_height-0.5*(layout_height-start_height))*tf[1];
 
     p1.x=event->button.x*start_width/layout_width-w1;
     p1.y=event->button.y*start_height/layout_height-h1;
 
     //Translate from GUI.
-    p1.x=p1.x-t_translate_x;
-    p1.y=p1.y-t_translate_y;
+    p1.x=p1.x-tf[2];
+    p1.y=p1.y-tf[3];
 
     //Rotate from GUI.
     gdouble temp_x=p1.x;
-    p1.x=p1.x*cos(-t_rotate)-p1.y*sin(-t_rotate);
-    p1.y=temp_x*sin(-t_rotate)+p1.y*cos(-t_rotate);
+    p1.x=p1.x*cos(-tf[4])-p1.y*sin(-tf[4]);
+    p1.y=temp_x*sin(-tf[4])+p1.y*cos(-tf[4]);
 
     struct point *p;
     p=&g_array_index(coords1, struct point, row_id);
@@ -2516,6 +2518,11 @@ static void add_points(GtkWidget *widget, GtkWidget **widgets)
   g_array_append_val(line_colors, lca[3]);
   g_array_append_val(line_widths, line_width);
   g_array_append_val(line_widths, line_cap);
+  g_array_append_val(transforms, tf[0]);
+  g_array_append_val(transforms, tf[1]);
+  g_array_append_val(transforms, tf[2]);
+  g_array_append_val(transforms, tf[3]);
+  g_array_append_val(transforms, tf[4]);
 
   //Save the color stops and direction for the gradient.
   if(fill==1)
@@ -2600,7 +2607,12 @@ static void delete_shape(GtkWidget *widget, GtkWidget **widgets)
               g_array_remove_index(line_colors, 4*row_id);
               g_array_remove_index(line_colors, 4*row_id);
               g_array_remove_index(line_widths, 2*row_id);
-              g_array_remove_index(line_widths, 2*row_id);               
+              g_array_remove_index(line_widths, 2*row_id);
+              g_array_remove_index(transforms, 5*row_id);
+              g_array_remove_index(transforms, 5*row_id); 
+              g_array_remove_index(transforms, 5*row_id); 
+              g_array_remove_index(transforms, 5*row_id); 
+              g_array_remove_index(transforms, 5*row_id);                
             }
           g_free(string);
         }
@@ -2631,6 +2643,9 @@ static void clear_shapes(GtkWidget *widget, GtkWidget **widgets)
 
   len=line_colors->len;
   g_array_remove_range(line_colors, 0, len);
+
+  len=transforms->len;
+  g_array_remove_range(transforms, 0, len);
 
   len=line_widths->len;
   g_array_remove_range(line_widths, 0, len);
@@ -3169,8 +3184,8 @@ static void scale_drawing(GtkWidget *widget, GtkWidget **scale_entries)
     //Set some scale limits.
     if(x>0&&y>0&&x<=100&&y<=100)
       {
-        t_scale_x=x;
-        t_scale_y=y;
+        tf[0]=x;
+        tf[1]=y;
         gtk_widget_queue_draw(scale_entries[2]);
       }
     else
@@ -3188,8 +3203,8 @@ static void translate_drawing(GtkWidget *widget, GtkWidget **translate_entries)
     //Set some translate limits.
     if(x>-1000&&y>-1000&&x<=1000&&y<=1000)
       {
-        t_translate_x=x;
-        t_translate_y=y;
+        tf[2]=x;
+        tf[3]=y;
         gtk_widget_queue_draw(translate_entries[2]);
       }
     else
@@ -3206,7 +3221,7 @@ static void rotate_drawing(GtkWidget *widget, GtkWidget **rotate_entries)
     //Set some rotation limits.
     if(r>=0&&r<=360)
       {
-        t_rotate=r*G_PI/180.0;
+        tf[4]=r*G_PI/180.0;
         gtk_widget_queue_draw(rotate_entries[1]);
       }
     else
@@ -3237,6 +3252,8 @@ static void cleanup(GtkWidget *widget, gpointer data)
       }
     g_ptr_array_free(gradients, TRUE);
     g_array_free(color_stops, TRUE);
+    
+    g_array_free(transforms, TRUE);
     g_array_free(direction, TRUE);
     g_array_free(line_colors, TRUE);
     g_array_free(line_widths, TRUE);
