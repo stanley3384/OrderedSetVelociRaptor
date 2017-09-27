@@ -549,7 +549,7 @@ int main(int argc, char *argv[])
 
 
     //Tab 5 "Add Shape" widgets.
-    GtkWidget *shape_button1=gtk_button_new_with_label("Add Shape");
+    GtkWidget *shape_button1=gtk_button_new_with_label("Add Active Shape");
     gtk_widget_set_hexpand(shape_button1, TRUE);
 
     GtkWidget *shape_button2=gtk_button_new_with_label("Delete Shape");
@@ -584,6 +584,14 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(scroll, TRUE);
     gtk_container_add(GTK_CONTAINER(scroll), tree); 
 
+    GtkWidget *shape_entry1=gtk_entry_new();
+    gtk_widget_set_hexpand(shape_entry1, TRUE);
+    gtk_entry_set_text(GTK_ENTRY(shape_entry1), "artist_drawing1.svg");
+
+    GtkWidget *shape_button4=gtk_button_new_with_label("Get Saved SVG");
+    GtkWidget *widgets5[]={da, check1, tree, shape_entry1};
+    g_signal_connect(shape_button4, "clicked", G_CALLBACK(get_saved_svg), widgets5);
+
     GtkWidget *shape_grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(shape_grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(shape_grid), 8);
@@ -591,6 +599,8 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(shape_grid), scroll, 0, 1, 2, 1);
     gtk_grid_attach(GTK_GRID(shape_grid), shape_button2, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(shape_grid), shape_button3, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(shape_grid), shape_entry1, 0, 3, 2, 1);
+    gtk_grid_attach(GTK_GRID(shape_grid), shape_button4, 0, 4, 2, 1);
     
     //Tab 6 "Save" widgets.
     GtkWidget *save_label1=gtk_label_new(NULL);
@@ -626,15 +636,6 @@ int main(int argc, char *argv[])
     GtkWidget *widgets4[]={da, save_entry3};
     g_signal_connect(save_button2, "clicked", G_CALLBACK(save_svg), widgets4);
 
-    GtkWidget *save_entry4=gtk_entry_new();
-    gtk_widget_set_hexpand(save_entry4, TRUE);
-    gtk_entry_set_text(GTK_ENTRY(save_entry4), "artist_drawing1.svg");
-
-    GtkWidget *save_button3=gtk_button_new_with_label("Get Saved SVG");
-    gtk_widget_set_hexpand(save_button3, TRUE);
-    GtkWidget *widgets5[]={da, check1, tree, save_entry4};
-    g_signal_connect(save_button3, "clicked", G_CALLBACK(get_saved_svg), widgets5);
-
     GtkWidget *save_grid=gtk_grid_new();
     gtk_container_set_border_width(GTK_CONTAINER(save_grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(save_grid), 8);
@@ -646,8 +647,6 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(save_grid), ch1, 0, 3, 2, 1);
     gtk_grid_attach(GTK_GRID(save_grid), save_entry3, 0, 4, 2, 1);
     gtk_grid_attach(GTK_GRID(save_grid), save_button2, 0, 5, 2, 1);
-    gtk_grid_attach(GTK_GRID(save_grid), save_entry4, 0, 6, 2, 1);
-    gtk_grid_attach(GTK_GRID(save_grid), save_button3, 0, 7, 2, 1);
 
     GtkWidget *nb_label1=gtk_label_new("Draw Path");
     GtkWidget *nb_label2=gtk_label_new("Line");
