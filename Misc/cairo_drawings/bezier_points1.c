@@ -1097,12 +1097,16 @@ static gboolean cursor_motion(GtkWidget *widget, GdkEvent *event, gpointer data)
     motion_x=event->button.x-layout_width/2.0;
     motion_y=-(event->button.y-layout_height/2.0);
 
-    //With Scale from GUI.
-    gdouble w1=(0.5*layout_width-0.5*(layout_width-start_width))*tf[0];
-    gdouble h1=(0.5*layout_height-0.5*(layout_height-start_height))*tf[1];
+    p1.x=motion_x;
+    p1.y=-motion_y;
 
-    p1.x=event->button.x*start_width/layout_width-w1;
-    p1.y=event->button.y*start_height/layout_height-h1;
+    //Scale by layout.
+    p1.x=p1.x*(start_width/layout_width);
+    p1.y=p1.y*(start_height/layout_height);
+
+    //Scale from the GUI.
+    p1.x=p1.x*(1/tf[0]);
+    p1.y=p1.y*(1/tf[1]);
 
     //Translate from GUI.
     p1.x=p1.x-tf[2];
