@@ -10,7 +10,8 @@
 */
 
 #include <gtk/gtk.h>
- 
+
+//The grid of rows and columns to draw the graphs in. Start with 1 graph. 
 static gint graph_rows=1;
 static gint graph_columns=1;
 
@@ -38,6 +39,8 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 2, "3", "Graph 2x2");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 3, "4", "Graph 3x3");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 4, "5", "Graph 4x4");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Graph 3x2");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Graph 2x3");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
 
@@ -233,10 +236,20 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data)
         graph_rows=3;
         graph_columns=3;
       }
-    else
+    else if(id==4)
       {
         graph_rows=4;
         graph_columns=4;
+      }
+    else if(id==5)
+      {
+        graph_rows=3;
+        graph_columns=2;
+      }
+    else
+      {
+        graph_rows=2;
+        graph_columns=3;
       }
 
     gtk_widget_queue_draw(GTK_WIDGET(data));
