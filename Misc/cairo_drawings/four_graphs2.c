@@ -67,10 +67,16 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Some drawing variables.
     gdouble x=0.0;
     gdouble y=0.0;
+    //Test array for number of tick marks.
+    gint x_ticks[]={10, 8, 12, 21, 10, 12, 15, 9, 15, 10, 12, 21, 10, 12, 15, 9};
+    gint y_ticks[]={5, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
+    gint temp_tick=0;
     gdouble graph_width=width/graph_columns;
     gdouble graph_height=height/graph_rows;
-    gdouble x_tick=graph_width/10.0;
-    gdouble y_tick=graph_height/5.0;
+    //Initialize to first tick marks in the arrays.
+    gdouble x_tick=graph_width/x_ticks[0];
+    gdouble y_tick=graph_height/y_ticks[0];
+    //Test number for y axis. 
     gdouble test_number=500.0;
 
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
@@ -83,11 +89,14 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         for(j=0;j<graph_columns;j++)
           {
-            for(k=0;k<10;k++)
+            temp_tick=i*graph_columns+j; 
+            x_tick=graph_width/x_ticks[temp_tick];
+            for(k=0;k<x_ticks[temp_tick];k++)
               {
                 x=j*graph_width+k*x_tick;
-                cairo_move_to(cr, x, 0.0);
-                cairo_line_to(cr, x, height);
+                y=i*graph_height+graph_height;
+                cairo_move_to(cr, x, y);
+                cairo_line_to(cr, x, y-graph_height);
                 cairo_stroke(cr);
               } 
           }
@@ -99,17 +108,20 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
       {
         for(j=0;j<graph_columns;j++)
           {
-            for(k=0;k<5;k++)
+            temp_tick=i*graph_columns+j; 
+            y_tick=graph_height/y_ticks[temp_tick];
+            for(k=0;k<y_ticks[temp_tick];k++)
               {
+                x=j*graph_width;
                 y=i*graph_height+k*y_tick;
-                cairo_move_to(cr, 0, y);
-                cairo_line_to(cr, width, y);
+                cairo_move_to(cr, x, y);
+                cairo_line_to(cr, x+graph_width, y);
                 cairo_stroke(cr);
               }
           }
       }
 
-    //Data points.
+    //Test data yellow line.
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     cairo_set_line_width(cr, 2);
     for(i=0;i<graph_rows;i++)
@@ -118,8 +130,12 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           {
             x=graph_width*j;
             y=graph_height*i+graph_height;
-            cairo_move_to(cr, x, y);           
-            for(k=0;k<4;k++)
+            cairo_move_to(cr, x, y);
+            temp_tick=i*graph_columns+j; 
+            x_tick=graph_width/x_ticks[temp_tick];
+            y_tick=graph_height/y_ticks[temp_tick];
+            //Draw through three rectangles.           
+            for(k=0;k<3;k++)
               {
                 x=j*graph_width+k*x_tick+x_tick;
                 y=i*graph_height+graph_height-k*y_tick-y_tick;
@@ -127,8 +143,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 cairo_stroke_preserve(cr);
               } 
           }
-      }
-    
+      }    
     cairo_stroke(cr);
 
     //Number of vertical lines for each graph.
@@ -138,7 +153,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
         y=i*graph_height+graph_height;
         for(j=0;j<graph_columns;j++)
           {
-            for(k=0;k<10;k++)
+            temp_tick=i*graph_columns+j; 
+            x_tick=graph_width/x_ticks[temp_tick];
+            for(k=0;k<x_ticks[temp_tick];k++)
               {
                 x=j*graph_width+k*x_tick;
                 cairo_move_to(cr, x+5, y-10);
@@ -157,7 +174,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           {
             x=j*graph_width;
             test_number=500;
-            for(k=0;k<5;k++)
+            temp_tick=i*graph_columns+j; 
+            y_tick=graph_height/y_ticks[temp_tick];
+            for(k=0;k<y_ticks[temp_tick];k++)
               {
                 y=i*graph_height+graph_height-k*y_tick-y_tick;
                 cairo_move_to(cr, x+5, y+20);
