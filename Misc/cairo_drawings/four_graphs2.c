@@ -179,6 +179,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_stroke(cr);
 
     //Number of vertical lines for each graph.
+    cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    //Scale font by width of graph.
+    cairo_set_font_size(cr, 16*(graph_width/500.0));
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     for(i=0;i<graph_rows;i++)
       {
@@ -205,7 +208,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
         for(j=0;j<graph_columns;j++)
           {
             x=j*graph_width;
-            test_number=500;
+            test_number=0;
             temp_tick=i*graph_columns+j; 
             y_tick=graph_height/y_ticks[temp_tick];
             for(k=0;k<y_ticks[temp_tick];k++)
