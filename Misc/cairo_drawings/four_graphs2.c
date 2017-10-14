@@ -14,6 +14,11 @@
 //The grid of rows and columns to draw the graphs in. Start with 1 graph. 
 static gint graph_rows=1;
 static gint graph_columns=1;
+//Test array for number of tick marks on the axis. Max is 4x4 grid or 16 numbers
+static gint x_ticks[]={10, 8, 12, 21, 10, 12, 15, 9, 15, 10, 12, 21, 10, 12, 15, 9};
+static gint y_ticks[]={5, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
+//Arrays for random data to test with.
+static GArray *data_points=NULL;
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void combo1_changed(GtkComboBox *combo6, gpointer data);
@@ -27,6 +32,25 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Graphs");
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    //Get some random numbers to test with.
+    gint i=0;
+    gint j=0;
+    gdouble value=0;
+    GRand *rand=g_rand_new();
+    data_points=g_array_sized_new(FALSE, FALSE, sizeof(GArray*), 16);
+    GArray *temp=NULL;
+    for(i=0;i<16;i++)
+      {
+        temp=g_array_sized_new(FALSE, FALSE, sizeof(gdouble), x_ticks[i]);
+        for(j=0;j<x_ticks[i];j++)
+          {
+            value=g_rand_double(rand);
+            g_array_append_val(temp, value);
+          }
+        g_array_append_val(data_points, temp);
+      }
+    g_rand_free(rand);
 
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE); 
@@ -58,6 +82,12 @@ int main(int argc, char *argv[])
     
     gtk_main();
 
+    for(i=0;i<data_points->len;i++)
+      {
+        g_array_free(g_array_index(data_points, GArray*, i), TRUE);
+      }
+    g_array_free(data_points, TRUE);
+
     return 0;
   }
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -70,9 +100,6 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Some drawing variables.
     gdouble x=0.0;
     gdouble y=0.0;
-    //Test array for number of tick marks.
-    gint x_ticks[]={10, 8, 12, 21, 10, 12, 15, 9, 15, 10, 12, 21, 10, 12, 15, 9};
-    gint y_ticks[]={5, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
     gint temp_tick=0;
     gdouble graph_width=width/graph_columns;
     gdouble graph_height=height/graph_rows;
@@ -81,6 +108,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     gdouble y_tick=graph_height/y_ticks[0];
     //Test number for y axis. 
     gdouble test_number=500.0;
+    GArray *rnd_data=NULL;
 
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_paint(cr);
@@ -137,11 +165,12 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
             temp_tick=i*graph_columns+j; 
             x_tick=graph_width/x_ticks[temp_tick];
             y_tick=graph_height/y_ticks[temp_tick];
-            //Draw through three rectangles.           
-            for(k=0;k<3;k++)
+            rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+            //Draw the random points.           
+            for(k=0;k<rnd_data->len;k++)
               {
                 x=j*graph_width+k*x_tick+x_tick;
-                y=i*graph_height+graph_height-k*y_tick-y_tick;
+                y=i*graph_height+graph_height-(graph_height*g_array_index(rnd_data, gdouble, k));
                 cairo_line_to(cr, x, y);
                 cairo_stroke_preserve(cr);
               } 
