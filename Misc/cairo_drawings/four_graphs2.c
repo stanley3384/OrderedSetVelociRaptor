@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
    
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 820, 500);
     gtk_window_set_title(GTK_WINDOW(window), "Graphs");
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -103,6 +103,8 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     gint temp_tick=0;
     gdouble graph_width=width/graph_columns;
     gdouble graph_height=height/graph_rows;
+    gdouble ratio_x=graph_width/700.0;
+    gdouble ratio_y=graph_height/500.0;
     //Initialize to first tick marks in the arrays.
     gdouble x_tick=graph_width/x_ticks[0];
     gdouble y_tick=graph_height/y_ticks[0];
@@ -180,8 +182,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Number of vertical lines for each graph.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    //Scale font by width of graph.
-    cairo_set_font_size(cr, 16*(graph_width/500.0));
+    cairo_set_font_size(cr, 18*ratio_x);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     for(i=0;i<graph_rows;i++)
       {
@@ -193,8 +194,8 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
             for(k=0;k<x_ticks[temp_tick];k++)
               {
                 x=j*graph_width+k*x_tick;
-                cairo_move_to(cr, x+5, y-10);
                 gchar *string=g_strdup_printf("%i", k);
+                cairo_move_to(cr, x+5.0*ratio_x, y-10.0*ratio_x);
                 cairo_show_text(cr, string);
                 g_free(string);
               }
@@ -203,6 +204,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Horizontal line numbers.
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_set_font_size(cr, 20*ratio_y);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
@@ -214,8 +216,8 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
             for(k=0;k<y_ticks[temp_tick];k++)
               {
                 y=i*graph_height+graph_height-k*y_tick-y_tick;
-                cairo_move_to(cr, x+5, y+20);
                 gchar *string=g_strdup_printf("%i", (gint)(test_number+=500));
+                cairo_move_to(cr, x+5.0*ratio_y, y+25.0*ratio_y);
                 cairo_show_text(cr, string);
                 g_free(string);
               }
@@ -224,10 +226,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Draw graph blocks.
     cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
-    cairo_set_line_width(cr, 10);
+    cairo_set_line_width(cr, 2);
     cairo_rectangle(cr, 0.0, 0.0, width, height);
     cairo_stroke(cr);
-    cairo_set_line_width(cr, 5);
     for(i=0;i<graph_columns;i++)
       {
         x=i*graph_width;
