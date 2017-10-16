@@ -19,9 +19,14 @@ static gint x_ticks[]={10, 8, 12, 21, 10, 12, 15, 9, 15, 10, 12, 21, 10, 12, 15,
 static gint y_ticks[]={5, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
 //Arrays for random data to test with.
 static GArray *data_points=NULL;
+//Font scaling on axis. 
+static gint x_font_scale=0;
+static gint y_font_scale=0;
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void combo1_changed(GtkComboBox *combo6, gpointer data);
+static void x_spin_changed(GtkSpinButton *spin_button, gpointer data);
+static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -68,8 +73,26 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
 
+    GtkAdjustment *adjustment1=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
+    GtkAdjustment *adjustment2=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
+
+    GtkWidget *x_spin_label=gtk_label_new("Scale x labels");
+
+    GtkWidget *x_spin=gtk_spin_button_new(adjustment1, 1, 0);
+    g_signal_connect(x_spin, "value-changed", G_CALLBACK(x_spin_changed), da);
+
+    GtkWidget *y_spin_label=gtk_label_new("Scale y labels");
+
+    GtkWidget *y_spin=gtk_spin_button_new(adjustment2, 1, 0);
+    g_signal_connect(y_spin, "value-changed", G_CALLBACK(y_spin_changed), da);
+
     GtkWidget *grid=gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), x_spin_label, 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), x_spin, 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), y_spin_label, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), y_spin, 0, 4, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -182,7 +205,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Number of vertical lines for each graph.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 18*ratio_x);
+    cairo_set_font_size(cr, (18+x_font_scale)*ratio_x);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     for(i=0;i<graph_rows;i++)
       {
@@ -204,7 +227,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Horizontal line numbers.
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    cairo_set_font_size(cr, 20*ratio_y);
+    cairo_set_font_size(cr, (20+y_font_scale)*ratio_y);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
@@ -287,5 +310,14 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data)
 
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
-
+static void x_spin_changed(GtkSpinButton *spin_button, gpointer data)
+  {
+    x_font_scale=(gint)gtk_spin_button_get_value(spin_button);
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void y_spin_changed(GtkSpinButton *spin_button, gpointer data)
+  {
+    y_font_scale=(gint)gtk_spin_button_get_value(spin_button);
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
 
