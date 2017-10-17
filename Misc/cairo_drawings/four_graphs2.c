@@ -22,11 +22,18 @@ static GArray *data_points=NULL;
 //Font scaling on axis. 
 static gint x_font_scale=0;
 static gint y_font_scale=0;
+//Dots=0 or lines=1 combo.
+static gint draw_lines=1;
+//Scale dots or lines.
+static gint scale_dots=0;
+
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
-static void combo1_changed(GtkComboBox *combo6, gpointer data);
+static void combo1_changed(GtkComboBox *combo, gpointer data);
+static void combo2_changed(GtkComboBox *combo, gpointer data);
 static void x_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
+static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -73,8 +80,15 @@ int main(int argc, char *argv[])
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
 
+    GtkWidget *combo2=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Points");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Draw Lines");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 1);
+    g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
+
     GtkAdjustment *adjustment1=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
     GtkAdjustment *adjustment2=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
+    GtkAdjustment *adjustment3=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
 
     GtkWidget *x_spin_label=gtk_label_new("Scale x labels");
 
@@ -86,6 +100,11 @@ int main(int argc, char *argv[])
     GtkWidget *y_spin=gtk_spin_button_new(adjustment2, 1, 0);
     g_signal_connect(y_spin, "value-changed", G_CALLBACK(y_spin_changed), da);
 
+    GtkWidget *dots_spin_label=gtk_label_new("Scale Dots");
+
+    GtkWidget *dots_spin=gtk_spin_button_new(adjustment3, 1, 0);
+    g_signal_connect(dots_spin, "value-changed", G_CALLBACK(scale_dots_changed), da);
+
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
@@ -93,6 +112,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), x_spin, 0, 2, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), y_spin_label, 0, 3, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), y_spin, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo2, 0, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), dots_spin_label, 0, 6, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), dots_spin, 0, 7, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -177,35 +199,68 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
 
-    //Test data yellow line.
+    //Test data in yellow.
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-    cairo_set_line_width(cr, 2);
-    for(i=0;i<graph_rows;i++)
+    
+    if(draw_lines==1)
       {
-        for(j=0;j<graph_columns;j++)
+        cairo_set_line_width(cr, 2*ratio_x+scale_dots);
+        for(i=0;i<graph_rows;i++)
           {
-            x=graph_width*j;
-            y=graph_height*i+graph_height;
-            cairo_move_to(cr, x, y);
-            temp_tick=i*graph_columns+j; 
-            x_tick=graph_width/x_ticks[temp_tick];
-            y_tick=graph_height/y_ticks[temp_tick];
-            rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
-            //Draw the random points.           
-            for(k=0;k<rnd_data->len;k++)
+            for(j=0;j<graph_columns;j++)
               {
-                x=j*graph_width+k*x_tick+x_tick;
-                y=i*graph_height+graph_height-(graph_height*g_array_index(rnd_data, gdouble, k));
-                cairo_line_to(cr, x, y);
-                cairo_stroke_preserve(cr);
-              } 
-          }
-      }    
-    cairo_stroke(cr);
+                x=graph_width*j;
+                y=graph_height*i+graph_height;
+                cairo_move_to(cr, x, y);
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                y_tick=graph_height/y_ticks[temp_tick];
+                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                //Draw the random points.           
+                for(k=0;k<rnd_data->len;k++)
+                  {
+                    x=j*graph_width+k*x_tick+x_tick;
+                    y=i*graph_height+graph_height-(graph_height*g_array_index(rnd_data, gdouble, k));
+                    cairo_line_to(cr, x, y);
+                    cairo_stroke_preserve(cr);
+                  } 
+              }
+          }    
+        cairo_stroke(cr);
+      }
+
+    if(draw_lines==0)
+      {
+        cairo_set_line_width(cr, 8*ratio_x+scale_dots);
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                x=graph_width*j;
+                y=graph_height*i+graph_height;
+                cairo_move_to(cr, x, y);
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                y_tick=graph_height/y_ticks[temp_tick];
+                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                //Draw the random points.           
+                for(k=0;k<rnd_data->len;k++)
+                  {
+                    x=j*graph_width+k*x_tick+x_tick;
+                    y=i*graph_height+graph_height-(graph_height*g_array_index(rnd_data, gdouble, k));
+                    cairo_move_to(cr, x, y);
+                    cairo_line_to(cr, x, y);
+                    cairo_stroke(cr);
+                  } 
+              }
+          }    
+      }
+ 
 
     //Number of vertical lines for each graph.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, (18+x_font_scale)*ratio_x);
+    cairo_set_font_size(cr, 18*ratio_x+x_font_scale);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     for(i=0;i<graph_rows;i++)
       {
@@ -227,7 +282,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Horizontal line numbers.
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    cairo_set_font_size(cr, (20+y_font_scale)*ratio_y);
+    cairo_set_font_size(cr, 20*ratio_y+y_font_scale);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
@@ -249,6 +304,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Draw graph blocks.
     cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     cairo_set_line_width(cr, 2);
     cairo_rectangle(cr, 0.0, 0.0, width, height);
     cairo_stroke(cr);
@@ -269,9 +325,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
  
     return FALSE;
   }
-static void combo1_changed(GtkComboBox *combo1, gpointer data)
+static void combo1_changed(GtkComboBox *combo, gpointer data)
   {
-    gint id=gtk_combo_box_get_active(combo1);
+    gint id=gtk_combo_box_get_active(combo);
     if(id==0)
       {
         graph_rows=1;
@@ -310,6 +366,14 @@ static void combo1_changed(GtkComboBox *combo1, gpointer data)
 
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
+static void combo2_changed(GtkComboBox *combo, gpointer data)
+  {
+    gint id=gtk_combo_box_get_active(combo);
+    if(id==0) draw_lines=0;
+    else draw_lines=1;
+
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
 static void x_spin_changed(GtkSpinButton *spin_button, gpointer data)
   {
     x_font_scale=(gint)gtk_spin_button_get_value(spin_button);
@@ -320,4 +384,10 @@ static void y_spin_changed(GtkSpinButton *spin_button, gpointer data)
     y_font_scale=(gint)gtk_spin_button_get_value(spin_button);
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
+static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data)
+  {
+    scale_dots=(gint)gtk_spin_button_get_value(spin_button);
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+
 
