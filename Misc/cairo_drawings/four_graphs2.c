@@ -1,6 +1,6 @@
 
 /*
-    Test putting more than one graph in a drawing area. 
+    Test putting more than one graph in a drawing area. Draw dots, lines and smooth curves. 
 
     gcc -Wall four_graphs2.c -o four_graphs2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -10,6 +10,17 @@
 */
 
 #include <gtk/gtk.h>
+
+struct point{
+  gdouble x;
+  gdouble y;
+};
+struct controls{
+  gdouble x1;
+  gdouble y1;
+  gdouble x2;
+  gdouble y2;
+};
 
 //The grid of rows and columns to draw the graphs in. Start with 1 graph. 
 static gint graph_rows=1;
@@ -22,10 +33,12 @@ static GArray *data_points=NULL;
 //Font scaling on axis. 
 static gint x_font_scale=0;
 static gint y_font_scale=0;
-//Dots=0 or lines=1 combo.
-static gint draw_lines=1;
+//Points=0, lines=1 or smooth=2 combo.
+static gint draw_lines=0;
 //Scale dots or lines.
 static gint scale_dots=0;
+//Test number for y axis. 
+static gdouble test_number=500.0;
 
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
@@ -34,6 +47,8 @@ static void combo2_changed(GtkComboBox *combo, gpointer data);
 static void x_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
+//Bezier control points from coordinates for smoothing.
+static GArray* control_points_from_coords2(const GArray *dataPoints);
 
 int main(int argc, char *argv[])
   {
@@ -48,17 +63,19 @@ int main(int argc, char *argv[])
     //Get some random numbers to test with.
     gint i=0;
     gint j=0;
-    gdouble value=0;
+    struct point pt;
     GRand *rand=g_rand_new();
     data_points=g_array_sized_new(FALSE, FALSE, sizeof(GArray*), 16);
     GArray *temp=NULL;
     for(i=0;i<16;i++)
       {
-        temp=g_array_sized_new(FALSE, FALSE, sizeof(gdouble), x_ticks[i]);
+        //Test array size based on x tick marks.
+        temp=g_array_sized_new(FALSE, FALSE, sizeof(struct point), x_ticks[i]);
         for(j=0;j<x_ticks[i];j++)
           {
-            value=g_rand_double(rand);
-            g_array_append_val(temp, value);
+            pt.x=(gdouble)j;
+            pt.y=g_rand_double(rand);
+            g_array_append_val(temp, pt);
           }
         g_array_append_val(data_points, temp);
       }
@@ -83,7 +100,8 @@ int main(int argc, char *argv[])
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Points");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Draw Lines");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 1);
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Draw Smooth");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
 
     GtkAdjustment *adjustment1=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
@@ -153,8 +171,6 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Initialize to first tick marks in the arrays.
     gdouble x_tick=graph_width/x_ticks[0];
     gdouble y_tick=graph_height/y_ticks[0];
-    //Test number for y axis. 
-    gdouble test_number=500.0;
     GArray *rnd_data=NULL;
 
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
@@ -199,36 +215,10 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
 
-    //Test data in yellow.
+    //Test data in yellow. Random points or lines.
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-    
-    if(draw_lines==1)
-      {
-        cairo_set_line_width(cr, 2*ratio_x+scale_dots);
-        for(i=0;i<graph_rows;i++)
-          {
-            for(j=0;j<graph_columns;j++)
-              {
-                x=graph_width*j;
-                y=graph_height*i+graph_height;
-                cairo_move_to(cr, x, y);
-                temp_tick=i*graph_columns+j; 
-                x_tick=graph_width/x_ticks[temp_tick];
-                y_tick=graph_height/y_ticks[temp_tick];
-                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
-                //Draw the random points.           
-                for(k=0;k<rnd_data->len;k++)
-                  {
-                    x=j*graph_width+k*x_tick+x_tick;
-                    y=i*graph_height+graph_height-(graph_height*g_array_index(rnd_data, gdouble, k));
-                    cairo_line_to(cr, x, y);
-                    cairo_stroke_preserve(cr);
-                  } 
-              }
-          }    
-        cairo_stroke(cr);
-      }
-
+    struct point pt; 
+    //Draw points.
     if(draw_lines==0)
       {
         cairo_set_line_width(cr, 8*ratio_x+scale_dots);
@@ -243,21 +233,97 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 temp_tick=i*graph_columns+j; 
                 x_tick=graph_width/x_ticks[temp_tick];
                 y_tick=graph_height/y_ticks[temp_tick];
-                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
-                //Draw the random points.           
+                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);           
                 for(k=0;k<rnd_data->len;k++)
                   {
-                    x=j*graph_width+k*x_tick+x_tick;
-                    y=i*graph_height+graph_height-(graph_height*g_array_index(rnd_data, gdouble, k));
+                    pt=g_array_index(rnd_data, struct point, k);
+                    //k=pt.x for testing.
+                    x=j*graph_width+pt.x*x_tick+x_tick;
+                    y=i*graph_height+graph_height-(graph_height*pt.y);
                     cairo_move_to(cr, x, y);
                     cairo_line_to(cr, x, y);
                     cairo_stroke(cr);
                   } 
               }
           }    
+      }   
+    else if(draw_lines==1)
+      {
+        cairo_set_line_width(cr, 2*ratio_x+scale_dots);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                y_tick=graph_height/y_ticks[temp_tick];
+                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                pt=g_array_index(rnd_data, struct point, 0);
+                x=j*graph_width+pt.x*x_tick+x_tick;
+                y=i*graph_height+graph_height-(graph_height*pt.y);
+                cairo_move_to(cr, x, y);           
+                for(k=1;k<rnd_data->len;k++)
+                  {
+                    pt=g_array_index(rnd_data, struct point, k);
+                    //k=pt.x for testing.
+                    x=j*graph_width+pt.x*x_tick+x_tick;
+                    y=i*graph_height+graph_height-(graph_height*pt.y);
+                    cairo_line_to(cr, x, y);
+                    cairo_stroke_preserve(cr);
+                  } 
+                cairo_stroke(cr);
+              }
+          }    
       }
- 
-
+    //Smooth lines.
+    else
+      {
+        struct controls c1;
+        gdouble ct1=0;
+        gdouble ct2=0;
+        gdouble ct3=0;
+        gdouble ct4=0;
+        cairo_set_line_width(cr, 4*ratio_x+scale_dots);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                //Clip rectangles to keep the curve in bounds.
+                cairo_save(cr);
+                x=graph_width*j;
+                y=graph_height*i;
+                cairo_rectangle(cr, x, y, graph_width, graph_height);
+                cairo_clip(cr);
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                y_tick=graph_height/y_ticks[temp_tick];
+                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                GArray *bezier_pts=control_points_from_coords2(rnd_data);
+                pt=g_array_index(rnd_data, struct point, 0);
+                x=j*graph_width+pt.x*x_tick+x_tick;
+                y=i*graph_height+graph_height-(graph_height*pt.y);
+                cairo_move_to(cr, x, y);       
+                for(k=1;k<rnd_data->len;k++)
+                  {
+                    pt=g_array_index(rnd_data, struct point, k);
+                    c1=g_array_index(bezier_pts, struct controls, k-1);
+                    //k=pt.x for testing.
+                    x=j*graph_width+pt.x*x_tick+x_tick;
+                    y=i*graph_height+graph_height-(graph_height*pt.y);
+                    ct1=j*graph_width+c1.x1*x_tick+x_tick;
+                    ct2=i*graph_height+graph_height-(graph_height*c1.y1);
+                    ct3=j*graph_width+c1.x2*x_tick+x_tick;
+                    ct4=i*graph_height+graph_height-(graph_height*c1.y2);
+                    cairo_curve_to(cr, ct1, ct2, ct3, ct4, x, y);
+                    cairo_stroke(cr);
+                    cairo_move_to(cr, x, y);
+                  } 
+                g_array_free(bezier_pts, TRUE);
+                cairo_restore(cr);
+              }
+          }    
+      }
+   
     //Number of vertical lines for each graph.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 18*ratio_x+x_font_scale);
@@ -370,7 +436,8 @@ static void combo2_changed(GtkComboBox *combo, gpointer data)
   {
     gint id=gtk_combo_box_get_active(combo);
     if(id==0) draw_lines=0;
-    else draw_lines=1;
+    else if(id==1) draw_lines=1;
+    else draw_lines=2;
 
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
@@ -388,6 +455,195 @@ static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data)
   {
     scale_dots=(gint)gtk_spin_button_get_value(spin_button);
     gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static GArray* control_points_from_coords2(const GArray *dataPoints)
+  {  
+    gint i=0;
+    GArray *controlPoints=NULL;      
+    //Number of Segments
+    gint count=0;
+    if(dataPoints!=NULL) count=dataPoints->len-1;
+    gdouble *fCP=NULL;
+    gdouble *sCP=NULL;
+
+    if(count>0)
+      {
+        fCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+        sCP=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+      }
+        
+    //P0, P1, P2, P3 are the points for each segment, where P0 & P3 are the knots and P1, P2 are the control points.
+    if(count<1||dataPoints==NULL)
+      {
+        //Return NULL.
+        controlPoints=NULL;
+        g_warning("Can't get control points from coordinates. NULL returned.\n");
+      }
+    else if(count==1)
+      {
+        struct point P0=g_array_index(dataPoints, struct point, 0);
+        struct point P3=g_array_index(dataPoints, struct point, 1);
+
+        //Calculate First Control Point
+        //3P1 = 2P0 + P3
+        struct point P1;
+        P1.x=(2.0*P0.x+P3.x)/3.0;
+        P1.y=(2.0*P0.y+P3.y)/3.0;
+
+        *(fCP)=P1.x;
+        *(fCP+1)=P1.y;
+
+        //Calculate second Control Point
+        //P2 = 2P1 - P0
+        struct point P2;
+        P2.x=(2.0*P1.x-P0.x);
+        P2.y=(2.0*P1.y-P0.x);
+
+        *(sCP)=P2.x;
+        *(sCP+1)=P2.y;      
+      }
+    else
+      {
+        gdouble *rhs=(gdouble*)g_malloc(2*count*sizeof(gdouble));
+        gdouble *a=(gdouble*)g_malloc(count*sizeof(gdouble));
+        gdouble *b=(gdouble*)g_malloc(count*sizeof(gdouble));
+        gdouble *c=(gdouble*)g_malloc(count*sizeof(gdouble));
+        gdouble rhsValueX=0;
+        gdouble rhsValueY=0;
+        struct point P0;
+        struct point P3;        
+        gdouble m=0;
+        gdouble b1=0;
+        gdouble r2x=0;
+        gdouble r2y=0;
+        gdouble P1_x=0;
+        gdouble P1_y=0;
+   
+        for(i=0;i<count;i++)
+          {
+            P0=g_array_index(dataPoints, struct point, i);
+            P3=g_array_index(dataPoints, struct point, i+1);
+
+            if(i==0)
+              {
+                *(a)=0.0;
+                *(b)=2.0;
+                *(c)=1.0;
+
+                //rhs for first segment
+                rhsValueX=P0.x+2.0*P3.x;
+                rhsValueY=P0.y+2.0*P3.y;
+              }
+            else if(i==count-1)
+              {
+                *(a+i)=2.0;
+                *(b+i)=7.0;
+                *(c+i)=0.0;
+
+                //rhs for last segment
+                rhsValueX=8.0*P0.x+P3.x;
+                rhsValueY=8.0*P0.y+P3.y;
+              }
+            else
+              {
+                *(a+i)=1.0;
+                *(b+i)=4.0;
+                *(c+i)=1.0;
+
+                rhsValueX=4.0*P0.x+2.0*P3.x;
+                rhsValueY=4.0*P0.y+2.0*P3.y;
+              }
+            *(rhs+i*2)=rhsValueX;
+            *(rhs+i*2+1)=rhsValueY;
+          }
+
+        //Solve Ax=B. Use Tridiagonal matrix algorithm a.k.a Thomas Algorithm
+        for(i=1;i<count;i++)
+          {
+            m=(*(a+i))/(*(b+i-1));
+
+            b1=(*(b+i))-m*(*(c+i-1));
+            *(b+i)=b1;
+
+            r2x=(*(rhs+i*2))-m*(*(rhs+(i-1)*2));
+            r2y=(*(rhs+i*2+1))-m*(*(rhs+(i-1)*2+1));
+
+            *(rhs+i*2)=r2x;
+            *(rhs+i*2+1)=r2y;
+          }
+
+        //Get First Control Points
+        
+        //Last control Point
+        gdouble lastControlPointX=(*(rhs+2*count-2))/(*(b+count-1));
+        gdouble lastControlPointY=(*(rhs+2*count-1))/(*(b+count-1));
+
+        *(fCP+2*count-2)=lastControlPointX;
+        *(fCP+2*count-1)=lastControlPointY;
+
+        gdouble controlPointX=0;
+        gdouble controlPointY=0;
+
+        for(i=count-2;i>=0;--i)
+          {
+            controlPointX=(*(rhs+i*2)-(*(c+i))*(*(fCP+(i+1)*2)))/(*(b+i));
+            controlPointY=(*(rhs+i*2+1)-(*(c+i))*(*(fCP+(i+1)*2+1)))/(*(b+i));
+
+             *(fCP+i*2)=controlPointX;
+             *(fCP+i*2+1)=controlPointY; 
+          }
+
+        //Compute second Control Points from first.
+        for(i=0;i<count;i++)
+          {
+            if(i==count-1)
+              {
+                P3=g_array_index(dataPoints, struct point, i+1);
+                P1_x=(*(fCP+i*2));
+                P1_y=(*(fCP+i*2+1));
+
+                controlPointX=(P3.x+P1_x)/2.0;
+                controlPointY=(P3.y+P1_y)/2.0;
+
+                *(sCP+count*2-2)=controlPointX;
+                *(sCP+count*2-1)=controlPointY;
+              }
+            else
+              {
+                P3=g_array_index(dataPoints, struct point, i+1);                
+                P1_x=(*(fCP+(i+1)*2));
+                P1_y=(*(fCP+(i+1)*2+1));
+
+                controlPointX=2.0*P3.x-P1_x;
+                controlPointY=2.0*P3.y-P1_y;
+
+                *(sCP+i*2)=controlPointX;
+                *(sCP+i*2+1)=controlPointY;
+              }
+
+          }
+
+        controlPoints=g_array_new(FALSE, FALSE, sizeof(struct controls));
+        struct controls cp;
+        for(i=0;i<count;i++)
+          {
+            cp.x1=(*(fCP+i*2));
+            cp.y1=(*(fCP+i*2+1));
+            cp.x2=(*(sCP+i*2));
+            cp.y2=(*(sCP+i*2+1));
+            g_array_append_val(controlPoints, cp);
+          }
+
+        g_free(rhs);
+        g_free(a);
+        g_free(b);
+        g_free(c);
+     }
+
+    if(fCP!=NULL) g_free(fCP);
+    if(sCP!=NULL) g_free(sCP);
+
+    return controlPoints;
   }
 
 
