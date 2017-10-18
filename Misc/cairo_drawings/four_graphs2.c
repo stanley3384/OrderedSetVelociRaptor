@@ -227,7 +227,12 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           {
             for(j=0;j<graph_columns;j++)
               {
+                //Clip rectangles to keep the curve in bounds.
+                cairo_save(cr);
                 x=graph_width*j;
+                y=graph_height*i;
+                cairo_rectangle(cr, x, y, graph_width, graph_height);
+                cairo_clip(cr);
                 y=graph_height*i+graph_height;
                 cairo_move_to(cr, x, y);
                 temp_tick=i*graph_columns+j; 
@@ -244,16 +249,24 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                     cairo_line_to(cr, x, y);
                     cairo_stroke(cr);
                   } 
+                cairo_restore(cr);
               }
           }    
       }   
     else if(draw_lines==1)
       {
         cairo_set_line_width(cr, 2*ratio_x+scale_dots);
+        cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
         for(i=0;i<graph_rows;i++)
           {
             for(j=0;j<graph_columns;j++)
               {
+                //Clip rectangles to keep the curve in bounds.
+                cairo_save(cr);
+                x=graph_width*j;
+                y=graph_height*i;
+                cairo_rectangle(cr, x, y, graph_width, graph_height);
+                cairo_clip(cr);
                 temp_tick=i*graph_columns+j; 
                 x_tick=graph_width/x_ticks[temp_tick];
                 y_tick=graph_height/y_ticks[temp_tick];
@@ -269,9 +282,10 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                     x=j*graph_width+pt.x*x_tick+x_tick;
                     y=i*graph_height+graph_height-(graph_height*pt.y);
                     cairo_line_to(cr, x, y);
-                    cairo_stroke_preserve(cr);
+                    cairo_stroke(cr);
+                    cairo_move_to(cr, x, y);
                   } 
-                cairo_stroke(cr);
+                cairo_restore(cr);
               }
           }    
       }
