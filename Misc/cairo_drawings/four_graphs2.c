@@ -28,7 +28,7 @@ static gint graph_rows=1;
 static gint graph_columns=1;
 //Test array for number of tick marks on the axis. Max is 4x4 grid or 16 numbers
 static gint x_ticks[]={10, 8, 12, 21, 10, 12, 15, 9, 15, 10, 12, 21, 10, 12, 15, 9};
-static gint y_ticks[]={5, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
+static gint y_ticks[]={9, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
 //Arrays for random data to test with.
 static GArray *data_points=NULL;
 //Font scaling on axis. 
@@ -36,10 +36,11 @@ static gint x_font_scale=0;
 static gint y_font_scale=0;
 //Points=0, lines=1 or smooth=2 combo.
 static gint draw_lines=0;
-//Scale dots or lines.
+//Scale dots and lines.
 static gint scale_dots=0;
-//Test number for y axis. 
-static gdouble test_number=500.0;
+//Test numbers for the x and y axis scale or increase at each tick.
+static gdouble test_number_x=5.0; 
+static gdouble test_number_y=500.0;
 //For the timer and random number generator.
 static int timer_id=0;
 static GRand *rand=NULL;
@@ -355,41 +356,54 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     for(i=0;i<graph_rows;i++)
       {
-        y=i*graph_height+graph_height;
         for(j=0;j<graph_columns;j++)
           {
+            cairo_save(cr);
+            x=graph_width*j;
+            y=graph_height*i;
+            cairo_rectangle(cr, x, y, graph_width, graph_height);
+            cairo_clip(cr);
+            y=i*graph_height+graph_height;
             temp_tick=i*graph_columns+j; 
             x_tick=graph_width/x_ticks[temp_tick];
             for(k=0;k<x_ticks[temp_tick];k++)
               {
                 x=j*graph_width+k*x_tick;
-                gchar *string=g_strdup_printf("%i", k);
-                cairo_move_to(cr, x+5.0*ratio_x, y-10.0*ratio_x);
+                gchar *string=g_strdup_printf("%i", (gint)(test_number_x*k));
+                cairo_move_to(cr, x+8.0*ratio_x, y-10.0*ratio_x);
                 cairo_show_text(cr, string);
                 g_free(string);
               }
+            cairo_restore(cr);
           }
       }
 
     //Horizontal line numbers.
+    gint len=0;
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_set_font_size(cr, 20*ratio_y+y_font_scale);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
           {
+            cairo_save(cr);
+            x=graph_width*j;
+            y=graph_height*i;
+            cairo_rectangle(cr, x, y, graph_width, graph_height);
+            cairo_clip(cr);
             x=j*graph_width;
-            test_number=0;
             temp_tick=i*graph_columns+j; 
             y_tick=graph_height/y_ticks[temp_tick];
-            for(k=0;k<y_ticks[temp_tick];k++)
+            len=y_ticks[temp_tick]+1;
+            for(k=0;k<len;k++)
               {
-                y=i*graph_height+graph_height-k*y_tick-y_tick;
-                gchar *string=g_strdup_printf("%i", (gint)(test_number+=500));
-                cairo_move_to(cr, x+5.0*ratio_y, y+25.0*ratio_y);
+                y=i*graph_height+graph_height-k*y_tick;
+                gchar *string=g_strdup_printf("%i", (gint)(test_number_y*k));
+                cairo_move_to(cr, x+8.0*ratio_y, y+25.0*ratio_y);
                 cairo_show_text(cr, string);
                 g_free(string);
               }
+            cairo_restore(cr);
           }
       }
 
