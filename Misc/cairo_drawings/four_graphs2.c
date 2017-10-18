@@ -1,6 +1,7 @@
 
 /*
-    Test putting more than one graph in a drawing area. Draw dots, lines and smooth curves. 
+    Test putting more than one graph in a drawing area. Draw dots, lines and smooth curves
+with animation. 
 
     gcc -Wall four_graphs2.c -o four_graphs2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -39,6 +40,9 @@ static gint draw_lines=0;
 static gint scale_dots=0;
 //Test number for y axis. 
 static gdouble test_number=500.0;
+//For the timer and random number generator.
+static int timer_id=0;
+static GRand *rand=NULL;
 
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
@@ -47,6 +51,8 @@ static void combo2_changed(GtkComboBox *combo, gpointer data);
 static void x_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
+static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[]);
+static gboolean animate_graphs(GtkWidget *widgets[]);
 //Bezier control points from coordinates for smoothing.
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
@@ -64,7 +70,7 @@ int main(int argc, char *argv[])
     gint i=0;
     gint j=0;
     struct point pt;
-    GRand *rand=g_rand_new();
+    rand=g_rand_new();
     data_points=g_array_sized_new(FALSE, FALSE, sizeof(GArray*), 16);
     GArray *temp=NULL;
     for(i=0;i<16;i++)
@@ -79,7 +85,6 @@ int main(int argc, char *argv[])
           }
         g_array_append_val(data_points, temp);
       }
-    g_rand_free(rand);
 
     GtkWidget *da=gtk_drawing_area_new();
     gtk_widget_set_hexpand(da, TRUE); 
@@ -123,6 +128,10 @@ int main(int argc, char *argv[])
     GtkWidget *dots_spin=gtk_spin_button_new(adjustment3, 1, 0);
     g_signal_connect(dots_spin, "value-changed", G_CALLBACK(scale_dots_changed), da);
 
+    GtkWidget *button1=gtk_toggle_button_new_with_label("Animate");
+    GtkWidget *widgets[]={button1, da};
+    g_signal_connect(button1, "toggled", G_CALLBACK(button1_clicked), widgets);
+
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
@@ -133,6 +142,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), combo2, 0, 5, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), dots_spin_label, 0, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), dots_spin, 0, 7, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button1, 0, 8, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -150,6 +160,7 @@ int main(int argc, char *argv[])
         g_array_free(g_array_index(data_points, GArray*, i), TRUE);
       }
     g_array_free(data_points, TRUE);
+    g_rand_free(rand);
 
     return 0;
   }
@@ -470,6 +481,48 @@ static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data)
     scale_dots=(gint)gtk_spin_button_get_value(spin_button);
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
+static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[])
+  {
+    if(gtk_toggle_button_get_active(button)&&timer_id==0)
+      {
+        timer_id=g_timeout_add(500, (GSourceFunc)animate_graphs, widgets);
+      }
+  }
+static gboolean animate_graphs(GtkWidget *widgets[])
+ {
+   if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widgets[0])))
+     {
+       gint i=0;
+       gint j=0;
+       struct point pt;
+       GArray *temp=NULL;
+       struct point *x_point=NULL;
+       gint len=0;
+       //Remove last point and add beginning point to each data array.
+       for(i=0;i<data_points->len;i++)
+         {
+           temp=g_array_index(data_points, GArray*, i);
+           len=temp->len-1;
+           g_array_remove_index_fast(temp, len);
+           pt.x=0.0;
+           pt.y=g_rand_double(rand);
+           g_array_prepend_val(temp, pt);
+           for(j=1;j<temp->len;j++)
+             {
+               x_point=&g_array_index(temp, struct point, j);
+               x_point->x=(gdouble)j;
+             }
+          }
+       gtk_widget_queue_draw(widgets[1]);
+       return TRUE;
+     }
+   else
+     {
+       timer_id=0;
+       gtk_widget_queue_draw(widgets[1]);
+       return FALSE;
+     }
+ }
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
     gint i=0;
