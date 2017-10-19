@@ -1,5 +1,5 @@
 /*
-    Print a few monospace fonts in a grid.  
+    Print a few monospace fonts in a grid to get an idea of how to layout text for printing.  
 
     gcc -Wall print_grid1.c -o print_grid1 `pkg-config --cflags --libs gtk+-3.0` -lm
     Tested on Ubuntu16.04 and GTK3.18
@@ -10,6 +10,7 @@
 #include<gtk/gtk.h>
 #include<math.h>
 
+//Some print variables to pass along to the print callbacks.
 struct print_stuff
   {
     GtkWidget *window;
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
   }
 static void print_dialog(GtkWidget *widget, struct print_stuff *ps)
   {
+    GError *error=NULL;
     GtkPrintOperation *operation=gtk_print_operation_new();
     GtkPageSetup *setup=gtk_page_setup_new();
     //Try the A4 paper size. 
@@ -79,11 +81,16 @@ static void print_dialog(GtkWidget *widget, struct print_stuff *ps)
     g_signal_connect(operation, "begin_print", G_CALLBACK(begin_print), ps);
     g_signal_connect(operation, "draw_page", G_CALLBACK(draw_page), ps);
     g_signal_connect(operation, "end_print", G_CALLBACK(end_print), ps);
-    GtkPrintOperationResult res=gtk_print_operation_run(operation, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, GTK_WINDOW(ps->window), NULL);
+    GtkPrintOperationResult res=gtk_print_operation_run(operation, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, GTK_WINDOW(ps->window), &error);
     
     if(res==GTK_PRINT_OPERATION_RESULT_APPLY)
       {
-        g_print("Print\n");
+        g_print("Print Success\n");
+      }
+    if(res==GTK_PRINT_OPERATION_RESULT_ERROR)
+      {
+        g_print("%s", error->message);
+        g_error_free(error);
       }
 
     gtk_paper_size_free(paper_size);
