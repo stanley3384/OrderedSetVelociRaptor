@@ -10,7 +10,7 @@ with animation.
     C. Eric Cashon
 */
 
-#include <gtk/gtk.h>
+#include<gtk/gtk.h>
 
 struct point{
   gdouble x;
@@ -28,7 +28,10 @@ static gint graph_rows=1;
 static gint graph_columns=1;
 //Test array for number of tick marks on the axis. Max is 4x4 grid or 16 numbers
 static gint x_ticks[]={10, 8, 12, 21, 10, 12, 15, 9, 15, 10, 12, 21, 10, 12, 15, 9};
-static gint y_ticks[]={9, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
+static gint y_ticks[]={10, 4, 6, 7, 5, 4, 9, 7, 11, 4, 6, 5, 5, 4, 10, 7};
+//Test numbers for the x and y axis scale or increase at each tick. All starting at 0.
+static gdouble test_increment_x=5.0; 
+static gdouble y_max[]={500.0, 1000.0, 100.0, 700.0, 10000.0, 750.0, 25.0, 125.0, 8000.0, 380.0, 450.0, 3000.0, 10.0, 40.0, 770.0, 8900.0};
 //Arrays for random data to test with.
 static GArray *data_points=NULL;
 //Font scaling on axis. 
@@ -38,9 +41,6 @@ static gint y_font_scale=0;
 static gint draw_lines=0;
 //Scale dots and lines.
 static gint scale_dots=0;
-//Test numbers for the x and y axis scale or increase at each tick.
-static gdouble test_number_x=5.0; 
-static gdouble test_number_y=500.0;
 //For the timer and random number generator.
 static int timer_id=0;
 static GRand *rand=NULL;
@@ -369,7 +369,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
             for(k=0;k<x_ticks[temp_tick];k++)
               {
                 x=j*graph_width+k*x_tick;
-                gchar *string=g_strdup_printf("%i", (gint)(test_number_x*k));
+                gchar *string=g_strdup_printf("%i", (gint)(test_increment_x*k));
                 cairo_move_to(cr, x+8.0*ratio_x, y-10.0*ratio_x);
                 cairo_show_text(cr, string);
                 g_free(string);
@@ -380,6 +380,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     //Horizontal line numbers.
     gint len=0;
+    gdouble y_value=0;
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_set_font_size(cr, 20*ratio_y+y_font_scale);
     for(i=0;i<graph_rows;i++)
@@ -394,11 +395,12 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
             x=j*graph_width;
             temp_tick=i*graph_columns+j; 
             y_tick=graph_height/y_ticks[temp_tick];
+            y_value=y_max[i*graph_columns+j]/y_ticks[temp_tick];
             len=y_ticks[temp_tick]+1;
             for(k=0;k<len;k++)
               {
                 y=i*graph_height+graph_height-k*y_tick;
-                gchar *string=g_strdup_printf("%i", (gint)(test_number_y*k));
+                gchar *string=g_strdup_printf("%.2f", (y_value*k));
                 cairo_move_to(cr, x+8.0*ratio_y, y+25.0*ratio_y);
                 cairo_show_text(cr, string);
                 g_free(string);
