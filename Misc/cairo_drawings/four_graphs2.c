@@ -54,6 +54,7 @@ static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
 static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[]);
 static gboolean animate_graphs(GtkWidget *widgets[]);
+static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data);
 //Bezier control points from coordinates for smoothing.
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
@@ -88,9 +89,11 @@ int main(int argc, char *argv[])
       }
 
     GtkWidget *da=gtk_drawing_area_new();
+    gtk_widget_add_events(da, GDK_BUTTON_PRESS_MASK);
     gtk_widget_set_hexpand(da, TRUE); 
     gtk_widget_set_vexpand(da, TRUE);  
     g_signal_connect(da, "draw", G_CALLBACK(draw_graphs), NULL);
+    g_signal_connect(da, "button-press-event", G_CALLBACK(click_drawing_area), NULL);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Graph 1x1");
@@ -539,6 +542,37 @@ static gboolean animate_graphs(GtkWidget *widgets[])
        return FALSE;
      }
  }
+static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint i=0;
+    gint j=0;
+    gint width=gtk_widget_get_allocated_width(widget);
+    gint height=gtk_widget_get_allocated_height(widget);
+    gint graph_width=width/graph_columns;
+    gint graph_height=height/graph_rows;
+    gint top_x=0;
+    gint top_y=0;
+    gint bottom_x=0;
+    gint bottom_y=0;
+
+    for(i=0;i<graph_rows;i++)
+      {
+        for(j=0;j<graph_columns;j++)
+          {
+            top_x=j*graph_width;
+            top_y=i*graph_height;
+            bottom_x=top_x+graph_width;
+            bottom_y=top_y+graph_height;
+            if(event->button.x>top_x&&event->button.y>top_y&&event->button.x<bottom_x&&event->button.y<bottom_y)
+              {
+                g_print("Click Graph %i, %i\n", i, j);
+                return TRUE;
+              }
+          }
+      }
+    
+    return TRUE;
+  }
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
     gint i=0;
