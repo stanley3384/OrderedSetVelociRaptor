@@ -519,8 +519,9 @@ static gboolean animate_graphs(GtkWidget *widgets[])
        GArray *temp=NULL;
        struct point *x_point=NULL;
        gint len=0;
-       //Remove last point and add beginning point to each data array.
-       for(i=0;i<data_points->len;i++)
+       gint graphs_showing=graph_rows*graph_columns;
+       //Remove last point and add beginning point to each data array that is currently showing.
+       for(i=0;i<graphs_showing;i++)
          {
            temp=g_array_index(data_points, GArray*, i);
            len=temp->len-1;
