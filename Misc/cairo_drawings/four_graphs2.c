@@ -1,7 +1,8 @@
 
 /*
     Test putting more than one graph in a drawing area. Draw dots, lines and smooth curves
-with animation. 
+with animation. If you click on a graph in the grid layout it will swap it to the 1x1 or 
+first graph position.
 
     gcc -Wall four_graphs2.c -o four_graphs2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -93,7 +94,6 @@ int main(int argc, char *argv[])
     gtk_widget_set_hexpand(da, TRUE); 
     gtk_widget_set_vexpand(da, TRUE);  
     g_signal_connect(da, "draw", G_CALLBACK(draw_graphs), NULL);
-    g_signal_connect(da, "button-press-event", G_CALLBACK(click_drawing_area), NULL);
 
     GtkWidget *combo1=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 0, "1", "Graph 1x1");
@@ -105,6 +105,8 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Graph 2x3");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
+
+    g_signal_connect(da, "button-press-event", G_CALLBACK(click_drawing_area), combo1);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Points");
@@ -555,18 +557,45 @@ static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer 
     gint bottom_x=0;
     gint bottom_y=0;
 
-    for(i=0;i<graph_rows;i++)
+    if(graph_rows!=1&&graph_columns!=1)
       {
-        for(j=0;j<graph_columns;j++)
+        for(i=0;i<graph_rows;i++)
           {
-            top_x=j*graph_width;
-            top_y=i*graph_height;
-            bottom_x=top_x+graph_width;
-            bottom_y=top_y+graph_height;
-            if(event->button.x>top_x&&event->button.y>top_y&&event->button.x<bottom_x&&event->button.y<bottom_y)
+            for(j=0;j<graph_columns;j++)
               {
-                g_print("Click Graph %i, %i\n", i, j);
-                return TRUE;
+                top_x=j*graph_width;
+                top_y=i*graph_height;
+                bottom_x=top_x+graph_width;
+                bottom_y=top_y+graph_height;
+                if(event->button.x>top_x&&event->button.y>top_y&&event->button.x<bottom_x&&event->button.y<bottom_y)
+                  {
+                    //Swap array values and show the graph by itself.
+                    GArray **temp1=NULL;
+                    GArray **temp2=NULL;
+                    GArray *temp=NULL;
+                    gdouble d_temp=0;
+                    gint i_temp=0;
+                    gint index=i*graph_columns+j;
+                    temp1=&g_array_index(data_points, GArray*, 0);
+                    temp2=&g_array_index(data_points, GArray*, index);
+                    temp=*temp1;
+                    *temp1=*temp2;
+                    *temp2=temp;
+                    i_temp=x_ticks[0];
+                    x_ticks[0]=x_ticks[index];
+                    x_ticks[index]=i_temp;
+                    i_temp=y_ticks[0];
+                    y_ticks[0]=y_ticks[index];
+                    y_ticks[index]=i_temp;
+                    d_temp=y_max[0];
+                    y_max[0]=y_max[index];
+                    y_max[index]=d_temp;
+                    gtk_combo_box_set_active(GTK_COMBO_BOX(data), 0);
+                    graph_rows=1;
+                    graph_columns=1;
+                    gtk_widget_queue_draw(widget);
+                    return TRUE;
+                  }
               }
           }
       }
