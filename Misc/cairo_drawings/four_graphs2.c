@@ -1,7 +1,7 @@
 
 /*
-    Test putting more than one graph in a drawing area. Draw dots, lines and smooth curves
-with animation. If you click on a graph in the grid layout it will swap it to the 1x1 or 
+    Test putting more than one graph in a drawing area. Draw dots, lines or smooth curves
+with or without animation. If you click on a graph in the grid layout it will swap it to the 1x1 or 
 first graph position. The data sets can also be composed into one graph or decomposed into
 many graphs. Keep in mind that the test data scales are different for each data set.
 
@@ -71,7 +71,6 @@ static GRand *rand=NULL;
 static gint compose=0;
 //For blocking a combo signal
 static gint combo3_id=0;
-
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void combo1_changed(GtkComboBox *combo, gpointer *data);
@@ -275,10 +274,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
 
-    //Test data in yellow. Random points or lines.
-    //cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-    struct point pt; 
-    //Draw points.
+    //Draw points, lines or curves.
+    struct point pt;
+    //Draw points. 
     if(draw_lines==0)
       {
         cairo_set_line_width(cr, 8*ratio_x+scale_dots);
@@ -287,7 +285,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           {
             for(j=0;j<graph_columns;j++)
               {
-                //Clip rectangles to keep the curve in bounds.
+                //Clip rectangles to keep the points in bounds.
                 cairo_save(cr);
                 x=graph_width*j;
                 y=graph_height*i;
@@ -335,7 +333,8 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 cairo_restore(cr);
               }
           }    
-      }   
+      } 
+    //Draw lines between points.  
     else if(draw_lines==1)
       {
         cairo_set_line_width(cr, 2*ratio_x+scale_dots);
@@ -344,7 +343,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           {
             for(j=0;j<graph_columns;j++)
               {
-                //Clip rectangles to keep the curve in bounds.
+                //Clip rectangles to keep the lines in bounds.
                 cairo_save(cr);
                 x=graph_width*j;
                 y=graph_height*i;
@@ -399,7 +398,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
               }
           }    
       }
-    //Smooth lines.
+    //Draw curves between points.
     else
       {
         struct controls c1;
@@ -482,7 +481,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }    
       }
    
-    //Number of vertical lines for each graph.
+    //The x-axis numbers.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 18*ratio_x+x_font_scale);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
@@ -510,7 +509,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
 
-    //Horizontal line numbers.
+    //The y-axis numbers.
     gint len=0;
     gdouble y_value=0;
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
