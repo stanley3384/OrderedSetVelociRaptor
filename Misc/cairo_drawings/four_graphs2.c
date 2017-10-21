@@ -2,7 +2,8 @@
 /*
     Test putting more than one graph in a drawing area. Draw dots, lines and smooth curves
 with animation. If you click on a graph in the grid layout it will swap it to the 1x1 or 
-first graph position.
+first graph position. The data sets can also be composed into one graph or decomposed into
+many graphs. Keep in mind that the test data scales are different for each data set.
 
     gcc -Wall four_graphs2.c -o four_graphs2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -22,6 +23,27 @@ struct controls{
   gdouble y1;
   gdouble x2;
   gdouble y2;
+};
+
+//Line colors for the graphs.
+static gdouble lc[16][4]=
+{
+  {1.0, 1.0, 0.0, 1.0},
+  {0.0, 1.0, 0.0, 1.0},
+  {0.0, 1.0,  1.0, 1.0},
+  {1.0,  0.0,  1.0, 1.0},
+  {1.0, 0.0, 0.0, 1.0},
+  {0.5, 0.5, 0.0, 1.0},
+  {0.0, 0.5,  0.0, 1.0},
+  {0.0,  0.5,  0.5, 1.0},
+  {0.5, 0.0, 0.5, 1.0},
+  {0.5, 0.0, 0.0, 1.0},
+  {0.25, 1.0,  0.0, 1.0},
+  {1.0,  0.25,  1.0, 1.0},
+  {1.0, 0.0, 0.25, 1.0},
+  {0.5, 0.5, 0.25, 1.0},
+  {0.0, 0.5,  0.25, 1.0},
+  {0.25,  0.5,  0.5, 1.0}
 };
 
 //The grid of rows and columns to draw the graphs in. Start with 1 graph. 
@@ -45,11 +67,16 @@ static gint scale_dots=0;
 //For the timer and random number generator.
 static int timer_id=0;
 static GRand *rand=NULL;
+//The number of data sets to compose in the drawing.
+static gint compose=0;
+//For blocking a combo signal
+static gint combo3_id=0;
 
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
-static void combo1_changed(GtkComboBox *combo, gpointer data);
+static void combo1_changed(GtkComboBox *combo, gpointer *data);
 static void combo2_changed(GtkComboBox *combo, gpointer data);
+static void combo3_changed(GtkComboBox *combo, gpointer *data);
 static void x_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
@@ -104,16 +131,30 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 5, "6", "Graph 3x2");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo1), 6, "7", "Graph 2x3");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo1), 0);
-    g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), da);
-
-    g_signal_connect(da, "button-press-event", G_CALLBACK(click_drawing_area), combo1);
 
     GtkWidget *combo2=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Points");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Draw Lines");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Draw Smooth");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
+
+    GtkWidget *combo3=gtk_combo_box_text_new();
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "Compose 1");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Compose 2");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 2, "3", "Compose 3");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 3, "4", "Compose 4");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 4, "5", "Compose 5");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 5, "6", "Compose 6");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 6, "7", "Compose 7");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 7, "8", "Compose 8");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
+
+
+    gpointer data[]={da, combo1, combo3};
+    g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), data);
+    g_signal_connect(da, "button-press-event", G_CALLBACK(click_drawing_area), combo1);
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
+    combo3_id=g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), data);
 
     GtkAdjustment *adjustment1=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
     GtkAdjustment *adjustment2=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
@@ -149,6 +190,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), dots_spin_label, 0, 6, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), dots_spin, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), combo3, 0, 9, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -175,6 +217,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     gint i=0;
     gint j=0;
     gint k=0;
+    gint h=0;
     gdouble width=(gdouble)gtk_widget_get_allocated_width(widget);
     gdouble height=(gdouble)gtk_widget_get_allocated_height(widget);
     //Some drawing variables.
@@ -255,16 +298,37 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 temp_tick=i*graph_columns+j; 
                 x_tick=graph_width/x_ticks[temp_tick];
                 y_tick=graph_height/y_ticks[temp_tick];
-                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);           
-                for(k=0;k<rnd_data->len;k++)
+                if(compose==0)
                   {
-                    pt=g_array_index(rnd_data, struct point, k);
-                    //k=pt.x for testing.
-                    x=j*graph_width+pt.x*x_tick+x_tick;
-                    y=i*graph_height+graph_height-(graph_height*pt.y);
-                    cairo_move_to(cr, x, y);
-                    cairo_line_to(cr, x, y);
-                    cairo_stroke(cr);
+                    rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);           
+                    for(k=0;k<rnd_data->len;k++)
+                      {
+                        pt=g_array_index(rnd_data, struct point, k);
+                        //k=pt.x for testing.
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        cairo_move_to(cr, x, y);
+                        cairo_line_to(cr, x, y);
+                        cairo_stroke(cr);
+                      }
+                  }
+                else
+                  {
+                    for(h=0;h<compose+1;h++)
+                      {
+                        cairo_set_source_rgb(cr, lc[h][0], lc[h][1], lc[h][2]);
+                        rnd_data=g_array_index(data_points, GArray*, h);           
+                        for(k=0;k<rnd_data->len;k++)
+                          {
+                            pt=g_array_index(rnd_data, struct point, k);
+                            //k=pt.x for testing.
+                            x=j*graph_width+pt.x*x_tick+x_tick;
+                            y=i*graph_height+graph_height-(graph_height*pt.y);
+                            cairo_move_to(cr, x, y);
+                            cairo_line_to(cr, x, y);
+                            cairo_stroke(cr);
+                          }
+                      }
                   } 
                 cairo_restore(cr);
               }
@@ -287,21 +351,46 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 temp_tick=i*graph_columns+j; 
                 x_tick=graph_width/x_ticks[temp_tick];
                 y_tick=graph_height/y_ticks[temp_tick];
-                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
-                pt=g_array_index(rnd_data, struct point, 0);
-                x=j*graph_width+pt.x*x_tick+x_tick;
-                y=i*graph_height+graph_height-(graph_height*pt.y);
-                cairo_move_to(cr, x, y);           
-                for(k=1;k<rnd_data->len;k++)
+                if(compose==0)
                   {
-                    pt=g_array_index(rnd_data, struct point, k);
-                    //k=pt.x for testing.
+                    rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                    pt=g_array_index(rnd_data, struct point, 0);
                     x=j*graph_width+pt.x*x_tick+x_tick;
                     y=i*graph_height+graph_height-(graph_height*pt.y);
-                    cairo_line_to(cr, x, y);
-                    cairo_stroke(cr);
-                    cairo_move_to(cr, x, y);
+                    cairo_move_to(cr, x, y);           
+                    for(k=1;k<rnd_data->len;k++)
+                      {
+                        pt=g_array_index(rnd_data, struct point, k);
+                        //k=pt.x for testing.
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        cairo_line_to(cr, x, y);
+                        cairo_stroke(cr);
+                        cairo_move_to(cr, x, y);
+                      }
                   } 
+                else
+                  {
+                    for(h=0;h<compose+1;h++)
+                      {
+                        cairo_set_source_rgb(cr, lc[h][0], lc[h][1], lc[h][2]);
+                        rnd_data=g_array_index(data_points, GArray*, h);
+                        pt=g_array_index(rnd_data, struct point, 0);
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        cairo_move_to(cr, x, y);           
+                        for(k=1;k<rnd_data->len;k++)
+                          {
+                            pt=g_array_index(rnd_data, struct point, k);
+                            //k=pt.x for testing.
+                            x=j*graph_width+pt.x*x_tick+x_tick;
+                            y=i*graph_height+graph_height-(graph_height*pt.y);
+                            cairo_line_to(cr, x, y);
+                            cairo_stroke(cr);
+                            cairo_move_to(cr, x, y);
+                          } 
+                      }
+                  }
                 cairo_restore(cr);
               }
           }    
@@ -328,28 +417,60 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 temp_tick=i*graph_columns+j; 
                 x_tick=graph_width/x_ticks[temp_tick];
                 y_tick=graph_height/y_ticks[temp_tick];
-                rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
-                GArray *bezier_pts=control_points_from_coords2(rnd_data);
-                pt=g_array_index(rnd_data, struct point, 0);
-                x=j*graph_width+pt.x*x_tick+x_tick;
-                y=i*graph_height+graph_height-(graph_height*pt.y);
-                cairo_move_to(cr, x, y);       
-                for(k=1;k<rnd_data->len;k++)
+                if(compose==0)
                   {
-                    pt=g_array_index(rnd_data, struct point, k);
-                    c1=g_array_index(bezier_pts, struct controls, k-1);
-                    //k=pt.x for testing.
+                    rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                    GArray *bezier_pts=control_points_from_coords2(rnd_data);
+                    pt=g_array_index(rnd_data, struct point, 0);
                     x=j*graph_width+pt.x*x_tick+x_tick;
                     y=i*graph_height+graph_height-(graph_height*pt.y);
-                    ct1=j*graph_width+c1.x1*x_tick+x_tick;
-                    ct2=i*graph_height+graph_height-(graph_height*c1.y1);
-                    ct3=j*graph_width+c1.x2*x_tick+x_tick;
-                    ct4=i*graph_height+graph_height-(graph_height*c1.y2);
-                    cairo_curve_to(cr, ct1, ct2, ct3, ct4, x, y);
-                    cairo_stroke(cr);
-                    cairo_move_to(cr, x, y);
-                  } 
-                g_array_free(bezier_pts, TRUE);
+                    cairo_move_to(cr, x, y);       
+                    for(k=1;k<rnd_data->len;k++)
+                      {
+                        pt=g_array_index(rnd_data, struct point, k);
+                        c1=g_array_index(bezier_pts, struct controls, k-1);
+                        //k=pt.x for testing.
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        ct1=j*graph_width+c1.x1*x_tick+x_tick;
+                        ct2=i*graph_height+graph_height-(graph_height*c1.y1);
+                        ct3=j*graph_width+c1.x2*x_tick+x_tick;
+                        ct4=i*graph_height+graph_height-(graph_height*c1.y2);
+                        cairo_curve_to(cr, ct1, ct2, ct3, ct4, x, y);
+                        cairo_stroke(cr);
+                        cairo_move_to(cr, x, y);
+                      } 
+                    g_array_free(bezier_pts, TRUE);
+                  }
+                else
+                  {
+                    for(h=0;h<compose+1;h++)
+                      {
+                        cairo_set_source_rgb(cr, lc[h][0], lc[h][1], lc[h][2]);
+                        rnd_data=g_array_index(data_points, GArray*, h);
+                        GArray *bezier_pts=control_points_from_coords2(rnd_data);
+                        pt=g_array_index(rnd_data, struct point, 0);
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        cairo_move_to(cr, x, y);       
+                        for(k=1;k<rnd_data->len;k++)
+                          {
+                            pt=g_array_index(rnd_data, struct point, k);
+                            c1=g_array_index(bezier_pts, struct controls, k-1);
+                            //k=pt.x for testing.
+                            x=j*graph_width+pt.x*x_tick+x_tick;
+                            y=i*graph_height+graph_height-(graph_height*pt.y);
+                            ct1=j*graph_width+c1.x1*x_tick+x_tick;
+                            ct2=i*graph_height+graph_height-(graph_height*c1.y1);
+                            ct3=j*graph_width+c1.x2*x_tick+x_tick;
+                            ct4=i*graph_height+graph_height-(graph_height*c1.y2);
+                            cairo_curve_to(cr, ct1, ct2, ct3, ct4, x, y);
+                            cairo_stroke(cr);
+                            cairo_move_to(cr, x, y);
+                          } 
+                        g_array_free(bezier_pts, TRUE);
+                      }
+                  }
                 cairo_restore(cr);
               }
           }    
@@ -437,7 +558,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
  
     return FALSE;
   }
-static void combo1_changed(GtkComboBox *combo, gpointer data)
+static void combo1_changed(GtkComboBox *combo, gpointer *data)
   {
     gint id=gtk_combo_box_get_active(combo);
     if(id==0)
@@ -476,7 +597,12 @@ static void combo1_changed(GtkComboBox *combo, gpointer data)
         graph_columns=3;
       }
 
-    gtk_widget_queue_draw(GTK_WIDGET(data));
+    compose=0;
+    g_signal_handler_block(GTK_COMBO_BOX(data[2]), combo3_id);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(data[2]), 0);
+    g_signal_handler_unblock(GTK_COMBO_BOX(data[2]), combo3_id);
+
+    gtk_widget_queue_draw(GTK_WIDGET(data[0]));
   }
 static void combo2_changed(GtkComboBox *combo, gpointer data)
   {
@@ -486,6 +612,24 @@ static void combo2_changed(GtkComboBox *combo, gpointer data)
     else draw_lines=2;
 
     gtk_widget_queue_draw(GTK_WIDGET(data));
+  }
+static void combo3_changed(GtkComboBox *combo, gpointer *data)
+  {
+    gint id=gtk_combo_box_get_active(combo);
+    if(id==0) compose=0;
+    else if(id==1) compose=1;
+    else if(id==2) compose=2;
+    else if(id==3) compose=3;
+    else if(id==4) compose=4;
+    else if(id==5) compose=5;
+    else if(id==6) compose=6;
+    else compose=7;
+    
+    graph_rows=1;
+    graph_columns=1;
+    gtk_combo_box_set_active(GTK_COMBO_BOX(data[1]), 0);
+      
+    gtk_widget_queue_draw(GTK_WIDGET(data[0]));
   }
 static void x_spin_changed(GtkSpinButton *spin_button, gpointer data)
   {
@@ -519,9 +663,8 @@ static gboolean animate_graphs(GtkWidget *widgets[])
        GArray *temp=NULL;
        struct point *x_point=NULL;
        gint len=0;
-       gint graphs_showing=graph_rows*graph_columns;
-       //Remove last point and add beginning point to each data array that is currently showing.
-       for(i=0;i<graphs_showing;i++)
+       //Remove last point and add beginning point to each data set.
+       for(i=0;i<data_points->len;i++)
          {
            temp=g_array_index(data_points, GArray*, i);
            len=temp->len-1;
