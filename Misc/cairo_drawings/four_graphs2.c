@@ -25,7 +25,7 @@ struct controls{
   gdouble y2;
 };
 
-//Line colors for the graphs.
+//Line colors for the different graphs.
 static gdouble lc[16][4]=
 {
   {1.0, 1.0, 0.0, 1.0},
@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Draw Smooth");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
 
+    //Just compose 8. The graph gets very busy with many data sets. 
     GtkWidget *combo3=gtk_combo_box_text_new();
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 0, "1", "Compose 1");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 1, "2", "Compose 2");
@@ -148,7 +149,6 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 6, "7", "Compose 7");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo3), 7, "8", "Compose 8");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo3), 0);
-
 
     gpointer data[]={da, combo1, combo3};
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), data);
@@ -276,7 +276,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
       }
 
     //Test data in yellow. Random points or lines.
-    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+    //cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
     struct point pt; 
     //Draw points.
     if(draw_lines==0)
@@ -300,7 +300,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 y_tick=graph_height/y_ticks[temp_tick];
                 if(compose==0)
                   {
-                    rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);           
+                    gint id=i*graph_columns+j;
+                    cairo_set_source_rgb(cr, lc[id][0], lc[id][1], lc[id][2]);
+                    rnd_data=g_array_index(data_points, GArray*, id);           
                     for(k=0;k<rnd_data->len;k++)
                       {
                         pt=g_array_index(rnd_data, struct point, k);
@@ -353,7 +355,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 y_tick=graph_height/y_ticks[temp_tick];
                 if(compose==0)
                   {
-                    rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                    gint id=i*graph_columns+j;
+                    cairo_set_source_rgb(cr, lc[id][0], lc[id][1], lc[id][2]);
+                    rnd_data=g_array_index(data_points, GArray*, id);
                     pt=g_array_index(rnd_data, struct point, 0);
                     x=j*graph_width+pt.x*x_tick+x_tick;
                     y=i*graph_height+graph_height-(graph_height*pt.y);
@@ -419,7 +423,9 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 y_tick=graph_height/y_ticks[temp_tick];
                 if(compose==0)
                   {
-                    rnd_data=g_array_index(data_points, GArray*, i*graph_columns+j);
+                    gint id=i*graph_columns+j;
+                    cairo_set_source_rgb(cr, lc[id][0], lc[id][1], lc[id][2]);
+                    rnd_data=g_array_index(data_points, GArray*, id);
                     GArray *bezier_pts=control_points_from_coords2(rnd_data);
                     pt=g_array_index(rnd_data, struct point, 0);
                     x=j*graph_width+pt.x*x_tick+x_tick;
@@ -725,15 +731,32 @@ static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer 
                     temp=*temp1;
                     *temp1=*temp2;
                     *temp2=temp;
+                    //Swap x tick values.
                     i_temp=x_ticks[0];
                     x_ticks[0]=x_ticks[index];
                     x_ticks[index]=i_temp;
+                    //Swap y tick values.
                     i_temp=y_ticks[0];
                     y_ticks[0]=y_ticks[index];
                     y_ticks[index]=i_temp;
+                    //Swap y label values.
                     d_temp=y_max[0];
                     y_max[0]=y_max[index];
                     y_max[index]=d_temp;
+                    //Swap line colors.
+                    d_temp=lc[0][0];
+                    lc[0][0]=lc[index][0];
+                    lc[index][0]=d_temp;
+                    d_temp=lc[0][1];
+                    lc[0][1]=lc[index][1];
+                    lc[index][1]=d_temp;
+                    d_temp=lc[0][2];
+                    lc[0][2]=lc[index][2];
+                    lc[index][2]=d_temp;
+                    d_temp=lc[0][3];
+                    lc[0][3]=lc[index][3];
+                    lc[index][3]=d_temp;
+                    //Show single graph window.
                     gtk_combo_box_set_active(GTK_COMBO_BOX(data), 0);
                     graph_rows=1;
                     graph_columns=1;
