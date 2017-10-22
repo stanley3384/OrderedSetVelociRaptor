@@ -71,6 +71,8 @@ static GRand *rand=NULL;
 static gint compose=0;
 //For blocking a combo signal
 static gint combo3_id=0;
+//Output draw times.
+static gboolean draw_time=FALSE;
 
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data);
 static void combo1_changed(GtkComboBox *combo, gpointer *data);
@@ -80,6 +82,7 @@ static void x_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
 static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[]);
+static void button2_clicked(GtkToggleButton *button, gpointer data);
 static gboolean animate_graphs(GtkWidget *widgets[]);
 static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data);
 //Bezier control points from coordinates for smoothing.
@@ -178,6 +181,9 @@ int main(int argc, char *argv[])
     GtkWidget *widgets[]={button1, da};
     g_signal_connect(button1, "toggled", G_CALLBACK(button1_clicked), widgets);
 
+    GtkWidget *button2=gtk_toggle_button_new_with_label("Draw Time");
+    g_signal_connect(button2, "toggled", G_CALLBACK(button2_clicked), NULL);
+
     GtkWidget *grid=gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_attach(GTK_GRID(grid), combo1, 0, 0, 1, 1);
@@ -190,6 +196,7 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), dots_spin, 0, 7, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo3, 0, 9, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button2, 0, 10, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -213,6 +220,8 @@ int main(int argc, char *argv[])
   }
 static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
   {
+    GTimer *timer=NULL;
+    if(draw_time==TRUE) timer=g_timer_new();
     gint i=0;
     gint j=0;
     gint k=0;
@@ -561,6 +570,11 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_stroke(cr);
       }
  
+    if(draw_time==TRUE)
+      {
+        g_print("Draw Time %f\n", g_timer_elapsed(timer, NULL));
+        g_timer_destroy(timer);
+      }
     return FALSE;
   }
 static void combo1_changed(GtkComboBox *combo, gpointer *data)
@@ -657,6 +671,11 @@ static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[])
       {
         timer_id=g_timeout_add(500, (GSourceFunc)animate_graphs, widgets);
       }
+  }
+static void button2_clicked(GtkToggleButton *button, gpointer data)
+  {
+    if(gtk_toggle_button_get_active(button)) draw_time=TRUE;
+    else draw_time=FALSE;
   }
 static gboolean animate_graphs(GtkWidget *widgets[])
  {
