@@ -1,6 +1,6 @@
 
 /*
-    Test putting more than one graph in a drawing area. Draw dots, lines or smooth curves
+    Test putting more than one graph in a drawing area. Draw dots, lines, curves or rectangles.
 with or without animation. If you click on a graph in the grid layout it will swap it to the 1x1 or 
 first graph position. The data sets can also be composed into one graph or decomposed into
 many graphs. Keep in mind that the test data scales are different for each data set.
@@ -93,8 +93,9 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
    
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size(GTK_WINDOW(window), 820, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 850, 500);
     gtk_window_set_title(GTK_WINDOW(window), "Graphs");
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -138,6 +139,7 @@ int main(int argc, char *argv[])
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 0, "1", "Draw Points");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 1, "2", "Draw Lines");
     gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 2, "3", "Draw Smooth");
+    gtk_combo_box_text_insert(GTK_COMBO_BOX_TEXT(combo2), 3, "4", "Draw Rectangles");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo2), 0);
 
     //Just compose 8. The graph gets very busy with many data sets. 
@@ -201,7 +203,7 @@ int main(int argc, char *argv[])
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
     gtk_paned_pack2(GTK_PANED(paned1), da, TRUE, TRUE);
-    gtk_paned_set_position(GTK_PANED(paned1), 120);
+    gtk_paned_set_position(GTK_PANED(paned1), 150);
    
     gtk_container_add(GTK_CONTAINER(window), paned1);
 
@@ -243,46 +245,49 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
     cairo_paint(cr);
-     
-    //Vertical lines.
-    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-    cairo_set_line_width(cr, 1);
-    for(i=0;i<graph_rows;i++)
-      {
-        for(j=0;j<graph_columns;j++)
-          {
-            temp_tick=i*graph_columns+j; 
-            x_tick=graph_width/x_ticks[temp_tick];
-            for(k=0;k<x_ticks[temp_tick];k++)
-              {
-                x=j*graph_width+k*x_tick;
-                y=i*graph_height+graph_height;
-                cairo_move_to(cr, x, y);
-                cairo_line_to(cr, x, y-graph_height);
-                cairo_stroke(cr);
-              } 
-          }
-      }
 
-    //Horizontal lines.
-    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-    for(i=0;i<graph_rows;i++)
+    //Draw grid lines before points, lines and curve and after for histogram rectangles.
+    if(draw_lines!=3)
       {
-        for(j=0;j<graph_columns;j++)
+        //Vertical lines.
+        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        cairo_set_line_width(cr, 1);
+        for(i=0;i<graph_rows;i++)
           {
-            temp_tick=i*graph_columns+j; 
-            y_tick=graph_height/y_ticks[temp_tick];
-            for(k=0;k<y_ticks[temp_tick];k++)
+            for(j=0;j<graph_columns;j++)
               {
-                x=j*graph_width;
-                y=i*graph_height+k*y_tick;
-                cairo_move_to(cr, x, y);
-                cairo_line_to(cr, x+graph_width, y);
-                cairo_stroke(cr);
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                for(k=0;k<x_ticks[temp_tick];k++)
+                  {
+                    x=j*graph_width+k*x_tick;
+                    y=i*graph_height+graph_height;
+                    cairo_move_to(cr, x, y);
+                    cairo_line_to(cr, x, y-graph_height);
+                    cairo_stroke(cr);
+                  } 
+              }
+          }
+        //Horizontal lines.
+        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                temp_tick=i*graph_columns+j; 
+                y_tick=graph_height/y_ticks[temp_tick];
+                for(k=0;k<y_ticks[temp_tick];k++)
+                  {
+                    x=j*graph_width;
+                    y=i*graph_height+k*y_tick;
+                    cairo_move_to(cr, x, y);
+                    cairo_line_to(cr, x+graph_width, y);
+                    cairo_stroke(cr);
+                  }
               }
           }
       }
-
+         
     //Draw points, lines or curves.
     struct point pt;
     //Draw points. 
@@ -308,7 +313,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 if(compose==0)
                   {
                     gint id=i*graph_columns+j;
-                    cairo_set_source_rgb(cr, lc[id][0], lc[id][1], lc[id][2]);
+                    cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[id][3]);
                     rnd_data=g_array_index(data_points, GArray*, id);           
                     for(k=0;k<rnd_data->len;k++)
                       {
@@ -325,7 +330,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                   {
                     for(h=0;h<compose+1;h++)
                       {
-                        cairo_set_source_rgb(cr, lc[h][0], lc[h][1], lc[h][2]);
+                        cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
                         rnd_data=g_array_index(data_points, GArray*, h);           
                         for(k=0;k<rnd_data->len;k++)
                           {
@@ -364,7 +369,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 if(compose==0)
                   {
                     gint id=i*graph_columns+j;
-                    cairo_set_source_rgb(cr, lc[id][0], lc[id][1], lc[id][2]);
+                    cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[h][3]);
                     rnd_data=g_array_index(data_points, GArray*, id);
                     pt=g_array_index(rnd_data, struct point, 0);
                     x=j*graph_width+pt.x*x_tick+x_tick;
@@ -385,7 +390,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                   {
                     for(h=0;h<compose+1;h++)
                       {
-                        cairo_set_source_rgb(cr, lc[h][0], lc[h][1], lc[h][2]);
+                        cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
                         rnd_data=g_array_index(data_points, GArray*, h);
                         pt=g_array_index(rnd_data, struct point, 0);
                         x=j*graph_width+pt.x*x_tick+x_tick;
@@ -408,7 +413,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }    
       }
     //Draw curves between points.
-    else
+    else if(draw_lines==2)
       {
         struct controls c1;
         gdouble ct1=0;
@@ -432,7 +437,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                 if(compose==0)
                   {
                     gint id=i*graph_columns+j;
-                    cairo_set_source_rgb(cr, lc[id][0], lc[id][1], lc[id][2]);
+                    cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[h][3]);
                     rnd_data=g_array_index(data_points, GArray*, id);
                     GArray *bezier_pts=control_points_from_coords2(rnd_data);
                     pt=g_array_index(rnd_data, struct point, 0);
@@ -460,7 +465,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                   {
                     for(h=0;h<compose+1;h++)
                       {
-                        cairo_set_source_rgb(cr, lc[h][0], lc[h][1], lc[h][2]);
+                        cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
                         rnd_data=g_array_index(data_points, GArray*, h);
                         GArray *bezier_pts=control_points_from_coords2(rnd_data);
                         pt=g_array_index(rnd_data, struct point, 0);
@@ -489,11 +494,127 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
               }
           }    
       }
+    //Draw histogram rectangles.
+    else
+      {
+        cairo_set_line_width(cr, 2*ratio_x+scale_dots);
+        cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                //Clip rectangles to keep the lines in bounds.
+                cairo_save(cr);
+                x=graph_width*j;
+                y=graph_height*i;
+                cairo_rectangle(cr, x, y, graph_width, graph_height);
+                cairo_clip(cr);
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                y_tick=graph_height/y_ticks[temp_tick];
+                if(compose==0)
+                  {
+                    gint id=i*graph_columns+j;
+                    cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[h][3]);
+                    rnd_data=g_array_index(data_points, GArray*, id);
+                    pt=g_array_index(rnd_data, struct point, 0);
+                    x=j*graph_width+pt.x*x_tick+x_tick;
+                    y=i*graph_height+graph_height-(graph_height*pt.y);
+                    cairo_move_to(cr, x, y);           
+                    for(k=1;k<rnd_data->len;k++)
+                      {
+                        cairo_rectangle(cr, x, y, x_tick, graph_height);
+                        cairo_fill(cr);
+                        cairo_set_source_rgba(cr, 0.3, 0.3, 1.0, 1.0);
+                        cairo_rectangle(cr, x, y, x_tick, graph_height);
+                        cairo_stroke(cr);
+                        cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[h][3]);
+                        cairo_fill(cr);
+                        pt=g_array_index(rnd_data, struct point, k);
+                        //k=pt.x for testing.
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        cairo_move_to(cr, x, y);
+                      }
+                  } 
+                else
+                  {
+                    for(h=0;h<compose+1;h++)
+                      {
+                        cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
+                        rnd_data=g_array_index(data_points, GArray*, h);
+                        pt=g_array_index(rnd_data, struct point, 0);
+                        x=j*graph_width+pt.x*x_tick+x_tick;
+                        y=i*graph_height+graph_height-(graph_height*pt.y);
+                        cairo_move_to(cr, x, y);           
+                        for(k=1;k<rnd_data->len;k++)
+                          {
+                            cairo_rectangle(cr, x, y, x_tick, graph_height);
+                            cairo_fill(cr);
+                            cairo_set_source_rgba(cr, 0.3, 0.3, 1.0, 1.0);
+                            cairo_rectangle(cr, x, y, x_tick, graph_height);
+                            cairo_stroke(cr);
+                            cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
+                            cairo_fill(cr);
+                            pt=g_array_index(rnd_data, struct point, k);
+                            //k=pt.x for testing.
+                            x=j*graph_width+pt.x*x_tick+x_tick;
+                            y=i*graph_height+graph_height-(graph_height*pt.y);
+                            cairo_move_to(cr, x, y);
+                          } 
+                      }
+                  }
+                cairo_restore(cr);
+              }
+          }    
+      }
+
+    //Draw histogram lines after drawing the data.
+    if(draw_lines==3)
+      {
+        //Vertical lines.
+        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        cairo_set_line_width(cr, 1);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                temp_tick=i*graph_columns+j; 
+                x_tick=graph_width/x_ticks[temp_tick];
+                for(k=0;k<x_ticks[temp_tick];k++)
+                  {
+                    x=j*graph_width+k*x_tick;
+                    y=i*graph_height+graph_height;
+                    cairo_move_to(cr, x, y);
+                    cairo_line_to(cr, x, y-graph_height);
+                    cairo_stroke(cr);
+                  } 
+              }
+          }
+        //Horizontal lines.
+        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                temp_tick=i*graph_columns+j; 
+                y_tick=graph_height/y_ticks[temp_tick];
+                for(k=0;k<y_ticks[temp_tick];k++)
+                  {
+                    x=j*graph_width;
+                    y=i*graph_height+k*y_tick;
+                    cairo_move_to(cr, x, y);
+                    cairo_line_to(cr, x+graph_width, y);
+                    cairo_stroke(cr);
+                  }
+              }
+          }
+      }
    
     //The x-axis numbers.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 18*ratio_x+x_font_scale);
-    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
@@ -521,7 +642,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     //The y-axis numbers.
     gint len=0;
     gdouble y_value=0;
-    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     cairo_set_font_size(cr, 20*ratio_y+y_font_scale);
     for(i=0;i<graph_rows;i++)
       {
@@ -550,7 +671,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
       }
 
     //Draw graph blocks.
-    cairo_set_source_rgb(cr, 0.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     cairo_set_line_width(cr, 2);
     cairo_rectangle(cr, 0.0, 0.0, width, height);
@@ -628,7 +749,8 @@ static void combo2_changed(GtkComboBox *combo, gpointer data)
     gint id=gtk_combo_box_get_active(combo);
     if(id==0) draw_lines=0;
     else if(id==1) draw_lines=1;
-    else draw_lines=2;
+    else if(id==2) draw_lines=2;
+    else draw_lines=3;
 
     gtk_widget_queue_draw(GTK_WIDGET(data));
   }
