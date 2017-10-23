@@ -288,7 +288,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
           }
       }
          
-    //Draw points, lines or curves.
+    //Draw points, lines, curves and rectangles.
     struct point pt;
     //Draw points. 
     if(draw_lines==0)
@@ -351,7 +351,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Draw lines between points.  
     else if(draw_lines==1)
       {
-        cairo_set_line_width(cr, 2*ratio_x+scale_dots);
+        cairo_set_line_width(cr, 4*ratio_x+scale_dots);
         cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
         for(i=0;i<graph_rows;i++)
           {
@@ -497,8 +497,8 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
     //Draw histogram rectangles.
     else
       {
-        cairo_set_line_width(cr, 2*ratio_x+scale_dots);
-        cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+        cairo_set_line_width(cr, 4*ratio_x+scale_dots);
+        cairo_set_line_cap (cr, CAIRO_LINE_CAP_BUTT);
         for(i=0;i<graph_rows;i++)
           {
             for(j=0;j<graph_columns;j++)
@@ -525,7 +525,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                       {
                         cairo_rectangle(cr, x, y, x_tick, graph_height);
                         cairo_fill(cr);
-                        cairo_set_source_rgba(cr, 0.3, 0.3, 1.0, 1.0);
+                        cairo_set_source_rgba(cr, 0.5, 0.8, 1.0, 1.0);
                         cairo_rectangle(cr, x, y, x_tick, graph_height);
                         cairo_stroke(cr);
                         cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[h][3]);
@@ -551,7 +551,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                           {
                             cairo_rectangle(cr, x, y, x_tick, graph_height);
                             cairo_fill(cr);
-                            cairo_set_source_rgba(cr, 0.3, 0.3, 1.0, 1.0);
+                            cairo_set_source_rgba(cr, 0.5, 0.8, 1.0, 1.0);
                             cairo_rectangle(cr, x, y, x_tick, graph_height);
                             cairo_stroke(cr);
                             cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
