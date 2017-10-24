@@ -331,7 +331,8 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                     for(h=0;h<compose+1;h++)
                       {
                         cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
-                        rnd_data=g_array_index(data_points, GArray*, h);           
+                        rnd_data=g_array_index(data_points, GArray*, h);
+                        x_tick=graph_width/x_ticks[h];           
                         for(k=0;k<rnd_data->len;k++)
                           {
                             pt=g_array_index(rnd_data, struct point, k);
@@ -392,6 +393,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                       {
                         cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
                         rnd_data=g_array_index(data_points, GArray*, h);
+                        x_tick=graph_width/x_ticks[h];
                         pt=g_array_index(rnd_data, struct point, 0);
                         x=j*graph_width+pt.x*x_tick+x_tick;
                         y=i*graph_height+graph_height-(graph_height*pt.y);
@@ -467,6 +469,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                       {
                         cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
                         rnd_data=g_array_index(data_points, GArray*, h);
+                        x_tick=graph_width/x_ticks[h];
                         GArray *bezier_pts=control_points_from_coords2(rnd_data);
                         pt=g_array_index(rnd_data, struct point, 0);
                         x=j*graph_width+pt.x*x_tick+x_tick;
@@ -543,6 +546,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                       {
                         cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
                         rnd_data=g_array_index(data_points, GArray*, h);
+                        x_tick=graph_width/x_ticks[h];
                         pt=g_array_index(rnd_data, struct point, 0);
                         x=j*graph_width+pt.x*x_tick+x_tick;
                         y=i*graph_height+graph_height-(graph_height*pt.y);
