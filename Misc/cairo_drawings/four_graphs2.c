@@ -60,7 +60,7 @@ static GArray *data_points=NULL;
 //Font scaling on axis. 
 static gint x_font_scale=0;
 static gint y_font_scale=0;
-//Points=0, lines=1 or smooth=2 combo.
+//Points=0, lines=1, smooth=2 or rectangle=3 combo.
 static gint draw_lines=0;
 //Scale dots and lines.
 static gint scale_dots=0;
@@ -85,6 +85,8 @@ static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[]);
 static void button2_clicked(GtkToggleButton *button, gpointer data);
 static gboolean animate_graphs(GtkWidget *widgets[]);
 static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data);
+static void swap_graphs(gint id1, gint id2);
+static void swap_button_clicked(GtkWidget *widget, GtkWidget *swap_widgets[]);
 //Bezier control points from coordinates for smoothing.
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
@@ -160,10 +162,16 @@ int main(int argc, char *argv[])
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), da);
     combo3_id=g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), data);
 
+    //Scale adjustments.
     GtkAdjustment *adjustment1=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
     GtkAdjustment *adjustment2=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
     GtkAdjustment *adjustment3=gtk_adjustment_new(0, -20, 20, 1, 0, 0);
 
+    //Swap graph adjustments.
+    GtkAdjustment *adjustment4=gtk_adjustment_new(1, 1, 16, 1, 0, 0);
+    GtkAdjustment *adjustment5=gtk_adjustment_new(2, 1, 16, 1, 0, 0);
+
+    //Scale.
     GtkWidget *x_spin_label=gtk_label_new("Scale x labels");
 
     GtkWidget *x_spin=gtk_spin_button_new(adjustment1, 1, 0);
@@ -178,6 +186,15 @@ int main(int argc, char *argv[])
 
     GtkWidget *dots_spin=gtk_spin_button_new(adjustment3, 1, 0);
     g_signal_connect(dots_spin, "value-changed", G_CALLBACK(scale_dots_changed), da);
+
+    //Swap graphs.
+    GtkWidget *swap1=gtk_spin_button_new(adjustment4, 1, 0);
+
+    GtkWidget *swap2=gtk_spin_button_new(adjustment5, 1, 0);
+
+    GtkWidget *swap_button=gtk_button_new_with_label("Swap Graphs");
+    GtkWidget *swap_widgets[]={swap1, swap2, da};
+    g_signal_connect(swap_button, "clicked", G_CALLBACK(swap_button_clicked), swap_widgets);  
 
     GtkWidget *button1=gtk_toggle_button_new_with_label("Animate");
     GtkWidget *widgets[]={button1, da};
@@ -199,6 +216,9 @@ int main(int argc, char *argv[])
     gtk_grid_attach(GTK_GRID(grid), button1, 0, 8, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), combo3, 0, 9, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), button2, 0, 10, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), swap1, 0, 11, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), swap2, 0, 12, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), swap_button, 0, 13, 1, 1);
 
     GtkWidget *paned1=gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_paned_pack1(GTK_PANED(paned1), grid, FALSE, TRUE);
@@ -863,44 +883,9 @@ static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer 
                 bottom_y=top_y+graph_height;
                 if(event->button.x>top_x&&event->button.y>top_y&&event->button.x<bottom_x&&event->button.y<bottom_y)
                   {
-                    //Swap array values and show the graph by itself.
-                    GArray **temp1=NULL;
-                    GArray **temp2=NULL;
-                    GArray *temp=NULL;
-                    gdouble d_temp=0;
-                    gint i_temp=0;
+                    //Swap array values and show the graph by itself.                    
                     gint index=i*graph_columns+j;
-                    temp1=&g_array_index(data_points, GArray*, 0);
-                    temp2=&g_array_index(data_points, GArray*, index);
-                    temp=*temp1;
-                    *temp1=*temp2;
-                    *temp2=temp;
-                    //Swap x tick values.
-                    i_temp=x_ticks[0];
-                    x_ticks[0]=x_ticks[index];
-                    x_ticks[index]=i_temp;
-                    //Swap y tick values.
-                    i_temp=y_ticks[0];
-                    y_ticks[0]=y_ticks[index];
-                    y_ticks[index]=i_temp;
-                    //Swap y label values.
-                    d_temp=y_max[0];
-                    y_max[0]=y_max[index];
-                    y_max[index]=d_temp;
-                    //Swap line colors.
-                    d_temp=lc[0][0];
-                    lc[0][0]=lc[index][0];
-                    lc[index][0]=d_temp;
-                    d_temp=lc[0][1];
-                    lc[0][1]=lc[index][1];
-                    lc[index][1]=d_temp;
-                    d_temp=lc[0][2];
-                    lc[0][2]=lc[index][2];
-                    lc[index][2]=d_temp;
-                    d_temp=lc[0][3];
-                    lc[0][3]=lc[index][3];
-                    lc[index][3]=d_temp;
-                    //Show single graph window.
+                    swap_graphs(0, index);
                     gtk_combo_box_set_active(GTK_COMBO_BOX(data), 0);
                     graph_rows=1;
                     graph_columns=1;
@@ -912,6 +897,51 @@ static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer 
       }
     
     return TRUE;
+  }
+static void swap_graphs(gint id1, gint id2)
+  {
+    GArray **temp1=NULL;
+    GArray **temp2=NULL;
+    GArray *temp=NULL;
+    gdouble d_temp=0;
+    gint i_temp=0;
+    temp1=&g_array_index(data_points, GArray*, id1);
+    temp2=&g_array_index(data_points, GArray*, id2);
+    temp=*temp1;
+    *temp1=*temp2;
+    *temp2=temp;
+    //Swap x tick values.
+    i_temp=x_ticks[id1];
+    x_ticks[id1]=x_ticks[id2];
+    x_ticks[id2]=i_temp;
+    //Swap y tick values.
+    i_temp=y_ticks[id1];
+    y_ticks[id1]=y_ticks[id2];
+    y_ticks[id2]=i_temp;
+    //Swap y label values.
+    d_temp=y_max[id1];
+    y_max[id1]=y_max[id2];
+    y_max[id2]=d_temp;
+    //Swap line colors.
+    d_temp=lc[id1][0];
+    lc[id1][0]=lc[id2][0];
+    lc[id2][0]=d_temp;
+    d_temp=lc[id1][1];
+    lc[id1][1]=lc[id2][1];
+    lc[id2][1]=d_temp;
+    d_temp=lc[id1][2];
+    lc[id1][2]=lc[id2][2];
+    lc[id2][2]=d_temp;
+    d_temp=lc[id1][3];
+    lc[id1][3]=lc[id2][3];
+    lc[id2][3]=d_temp;
+  }
+static void swap_button_clicked(GtkWidget *widget, GtkWidget *swap_widgets[])
+  {
+    gint id1=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(swap_widgets[0]))-1;
+    gint id2=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(swap_widgets[1]))-1;
+    swap_graphs(id1, id2);
+    gtk_widget_queue_draw(swap_widgets[2]);
   }
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
