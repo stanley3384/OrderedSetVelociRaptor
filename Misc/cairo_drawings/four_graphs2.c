@@ -4,6 +4,9 @@
 with or without animation. If you click on a graph in the grid layout it will swap it to the 1x1 or 
 first graph position. The data sets can also be composed into one graph or decomposed into
 many graphs. Keep in mind that the test data scales are different for each data set.
+    The animation prepends a value to the start of each series and removes a point from the end
+of each series. Similar to having mulitple time series graphs but with some random numbers for
+testing.
 
     gcc -Wall four_graphs2.c -o four_graphs2 `pkg-config --cflags --libs gtk+-3.0`
 
@@ -25,7 +28,7 @@ struct controls{
   gdouble y2;
 };
 
-//Line colors for the different graphs.
+//Colors for the 16 graphs.
 static gdouble lc[16][4]=
 {
   {1.0, 1.0, 0.0, 1.0},
@@ -33,16 +36,16 @@ static gdouble lc[16][4]=
   {0.0, 1.0,  1.0, 1.0},
   {1.0,  0.0,  1.0, 1.0},
   {1.0, 0.0, 0.0, 1.0},
-  {0.5, 0.5, 0.0, 1.0},
-  {0.0, 0.5,  0.0, 1.0},
-  {0.0,  0.5,  0.5, 1.0},
-  {0.5, 0.0, 0.5, 1.0},
-  {0.5, 0.0, 0.0, 1.0},
-  {0.25, 1.0,  0.0, 1.0},
-  {1.0,  0.25,  1.0, 1.0},
-  {1.0, 0.0, 0.25, 1.0},
-  {0.5, 0.5, 0.25, 1.0},
-  {0.0, 0.5,  0.25, 1.0},
+  {1.0, 1.0, 0.5, 1.0},
+  {0.5, 1.0,  0.5, 1.0},
+  {0.5,  1.0,  1.0, 1.0},
+  {1.0, 0.5, 1.0, 1.0},
+  {1.0, 0.5, 0.5, 1.0},
+  {1.0, 0.75, 0.25, 1.0},
+  {0.75, 1.0,  0.25, 1.0},
+  {0.25,  0.75,  1.0, 1.0},
+  {1.0, 0.25, 0.75, 1.0},
+  {1.0, 0.25, 0.25, 1.0},
   {0.25,  0.5,  0.5, 1.0}
 };
 
@@ -65,7 +68,7 @@ static gint draw_lines=0;
 //Scale dots and lines.
 static gint scale_dots=0;
 //For the timer and random number generator.
-static int timer_id=0;
+static guint timer_id=0;
 static GRand *rand=NULL;
 //The number of data sets to compose in the drawing.
 static gint compose=0;
@@ -84,9 +87,11 @@ static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
 static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[]);
 static void button2_clicked(GtkToggleButton *button, gpointer data);
 static gboolean animate_graphs(GtkWidget *widgets[]);
+static void prepend_remove_end_point(gint graph_id, gdouble x, gdouble y);
 static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void swap_graphs(gint id1, gint id2);
 static void swap_button_clicked(GtkWidget *widget, GtkWidget *swap_widgets[]);
+static void close_program(GtkWidget *widget, gpointer data);
 //Bezier control points from coordinates for smoothing.
 static GArray* control_points_from_coords2(const GArray *dataPoints);
 
@@ -99,7 +104,7 @@ int main(int argc, char *argv[])
     gtk_window_set_title(GTK_WINDOW(window), "Graphs");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
 
     //Get some random numbers to test with.
     gint i=0;
@@ -470,7 +475,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                       {
                         pt=g_array_index(rnd_data, struct point, k);
                         c1=g_array_index(bezier_pts, struct controls, k-1);
-                        //k=pt.x for testing.
+                        //k=pt.x for testing. For smooth curves pt.x needed for the smoothing function.
                         x=j*graph_width+pt.x*x_tick+x_tick;
                         y=i*graph_height+graph_height-(graph_height*pt.y);
                         ct1=j*graph_width+c1.x1*x_tick+x_tick;
@@ -499,7 +504,7 @@ static gboolean draw_graphs(GtkWidget *widget, cairo_t *cr, gpointer data)
                           {
                             pt=g_array_index(rnd_data, struct point, k);
                             c1=g_array_index(bezier_pts, struct controls, k-1);
-                            //k=pt.x for testing.
+                            //k=pt.x for testing. For smooth curves pt.x needed for the smoothing function.
                             x=j*graph_width+pt.x*x_tick+x_tick;
                             y=i*graph_height+graph_height-(graph_height*pt.y);
                             ct1=j*graph_width+c1.x1*x_tick+x_tick;
@@ -827,26 +832,14 @@ static gboolean animate_graphs(GtkWidget *widgets[])
  {
    if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widgets[0])))
      {
-       gint i=0;
-       gint j=0;
-       struct point pt;
-       GArray *temp=NULL;
-       struct point *x_point=NULL;
-       gint len=0;
-       //Remove last point and add beginning point to each data set.
+       gint i=0; 
+       /*      
+         Remove last point and add beginning point to each data set. The time series data feed
+         for the graphs. Update all the graphs for testing.
+       */
        for(i=0;i<data_points->len;i++)
          {
-           temp=g_array_index(data_points, GArray*, i);
-           len=temp->len-1;
-           g_array_remove_index_fast(temp, len);
-           pt.x=0.0;
-           pt.y=g_rand_double(rand);
-           g_array_prepend_val(temp, pt);
-           for(j=1;j<temp->len;j++)
-             {
-               x_point=&g_array_index(temp, struct point, j);
-               x_point->x=(gdouble)j;
-             }
+           prepend_remove_end_point(i, 0.0, g_rand_double(rand));          
           }
        gtk_widget_queue_draw(widgets[1]);
        return TRUE;
@@ -857,7 +850,30 @@ static gboolean animate_graphs(GtkWidget *widgets[])
        gtk_widget_queue_draw(widgets[1]);
        return FALSE;
      }
- }
+  }
+static void prepend_remove_end_point(gint graph_id, gdouble x, gdouble y)
+  {
+    gint i=0;
+    struct point pt;
+    struct point *x_point=NULL;
+    pt.x=x;
+    pt.y=y;
+    GArray *temp=g_array_index(data_points, GArray*, graph_id);
+    gint len=temp->len-1;
+    g_array_remove_index_fast(temp, len);
+    g_array_prepend_val(temp, pt);
+    /*
+       Why is the x point re-indexed this way? Why not just use the loop index for evenly
+spaced x. The problem is in getting the bezier points for smoothing. There needs to be valid
+x coordinates in the array to get valid bezier points for the curves. Just using a loop
+index, for evenly spaced points, lines and rectangles, would work fine but not for smooth curves.
+    */
+    for(i=1;i<temp->len;i++)
+      {
+        x_point=&g_array_index(temp, struct point, i);
+        x_point->x=(gdouble)i;
+      }
+  }
 static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data)
   {
     gint i=0;
@@ -942,6 +958,12 @@ static void swap_button_clicked(GtkWidget *widget, GtkWidget *swap_widgets[])
     gint id2=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(swap_widgets[1]))-1;
     swap_graphs(id1, id2);
     gtk_widget_queue_draw(swap_widgets[2]);
+  }
+static void close_program(GtkWidget *widget, gpointer data)
+  {
+    //Check if timer is still active when closing the program.
+    if(timer_id!=0) g_source_remove(timer_id);
+    gtk_main_quit();
   }
 static GArray* control_points_from_coords2(const GArray *dataPoints)
   {  
