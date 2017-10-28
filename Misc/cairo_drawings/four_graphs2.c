@@ -7,6 +7,7 @@ many graphs. Keep in mind that the test data scales are different for each data 
     The animation prepends a value to the start of each series and removes a point from the end
 of each series. Similar to having mulitple time series graphs but with some random numbers for
 testing.
+    There is also a multigraph widget in the MultiGraph folder that has similar functionality.
 
     gcc -Wall four_graphs2.c -o four_graphs2 `pkg-config --cflags --libs gtk+-3.0`
 
