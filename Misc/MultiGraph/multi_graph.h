@@ -38,6 +38,12 @@ void multi_graph_set_background_color(MultiGraph *da, const gchar *dim_color_str
 const gchar* multi_graph_get_background_color(MultiGraph *da);
 void multi_graph_set_columns(MultiGraph *da, gint columns);
 void multi_graph_set_rows(MultiGraph *da, gint rows);
+void multi_graph_set_x_font_scale(MultiGraph *da, gint x_font_scale);
+void multi_graph_set_y_font_scale(MultiGraph *da, gint y_font_scale);
+void multi_graph_set_draw_lines(MultiGraph *da, gint draw_lines);
+void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots);
+void multi_graph_set_compose(MultiGraph *da, gint compose);
+void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y);
 
 G_END_DECLS
 

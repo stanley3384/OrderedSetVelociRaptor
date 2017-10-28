@@ -37,7 +37,12 @@ enum
   PROP_0,
   MULTI_GRAPH_BACKGROUND_COLOR,
   MULTI_GRAPH_ROWS,
-  MULTI_GRAPH_COLUMNS
+  MULTI_GRAPH_COLUMNS,
+  MULTI_GRAPH_X_FONT_SCALE,
+  MULTI_GRAPH_Y_FONT_SCALE,
+  MULTI_GRAPH_DRAW_LINES,
+  MULTI_GRAPH_SCALE_DOTS,
+  MULTI_GRAPH_COMPOSE
 };
 
 struct point{
@@ -109,6 +114,16 @@ static void multi_graph_class_init(MultiGraphClass *klass)
 
   g_object_class_install_property(gobject_class, MULTI_GRAPH_COLUMNS, g_param_spec_int("multi_graph_columns", "multi_graph_columns", "multi_graph_columns", 1, 16, 1, G_PARAM_READWRITE));
 
+  g_object_class_install_property(gobject_class, MULTI_GRAPH_X_FONT_SCALE, g_param_spec_int("multi_graph_x_font_scale", "multi_graph_x_font_scale", "multi_graph_x_font_scale", -20, 20, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, MULTI_GRAPH_Y_FONT_SCALE, g_param_spec_int("multi_graph_y_font_scale", "multi_graph_y_font_scale", "multi_graph_y_font_scale", -20, 20, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, MULTI_GRAPH_DRAW_LINES, g_param_spec_int("multi_graph_draw_lines", "multi_graph_draw_lines", "multi_graph_draw_lines", 0, 4, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, MULTI_GRAPH_SCALE_DOTS, g_param_spec_int("multi_graph_scale_dots", "multi_graph_scale_dots", "multi_graph_scale_dots", -20, 20, 0, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, MULTI_GRAPH_COMPOSE, g_param_spec_int("multi_graph_compose", "multi_graph_compose", "multi_graph_compose", 0, 15, 0, G_PARAM_READWRITE));
+
 }
 //Needed for g_object_set().
 static void multi_graph_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
@@ -126,6 +141,21 @@ static void multi_graph_set_property(GObject *object, guint prop_id, const GValu
       break;
     case MULTI_GRAPH_COLUMNS:
       multi_graph_set_columns(da, g_value_get_int(value));
+      break;
+    case MULTI_GRAPH_X_FONT_SCALE:
+      multi_graph_set_x_font_scale(da, g_value_get_int(value));
+      break;
+    case MULTI_GRAPH_Y_FONT_SCALE:
+      multi_graph_set_y_font_scale(da, g_value_get_int(value));
+      break;
+    case MULTI_GRAPH_DRAW_LINES:
+      multi_graph_set_draw_lines(da, g_value_get_int(value));
+      break;
+    case MULTI_GRAPH_SCALE_DOTS:
+      multi_graph_set_scale_dots(da, g_value_get_int(value));
+      break;
+    case MULTI_GRAPH_COMPOSE:
+      multi_graph_set_compose(da, g_value_get_int(value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -178,6 +208,76 @@ void multi_graph_set_columns(MultiGraph *da, gint columns)
     {
       g_warning("Multi Graph columns; 1<=x<=16.");
     }
+}
+void multi_graph_set_x_font_scale(MultiGraph *da, gint x_font_scale)
+{
+  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+  if(x_font_scale>=-20&&x_font_scale<=20)
+    { 
+      priv->x_font_scale=x_font_scale;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("Multi Graph x_font_scale; -20<=x<=20.");
+    }
+}  
+void multi_graph_set_y_font_scale(MultiGraph *da, gint y_font_scale)
+{
+  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+  if(y_font_scale>=-20&&y_font_scale<=20)
+    { 
+      priv->y_font_scale=y_font_scale;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("Multi Graph y_font_scale; -20<=x<=20.");
+    }
+}  
+void multi_graph_set_draw_lines(MultiGraph *da, gint draw_lines)
+{
+  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+  if(draw_lines>=0&&draw_lines<=3)
+    { 
+      priv->draw_lines=draw_lines;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("Multi Graph draw_lines; 0<=x<=3.");
+    }
+} 
+void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots)
+{
+  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+  if(scale_dots>=-20&&scale_dots<=20)
+    { 
+      priv->scale_dots=scale_dots;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("Multi Graph scale_dots; -20<=x<=20.");
+    }
+} 
+void multi_graph_set_compose(MultiGraph *da, gint compose)
+{
+  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+  if(compose>=0&&compose<=15)
+    { 
+      priv->compose=compose;
+      gtk_widget_queue_draw(GTK_WIDGET(da));
+    }
+  else
+    {
+      g_warning("Multi Graph compose; 0<=x<=15.");
+    }
 } 
 static void multi_graph_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
@@ -224,7 +324,7 @@ static void multi_graph_init(MultiGraph *da)
   priv->test_increment_x=5;
   priv->x_font_scale=0;
   priv->y_font_scale=0;
-  priv->draw_lines=1;
+  priv->draw_lines=0;
   priv->scale_dots=0;
   priv->compose=0;
 
@@ -277,6 +377,30 @@ static void multi_graph_finalize(GObject *object)
 
   G_OBJECT_CLASS(multi_graph_parent_class)->finalize(object);
 }
+void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    gint i=0;
+    struct point pt;
+    struct point *x_point=NULL;
+    pt.x=x;
+    pt.y=y;
+    GArray *temp=g_array_index(priv->data_points, GArray*, graph_id);
+    gint len=temp->len-1;
+    g_array_remove_index_fast(temp, len);
+    g_array_prepend_val(temp, pt);
+    /*
+       Why is the x point re-indexed this way? Why not just use the loop index for evenly
+spaced x. The problem is in getting the bezier points for smoothing. There needs to be valid
+x coordinates in the array to get valid bezier points for the curves. Just using a loop
+index, for evenly spaced points, lines and rectangles, would work fine but not for smooth curves.
+    */
+    for(i=1;i<temp->len;i++)
+      {
+        x_point=&g_array_index(temp, struct point, i);
+        x_point->x=(gdouble)i;
+      }
+  }
 static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
