@@ -15,35 +15,35 @@
 typedef struct _MultiGraphPrivate MultiGraphPrivate;
 
 struct _MultiGraphPrivate
-{    
-  gdouble background_color[4];
-  gchar *background_color_string;
-  gint graph_rows;
-  gint graph_columns;
-  gdouble test_increment_x;
-  GArray *x_ticks;
-  GArray *y_ticks;
-  GArray *y_max;
-  GArray *data_points;
-  gint x_font_scale;
-  gint y_font_scale;
-  gint draw_lines;
-  gint scale_dots;
-  gint compose;
-};
+  {    
+    gdouble background_color[4];
+    gchar *background_color_string;
+    gint graph_rows;
+    gint graph_columns;
+    gdouble test_increment_x;
+    GArray *x_ticks;
+    GArray *y_ticks;
+    GArray *y_max;
+    GArray *data_points;
+    gint x_font_scale;
+    gint y_font_scale;
+    gint draw_lines;
+    gint scale_dots;
+    gint compose;
+  };
 
 enum
-{
-  PROP_0,
-  MULTI_GRAPH_BACKGROUND_COLOR,
-  MULTI_GRAPH_ROWS,
-  MULTI_GRAPH_COLUMNS,
-  MULTI_GRAPH_X_FONT_SCALE,
-  MULTI_GRAPH_Y_FONT_SCALE,
-  MULTI_GRAPH_DRAW_LINES,
-  MULTI_GRAPH_SCALE_DOTS,
-  MULTI_GRAPH_COMPOSE
-};
+  {
+    PROP_0,
+    MULTI_GRAPH_BACKGROUND_COLOR,
+    MULTI_GRAPH_ROWS,
+    MULTI_GRAPH_COLUMNS,
+    MULTI_GRAPH_X_FONT_SCALE,
+    MULTI_GRAPH_Y_FONT_SCALE,
+    MULTI_GRAPH_DRAW_LINES,
+    MULTI_GRAPH_SCALE_DOTS,
+    MULTI_GRAPH_COMPOSE
+  };
 
 struct point{
   gdouble x;
@@ -91,292 +91,342 @@ static void multi_graph_finalize(GObject *gobject);
 G_DEFINE_TYPE(MultiGraph, multi_graph, GTK_TYPE_DRAWING_AREA)
 
 static void multi_graph_class_init(MultiGraphClass *klass)
-{ 
-  GObjectClass *gobject_class;
-  GtkWidgetClass *widget_class;
+  { 
+    GObjectClass *gobject_class;
+    GtkWidgetClass *widget_class;
 
-  gobject_class=(GObjectClass*)klass;
-  widget_class=(GtkWidgetClass*)klass;
+    gobject_class=(GObjectClass*)klass;
+    widget_class=(GtkWidgetClass*)klass;
 
-  //Set the property funtions.
-  gobject_class->set_property=multi_graph_set_property;
-  gobject_class->get_property=multi_graph_get_property;
+    //Set the property funtions.
+    gobject_class->set_property=multi_graph_set_property;
+    gobject_class->get_property=multi_graph_get_property;
 
-  //Draw when first shown.
-  widget_class->draw=multi_graph_draw;
-  gobject_class->finalize = multi_graph_finalize;
+    //Draw when first shown.
+    widget_class->draw=multi_graph_draw;
+    gobject_class->finalize = multi_graph_finalize;
 
-  g_type_class_add_private(klass, sizeof(MultiGraphPrivate));
+    g_type_class_add_private(klass, sizeof(MultiGraphPrivate));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_BACKGROUND_COLOR, g_param_spec_string("background_color", "background_color", "background_color", NULL, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_BACKGROUND_COLOR, g_param_spec_string("background_color", "background_color", "background_color", NULL, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_ROWS, g_param_spec_int("multi_graph_rows", "multi_graph_rows", "multi_graph_rows", 1, 16, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_ROWS, g_param_spec_int("multi_graph_rows", "multi_graph_rows", "multi_graph_rows", 1, 16, 1, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_COLUMNS, g_param_spec_int("multi_graph_columns", "multi_graph_columns", "multi_graph_columns", 1, 16, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_COLUMNS, g_param_spec_int("multi_graph_columns", "multi_graph_columns", "multi_graph_columns", 1, 16, 1, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_X_FONT_SCALE, g_param_spec_int("multi_graph_x_font_scale", "multi_graph_x_font_scale", "multi_graph_x_font_scale", -20, 20, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_X_FONT_SCALE, g_param_spec_int("multi_graph_x_font_scale", "multi_graph_x_font_scale", "multi_graph_x_font_scale", -20, 20, 0, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_Y_FONT_SCALE, g_param_spec_int("multi_graph_y_font_scale", "multi_graph_y_font_scale", "multi_graph_y_font_scale", -20, 20, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_Y_FONT_SCALE, g_param_spec_int("multi_graph_y_font_scale", "multi_graph_y_font_scale", "multi_graph_y_font_scale", -20, 20, 0, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_DRAW_LINES, g_param_spec_int("multi_graph_draw_lines", "multi_graph_draw_lines", "multi_graph_draw_lines", 0, 4, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_DRAW_LINES, g_param_spec_int("multi_graph_draw_lines", "multi_graph_draw_lines", "multi_graph_draw_lines", 0, 4, 0, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_SCALE_DOTS, g_param_spec_int("multi_graph_scale_dots", "multi_graph_scale_dots", "multi_graph_scale_dots", -20, 20, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_SCALE_DOTS, g_param_spec_int("multi_graph_scale_dots", "multi_graph_scale_dots", "multi_graph_scale_dots", -20, 20, 0, G_PARAM_READWRITE));
 
-  g_object_class_install_property(gobject_class, MULTI_GRAPH_COMPOSE, g_param_spec_int("multi_graph_compose", "multi_graph_compose", "multi_graph_compose", 0, 15, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_COMPOSE, g_param_spec_int("multi_graph_compose", "multi_graph_compose", "multi_graph_compose", 0, 15, 0, G_PARAM_READWRITE));
 
-}
+  }
 //Needed for g_object_set().
 static void multi_graph_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
-{
-  MultiGraph *da=MULTI_GRAPH(object);
-
-  switch(prop_id)
   {
-    g_print("Prop %i\n", prop_id);
-    case MULTI_GRAPH_BACKGROUND_COLOR:
-      multi_graph_set_background_color(da, g_value_get_string(value));
-      break;
-    case MULTI_GRAPH_ROWS:
-      multi_graph_set_rows(da, g_value_get_int(value));
-      break;
-    case MULTI_GRAPH_COLUMNS:
-      multi_graph_set_columns(da, g_value_get_int(value));
-      break;
-    case MULTI_GRAPH_X_FONT_SCALE:
-      multi_graph_set_x_font_scale(da, g_value_get_int(value));
-      break;
-    case MULTI_GRAPH_Y_FONT_SCALE:
-      multi_graph_set_y_font_scale(da, g_value_get_int(value));
-      break;
-    case MULTI_GRAPH_DRAW_LINES:
-      multi_graph_set_draw_lines(da, g_value_get_int(value));
-      break;
-    case MULTI_GRAPH_SCALE_DOTS:
-      multi_graph_set_scale_dots(da, g_value_get_int(value));
-      break;
-    case MULTI_GRAPH_COMPOSE:
-      multi_graph_set_compose(da, g_value_get_int(value));
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-      break;
+    MultiGraph *da=MULTI_GRAPH(object);
+
+    switch(prop_id)
+    {
+      g_print("Prop %i\n", prop_id);
+      case MULTI_GRAPH_BACKGROUND_COLOR:
+        multi_graph_set_background_color(da, g_value_get_string(value));
+        break;
+      case MULTI_GRAPH_ROWS:
+        multi_graph_set_rows(da, g_value_get_int(value));
+        break;
+      case MULTI_GRAPH_COLUMNS:
+        multi_graph_set_columns(da, g_value_get_int(value));
+        break;
+      case MULTI_GRAPH_X_FONT_SCALE:
+        multi_graph_set_x_font_scale(da, g_value_get_int(value));
+        break;
+      case MULTI_GRAPH_Y_FONT_SCALE:
+        multi_graph_set_y_font_scale(da, g_value_get_int(value));
+        break;
+      case MULTI_GRAPH_DRAW_LINES:
+        multi_graph_set_draw_lines(da, g_value_get_int(value));
+        break;
+      case MULTI_GRAPH_SCALE_DOTS:
+        multi_graph_set_scale_dots(da, g_value_get_int(value));
+        break;
+      case MULTI_GRAPH_COMPOSE:
+        multi_graph_set_compose(da, g_value_get_int(value));
+        break;
+      default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+        break;
+    }
   }
-}
 void multi_graph_set_background_color(MultiGraph *da, const gchar *background_color_string)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
-
-  GdkRGBA rgba;
-  if(gdk_rgba_parse(&rgba, background_color_string))
-    {
-      priv->background_color[0]=rgba.red;
-      priv->background_color[1]=rgba.green;
-      priv->background_color[2]=rgba.blue;
-      priv->background_color[3]=rgba.alpha;
-      if(priv->background_color_string!=NULL) g_free(priv->background_color_string);
-      priv->background_color_string=g_strdup(background_color_string); 
-    }
-  else
-    {
-      g_warning("background_color_string error\n");
-    } 
-}
-void multi_graph_set_rows(MultiGraph *da, gint rows)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(rows>=1&&rows<=16)
-    { 
-      priv->graph_rows=rows;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph rows; 1<=x<=16.");
-    }
-} 
-void multi_graph_set_columns(MultiGraph *da, gint columns)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(columns>=1&&columns<=16)
-    { 
-      priv->graph_columns=columns;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph columns; 1<=x<=16.");
-    }
-}
-void multi_graph_set_x_font_scale(MultiGraph *da, gint x_font_scale)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(x_font_scale>=-20&&x_font_scale<=20)
-    { 
-      priv->x_font_scale=x_font_scale;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph x_font_scale; -20<=x<=20.");
-    }
-}  
-void multi_graph_set_y_font_scale(MultiGraph *da, gint y_font_scale)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(y_font_scale>=-20&&y_font_scale<=20)
-    { 
-      priv->y_font_scale=y_font_scale;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph y_font_scale; -20<=x<=20.");
-    }
-}  
-void multi_graph_set_draw_lines(MultiGraph *da, gint draw_lines)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(draw_lines>=0&&draw_lines<=3)
-    { 
-      priv->draw_lines=draw_lines;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph draw_lines; 0<=x<=3.");
-    }
-} 
-void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(scale_dots>=-20&&scale_dots<=20)
-    { 
-      priv->scale_dots=scale_dots;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph scale_dots; -20<=x<=20.");
-    }
-} 
-void multi_graph_set_compose(MultiGraph *da, gint compose)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
- 
-  if(compose>=0&&compose<=15)
-    { 
-      priv->compose=compose;
-      gtk_widget_queue_draw(GTK_WIDGET(da));
-    }
-  else
-    {
-      g_warning("Multi Graph compose; 0<=x<=15.");
-    }
-} 
-static void multi_graph_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
-{
-  MultiGraph *da=MULTI_GRAPH(object);
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
-  
-  switch(prop_id)
   {
-    case MULTI_GRAPH_BACKGROUND_COLOR:
-      g_value_set_string(value, priv->background_color_string);
-      break;
-   case MULTI_GRAPH_ROWS:
-      g_value_set_int(value, priv->graph_rows);
-      break;
-    case MULTI_GRAPH_COLUMNS:
-      g_value_set_int(value, priv->graph_columns);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    GdkRGBA rgba;
+    if(gdk_rgba_parse(&rgba, background_color_string))
+      {
+        priv->background_color[0]=rgba.red;
+        priv->background_color[1]=rgba.green;
+        priv->background_color[2]=rgba.blue;
+        priv->background_color[3]=rgba.alpha;
+        if(priv->background_color_string!=NULL) g_free(priv->background_color_string);
+        priv->background_color_string=g_strdup(background_color_string); 
+      }
+    else
+      {
+        g_warning("background_color_string error\n");
+      } 
   }
-}
+void multi_graph_set_rows(MultiGraph *da, gint rows)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(rows>=1&&rows<=16)
+      { 
+        priv->graph_rows=rows;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph rows; 1<=x<=16.");
+      }
+  } 
+void multi_graph_set_columns(MultiGraph *da, gint columns)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(columns>=1&&columns<=16)
+      { 
+        priv->graph_columns=columns;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph columns; 1<=x<=16.");
+      }
+  }
+void multi_graph_set_x_font_scale(MultiGraph *da, gint x_font_scale)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(x_font_scale>=-20&&x_font_scale<=20)
+      { 
+        priv->x_font_scale=x_font_scale;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph x_font_scale; -20<=x<=20.");
+      }
+  }  
+void multi_graph_set_y_font_scale(MultiGraph *da, gint y_font_scale)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(y_font_scale>=-20&&y_font_scale<=20)
+      { 
+        priv->y_font_scale=y_font_scale;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph y_font_scale; -20<=x<=20.");
+      }
+  }  
+void multi_graph_set_draw_lines(MultiGraph *da, gint draw_lines)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(draw_lines>=0&&draw_lines<=3)
+      { 
+        priv->draw_lines=draw_lines;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph draw_lines; 0<=x<=3.");
+      }
+  } 
+void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(scale_dots>=-20&&scale_dots<=20)
+      { 
+        priv->scale_dots=scale_dots;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph scale_dots; -20<=x<=20.");
+      }
+  } 
+void multi_graph_set_compose(MultiGraph *da, gint compose)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+ 
+    if(compose>=0&&compose<=15)
+      { 
+        priv->compose=compose;
+        gtk_widget_queue_draw(GTK_WIDGET(da));
+      }
+    else
+      {
+        g_warning("Multi Graph compose; 0<=x<=15.");
+      }
+  } 
+static void multi_graph_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
+  {
+    MultiGraph *da=MULTI_GRAPH(object);
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+  
+    switch(prop_id)
+    {
+      case MULTI_GRAPH_BACKGROUND_COLOR:
+        g_value_set_string(value, priv->background_color_string);
+        break;
+      case MULTI_GRAPH_ROWS:
+        g_value_set_int(value, priv->graph_rows);
+        break;
+      case MULTI_GRAPH_COLUMNS:
+        g_value_set_int(value, priv->graph_columns);
+        break;
+      case MULTI_GRAPH_X_FONT_SCALE:
+        g_value_set_int(value, priv->x_font_scale);
+        break;
+      case MULTI_GRAPH_Y_FONT_SCALE:
+        g_value_set_int(value, priv->y_font_scale);
+        break;
+      case MULTI_GRAPH_DRAW_LINES:
+        g_value_set_int(value, priv->draw_lines);
+        break;
+      case MULTI_GRAPH_SCALE_DOTS:
+        g_value_set_int(value, priv->scale_dots);
+        break;
+      case MULTI_GRAPH_COMPOSE:
+        g_value_set_int(value, priv->compose);
+        break;
+      default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+    }
+  }
 const gchar* multi_graph_get_background_color(MultiGraph *da)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
-  return priv->background_color_string;
-}
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->background_color_string;
+  }
+gint multi_graph_get_graph_rows(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->graph_rows;
+  }
+gint multi_graph_get_graph_columns(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->graph_columns;
+  }
+gint multi_graph_get_x_font_scale(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->x_font_scale;
+  }
+gint multi_graph_get_y_font_scale(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->y_font_scale;
+  }
+gint multi_graph_get_draw_lines(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->draw_lines;
+  }
+gint multi_graph_get_scale_dots(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->scale_dots;
+  }
+gint multi_graph_get_compose(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->compose;
+  }
 static void multi_graph_init(MultiGraph *da)
-{
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
-  gint i=0;
-  gint j=0;
-  gint temp=10;
-  gdouble d_temp=100;
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    gint i=0;
+    gint j=0;
+    gint temp=10;
+    gdouble d_temp=100;
 
-  //Set some initial colors.
-  priv->background_color[0]=0.0;
-  priv->background_color[1]=0.0;
-  priv->background_color[2]=0.0;
-  priv->background_color[3]=1.0;
-  priv->background_color_string=g_strdup("rgba(0, 0, 0, 1.0)");
+    //Set some initial colors.
+    priv->background_color[0]=0.0;
+    priv->background_color[1]=0.0;
+    priv->background_color[2]=0.0;
+    priv->background_color[3]=1.0;
+    priv->background_color_string=g_strdup("rgba(0, 0, 0, 1.0)");
 
-  priv->graph_rows=1;
-  priv->graph_columns=1;
-  priv->test_increment_x=5;
-  priv->x_font_scale=0;
-  priv->y_font_scale=0;
-  priv->draw_lines=0;
-  priv->scale_dots=0;
-  priv->compose=0;
+    priv->graph_rows=1;
+    priv->graph_columns=1;
+    priv->test_increment_x=5;
+    priv->x_font_scale=0;
+    priv->y_font_scale=0;
+    priv->draw_lines=0;
+    priv->scale_dots=0;
+    priv->compose=0;
 
-  priv->x_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
-  priv->y_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
-  priv->y_max=g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 16);
-  //Start 16 graphs with x_ticks=10, y_ticks=5 and y_max=100.
-  for(i=0;i<16;i++) g_array_append_val(priv->x_ticks, temp);
-  temp=5;
-  for(i=0;i<16;i++) g_array_append_val(priv->y_ticks, temp);
-  temp=100;
-  for(i=0;i<16;i++) g_array_append_val(priv->y_max, d_temp);
+    priv->x_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
+    priv->y_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
+    priv->y_max=g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 16);
+    //Start 16 graphs with x_ticks=10, y_ticks=5 and y_max=100.
+    for(i=0;i<16;i++) g_array_append_val(priv->x_ticks, temp);
+    temp=5;
+    for(i=0;i<16;i++) g_array_append_val(priv->y_ticks, temp);
+    temp=100;
+    for(i=0;i<16;i++) g_array_append_val(priv->y_max, d_temp);
 
-  //Initialize data arrays with height 50.
-  struct point pt;
-  priv->data_points=g_array_sized_new(FALSE, FALSE, sizeof(GArray*), 16);
-  GArray *temp_array=NULL;
-  for(i=0;i<16;i++)
-    {
-      temp_array=g_array_sized_new(FALSE, FALSE, sizeof(struct point), 10);
-      pt.y=0.5;
-      for(j=0;j<10;j++)
-        {
-          pt.x=(gdouble)j;
-          g_array_append_val(temp_array, pt);
-        }
-      g_array_append_val(priv->data_points, temp_array);
-    }
-      
-}
+    //Initialize data arrays with height 50.
+    struct point pt;
+    priv->data_points=g_array_sized_new(FALSE, FALSE, sizeof(GArray*), 16);
+    GArray *temp_array=NULL;
+    for(i=0;i<16;i++)
+      {
+        temp_array=g_array_sized_new(FALSE, FALSE, sizeof(struct point), 10);
+        //Initialize baseline to 1 for all the graphs.
+        pt.y=0.01;
+        for(j=0;j<10;j++)
+          {
+            pt.x=(gdouble)j;
+            g_array_append_val(temp_array, pt);
+          }
+        g_array_append_val(priv->data_points, temp_array);
+      }      
+  }
 GtkWidget* multi_graph_new()
-{
-  return GTK_WIDGET(g_object_new(multi_graph_get_type(), NULL));
-}
+  {
+    return GTK_WIDGET(g_object_new(multi_graph_get_type(), NULL));
+  }
 static void multi_graph_finalize(GObject *object)
-{
-  MultiGraph *da=MULTI_GRAPH(object);
-  MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+  {
+    MultiGraph *da=MULTI_GRAPH(object);
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
 
-  gint i=0;
-  g_free(priv->background_color_string);
-  g_array_free(priv->x_ticks, TRUE);
-  g_array_free(priv->y_ticks, TRUE);
-  g_array_free(priv->y_max, TRUE);
-  for(i=0;i<priv->data_points->len;i++)
-    {
-      g_array_free(g_array_index(priv->data_points, GArray*, i), TRUE);
-    }
-  g_array_free(priv->data_points, TRUE);
+    gint i=0;
+    g_free(priv->background_color_string);
+    g_array_free(priv->x_ticks, TRUE);
+    g_array_free(priv->y_ticks, TRUE);
+    g_array_free(priv->y_max, TRUE);
+    for(i=0;i<priv->data_points->len;i++)
+      {
+        g_array_free(g_array_index(priv->data_points, GArray*, i), TRUE);
+      }
+    g_array_free(priv->data_points, TRUE);
 
-  G_OBJECT_CLASS(multi_graph_parent_class)->finalize(object);
-}
+    G_OBJECT_CLASS(multi_graph_parent_class)->finalize(object);
+  }
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
@@ -399,6 +449,67 @@ index, for evenly spaced points, lines and rectangles, would work fine but not f
       {
         x_point=&g_array_index(temp, struct point, i);
         x_point->x=(gdouble)i;
+      }
+  }
+void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2)
+  {
+    if(id1>=0&&id1<16&&id2>=0&&id2<16)
+      {
+        MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+        GArray **temp1=NULL;
+        GArray **temp2=NULL;
+        GArray *temp=NULL;
+        gdouble *d_pt1=NULL;
+        gdouble *d_pt2=NULL;
+        gdouble d_temp1=0;
+        gdouble d_temp2=0;
+        gint *i_pt1=NULL;
+        gint *i_pt2=NULL;
+        gint i_temp1=0;
+        gint i_temp2=0;
+        temp1=&g_array_index(priv->data_points, GArray*, id1);
+        temp2=&g_array_index(priv->data_points, GArray*, id2);
+        temp=*temp1;
+        *temp1=*temp2;
+        *temp2=temp;
+        //Swap x tick values.
+        i_pt1=&g_array_index(priv->x_ticks, gint, id1);
+        i_temp1=(*i_pt1);
+        i_pt2=&g_array_index(priv->x_ticks, gint, id2);
+        i_temp2=(*i_pt2);
+        *i_pt1=i_temp2;
+        *i_pt2=i_temp1;    
+        //Swap y tick values.
+        i_pt1=&g_array_index(priv->x_ticks, gint, id1);
+        i_temp1=(*i_pt1);
+        i_pt2=&g_array_index(priv->x_ticks, gint, id2);
+        i_temp2=(*i_pt2);
+        *i_pt1=i_temp2;
+        *i_pt2=i_temp1;  
+        //Swap y label values.
+        d_pt1=&g_array_index(priv->y_max, gdouble, id1);
+        d_temp1=(*d_pt1);
+        d_pt2=&g_array_index(priv->y_max, gdouble, id2);
+        d_temp2=(*d_pt2);
+        *d_pt1=d_temp2;
+        *d_pt2=d_temp1;
+        //Swap line colors.
+        d_temp1=lc[id1][0];
+        lc[id1][0]=lc[id2][0];
+        lc[id2][0]=d_temp1;
+        d_temp1=lc[id1][1];
+        lc[id1][1]=lc[id2][1];
+        lc[id2][1]=d_temp1;
+        d_temp1=lc[id1][2];
+        lc[id1][2]=lc[id2][2];
+        lc[id2][2]=d_temp1;
+        d_temp1=lc[id1][3];
+        lc[id1][3]=lc[id2][3];
+        lc[id2][3]=d_temp1;
+      }
+    else
+      {
+        g_warning("Multi Graph ID's; 0<=x<=15.");
       }
   }
 static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)

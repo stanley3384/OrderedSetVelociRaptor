@@ -33,17 +33,26 @@ struct _MultiGraphClass
 //Public functions.
 GType multi_graph_get_type(void) G_GNUC_CONST;
 GtkWidget* multi_graph_new();
-
+//Property get and set.
 void multi_graph_set_background_color(MultiGraph *da, const gchar *dim_color_string);
 const gchar* multi_graph_get_background_color(MultiGraph *da);
-void multi_graph_set_columns(MultiGraph *da, gint columns);
 void multi_graph_set_rows(MultiGraph *da, gint rows);
+gint multi_graph_get_graph_rows(MultiGraph *da);
+void multi_graph_set_columns(MultiGraph *da, gint columns);
+gint multi_graph_get_graph_columns(MultiGraph *da);
 void multi_graph_set_x_font_scale(MultiGraph *da, gint x_font_scale);
+gint multi_graph_get_x_font_scale(MultiGraph *da);
 void multi_graph_set_y_font_scale(MultiGraph *da, gint y_font_scale);
+gint multi_graph_get_y_font_scale(MultiGraph *da);
 void multi_graph_set_draw_lines(MultiGraph *da, gint draw_lines);
+gint multi_graph_get_draw_lines(MultiGraph *da);
 void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots);
+gint multi_graph_get_scale_dots(MultiGraph *da);
 void multi_graph_set_compose(MultiGraph *da, gint compose);
+gint multi_graph_get_compose(MultiGraph *da);
+//Add a point to the start of the graph.
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y);
+void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2);
 
 G_END_DECLS
 

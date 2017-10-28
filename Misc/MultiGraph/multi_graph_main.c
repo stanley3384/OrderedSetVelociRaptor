@@ -1,7 +1,9 @@
 
 /*
 
-    This is the start of moving four_graph2.c into a multi graph widget. It works but has a ways to go.
+    This is moving the graphing in four_graph2.c into a widget. All of the graph scales are the
+same. The data array points are initialized to 1 on all the graphs. When the graphs are animated,
+random values are fed to the graphs. 
 
     gcc -Wall multi_graph.c multi_graph_main.c -o multi_graph `pkg-config gtk+-3.0 --cflags --libs`
 
@@ -27,6 +29,9 @@ static void y_spin_changed(GtkSpinButton *spin_button, gpointer data);
 static void scale_dots_changed(GtkSpinButton *spin_button, gpointer data);
 static void button1_clicked(GtkToggleButton *button, GtkWidget *widgets[]);
 static gboolean animate_graphs(GtkWidget *widgets[]);
+static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data);
+static void swap_button_clicked(GtkWidget *widget, GtkWidget *swap_widgets[]);
+static void close_program(GtkWidget *widget, gpointer data);
 
 int main(int argc, char *argv[])
   {
@@ -37,11 +42,12 @@ int main(int argc, char *argv[])
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 850, 500);
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(close_program), NULL);
 
     rand=g_rand_new();
 
     GtkWidget *graph1=multi_graph_new();
+    gtk_widget_add_events(graph1, GDK_BUTTON_PRESS_MASK);
     //multi_graph_set_background_color(MULTI_GRAPH(graph1), "rgba(0, 0, 255, 1.0)");
     gtk_widget_set_hexpand(graph1, TRUE);
     gtk_widget_set_vexpand(graph1, TRUE);
@@ -77,7 +83,7 @@ int main(int argc, char *argv[])
 
     gpointer data[]={graph1, combo1, combo3};
     g_signal_connect(combo1, "changed", G_CALLBACK(combo1_changed), data);
-    //g_signal_connect(graph1, "button-press-event", G_CALLBACK(click_drawing_area), combo1);
+    g_signal_connect(graph1, "button-press-event", G_CALLBACK(click_drawing_area), combo1);
     g_signal_connect(combo2, "changed", G_CALLBACK(combo2_changed), graph1);
     combo3_id=g_signal_connect(combo3, "changed", G_CALLBACK(combo3_changed), data);
 
@@ -112,8 +118,8 @@ int main(int argc, char *argv[])
     GtkWidget *swap2=gtk_spin_button_new(adjustment5, 1, 0);
 
     GtkWidget *swap_button=gtk_button_new_with_label("Swap Graphs");
-    //GtkWidget *swap_widgets[]={swap1, swap2, graph1};
-    //g_signal_connect(swap_button, "clicked", G_CALLBACK(swap_button_clicked), swap_widgets);  
+    GtkWidget *swap_widgets[]={swap1, swap2, graph1};
+    g_signal_connect(swap_button, "clicked", G_CALLBACK(swap_button_clicked), swap_widgets);  
 
     GtkWidget *button1=gtk_toggle_button_new_with_label("Animate");
     GtkWidget *widgets[]={button1, graph1};
@@ -268,4 +274,59 @@ static gboolean animate_graphs(GtkWidget *widgets[])
        gtk_widget_queue_draw(widgets[1]);
        return FALSE;
      }
+  }
+static gboolean click_drawing_area(GtkWidget *widget, GdkEvent *event, gpointer data)
+  {
+    gint i=0;
+    gint j=0;
+    gint width=gtk_widget_get_allocated_width(widget);
+    gint height=gtk_widget_get_allocated_height(widget);
+    gint graph_rows=multi_graph_get_graph_rows(MULTI_GRAPH(widget));
+    gint graph_columns=multi_graph_get_graph_columns(MULTI_GRAPH(widget));
+    gint graph_width=width/graph_columns;
+    gint graph_height=height/graph_rows;
+    gint top_x=0;
+    gint top_y=0;
+    gint bottom_x=0;
+    gint bottom_y=0;
+
+    if(graph_rows!=1&&graph_columns!=1)
+      {
+        for(i=0;i<graph_rows;i++)
+          {
+            for(j=0;j<graph_columns;j++)
+              {
+                top_x=j*graph_width;
+                top_y=i*graph_height;
+                bottom_x=top_x+graph_width;
+                bottom_y=top_y+graph_height;
+                if(event->button.x>top_x&&event->button.y>top_y&&event->button.x<bottom_x&&event->button.y<bottom_y)
+                  {
+                    //Swap array values and show the graph by itself.                    
+                    gint index=i*graph_columns+j;
+                    multi_graph_swap_graphs(MULTI_GRAPH(widget), 0, index);
+                    gtk_combo_box_set_active(GTK_COMBO_BOX(data), 0);
+                    multi_graph_set_rows(MULTI_GRAPH(widget), 1);
+                    multi_graph_set_columns(MULTI_GRAPH(widget), 1);
+                    gtk_widget_queue_draw(widget);
+                    return TRUE;
+                  }
+              }
+          }
+      }
+    
+    return TRUE;
+  }
+static void swap_button_clicked(GtkWidget *widget, GtkWidget *swap_widgets[])
+  {
+    gint id1=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(swap_widgets[0]))-1;
+    gint id2=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(swap_widgets[1]))-1;
+    multi_graph_swap_graphs(MULTI_GRAPH(swap_widgets[2]), id1, id2);
+    gtk_widget_queue_draw(swap_widgets[2]);
+  }
+static void close_program(GtkWidget *widget, gpointer data)
+  {
+    //Check if timer is still active when closing the program.
+    if(timer_id!=0) g_source_remove(timer_id);
+    gtk_main_quit();
   }
