@@ -9,6 +9,7 @@
 
 #include<gtk/gtk.h>
 #include "multi_graph.h"
+#include<stdlib.h>
 
 #define MULTI_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), MULTI_GRAPH_TYPE, MultiGraphPrivate))
 
@@ -18,6 +19,12 @@ struct _MultiGraphPrivate
   {    
     gdouble background_color[4];
     gchar *background_color_string;
+    gdouble font_color[4];
+    gchar *font_color_string;
+    gdouble grid_color[4];
+    gchar *grid_color_string;
+    gdouble tick_color[4];
+    gchar *tick_color_string;
     gint graph_rows;
     gint graph_columns;
     gdouble test_increment_x;
@@ -36,6 +43,9 @@ enum
   {
     PROP_0,
     MULTI_GRAPH_BACKGROUND_COLOR,
+    MULTI_GRAPH_FONT_COLOR,
+    MULTI_GRAPH_GRID_COLOR,
+    MULTI_GRAPH_TICK_COLOR,
     MULTI_GRAPH_ROWS,
     MULTI_GRAPH_COLUMNS,
     MULTI_GRAPH_X_FONT_SCALE,
@@ -110,6 +120,12 @@ static void multi_graph_class_init(MultiGraphClass *klass)
 
     g_object_class_install_property(gobject_class, MULTI_GRAPH_BACKGROUND_COLOR, g_param_spec_string("background_color", "background_color", "background_color", NULL, G_PARAM_READWRITE));
 
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_FONT_COLOR, g_param_spec_string("font_color", "font_color", "font_color", NULL, G_PARAM_READWRITE));
+
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_GRID_COLOR, g_param_spec_string("grid_color", "grid_color", "grid_color", NULL, G_PARAM_READWRITE));
+
+    g_object_class_install_property(gobject_class, MULTI_GRAPH_TICK_COLOR, g_param_spec_string("tick_color", "tick_color", "tick_color", NULL, G_PARAM_READWRITE));
+    
     g_object_class_install_property(gobject_class, MULTI_GRAPH_ROWS, g_param_spec_int("multi_graph_rows", "multi_graph_rows", "multi_graph_rows", 1, 16, 1, G_PARAM_READWRITE));
 
     g_object_class_install_property(gobject_class, MULTI_GRAPH_COLUMNS, g_param_spec_int("multi_graph_columns", "multi_graph_columns", "multi_graph_columns", 1, 16, 1, G_PARAM_READWRITE));
@@ -135,6 +151,15 @@ static void multi_graph_set_property(GObject *object, guint prop_id, const GValu
       g_print("Prop %i\n", prop_id);
       case MULTI_GRAPH_BACKGROUND_COLOR:
         multi_graph_set_background_color(da, g_value_get_string(value));
+        break;
+      case MULTI_GRAPH_FONT_COLOR:
+        multi_graph_set_font_color(da, g_value_get_string(value));
+        break;
+      case MULTI_GRAPH_GRID_COLOR:
+        multi_graph_set_grid_color(da, g_value_get_string(value));
+        break;
+      case MULTI_GRAPH_TICK_COLOR:
+        multi_graph_set_tick_color(da, g_value_get_string(value));
         break;
       case MULTI_GRAPH_ROWS:
         multi_graph_set_rows(da, g_value_get_int(value));
@@ -179,6 +204,63 @@ void multi_graph_set_background_color(MultiGraph *da, const gchar *background_co
     else
       {
         g_warning("background_color_string error\n");
+      } 
+  }
+void multi_graph_set_font_color(MultiGraph *da, const gchar *font_color_string)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    GdkRGBA rgba;
+    if(gdk_rgba_parse(&rgba, font_color_string))
+      {
+        priv->font_color[0]=rgba.red;
+        priv->font_color[1]=rgba.green;
+        priv->font_color[2]=rgba.blue;
+        priv->font_color[3]=rgba.alpha;
+        if(priv->font_color_string!=NULL) g_free(priv->font_color_string);
+        priv->font_color_string=g_strdup(font_color_string); 
+      }
+    else
+      {
+        g_warning("font_color_string error\n");
+      } 
+  }
+void multi_graph_set_grid_color(MultiGraph *da, const gchar *grid_color_string)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    GdkRGBA rgba;
+    if(gdk_rgba_parse(&rgba, grid_color_string))
+      {
+        priv->grid_color[0]=rgba.red;
+        priv->grid_color[1]=rgba.green;
+        priv->grid_color[2]=rgba.blue;
+        priv->grid_color[3]=rgba.alpha;
+        if(priv->grid_color_string!=NULL) g_free(priv->grid_color_string);
+        priv->grid_color_string=g_strdup(grid_color_string); 
+      }
+    else
+      {
+        g_warning("grid_color_string error\n");
+      } 
+  }
+void multi_graph_set_tick_color(MultiGraph *da, const gchar *tick_color_string)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    GdkRGBA rgba;
+    if(gdk_rgba_parse(&rgba, tick_color_string))
+      {
+        priv->tick_color[0]=rgba.red;
+        priv->tick_color[1]=rgba.green;
+        priv->tick_color[2]=rgba.blue;
+        priv->tick_color[3]=rgba.alpha;
+        if(priv->tick_color_string!=NULL) g_free(priv->tick_color_string);
+        priv->tick_color_string=g_strdup(tick_color_string); 
+      }
+    else
+      {
+        g_warning("tick_color_string error\n");
       } 
   }
 void multi_graph_set_rows(MultiGraph *da, gint rows)
@@ -289,6 +371,15 @@ static void multi_graph_get_property(GObject *object, guint prop_id, GValue *val
       case MULTI_GRAPH_BACKGROUND_COLOR:
         g_value_set_string(value, priv->background_color_string);
         break;
+      case MULTI_GRAPH_FONT_COLOR:
+        g_value_set_string(value, priv->font_color_string);
+        break;
+      case MULTI_GRAPH_GRID_COLOR:
+        g_value_set_string(value, priv->grid_color_string);
+        break;
+      case MULTI_GRAPH_TICK_COLOR:
+        g_value_set_string(value, priv->tick_color_string);
+        break;
       case MULTI_GRAPH_ROWS:
         g_value_set_int(value, priv->graph_rows);
         break;
@@ -318,6 +409,21 @@ const gchar* multi_graph_get_background_color(MultiGraph *da)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
     return priv->background_color_string;
+  }
+const gchar* multi_graph_get_font_color(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->font_color_string;
+  }
+const gchar* multi_graph_get_grid_color(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->grid_color_string;
+  }
+const gchar* multi_graph_get_tick_color(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    return priv->tick_color_string;
   }
 gint multi_graph_get_graph_rows(MultiGraph *da)
   {
@@ -359,7 +465,7 @@ static void multi_graph_init(MultiGraph *da)
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
     gint i=0;
     gint j=0;
-    gint temp=10;
+    gint temp=0;
     gdouble d_temp=100;
 
     //Set some initial colors.
@@ -368,10 +474,25 @@ static void multi_graph_init(MultiGraph *da)
     priv->background_color[2]=0.0;
     priv->background_color[3]=1.0;
     priv->background_color_string=g_strdup("rgba(0, 0, 0, 1.0)");
+    priv->font_color[0]=1.0;
+    priv->font_color[1]=1.0;
+    priv->font_color[2]=1.0;
+    priv->font_color[3]=1.0;
+    priv->font_color_string=g_strdup("rgba(255, 255, 255, 1.0)");
+    priv->grid_color[0]=0.0;
+    priv->grid_color[1]=1.0;
+    priv->grid_color[2]=1.0;
+    priv->grid_color[3]=1.0;
+    priv->grid_color_string=g_strdup("rgba(0, 255, 255, 1.0)");
+    priv->tick_color[0]=0.0;
+    priv->tick_color[1]=0.0;
+    priv->tick_color[2]=1.0;
+    priv->tick_color[3]=1.0;
+    priv->tick_color_string=g_strdup("rgba(0, 0, 255, 1.0)");
 
     priv->graph_rows=1;
     priv->graph_columns=1;
-    priv->test_increment_x=5;
+    priv->test_increment_x=1;
     priv->x_font_scale=0;
     priv->y_font_scale=0;
     priv->draw_lines=0;
@@ -382,6 +503,7 @@ static void multi_graph_init(MultiGraph *da)
     priv->y_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
     priv->y_max=g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 16);
     //Start 16 graphs with x_ticks=10, y_ticks=5 and y_max=100.
+    temp=10;
     for(i=0;i<16;i++) g_array_append_val(priv->x_ticks, temp);
     temp=5;
     for(i=0;i<16;i++) g_array_append_val(priv->y_ticks, temp);
@@ -426,6 +548,79 @@ static void multi_graph_finalize(GObject *object)
     g_array_free(priv->data_points, TRUE);
 
     G_OBJECT_CLASS(multi_graph_parent_class)->finalize(object);
+  }
+void multi_graph_set_points(MultiGraph *da, gint points)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    gint i=0;
+    gint j=0;
+    gint len=0;
+    GArray *temp=NULL;
+    gint *i_pt=NULL;
+    gint pts=0;
+    gint diff=0;
+    struct point pt;
+    pt.y=0.01;
+
+    //All 16 data arrays are the same length here.
+    temp=g_array_index(priv->data_points, GArray*, 0);
+    pts=temp->len;
+    diff=abs(points-pts);
+    
+    //Set a minimum of 5 points.
+    if(points>5)
+      {
+        //Trim points. If pts==points, don't change anything.
+        if(pts>points)
+          {
+            for(i=0;i<priv->data_points->len;i++)
+              {
+                temp=g_array_index(priv->data_points, GArray*, i);
+                for(j=0;j<diff;j++)
+                  {
+                    g_array_remove_index_fast(temp, points);
+                  }
+              }
+            //Reset the x-tick marks.
+            for(i=0;i<priv->x_ticks->len;i++)
+             {
+               i_pt=&g_array_index(priv->x_ticks, gint, i);
+               *i_pt=points;
+             }
+          }
+        //Add points
+        if(pts<points)
+          {
+            for(i=0;i<priv->data_points->len;i++)
+              {
+                temp=g_array_index(priv->data_points, GArray*, i);
+                len=temp->len;
+                for(j=0;j<diff;j++)
+                  {
+                    pt.x=len;
+                    g_array_append_val(temp, pt);
+                    len++;
+                  }
+              }
+           //Reset the x-tick marks.
+           for(i=0;i<priv->x_ticks->len;i++)
+             {
+               i_pt=&g_array_index(priv->x_ticks, gint, i);
+               *i_pt=points;
+             }
+           
+         }
+      }
+    else
+      {
+        g_warning("Need at least 5 points to graph.\n");
+      }
+  }
+gint multi_graph_get_points(MultiGraph *da)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+    GArray *temp=g_array_index(priv->data_points, GArray*, 0);
+    return temp->len;
   }
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y)
   {
@@ -549,7 +744,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
     if(draw_lines!=3)
       {
         //Vertical lines.
-        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        cairo_set_source_rgba(cr, priv->tick_color[0], priv->tick_color[1], priv->tick_color[2], priv->tick_color[3]);
         cairo_set_line_width(cr, 1);
         for(i=0;i<graph_rows;i++)
           {
@@ -568,7 +763,6 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
               }
           }
         //Horizontal lines.
-        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
         for(i=0;i<graph_rows;i++)
           {
             for(j=0;j<graph_columns;j++)
@@ -827,7 +1021,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
                       {
                         cairo_rectangle(cr, x, y, x_tick, graph_height);
                         cairo_fill(cr);
-                        cairo_set_source_rgba(cr, 0.5, 0.8, 1.0, 1.0);
+                        cairo_set_source_rgba(cr, priv->tick_color[0], priv->tick_color[1], priv->tick_color[2], priv->tick_color[3]);
                         cairo_rectangle(cr, x, y, x_tick, graph_height);
                         cairo_stroke(cr);
                         cairo_set_source_rgba(cr, lc[id][0], lc[id][1], lc[id][2], lc[h][3]);
@@ -854,7 +1048,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
                           {
                             cairo_rectangle(cr, x, y, x_tick, graph_height);
                             cairo_fill(cr);
-                            cairo_set_source_rgba(cr, 0.5, 0.8, 1.0, 1.0);
+                            cairo_set_source_rgba(cr, priv->tick_color[0], priv->tick_color[1], priv->tick_color[2], priv->tick_color[3]);
                             cairo_rectangle(cr, x, y, x_tick, graph_height);
                             cairo_stroke(cr);
                             cairo_set_source_rgba(cr, lc[h][0], lc[h][1], lc[h][2], lc[h][3]);
@@ -876,7 +1070,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
     if(draw_lines==3)
       {
         //Vertical lines.
-        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
+        cairo_set_source_rgba(cr, priv->tick_color[0], priv->tick_color[1], priv->tick_color[2], priv->tick_color[3]);
         cairo_set_line_width(cr, 1);
         for(i=0;i<graph_rows;i++)
           {
@@ -895,7 +1089,6 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
               }
           }
         //Horizontal lines.
-        cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 1.0);
         for(i=0;i<graph_rows;i++)
           {
             for(j=0;j<graph_columns;j++)
@@ -917,7 +1110,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
     //The x-axis numbers.
     cairo_select_font_face(cr, "Arial", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 18*ratio_x+x_font_scale);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, priv->font_color[0], priv->font_color[1], priv->font_color[2], priv->font_color[3]);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
@@ -945,7 +1138,6 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
     //The y-axis numbers.
     gint len=0;
     gdouble y_value=0;
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     cairo_set_font_size(cr, 20*ratio_y+y_font_scale);
     for(i=0;i<graph_rows;i++)
       {
@@ -974,7 +1166,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
       }
 
     //Draw graph blocks.
-    cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, priv->grid_color[0], priv->grid_color[1], priv->grid_color[2], priv->grid_color[3]);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     cairo_set_line_width(cr, 2);
     cairo_rectangle(cr, 0.0, 0.0, width, height);

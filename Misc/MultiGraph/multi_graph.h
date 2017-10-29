@@ -36,6 +36,12 @@ GtkWidget* multi_graph_new();
 //Property get and set.
 void multi_graph_set_background_color(MultiGraph *da, const gchar *dim_color_string);
 const gchar* multi_graph_get_background_color(MultiGraph *da);
+void multi_graph_set_font_color(MultiGraph *da, const gchar *font_color_string);
+const gchar* multi_graph_get_font_color(MultiGraph *da);
+void multi_graph_set_grid_color(MultiGraph *da, const gchar *grid_color_string);
+const gchar* multi_graph_get_grid_color(MultiGraph *da);
+void multi_graph_set_tick_color(MultiGraph *da, const gchar *tick_color_string);
+const gchar* multi_graph_get_tick_color(MultiGraph *da);
 void multi_graph_set_rows(MultiGraph *da, gint rows);
 gint multi_graph_get_graph_rows(MultiGraph *da);
 void multi_graph_set_columns(MultiGraph *da, gint columns);
@@ -50,6 +56,9 @@ void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots);
 gint multi_graph_get_scale_dots(MultiGraph *da);
 void multi_graph_set_compose(MultiGraph *da, gint compose);
 gint multi_graph_get_compose(MultiGraph *da);
+//Set the number of points to draw.
+void multi_graph_set_points(MultiGraph *da, gint points);
+gint multi_graph_get_points(MultiGraph *da);
 //Add a point to the start of the graph.
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y);
 void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2);

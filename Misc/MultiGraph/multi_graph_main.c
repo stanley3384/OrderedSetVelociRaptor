@@ -5,7 +5,7 @@
 same. The data array points are initialized to 1 on all the graphs. When the graphs are animated,
 random values are fed to the graphs. 
 
-    gcc -Wall multi_graph.c multi_graph_main.c -o multi_graph `pkg-config gtk+-3.0 --cflags --libs`
+    gcc -Wall multi_graph.c multi_graph_main.c -o multi_graph `pkg-config gtk+-3.0 --cflags --libs` -lm
 
     Tested on Ubuntu16.04, GTK3.18.
 
@@ -48,7 +48,10 @@ int main(int argc, char *argv[])
 
     GtkWidget *graph1=multi_graph_new();
     gtk_widget_add_events(graph1, GDK_BUTTON_PRESS_MASK);
-    //multi_graph_set_background_color(MULTI_GRAPH(graph1), "rgba(0, 0, 255, 1.0)");
+    multi_graph_set_points(MULTI_GRAPH(graph1), 20);
+    //multi_graph_set_background_color(MULTI_GRAPH(graph1), "rgba(255, 255, 255, 1.0)");
+    //multi_graph_set_font_color(MULTI_GRAPH(graph1), "rgba(0, 0, 0, 1.0)");
+    //multi_graph_set_tick_color(MULTI_GRAPH(graph1), "rgba(0, 0, 255, 1.0)");
     gtk_widget_set_hexpand(graph1, TRUE);
     gtk_widget_set_vexpand(graph1, TRUE);
 
