@@ -578,6 +578,7 @@ static void multi_graph_finalize(GObject *object)
 
     G_OBJECT_CLASS(multi_graph_parent_class)->finalize(object);
   }
+//This changes the points and x_ticks.
 void multi_graph_set_points(MultiGraph *da, gint graph_id, gint points)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
@@ -647,6 +648,39 @@ gint multi_graph_get_points(MultiGraph *da, gint graph_id)
       {
         g_warning("Graph id: 0<=x<=15\n");
         return 0;
+      }
+  }
+void multi_graph_set_y_ticks(MultiGraph *da, gint graph_id, gint ticks)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        if(ticks>=3)
+          {
+            gint *temp=&g_array_index(priv->y_ticks, gint, graph_id);
+            *temp=ticks;
+          }
+        else g_warning("Y tick marks: y>=3\n");
+      }
+    else
+      {
+        g_warning("Graph id: 0<=x<=15\n");
+      }
+  }
+gint multi_graph_get_x_ticks(MultiGraph *da, gint graph_id)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        gint temp=g_array_index(priv->y_ticks, gint, graph_id);  
+        return temp;           
+      }
+    else
+      {
+        return 0;
+        g_warning("Graph id: 0<=x<=15\n");
       }
   }
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y)

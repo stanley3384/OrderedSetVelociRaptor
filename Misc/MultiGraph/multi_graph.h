@@ -58,11 +58,15 @@ void multi_graph_set_compose(MultiGraph *da, gint compose);
 gint multi_graph_get_compose(MultiGraph *da);
 //Set point, line, curve or rectangle color to draw with for each graph. Doesn't have a set get pair. 
 void multi_graph_set_line_color(MultiGraph *da, gint graph_id, const gchar *line_color_string);
-//Set the number of points to draw for each graph.
+//Set the number of points to draw for each graph. This adjusts the x_ticks as well.
 void multi_graph_set_points(MultiGraph *da, gint graph_id, gint points);
 gint multi_graph_get_points(MultiGraph *da, gint graph_id);
+//Set the number of y_ticks for the graph.
+void multi_graph_set_y_ticks(MultiGraph *da, gint graph_id, gint ticks);
+gint multi_graph_get_y_ticks(MultiGraph *da, gint graph_id);
 //Add a point to the start of the graph.
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y);
+//Swap the positions of two graphs.
 void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2);
 
 G_END_DECLS
