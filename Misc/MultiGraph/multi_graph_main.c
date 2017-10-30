@@ -1,9 +1,10 @@
 
 /*
 
-    This is moving the graphing in four_graph2.c into a widget. All of the graph scales are the
-same. The data array points are initialized to 1 on all the graphs. When the graphs are animated,
-random values are fed to the graphs. 
+    This is moving the graphing in four_graph2.c into a widget. The data array points are
+initialized to 1 on all the graphs. When the graphs are animated, random values are fed to
+the graphs. It will draw up to 16 standardized time series graphs individually or compose the
+graphs into one. It can draw points, lines, curves or rectangles.   
 
     gcc -Wall multi_graph.c multi_graph_main.c -o multi_graph `pkg-config gtk+-3.0 --cflags --libs` -lm
 
@@ -48,10 +49,13 @@ int main(int argc, char *argv[])
 
     GtkWidget *graph1=multi_graph_new();
     gtk_widget_add_events(graph1, GDK_BUTTON_PRESS_MASK);
-    multi_graph_set_points(MULTI_GRAPH(graph1), 20);
+    //Test some multi graph functions.
+    multi_graph_set_points(MULTI_GRAPH(graph1), 1, 20);
     //multi_graph_set_background_color(MULTI_GRAPH(graph1), "rgba(255, 255, 255, 1.0)");
     //multi_graph_set_font_color(MULTI_GRAPH(graph1), "rgba(0, 0, 0, 1.0)");
     //multi_graph_set_tick_color(MULTI_GRAPH(graph1), "rgba(0, 0, 255, 1.0)");
+    //multi_graph_set_grid_color(MULTI_GRAPH(graph1), "rgba(200, 200, 200, 1.0)");
+    //multi_graph_set_line_color(MULTI_GRAPH(graph1), 3, "rgba(255, 128, 0, 1.0)");
     gtk_widget_set_hexpand(graph1, TRUE);
     gtk_widget_set_vexpand(graph1, TRUE);
 

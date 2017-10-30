@@ -56,9 +56,11 @@ void multi_graph_set_scale_dots(MultiGraph *da, gint scale_dots);
 gint multi_graph_get_scale_dots(MultiGraph *da);
 void multi_graph_set_compose(MultiGraph *da, gint compose);
 gint multi_graph_get_compose(MultiGraph *da);
-//Set the number of points to draw.
-void multi_graph_set_points(MultiGraph *da, gint points);
-gint multi_graph_get_points(MultiGraph *da);
+//Set point, line, curve or rectangle color to draw with for each graph. Doesn't have a set get pair. 
+void multi_graph_set_line_color(MultiGraph *da, gint graph_id, const gchar *line_color_string);
+//Set the number of points to draw for each graph.
+void multi_graph_set_points(MultiGraph *da, gint graph_id, gint points);
+gint multi_graph_get_points(MultiGraph *da, gint graph_id);
 //Add a point to the start of the graph.
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y);
 void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2);

@@ -25,6 +25,8 @@ struct _MultiGraphPrivate
     gchar *grid_color_string;
     gdouble tick_color[4];
     gchar *tick_color_string;
+    //The array of line colors.
+    gdouble (*lc)[4];
     gint graph_rows;
     gint graph_columns;
     gdouble test_increment_x;
@@ -263,6 +265,31 @@ void multi_graph_set_tick_color(MultiGraph *da, const gchar *tick_color_string)
         g_warning("tick_color_string error\n");
       } 
   }
+//Uses a static array. Doesn't set a color string or have a set get pair.
+void multi_graph_set_line_color(MultiGraph *da, gint graph_id, const gchar *line_color_string)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        GdkRGBA rgba;
+        if(gdk_rgba_parse(&rgba, line_color_string))
+          {
+            priv->lc[graph_id][0]=rgba.red;
+            priv->lc[graph_id][1]=rgba.green;
+            priv->lc[graph_id][2]=rgba.blue;
+            priv->lc[graph_id][3]=rgba.alpha;
+          }
+        else
+          {
+            g_warning("line_color_string error\n");
+          } 
+      }
+    else
+      {
+        g_warning("Graph id: 0<=x<=15\n");
+      }
+  }
 void multi_graph_set_rows(MultiGraph *da, gint rows)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
@@ -490,6 +517,8 @@ static void multi_graph_init(MultiGraph *da)
     priv->tick_color[3]=1.0;
     priv->tick_color_string=g_strdup("rgba(0, 0, 255, 1.0)");
 
+    priv->lc=lc;
+
     priv->graph_rows=1;
     priv->graph_columns=1;
     priv->test_increment_x=1;
@@ -549,78 +578,76 @@ static void multi_graph_finalize(GObject *object)
 
     G_OBJECT_CLASS(multi_graph_parent_class)->finalize(object);
   }
-void multi_graph_set_points(MultiGraph *da, gint points)
+void multi_graph_set_points(MultiGraph *da, gint graph_id, gint points)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
     gint i=0;
-    gint j=0;
     gint len=0;
     GArray *temp=NULL;
     gint *i_pt=NULL;
-    gint pts=0;
     gint diff=0;
     struct point pt;
     pt.y=0.01;
 
-    //All 16 data arrays are the same length here.
-    temp=g_array_index(priv->data_points, GArray*, 0);
-    pts=temp->len;
-    diff=abs(points-pts);
+    //Get the length of the dataset.
+    temp=g_array_index(priv->data_points, GArray*, graph_id);
+    len=temp->len;
+    diff=abs(points-len);
     
-    //Set a minimum of 5 points.
-    if(points>5)
+    if(graph_id>=0&&graph_id<=15)
       {
-        //Trim points. If pts==points, don't change anything.
-        if(pts>points)
+        //Set a minimum of 5 points.
+        if(points>5)
           {
-            for(i=0;i<priv->data_points->len;i++)
+            //Trim points. If pts==points, don't change anything.
+            if(len>points)
               {
-                temp=g_array_index(priv->data_points, GArray*, i);
-                for(j=0;j<diff;j++)
+                for(i=0;i<diff;i++)
                   {
                     g_array_remove_index_fast(temp, points);
                   }
+                //Reset the x-tick marks.     
+                i_pt=&g_array_index(priv->x_ticks, gint, graph_id);
+                *i_pt=points;
               }
-            //Reset the x-tick marks.
-            for(i=0;i<priv->x_ticks->len;i++)
-             {
-               i_pt=&g_array_index(priv->x_ticks, gint, i);
-               *i_pt=points;
-             }
-          }
-        //Add points
-        if(pts<points)
-          {
-            for(i=0;i<priv->data_points->len;i++)
+            //Add points
+            if(len<points)
               {
-                temp=g_array_index(priv->data_points, GArray*, i);
-                len=temp->len;
-                for(j=0;j<diff;j++)
+                for(i=0;i<diff;i++)
                   {
                     pt.x=len;
                     g_array_append_val(temp, pt);
                     len++;
                   }
-              }
-           //Reset the x-tick marks.
-           for(i=0;i<priv->x_ticks->len;i++)
-             {
-               i_pt=&g_array_index(priv->x_ticks, gint, i);
-               *i_pt=points;
+                //Reset the x-tick marks.
+                i_pt=&g_array_index(priv->x_ticks, gint, graph_id);
+                *i_pt=points;
              }
-           
-         }
+          }
+        else
+          {
+            g_warning("Need at least 5 points to graph.\n");
+          }
       }
     else
       {
-        g_warning("Need at least 5 points to graph.\n");
+        g_warning("Graph id: 0<=x<=15\n");
       }
   }
-gint multi_graph_get_points(MultiGraph *da)
+gint multi_graph_get_points(MultiGraph *da, gint graph_id)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
-    GArray *temp=g_array_index(priv->data_points, GArray*, 0);
-    return temp->len;
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        GArray *temp=g_array_index(priv->data_points, GArray*, graph_id);
+        return temp->len;
+      }
+    else
+      {
+        g_warning("Graph id: 0<=x<=15\n");
+        return 0;
+      }
   }
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y)
   {
@@ -648,7 +675,7 @@ index, for evenly spaced points, lines and rectangles, would work fine but not f
   }
 void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2)
   {
-    if(id1>=0&&id1<16&&id2>=0&&id2<16)
+    if(id1>=0&&id1<=15&&id2>=0&&id2<=15)
       {
         MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
         GArray **temp1=NULL;
@@ -673,11 +700,11 @@ void multi_graph_swap_graphs(MultiGraph *da, gint id1, gint id2)
         i_pt2=&g_array_index(priv->x_ticks, gint, id2);
         i_temp2=(*i_pt2);
         *i_pt1=i_temp2;
-        *i_pt2=i_temp1;    
+        *i_pt2=i_temp1;
         //Swap y tick values.
-        i_pt1=&g_array_index(priv->x_ticks, gint, id1);
+        i_pt1=&g_array_index(priv->y_ticks, gint, id1);
         i_temp1=(*i_pt1);
-        i_pt2=&g_array_index(priv->x_ticks, gint, id2);
+        i_pt2=&g_array_index(priv->y_ticks, gint, id2);
         i_temp2=(*i_pt2);
         *i_pt1=i_temp2;
         *i_pt2=i_temp1;  
