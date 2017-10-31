@@ -52,8 +52,9 @@ int main(int argc, char *argv[])
     /*
       Test some multi graph functions. The set_points also set the x_ticks. 
     */
-    multi_graph_set_points(MULTI_GRAPH(graph1), 1, 20);
-    multi_graph_set_y_ticks(MULTI_GRAPH(graph1), 1, 10);
+    //multi_graph_set_points(MULTI_GRAPH(graph1), 1, 20);
+    //multi_graph_set_y_ticks(MULTI_GRAPH(graph1), 1, 10);
+    //multi_graph_set_y_max(MULTI_GRAPH(graph1), 1, 200.0);
     //multi_graph_set_background_color(MULTI_GRAPH(graph1), "rgba(255, 255, 255, 1.0)");
     //multi_graph_set_font_color(MULTI_GRAPH(graph1), "rgba(0, 0, 0, 1.0)");
     //multi_graph_set_tick_color(MULTI_GRAPH(graph1), "rgba(0, 0, 255, 1.0)");
@@ -273,6 +274,10 @@ static gboolean animate_graphs(GtkWidget *widgets[])
        */
        for(i=0;i<16;i++)
          {
+           /*
+             Feed a standardized y number between 0 and 1. It is multiplied by the y_max value
+             for graphing.
+           */
            multi_graph_feed_point(MULTI_GRAPH(widgets[1]), i, 0.0, g_rand_double(rand));          
          }
        gtk_widget_queue_draw(widgets[1]);

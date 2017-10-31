@@ -668,13 +668,46 @@ void multi_graph_set_y_ticks(MultiGraph *da, gint graph_id, gint ticks)
         g_warning("Graph id: 0<=x<=15\n");
       }
   }
-gint multi_graph_get_x_ticks(MultiGraph *da, gint graph_id)
+gint multi_graph_get_y_ticks(MultiGraph *da, gint graph_id)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
 
     if(graph_id>=0&&graph_id<=15)
       {
         gint temp=g_array_index(priv->y_ticks, gint, graph_id);  
+        return temp;           
+      }
+    else
+      {
+        return 0;
+        g_warning("Graph id: 0<=x<=15\n");
+      }
+  }
+void multi_graph_set_y_max(MultiGraph *da, gint graph_id, gdouble y_max)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        if(y_max>0)
+          {
+            gdouble *temp=&g_array_index(priv->y_max, gdouble, graph_id);
+            *temp=y_max;
+          }
+        else g_warning("Y max: y>0\n");
+      }
+    else
+      {
+        g_warning("Graph id: 0<=x<=15\n");
+      }
+  }
+gdouble multi_graph_get_y_max(MultiGraph *da, gint graph_id)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        gdouble temp=g_array_index(priv->y_max, gdouble, graph_id);  
         return temp;           
       }
     else
