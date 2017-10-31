@@ -1188,7 +1188,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
               {
                 x=j*graph_width+k*x_tick;
                 gchar *string=g_strdup_printf("%i", (gint)(test_increment_x*k));
-                cairo_move_to(cr, x+8.0*ratio_x, y-10.0*ratio_x);
+                cairo_move_to(cr, x+8.0*ratio_x, y-ratio_x-4);
                 cairo_show_text(cr, string);
                 g_free(string);
               }
@@ -1199,7 +1199,9 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
     //The y-axis numbers.
     gint len=0;
     gdouble y_value=0;
+    cairo_text_extents_t ext;
     cairo_set_font_size(cr, 20*ratio_y+y_font_scale);
+    cairo_text_extents(cr, "2", &ext);
     for(i=0;i<graph_rows;i++)
       {
         for(j=0;j<graph_columns;j++)
@@ -1218,7 +1220,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
               {
                 y=i*graph_height+graph_height-k*y_tick;
                 gchar *string=g_strdup_printf("%.2f", (y_value*k));
-                cairo_move_to(cr, x+8.0*ratio_y, y+25.0*ratio_y);
+                cairo_move_to(cr, x+8.0*ratio_y, y+ext.height*ratio_y+8.0);
                 cairo_show_text(cr, string);
                 g_free(string);
               }
