@@ -52,7 +52,10 @@ int main(int argc, char *argv[])
     /*
       Test some multi graph functions. The set_points also set the x_ticks. 
     */
-    //multi_graph_set_points(MULTI_GRAPH(graph1), 1, 20);
+    multi_graph_set_points(MULTI_GRAPH(graph1), 1, 40);
+    multi_graph_set_tick_increment_x(MULTI_GRAPH(graph1), 1, 5);
+    multi_graph_set_points(MULTI_GRAPH(graph1), 2, 80);
+    multi_graph_set_tick_increment_x(MULTI_GRAPH(graph1), 2, 10);
     //multi_graph_set_y_ticks(MULTI_GRAPH(graph1), 1, 10);
     //multi_graph_set_y_max(MULTI_GRAPH(graph1), 1, 200.0);
     //multi_graph_set_background_color(MULTI_GRAPH(graph1), "rgba(255, 255, 255, 1.0)");

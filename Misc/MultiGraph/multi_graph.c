@@ -29,7 +29,7 @@ struct _MultiGraphPrivate
     gdouble (*lc)[4];
     gint graph_rows;
     gint graph_columns;
-    gdouble test_increment_x;
+    GArray *tick_increment_x;
     GArray *x_ticks;
     GArray *y_ticks;
     GArray *y_max;
@@ -521,7 +521,6 @@ static void multi_graph_init(MultiGraph *da)
 
     priv->graph_rows=1;
     priv->graph_columns=1;
-    priv->test_increment_x=1;
     priv->x_font_scale=0;
     priv->y_font_scale=0;
     priv->draw_lines=0;
@@ -531,13 +530,16 @@ static void multi_graph_init(MultiGraph *da)
     priv->x_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
     priv->y_ticks=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
     priv->y_max=g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 16);
-    //Start 16 graphs with x_ticks=10, y_ticks=5 and y_max=100.
+    priv->tick_increment_x=g_array_sized_new(FALSE, FALSE, sizeof(gint), 16);
+    //Start 16 graphs with x_ticks=10, y_ticks=5, y_max=100, tick_increment_x=1.
     temp=10;
     for(i=0;i<16;i++) g_array_append_val(priv->x_ticks, temp);
     temp=5;
     for(i=0;i<16;i++) g_array_append_val(priv->y_ticks, temp);
-    temp=100;
+    d_temp=100.0;
     for(i=0;i<16;i++) g_array_append_val(priv->y_max, d_temp);
+    temp=1;
+    for(i=0;i<16;i++) g_array_append_val(priv->tick_increment_x, temp);
 
     //Initialize data arrays with height 50.
     struct point pt;
@@ -570,6 +572,7 @@ static void multi_graph_finalize(GObject *object)
     g_array_free(priv->x_ticks, TRUE);
     g_array_free(priv->y_ticks, TRUE);
     g_array_free(priv->y_max, TRUE);
+    g_array_free(priv->tick_increment_x, TRUE);
     for(i=0;i<priv->data_points->len;i++)
       {
         g_array_free(g_array_index(priv->data_points, GArray*, i), TRUE);
@@ -716,6 +719,40 @@ gdouble multi_graph_get_y_max(MultiGraph *da, gint graph_id)
         g_warning("Graph id: 0<=x<=15\n");
       }
   }
+void multi_graph_set_tick_increment_x(MultiGraph *da, gint graph_id, gint increment)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        //Need to check that increment is less than points.
+        if(increment>1)
+          {
+            gint *temp=&g_array_index(priv->tick_increment_x, gint, graph_id);
+            *temp=increment;
+          }
+        else g_warning("tick_increment_x: x>1\n");
+      }
+    else
+      {
+        g_warning("Graph id: 0<=x<=15\n");
+      }
+  }
+gint multi_graph_get_tick_increment_x(MultiGraph *da, gint graph_id)
+  {
+    MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
+
+    if(graph_id>=0&&graph_id<=15)
+      {
+        gint temp=g_array_index(priv->tick_increment_x, gint, graph_id);  
+        return temp;           
+      }
+    else
+      {
+        return 0;
+        g_warning("Graph id: 0<=x<=15\n");
+      }
+  }
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y)
   {
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
@@ -817,7 +854,6 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
     gint x_font_scale=priv->x_font_scale;
     gint y_font_scale=priv->y_font_scale;
     gint scale_dots=priv->scale_dots;
-    gdouble test_increment_x=priv->test_increment_x;
     //Some drawing variables.
     gdouble x=0.0;
     gdouble y=0.0;
@@ -845,8 +881,9 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
             for(j=0;j<graph_columns;j++)
               {
                 temp_tick=i*graph_columns+j; 
-                x_tick=graph_width/g_array_index(priv->x_ticks, gint, temp_tick);
-                for(k=0;k<g_array_index(priv->x_ticks, gint, temp_tick);k++)
+                gint marks=g_array_index(priv->x_ticks, gint, temp_tick)/g_array_index(priv->tick_increment_x, gint, temp_tick);
+                x_tick=graph_width/marks;
+                for(k=0;k<marks;k++)
                   {
                     x=j*graph_width+k*x_tick;
                     y=i*graph_height+graph_height;
@@ -854,6 +891,7 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
                     cairo_line_to(cr, x, y-graph_height);
                     cairo_stroke(cr);
                   } 
+
               }
           }
         //Horizontal lines.
@@ -1171,8 +1209,9 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
             for(j=0;j<graph_columns;j++)
               {
                 temp_tick=i*graph_columns+j; 
-                x_tick=graph_width/g_array_index(priv->x_ticks, gint, temp_tick);
-                for(k=0;k<g_array_index(priv->x_ticks, gint, temp_tick);k++)
+                gint marks=g_array_index(priv->x_ticks, gint, temp_tick)/g_array_index(priv->tick_increment_x, gint, temp_tick);
+                x_tick=graph_width/marks;
+                for(k=0;k<marks;k++)
                   {
                     x=j*graph_width+k*x_tick;
                     y=i*graph_height+graph_height;
@@ -1216,11 +1255,12 @@ static gboolean multi_graph_draw(GtkWidget *da, cairo_t *cr)
             cairo_clip(cr);
             y=i*graph_height+graph_height;
             temp_tick=i*graph_columns+j; 
-            x_tick=graph_width/g_array_index(priv->x_ticks, gint, temp_tick);
-            for(k=0;k<g_array_index(priv->x_ticks, gint, temp_tick);k++)
+            gint marks=g_array_index(priv->x_ticks, gint, temp_tick)/g_array_index(priv->tick_increment_x, gint, temp_tick);
+            x_tick=graph_width/marks;
+            for(k=0;k<marks;k++)
               {
                 x=j*graph_width+k*x_tick;
-                gchar *string=g_strdup_printf("%i", (gint)(test_increment_x*k));
+                gchar *string=g_strdup_printf("%i", g_array_index(priv->tick_increment_x, gint, temp_tick)*k);
                 cairo_move_to(cr, x+8.0*ratio_x, y-ratio_x-4);
                 cairo_show_text(cr, string);
                 g_free(string);

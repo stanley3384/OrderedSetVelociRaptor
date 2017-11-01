@@ -67,6 +67,9 @@ gint multi_graph_get_y_ticks(MultiGraph *da, gint graph_id);
 //Set the max value of the y-axis.
 void multi_graph_set_y_max(MultiGraph *da, gint graph_id, gdouble y_max);
 gdouble multi_graph_get_y_max(MultiGraph *da, gint graph_id);
+//Set the space between ticks and x-axis labels.
+void multi_graph_set_tick_increment_x(MultiGraph *da, gint graph_id, gint increment);
+gint multi_graph_get_tick_increment_x(MultiGraph *da, gint graph_id);
 //Add a point to the start of the graph.
 void multi_graph_feed_point(MultiGraph *da, gint graph_id, gdouble x, gdouble y);
 //Swap the positions of two graphs.
