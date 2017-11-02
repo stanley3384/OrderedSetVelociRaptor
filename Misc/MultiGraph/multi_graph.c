@@ -566,9 +566,13 @@ static void multi_graph_finalize(GObject *object)
   {
     MultiGraph *da=MULTI_GRAPH(object);
     MultiGraphPrivate *priv=MULTI_GRAPH_GET_PRIVATE(da);
-
     gint i=0;
+
     g_free(priv->background_color_string);
+    g_free(priv->font_color_string);
+    g_free(priv->grid_color_string);
+    g_free(priv->tick_color_string);
+
     g_array_free(priv->x_ticks, TRUE);
     g_array_free(priv->y_ticks, TRUE);
     g_array_free(priv->y_max, TRUE);
